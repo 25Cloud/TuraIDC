@@ -1940,7 +1940,8 @@
         "qrExpiresIn": "The QR code expires in {time}",
         "dialogHeader": "Identity verification",
         "nameLine": "Name: {name}",
-        "idCardLine": "ID number: {idCard}"
+        "idCardLine": "ID number: {idCard}",
+        "verifiedAt": "Verification time"
     },
     "checkoutResume": {
         "browse": "Browse Products",

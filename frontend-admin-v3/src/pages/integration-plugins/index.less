@@ -4,32 +4,9 @@
   gap: 16px;
 }
 
-.upstream-origin-check-card .t-card__body {
+/* 上游面板开关卡：字段结构走全局 admin-field，这里只收一下卡片内边距 */
+.upstream-panel-settings-card .t-card__body {
   padding: 16px;
-}
-
-.upstream-origin-check {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.upstream-origin-check__text {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.upstream-origin-check__text strong {
-  font-size: 14px;
-}
-
-.upstream-origin-check__text span {
-  color: var(--td-text-color-secondary);
-  font-size: 12px;
-  line-height: 20px;
 }
 
 .plugins-toolbar {
@@ -53,33 +30,37 @@
   background: var(--td-bg-color-container);
 }
 
+/*
+ * 插件卡片：一屏要看到更多插件，卡片就得矮。
+ * 缩小内边距与行距、把「运行状态」并到元信息那一行，操作按钮不再被 margin-top:auto 推到卡片底部。
+ */
 .plugin-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 12px;
 }
 
 .plugin-card {
   display: flex;
   min-width: 0;
   flex-direction: column;
-  gap: 14px;
+  gap: 10px;
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-default, 4px);
   background: var(--td-bg-color-container);
-  padding: 16px;
+  padding: 12px;
 }
 
 .plugin-card__main {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 12px;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
 }
 
 .plugin-card__icon {
   display: flex;
-  width: 44px;
-  height: 44px;
+  width: 36px;
+  height: 36px;
   align-items: center;
   justify-content: center;
   border-radius: var(--td-radius-default, 4px);
@@ -103,7 +84,7 @@
   min-width: 0;
   overflow: hidden;
   color: var(--td-text-color-primary);
-  font-size: var(--td-font-size-size-4, 16px);
+  font-size: var(--td-font-size-size-3, 14px);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -116,26 +97,24 @@
 }
 
 .plugin-card__body p {
-  margin: 6px 0 0;
+  margin: 4px 0 0;
 }
 
+/* 元信息与运行状态同一行，少一整行高度 */
 .plugin-meta,
 .plugin-actions {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 
-.plugin-observability {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 8px;
+.plugin-meta {
+  margin-top: 4px;
 }
 
 .plugin-actions {
-  justify-content: flex-end;
-  margin-top: auto;
+  justify-content: flex-start;
 }
 
 /* 列表视图：插件名与业务标识上下两行，避免一列里塞满 slug / key */
@@ -201,18 +180,45 @@
   white-space: nowrap;
 }
 
+/*
+ * 插件配置表单：单列纵向排列，一行一个字段。
+ * 抽屉固定 560px 宽，双列会把说明文字压成一条窄条，控件长度也会来回跳。
+ */
 .plugin-config-form {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  column-gap: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding-bottom: 16px;
 }
 
-.plugin-config-form > .t-form__item,
-.plugin-config-form > .t-divider,
-.plugin-config-form > .plugin-config-section,
-.plugin-config-form > .plugin-config-notice {
-  grid-column: 1 / -1;
+/* 控件铺满自己的格子，宽度由 --narrow / --medium 修饰符收窄 */
+.plugin-config-form .admin-field__control > .t-input,
+.plugin-config-form .admin-field__control > .t-select,
+.plugin-config-form .admin-field__control > .t-textarea,
+.plugin-config-form .admin-field__control > .t-input-number {
+  width: 100%;
+}
+
+/*
+ * 分节标题：可折叠分组与普通分隔共用同一套层级，只有交互不同。
+ * 层级与全局 .admin-field-section__head 对齐，管理员不用再分辨两种分隔样式。
+ */
+.plugin-config-section,
+.plugin-config-divider {
+  margin-top: 4px;
+  padding-top: 16px;
+  border-top: 1px solid var(--td-component-stroke);
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-4, 16px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+/* 表单第一个元素上方不画分隔线，否则紧贴抽屉顶部像多了一条边 */
+.plugin-config-form > :first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
 /* 可折叠分组标题：高级项默认收起，点这里展开 */
@@ -221,19 +227,15 @@
   align-items: center;
   gap: 6px;
   width: 100%;
-  margin: 4px 0 18px;
-  padding: 8px 12px;
-  border: 1px solid var(--td-component-border);
-  border-radius: var(--td-radius-default);
-  background: var(--td-bg-color-container-hover);
-  color: var(--td-text-color-primary);
-  font-size: 14px;
+  padding-right: 0;
+  padding-bottom: 0;
+  padding-left: 0;
+  background: none;
   text-align: left;
   cursor: pointer;
-  transition: background-color 0.2s;
 
-  &:hover {
-    background: var(--td-bg-color-container-active);
+  &:hover .plugin-config-section__title {
+    color: var(--td-brand-color);
   }
 
   &__arrow {
@@ -247,41 +249,21 @@
   }
 
   &__title {
+    min-width: 0;
     flex: 1;
-    font-weight: 500;
   }
 
   &__hint {
     flex: none;
+    margin-left: auto;
     color: var(--td-text-color-placeholder);
     font-size: 12px;
+    font-weight: 400;
   }
 }
 
-.plugin-config-form > .plugin-config-form__item--half {
-  grid-column: auto;
-}
-
-.plugin-config-form .t-input-number {
-  width: 100%;
-}
-
 .plugin-config-notice {
-  margin-bottom: 18px;
-}
-
-.plugin-field-description {
-  margin: 6px 0 0;
-  color: var(--td-text-color-placeholder);
-  font-size: var(--td-font-size-size-1, 12px);
-  line-height: 20px;
-}
-
-.plugin-secret-hint {
-  margin: 6px 0 0;
-  color: var(--td-text-color-placeholder);
-  font-size: var(--td-font-size-size-1, 12px);
-  line-height: 20px;
+  margin: 0;
 }
 
 .plugin-secret-toggle {
@@ -293,40 +275,6 @@
 
 .plugin-secret-toggle:hover {
   color: var(--td-brand-color);
-}
-
-.plugin-secret-preview {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.plugin-secret-preview__item {
-  display: grid;
-  grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
-  gap: 4px 12px;
-  border: 1px solid var(--td-component-border);
-  border-radius: var(--td-radius-default, 4px);
-  background: var(--td-bg-color-secondarycontainer);
-  padding: 8px 10px;
-  color: var(--td-text-color-secondary);
-  font-size: var(--td-font-size-size-1, 12px);
-  line-height: 20px;
-}
-
-.plugin-secret-preview__item strong {
-  overflow: hidden;
-  color: var(--td-text-color-primary);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.plugin-secret-preview__item span {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .smtp-account-manager {
@@ -394,17 +342,32 @@
   min-width: 96px;
 }
 
-.smtp-account-form {
+/* SMTP 账号弹窗与测试发信弹窗沿用同一套字段结构，这里只管纵向间距 */
+.smtp-account-form,
+.email-test-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding-top: 4px;
 }
 
-@media (width <= 768px) {
-  .plugin-config-form {
-    grid-template-columns: 1fr;
-  }
+.smtp-account-form .admin-field__control > .t-input,
+.smtp-account-form .admin-field__control > .t-input-number,
+.smtp-account-form .admin-field__control > .t-select,
+.email-test-form .admin-field__control > .t-input {
+  width: 100%;
+}
 
-  .plugin-config-form > .plugin-config-form__item--half {
-    grid-column: 1 / -1;
+/* 校验错误与控件红框同色，读起来是一件事 */
+.email-test-form .email-test-form__error {
+  color: var(--td-error-color);
+}
+
+@media (width <= 768px) {
+  /* 窄屏控件铺满整行，收窄的修饰符在这里失效 */
+  .plugin-config-form .admin-field__control--narrow,
+  .plugin-config-form .admin-field__control--medium {
+    max-width: none;
   }
 
   .plugins-toolbar {

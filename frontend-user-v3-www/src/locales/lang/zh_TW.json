@@ -1161,9 +1161,9 @@
       "system": "系統"
     },
     "mode": {
-      "readOnly": "唯讀",
-      "confirm": "確認後執行",
-      "autoApprove": "自動執行"
+      "readOnly": "僅可檢視",
+      "confirm": "完整權限",
+      "autoApprove": "自動核准（beta）"
     },
     "risk": {
       "read": "查詢",

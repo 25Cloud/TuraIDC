@@ -125,8 +125,8 @@ export const contentRoutes: RouteRecordRaw[] = [
     component: () => import('@/pages/settings/index.vue'),
     meta: {
       title: {
-        zh_CN: '首页装修',
-        zh_TW: '首頁裝修',
+        zh_CN: '首页轮播',
+        zh_TW: '首頁輪播',
         en_US: 'Site Hero',
       },
       permission: 'site.view',

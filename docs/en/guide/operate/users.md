@@ -1,6 +1,6 @@
 ---
 source: guide/operate/users.md
-sourceHash: 0e08133b98ad1119e7a363bd6511769e6f7c453f22ddbb83d42ff06488b8349e
+sourceHash: 1939e2558c48445bc15b483e0ded92ee914ffcf0b172c25a18e514ddc1648907
 translatedAt: 2026-10-26
 ---
 
@@ -40,7 +40,7 @@ This document is for site operators running TuraIDC. It explains how users come 
 - **How real-name verification hooks into business flows**:
   1. Once a product's `purchase_requires.require_verification` is on, orders from users without real-name verification are rejected (40301 "This product requires real-name verification before purchase, please complete real-name verification first"); `require_phone` in the same switch group forces phone number binding (40302).
   2. Applying for a withdrawal requires real-name verification first (see section 7).
-  3. Whether a top-up requires real-name verification is decided by the setting `finance.recharge_requires_verification`, on by default; the entry point is the "Account and Finance" tab of the settings page, see [Finance and Statements](finance.md).
+  3. Whether a top-up requires real-name verification is decided by the setting `finance.recharge_requires_verification`, on by default; the entry point is the "Account top-up" section of Marketing → Referral → Referral & top-up (`/admin/referral-settings`) in the admin panel, see [Finance and Statements](finance.md).
 
 ## 4. Membership Tiers and Reward Rates
 

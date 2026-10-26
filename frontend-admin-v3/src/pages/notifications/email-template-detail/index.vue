@@ -45,42 +45,43 @@
       </t-card>
 
       <t-card :bordered="false" :loading="loading">
-        <t-form :data="templateDefinition" label-align="top">
-          <t-form-item :label="$t('notifications.emailTemplate.sendStatus')" name="isEnabled">
-            <div class="status-control">
+        <!-- 标签一行、说明一行、控件一行：主题与正文预览各自独占整行，不与开关挤在一起 -->
+        <div class="template-form">
+          <div class="admin-field admin-field--switch">
+            <span class="admin-field__label">{{ $t('notifications.emailTemplate.sendStatus') }}</span>
+            <div class="admin-field__control">
               <t-switch
                 v-model="templateDefinition.isEnabled"
                 :custom-value="[true, false]"
                 :label="[$t('notifications.enabled'), $t('notifications.disabled')]"
               />
             </div>
-          </t-form-item>
-          <t-form-item
-            v-if="templateDefinition.channel === 'email'"
-            :label="$t('notifications.emailTemplate.emailSubject')"
-            name="subject"
-          >
-            <t-input
-              v-model="templateDefinition.subject"
-              :placeholder="$t('notifications.emailTemplate.emailSubjectPlaceholder')"
-            />
-          </t-form-item>
-          <t-form-item
-            v-if="templateDefinition.channel === 'sms'"
-            :label="$t('notifications.emailTemplate.providerTemplateId')"
-            name="providerTemplateId"
-          >
-            <t-input
-              v-model="templateDefinition.providerTemplateId"
-              :placeholder="$t('notifications.emailTemplate.providerTemplatePlaceholder')"
-            />
-          </t-form-item>
-          <div v-if="templateDefinition.channel === 'email'" class="subject-preview">
+          </div>
+          <div v-if="templateDefinition.channel === 'email'" class="admin-field">
+            <span class="admin-field__label">{{ $t('notifications.emailTemplate.emailSubject') }}</span>
+            <div class="admin-field__control">
+              <t-input
+                v-model="templateDefinition.subject"
+                :placeholder="$t('notifications.emailTemplate.emailSubjectPlaceholder')"
+              />
+            </div>
+          </div>
+          <div v-if="templateDefinition.channel === 'sms'" class="admin-field">
+            <span class="admin-field__label">{{ $t('notifications.emailTemplate.providerTemplateId') }}</span>
+            <div class="admin-field__control admin-field__control--medium">
+              <t-input
+                v-model="templateDefinition.providerTemplateId"
+                :placeholder="$t('notifications.emailTemplate.providerTemplatePlaceholder')"
+              />
+            </div>
+          </div>
+          <!-- 主题预览紧跟主题字段：改一个变量就能当场看到渲染结果 -->
+          <div v-if="templateDefinition.channel === 'email'" class="subject-preview admin-field--full">
             <span>{{ $t('notifications.emailTemplate.subjectPreview') }}</span>
             <strong>{{ renderPreviewSubject(templateDefinition) }}</strong>
           </div>
 
-          <div class="editor-grid">
+          <div class="editor-grid admin-field--full">
             <div class="editor-stack">
               <section class="editor-pane">
                 <div class="pane-header">
@@ -129,7 +130,7 @@
               </div>
             </section>
           </div>
-        </t-form>
+        </div>
       </t-card>
     </template>
 
@@ -159,10 +160,11 @@
             · {{ templateDefinition.code }}</span
           >
         </div>
-        <t-form label-align="top">
-          <t-form-item
-            :label="templateChannel === 'sms' ? $t('notifications.recipientPhone') : $t('notifications.recipientEmail')"
-          >
+        <div class="admin-field">
+          <span class="admin-field__label">{{
+            templateChannel === 'sms' ? $t('notifications.recipientPhone') : $t('notifications.recipientEmail')
+          }}</span>
+          <div class="admin-field__control">
             <t-input
               v-model="testSendRecipient"
               :placeholder="testSendPlaceholder"
@@ -170,8 +172,8 @@
               :type="templateChannel === 'sms' ? 'tel' : 'text'"
               @input="testSendResult = null"
             />
-          </t-form-item>
-        </t-form>
+          </div>
+        </div>
 
         <div
           v-if="testSendResult"

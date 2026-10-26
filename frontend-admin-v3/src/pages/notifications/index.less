@@ -58,6 +58,17 @@
   overflow-x: auto;
 }
 
+// 表格内长文本统一两行截断，避免溢出单元格后被硬切且无省略号
+.clamp-cell {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  line-height: 20px;
+}
+
 .stack-cell {
   display: flex;
   min-width: 0;
@@ -111,12 +122,20 @@
 
 .template-mobile-card__head {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
   gap: 8px;
   min-height: 42px;
-  border-bottom: 1px solid var(--td-component-border);
   padding: 9px 10px;
+}
+
+// 只有展开态才画分隔线，折叠的紧凑行保持单行观感
+.template-mobile-card.is-expanded .template-mobile-card__head {
+  border-bottom: 1px solid var(--td-component-border);
+}
+
+.template-mobile-card__meta {
+  padding: 8px 10px 0;
 }
 
 .template-mobile-card__head strong {
@@ -179,6 +198,17 @@
   min-width: 44px;
   padding-right: 8px;
   padding-left: 8px;
+}
+
+// 主题/正文值两行截断并带省略号，不再被卡片右边缘硬切掉
+.template-mobile-card dd.template-mobile-card__subject {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  text-align: right;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .template-mobile-card__actions {

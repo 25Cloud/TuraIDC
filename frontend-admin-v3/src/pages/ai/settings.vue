@@ -1,341 +1,316 @@
 <template>
   <div class="ai-settings-page">
     <t-loading :loading="loading" size="small" show-overlay class="ai-settings-loading">
-      <t-form
-        ref="formRef"
-        class="ai-settings-form"
-        :data="form"
-        :rules="formRules"
-        :label-align="isMobile ? 'top' : 'right'"
-        :label-width="isMobile ? undefined : '180px'"
-      >
+      <t-form ref="formRef" class="ai-settings-form" :data="form" :rules="formRules">
+        <!-- 每个字段都是「标签一行 → 说明一行 → 控件一行」：
+             说明不再跟控件抢同一行，长说明和开关也不会互相挤。 -->
         <!-- ① 总开关与上游协议：先决定这套助手怎么接、能不能用 -->
         <t-card :bordered="false" class="ai-settings-card">
           <h2 class="ai-settings-card__title">{{ $t('ai.settings.sectionSwitch') }}</h2>
 
-          <t-form-item name="enabled" :label="$t('ai.settings.enabled')" :help="$t('ai.settings.enabledTip')">
-            <t-switch v-model="form.enabled" />
-          </t-form-item>
+          <div class="admin-field-grid">
+            <div class="admin-field admin-field--switch">
+              <span class="admin-field__label">{{ $t('ai.settings.enabled') }}</span>
+              <div class="admin-field__control">
+                <t-switch v-model="form.enabled" />
+              </div>
+              <p class="admin-field__desc">{{ $t('ai.settings.enabledTip') }}</p>
+            </div>
 
-          <t-form-item name="protocol" :label="$t('ai.settings.protocol')" :help="protocolHelp">
-            <t-select v-model="form.protocol" class="ai-settings-control">
-              <t-option
-                v-for="option in protocolOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </t-select>
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.protocol') }}</span>
+              <p class="admin-field__desc">{{ protocolHelp }}</p>
+              <div class="admin-field__control admin-field__control--medium">
+                <t-select v-model="form.protocol">
+                  <t-option
+                    v-for="option in protocolOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </t-select>
+              </div>
+            </div>
+          </div>
         </t-card>
 
         <!-- ② 网关与模型：真正影响能不能连通的一整组参数 -->
         <t-card :bordered="false" class="ai-settings-card">
           <h2 class="ai-settings-card__title">{{ $t('ai.settings.sectionBasic') }}</h2>
 
-          <t-form-item name="base_url" :label="$t('ai.settings.baseUrl')" :help="$t('ai.settings.helpBaseUrl')">
-            <t-input
-              v-model="form.base_url"
-              class="ai-settings-control"
-              clearable
-              :placeholder="$t('ai.settings.baseUrlPlaceholder')"
-            />
-          </t-form-item>
+          <div class="admin-field-grid">
+            <div class="admin-field admin-field--full">
+              <span class="admin-field__label">{{ $t('ai.settings.baseUrl') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpBaseUrl') }}</p>
+              <div class="admin-field__control">
+                <t-input v-model="form.base_url" clearable :placeholder="$t('ai.settings.baseUrlPlaceholder')" />
+              </div>
+            </div>
 
-          <t-form-item name="model" :label="$t('ai.settings.model')" :help="$t('ai.settings.helpModel')">
-            <t-input
-              v-model="form.model"
-              class="ai-settings-control"
-              clearable
-              :placeholder="$t('ai.settings.modelPlaceholder')"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.model') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpModel') }}</p>
+              <div class="admin-field__control admin-field__control--medium">
+                <t-input v-model="form.model" clearable :placeholder="$t('ai.settings.modelPlaceholder')" />
+              </div>
+            </div>
 
-          <t-form-item name="api_key" :label="$t('ai.settings.apiKey')" :help="apiKeyHelp">
-            <t-input
-              v-model="apiKeyInput"
-              class="ai-settings-control"
-              type="password"
-              clearable
-              :placeholder="$t('ai.settings.apiKeyPlaceholder')"
-            />
-          </t-form-item>
+            <div class="admin-field admin-field--full">
+              <span class="admin-field__label">{{ $t('ai.settings.apiKey') }}</span>
+              <p class="admin-field__desc">{{ apiKeyHelp }}</p>
+              <div class="admin-field__control">
+                <t-input
+                  v-model="apiKeyInput"
+                  type="password"
+                  clearable
+                  :placeholder="$t('ai.settings.apiKeyPlaceholder')"
+                />
+              </div>
+            </div>
 
-          <t-form-item
-            name="temperature"
-            :label="$t('ai.settings.temperature')"
-            :help="$t('ai.settings.helpTemperature')"
-          >
-            <t-input-number
-              v-model="form.temperature"
-              class="ai-settings-number"
-              theme="normal"
-              :min="0"
-              :max="2"
-              :step="0.1"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.temperature') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpTemperature') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number v-model="form.temperature" theme="normal" :min="0" :max="2" :step="0.1" />
+              </div>
+            </div>
 
-          <t-form-item name="max_tokens" :label="$t('ai.settings.maxTokens')" :help="$t('ai.settings.helpMaxTokens')">
-            <t-input-number
-              v-model="form.max_tokens"
-              class="ai-settings-number"
-              theme="normal"
-              :min="128"
-              :max="8192"
-              :step="128"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.maxTokens') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpMaxTokens') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number v-model="form.max_tokens" theme="normal" :min="128" :max="8192" :step="128" />
+              </div>
+            </div>
+          </div>
         </t-card>
 
         <!-- ③ 入口开关：三个端各自能不能看到浮球 -->
         <t-card :bordered="false" class="ai-settings-card">
           <h2 class="ai-settings-card__title">{{ $t('ai.settings.sectionChannels') }}</h2>
 
-          <t-form-item
-            name="console_enabled"
-            :label="$t('ai.settings.consoleEnabled')"
-            :help="$t('ai.settings.helpConsoleEnabled')"
-          >
-            <t-switch v-model="form.console_enabled" />
-          </t-form-item>
+          <div class="admin-field-grid">
+            <div class="admin-field admin-field--switch">
+              <span class="admin-field__label">{{ $t('ai.settings.consoleEnabled') }}</span>
+              <div class="admin-field__control">
+                <t-switch v-model="form.console_enabled" />
+              </div>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpConsoleEnabled') }}</p>
+            </div>
 
-          <t-form-item
-            name="site_enabled"
-            :label="$t('ai.settings.siteEnabled')"
-            :help="$t('ai.settings.helpSiteEnabled')"
-          >
-            <t-switch v-model="form.site_enabled" />
-          </t-form-item>
+            <div class="admin-field admin-field--switch">
+              <span class="admin-field__label">{{ $t('ai.settings.siteEnabled') }}</span>
+              <div class="admin-field__control">
+                <t-switch v-model="form.site_enabled" />
+              </div>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpSiteEnabled') }}</p>
+            </div>
 
-          <t-form-item
-            name="admin_enabled"
-            :label="$t('ai.settings.adminEnabled')"
-            :help="$t('ai.settings.helpAdminEnabled')"
-          >
-            <t-switch v-model="form.admin_enabled" />
-          </t-form-item>
+            <div class="admin-field admin-field--switch">
+              <span class="admin-field__label">{{ $t('ai.settings.adminEnabled') }}</span>
+              <div class="admin-field__control">
+                <t-switch v-model="form.admin_enabled" />
+              </div>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpAdminEnabled') }}</p>
+            </div>
 
-          <t-form-item
-            name="allow_balance_pay"
-            :label="$t('ai.settings.allowBalancePay')"
-            :help="$t('ai.settings.allowBalancePayTip')"
-          >
-            <t-switch v-model="form.allow_balance_pay" />
-          </t-form-item>
+            <div class="admin-field admin-field--switch">
+              <span class="admin-field__label">{{ $t('ai.settings.allowBalancePay') }}</span>
+              <div class="admin-field__control">
+                <t-switch v-model="form.allow_balance_pay" />
+              </div>
+              <p class="admin-field__desc">{{ $t('ai.settings.allowBalancePayTip') }}</p>
+            </div>
+          </div>
         </t-card>
 
         <!-- ④ 额度与熔断：0 一律表示不限量，默认值已经是可直接投产的数 -->
         <t-card :bordered="false" class="ai-settings-card">
           <h2 class="ai-settings-card__title">{{ $t('ai.settings.sectionLimits') }}</h2>
 
-          <t-form-item
-            name="user_daily_messages"
-            :label="$t('ai.settings.userDailyMessages')"
-            :help="$t('ai.settings.unlimitedTip')"
-          >
-            <t-input-number
-              v-model="form.user_daily_messages"
-              class="ai-settings-number"
-              theme="normal"
-              :min="0"
-              :max="10000"
-              :step="10"
-            />
-          </t-form-item>
+          <div class="admin-field-grid">
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.userDailyMessages') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.unlimitedTip') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number v-model="form.user_daily_messages" theme="normal" :min="0" :max="10000" :step="10" />
+              </div>
+            </div>
 
-          <t-form-item
-            name="user_daily_tokens"
-            :label="$t('ai.settings.userDailyTokens')"
-            :help="$t('ai.settings.unlimitedTip')"
-          >
-            <t-input-number
-              v-model="form.user_daily_tokens"
-              class="ai-settings-number"
-              theme="normal"
-              :min="0"
-              :max="100000000"
-              :step="1000"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.userDailyTokens') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.unlimitedTip') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number
+                  v-model="form.user_daily_tokens"
+                  theme="normal"
+                  :min="0"
+                  :max="100000000"
+                  :step="1000"
+                />
+              </div>
+            </div>
 
-          <t-form-item
-            name="global_daily_tokens"
-            :label="$t('ai.settings.globalDailyTokens')"
-            :help="$t('ai.settings.unlimitedTip')"
-          >
-            <t-input-number
-              v-model="form.global_daily_tokens"
-              class="ai-settings-number"
-              theme="normal"
-              :min="0"
-              :max="100000000"
-              :step="10000"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.globalDailyTokens') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.unlimitedTip') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number
+                  v-model="form.global_daily_tokens"
+                  theme="normal"
+                  :min="0"
+                  :max="100000000"
+                  :step="10000"
+                />
+              </div>
+            </div>
 
-          <t-form-item
-            name="global_daily_cost_cents"
-            :label="$t('ai.settings.globalDailyCostCents')"
-            :help="$t('ai.settings.unlimitedTip')"
-          >
-            <t-input-number
-              v-model="form.global_daily_cost_cents"
-              class="ai-settings-number"
-              theme="normal"
-              :min="0"
-              :max="100000000"
-              :step="100"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.globalDailyCostCents') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.unlimitedTip') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number
+                  v-model="form.global_daily_cost_cents"
+                  theme="normal"
+                  :min="0"
+                  :max="100000000"
+                  :step="100"
+                />
+              </div>
+            </div>
 
-          <t-form-item
-            name="cost_per_1k_tokens_cents"
-            :label="$t('ai.settings.costPerThousandTokens')"
-            :help="$t('ai.settings.helpCostPerThousandTokens')"
-          >
-            <t-input-number
-              v-model="form.cost_per_1k_tokens_cents"
-              class="ai-settings-number"
-              theme="normal"
-              :min="0"
-              :max="100000"
-              :step="1"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.costPerThousandTokens') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpCostPerThousandTokens') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number
+                  v-model="form.cost_per_1k_tokens_cents"
+                  theme="normal"
+                  :min="0"
+                  :max="100000"
+                  :step="1"
+                />
+              </div>
+            </div>
+          </div>
         </t-card>
 
         <!-- ⑤ 工具与轮次：决定模型能碰哪些数据、一轮里能连续调几次 -->
         <t-card :bordered="false" class="ai-settings-card">
           <h2 class="ai-settings-card__title">{{ $t('ai.settings.sectionTools') }}</h2>
 
-          <t-form-item
-            name="enabled_tools"
-            :label="$t('ai.settings.enabledTools')"
-            :help="$t('ai.settings.helpEnabledTools')"
-          >
-            <t-select
-              class="ai-settings-control"
-              multiple
-              clearable
-              filterable
-              :model-value="form.enabled_tools"
-              :placeholder="$t('ai.settings.toolsPlaceholder')"
-              @change="handleEnabledToolsChange"
-            >
-              <t-option v-for="tool in toolOptions" :key="tool.name" :value="tool.name" :label="tool.name">
-                <div class="ai-settings-tool">
-                  <span class="ai-settings-tool__name">{{ tool.name }}</span>
-                  <span class="ai-settings-tool__risk">{{ riskLabel(tool.risk) }}</span>
-                  <span class="ai-settings-tool__desc">{{ tool.description }}</span>
-                </div>
-              </t-option>
-            </t-select>
-          </t-form-item>
+          <div class="admin-field-grid">
+            <div class="admin-field admin-field--full">
+              <span class="admin-field__label">{{ $t('ai.settings.enabledTools') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpEnabledTools') }}</p>
+              <div class="admin-field__control">
+                <t-select
+                  multiple
+                  clearable
+                  filterable
+                  :model-value="form.enabled_tools"
+                  :placeholder="$t('ai.settings.toolsPlaceholder')"
+                  @change="handleEnabledToolsChange"
+                >
+                  <t-option v-for="tool in toolOptions" :key="tool.name" :value="tool.name" :label="tool.name">
+                    <div class="ai-settings-tool">
+                      <span class="ai-settings-tool__name">{{ tool.name }}</span>
+                      <span class="ai-settings-tool__risk">{{ riskLabel(tool.risk) }}</span>
+                      <span class="ai-settings-tool__desc">{{ tool.description }}</span>
+                    </div>
+                  </t-option>
+                </t-select>
+              </div>
+            </div>
 
-          <t-form-item
-            name="max_tool_rounds"
-            :label="$t('ai.settings.maxToolRounds')"
-            :help="$t('ai.settings.helpMaxToolRounds')"
-          >
-            <t-input-number
-              v-model="form.max_tool_rounds"
-              class="ai-settings-number"
-              theme="normal"
-              :min="1"
-              :max="12"
-              :step="1"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.maxToolRounds') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpMaxToolRounds') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number v-model="form.max_tool_rounds" theme="normal" :min="1" :max="12" :step="1" />
+              </div>
+            </div>
 
-          <t-form-item
-            name="request_timeout_seconds"
-            :label="$t('ai.settings.requestTimeoutSeconds')"
-            :help="$t('ai.settings.helpRequestTimeout')"
-          >
-            <t-input-number
-              v-model="form.request_timeout_seconds"
-              class="ai-settings-number"
-              theme="normal"
-              :min="15"
-              :max="180"
-              :step="5"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.requestTimeoutSeconds') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpRequestTimeout') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number v-model="form.request_timeout_seconds" theme="normal" :min="15" :max="180" :step="5" />
+              </div>
+            </div>
+          </div>
         </t-card>
 
         <!-- ⑥ 会话与留存：上下文带多少、日志留多久、出站要不要脱敏 -->
         <t-card :bordered="false" class="ai-settings-card">
           <h2 class="ai-settings-card__title">{{ $t('ai.settings.sectionSafety') }}</h2>
 
-          <t-form-item
-            name="history_message_limit"
-            :label="$t('ai.settings.historyMessageLimit')"
-            :help="$t('ai.settings.helpHistoryMessageLimit')"
-          >
-            <t-input-number
-              v-model="form.history_message_limit"
-              class="ai-settings-number"
-              theme="normal"
-              :min="2"
-              :max="40"
-              :step="1"
-            />
-          </t-form-item>
+          <div class="admin-field-grid">
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.historyMessageLimit') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpHistoryMessageLimit') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number v-model="form.history_message_limit" theme="normal" :min="2" :max="40" :step="1" />
+              </div>
+            </div>
 
-          <t-form-item
-            name="retention_days"
-            :label="$t('ai.settings.retentionDays')"
-            :help="$t('ai.settings.helpRetentionDays')"
-          >
-            <t-input-number
-              v-model="form.retention_days"
-              class="ai-settings-number"
-              theme="normal"
-              :min="1"
-              :max="365"
-              :step="1"
-            />
-          </t-form-item>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.retentionDays') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpRetentionDays') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
+                <t-input-number v-model="form.retention_days" theme="normal" :min="1" :max="365" :step="1" />
+              </div>
+            </div>
 
-          <t-form-item name="redact_pii" :label="$t('ai.settings.redactPii')" :help="$t('ai.settings.redactPiiTip')">
-            <t-switch v-model="form.redact_pii" />
-          </t-form-item>
+            <div class="admin-field admin-field--switch">
+              <span class="admin-field__label">{{ $t('ai.settings.redactPii') }}</span>
+              <div class="admin-field__control">
+                <t-switch v-model="form.redact_pii" />
+              </div>
+              <p class="admin-field__desc">{{ $t('ai.settings.redactPiiTip') }}</p>
+            </div>
+          </div>
         </t-card>
 
-        <!-- ⑦ 权限模式：默认档位不能高于站点最高档位 -->
+        <!-- ⑦ 权限模式：默认档位不能高于站点最高档位，这里是全页唯一的校验项 -->
         <t-card :bordered="false" class="ai-settings-card">
           <h2 class="ai-settings-card__title">{{ $t('ai.settings.sectionPermission') }}</h2>
 
-          <t-form-item
-            name="default_permission_mode"
-            :label="$t('ai.settings.defaultPermissionMode')"
-            :help="$t('ai.settings.helpDefaultPermissionMode')"
-          >
-            <t-select v-model="form.default_permission_mode" class="ai-settings-control">
-              <t-option
-                v-for="option in permissionModeOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </t-select>
-          </t-form-item>
+          <div class="admin-field-grid">
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('ai.settings.defaultPermissionMode') }}</span>
+              <p class="admin-field__desc">{{ $t('ai.settings.helpDefaultPermissionMode') }}</p>
+              <div class="admin-field__control admin-field__control--medium">
+                <t-select v-model="form.default_permission_mode">
+                  <t-option
+                    v-for="option in permissionModeOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </t-select>
+              </div>
+            </div>
 
-          <t-form-item
-            name="max_permission_mode"
-            :label="$t('ai.settings.maxPermissionMode')"
-            :help="$t('ai.settings.helpMaxPermissionMode')"
-          >
-            <t-select v-model="form.max_permission_mode" class="ai-settings-control">
-              <t-option
-                v-for="option in permissionModeOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </t-select>
-          </t-form-item>
+            <!-- t-form-item 只为了校验提示：字段本身仍是 .admin-field 结构 -->
+            <t-form-item name="max_permission_mode">
+              <div class="admin-field">
+                <span class="admin-field__label">{{ $t('ai.settings.maxPermissionMode') }}</span>
+                <p class="admin-field__desc">{{ $t('ai.settings.helpMaxPermissionMode') }}</p>
+                <div class="admin-field__control admin-field__control--medium">
+                  <t-select v-model="form.max_permission_mode">
+                    <t-option
+                      v-for="option in permissionModeOptions"
+                      :key="option.value"
+                      :label="option.label"
+                      :value="option.value"
+                    />
+                  </t-select>
+                </div>
+              </div>
+            </t-form-item>
+          </div>
         </t-card>
       </t-form>
     </t-loading>
@@ -369,13 +344,10 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import type { AiAdminSettings, AiAdminSettingsCatalog, AiAdminSettingsPayload, AiSettingsTestResult } from '@/api/ai';
 import { AI_PERMISSION_MODES, AI_PROTOCOL_OPTIONS, AI_SETTINGS_DEFAULTS, aiAdminApi } from '@/api/ai';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { t } from '@/locales';
 import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminAiSettings' });
-
-const isMobile = useMediaQuery('(max-width: 768px)');
 
 const loading = ref(false);
 const saving = ref(false);
@@ -427,7 +399,7 @@ const permissionModeOptions = computed(() => {
 
 const toolOptions = computed(() => catalog.value.tools);
 
-// 端点跟着协议变，写在 help 里比塞进 placeholder 更容易看见
+// 端点跟着协议变，写在说明里比塞进 placeholder 更容易看见
 const protocolHelp = computed(() => {
   const endpoint = AI_PROTOCOL_OPTIONS.find((option) => option.value === form.protocol)?.endpoint || '-';
   return t('ai.settings.protocolEndpoint', { endpoint });
@@ -605,26 +577,30 @@ onMounted(loadSettings);
   color: var(--td-text-color-primary);
 }
 
-/* 字段间距统一 l 档：带 help 的项默认只留 xs，会挤在一起 */
+/*
+ * t-form 只承担校验：标签与说明都在 .admin-field 里，
+ * 留着 t-form-item 自带的标签行与下边距会在栅格里多出一层间距。
+ */
 .ai-settings-form :deep(.t-form__item) {
-  margin-bottom: var(--td-comp-margin-l);
-}
-
-.ai-settings-form :deep(.t-form__item:last-child) {
+  display: block;
+  min-width: 0;
   margin-bottom: 0;
 }
 
-.ai-settings-form :deep(.t-input__help) {
-  margin-top: var(--td-comp-margin-xs);
+.ai-settings-form :deep(.t-form__controls) {
+  margin-left: 0;
 }
 
-.ai-settings-control {
+.ai-settings-form :deep(.t-form__controls-content) {
+  display: block;
   width: 100%;
-  max-width: 420px;
 }
 
-.ai-settings-number {
-  width: 220px;
+/* 控件铺满自己的格子；需要收窄的由 --narrow / --medium 修饰符决定 */
+.ai-settings-form :deep(.admin-field__control > .t-input),
+.ai-settings-form :deep(.admin-field__control > .t-select),
+.ai-settings-form :deep(.admin-field__control > .t-input-number) {
+  width: 100%;
 }
 
 .ai-settings-tool {
@@ -712,9 +688,9 @@ onMounted(loadSettings);
     padding: 12px;
   }
 
-  .ai-settings-control,
-  .ai-settings-number {
-    width: 100%;
+  /* 窄屏控件铺满整行，收窄的修饰符在这里失效，加减号也不会被挤成小点 */
+  .ai-settings-form :deep(.admin-field__control--narrow),
+  .ai-settings-form :deep(.admin-field__control--medium) {
     max-width: none;
   }
 

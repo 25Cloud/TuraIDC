@@ -4,13 +4,14 @@ import { expect, test } from '@playwright/test';
 /**
  * 「工单预回复设置」页排版回归。
  *
- * 线上反馈：整页控件挤在一起、莫名其妙的折行、控件宽度奇怪。此前该页的问题：
- *  1. 只有一个孤零零的「保存设置」按钮贴在卡片右上角，下面直接接表单，没有页头；
- *  2. 开关与说明文字只靠 margin-left: 8px 贴着，行高又不一致，看起来像同一个标签；
- *  3. 表单限宽 720px 但控件宽度各自为政，下拉框窄、文本域宽度不统一。
- *
- * 这里锁定修复后的形态：页头左说明右保存、控件与说明有可换行的 12px 间距、
- * 文本域撑满整行、窄屏说明独占一行且不产生横向溢出。
+ * 此前该页的问题：只有一枚「保存设置」贴在卡片右上角、开关与说明文字挤在同一行、
+ * 文本域宽度与下拉框各自为政。现在统一成「标签一行 → 说明一行 → 控件一行」，
+ * 保存按钮收进页面底部的固定操作条。这里锁定：
+ *  1) 卡片内页头只放标题与整页说明；
+ *  2) 开关行标签与开关同行、说明独占下一行；
+ *  3) 文本域撑满控件行；
+ *  4) 保存操作条 sticky 在视口底部右对齐，窄屏按钮铺满整行；
+ *  5) 整页无横向溢出、渲染期无未捕获错误。
  */
 
 async function seedAdminSession(page: Page) {
@@ -56,7 +57,7 @@ async function mockAdminApi(page: Page) {
   });
 }
 
-test('工单预回复设置页：页头对齐、控件与说明有间距、文本域撑满', async ({ page }, testInfo) => {
+test('工单预回复设置页：字段三段排版、文本域撑满、保存条吸底', async ({ page }, testInfo) => {
   const pageErrors: string[] = [];
   page.on('pageerror', (error) => pageErrors.push(String(error)));
 
@@ -67,98 +68,103 @@ test('工单预回复设置页：页头对齐、控件与说明有间距、文�
   const toolbar = page.locator('.ticket-pre-reply-toolbar');
   await expect(toolbar).toBeVisible({ timeout: 15000 });
   await expect(page.locator('.ticket-pre-reply-summary strong')).toHaveText('工单预回复');
-  await expect(toolbar.getByRole('button', { name: '保存设置' })).toBeVisible();
 
-  const toolbarLayout = await toolbar.evaluate((element) => {
-    const summary = element.querySelector('.ticket-pre-reply-summary');
+  // 保存按钮在底部固定操作条里，不再挤在卡片标题行
+  const actions = page.locator('.ticket-pre-reply-actions');
+  await expect(actions.getByRole('button', { name: '保存设置' })).toBeVisible();
+
+  const actionsLayout = await actions.evaluate((element) => {
+    const style = window.getComputedStyle(element);
     const button = element.querySelector('.t-button');
-    if (!summary || !button) return null;
+    const barRect = element.getBoundingClientRect();
 
     return {
-      display: window.getComputedStyle(element).display,
-      direction: window.getComputedStyle(element).flexDirection,
-      summaryLeft: summary.getBoundingClientRect().left,
-      buttonRight: button.getBoundingClientRect().right,
-      gap: button.getBoundingClientRect().left - summary.getBoundingClientRect().right,
+      position: style.position,
+      bottom: style.bottom,
+      justifyContent: style.justifyContent,
+      barWidth: barRect.width,
+      barRight: barRect.right,
+      buttonWidth: button ? button.getBoundingClientRect().width : 0,
+      buttonRight: button ? button.getBoundingClientRect().right : 0,
     };
   });
-  expect(toolbarLayout).not.toBeNull();
-  expect(toolbarLayout!.display).toBe('flex');
+  expect(actionsLayout.position, '保存条应吸在视口底部').toBe('sticky');
+  expect(actionsLayout.bottom).toBe('0px');
+  expect(actionsLayout.justifyContent, '保存按钮右对齐').toBe('flex-end');
 
   if (testInfo.project.name === 'desktop') {
-    // 桌面：左右两段，说明在左、保存在右，中间留出空隙
-    expect(toolbarLayout!.direction).toBe('row');
-    expect(toolbarLayout!.gap).toBeGreaterThanOrEqual(8);
+    // 桌面：按钮靠右，与操作条右边缘只隔内边距
+    expect(actionsLayout.barRight - actionsLayout.buttonRight).toBeLessThanOrEqual(40);
+    expect(actionsLayout.buttonWidth).toBeLessThan(actionsLayout.barWidth);
+  } else {
+    // 窄屏：按钮铺满整行，不被挤成小点
+    expect(actionsLayout.buttonWidth).toBeGreaterThan(actionsLayout.barWidth - 40);
+  }
 
+  // 四个字段：启用开关 / 预回复管理员 / 回复内容 / 上游预回复内容
+  await expect(page.locator('.ticket-pre-reply-form .admin-field')).toHaveCount(4);
+
+  // 开关行：标签在左、开关在右同一行，说明落到下一行整行
+  const switchField = page.locator('.ticket-pre-reply-form .admin-field--switch').first();
+  const switchLayout = await switchField.evaluate((element) => {
+    const label = element.querySelector('.admin-field__label')!.getBoundingClientRect();
+    const control = element.querySelector('.admin-field__control')!.getBoundingClientRect();
+    const description = element.querySelector('.admin-field__desc')!.getBoundingClientRect();
+
+    return {
+      labelTop: label.top,
+      labelRight: label.right,
+      controlLeft: control.left,
+      controlTop: control.top,
+      controlBottom: control.bottom,
+      descTop: description.top,
+      descWidth: description.width,
+    };
+  });
+  expect(Math.abs(switchLayout.labelTop - switchLayout.controlTop), '开关应与标签同一行').toBeLessThanOrEqual(2);
+  expect(switchLayout.controlLeft, '开关应排在标签右侧').toBeGreaterThan(switchLayout.labelRight);
+  expect(switchLayout.descTop, '说明应独占下一行').toBeGreaterThanOrEqual(switchLayout.controlBottom - 1);
+  expect(switchLayout.descWidth, '说明应占整行，不被压成窄条').toBeGreaterThan(160);
+
+  // 说明写在控件上方，placeholder 只留示例值
+  const upstreamField = page.locator('.ticket-pre-reply-form .admin-field').nth(3);
+  await expect(upstreamField.locator('.admin-field__desc')).toHaveText(
+    '仅对会传递到上游的工单生效，留空则回退上方内容',
+  );
+  await expect(upstreamField.locator('textarea')).toHaveAttribute(
+    'placeholder',
+    '例如：该工单已同步给上游服务商，请耐心等待处理。',
+  );
+
+  // 文本域必须撑满控件行，不能缩成一段窄条
+  const textareaField = page.locator('.ticket-pre-reply-form .admin-field').nth(2);
+  const textareaWidth = await textareaField.evaluate((element) => {
+    const control = element.querySelector('.admin-field__control')!;
+    const field = element.querySelector('.t-textarea');
+    if (!field) return null;
+
+    return {
+      control: control.getBoundingClientRect().width,
+      field: field.getBoundingClientRect().width,
+    };
+  });
+  expect(textareaWidth).not.toBeNull();
+  expect(Math.abs(textareaWidth!.control - textareaWidth!.field)).toBeLessThanOrEqual(2);
+
+  if (testInfo.project.name === 'desktop') {
     // 表单宽度收敛，不铺满整张卡片，也不窄到把说明挤成一条
     const formWidth = await page.locator('.ticket-pre-reply-form').evaluate((element) => ({
       width: element.getBoundingClientRect().width,
       maxWidth: Number.parseFloat(window.getComputedStyle(element).maxWidth || '0'),
     }));
     expect(formWidth.width).toBeLessThanOrEqual(900);
-
-    // 开关行：说明文字与开关之间至少 8px，说明不贴着开关
-    const switchRow = page.locator('.ticket-pre-reply-form .t-form__item').first();
-    const spacing = await switchRow.evaluate((element) => {
-      const controls = element.querySelector('.t-form__controls-content');
-      const hint = element.querySelector('.ticket-pre-reply-hint');
-      if (!controls || !hint) return null;
-
-      const hintRect = hint.getBoundingClientRect();
-      const controlRect = controls.firstElementChild?.getBoundingClientRect();
-
-      return {
-        wrap: window.getComputedStyle(controls).flexWrap,
-        leftGap: controlRect ? hintRect.left - controlRect.right : null,
-        hintWidth: hintRect.width,
-      };
-    });
-    expect(spacing).not.toBeNull();
-    expect(spacing!.wrap).toBe('wrap');
-    expect(spacing!.leftGap).toBeGreaterThanOrEqual(8);
-    expect(spacing!.hintWidth).toBeGreaterThan(160);
-
-    // 文本域必须撑满控件行，不能缩成一段窄条
-    const textarea = page.locator('.ticket-pre-reply-form .t-form__item').nth(2);
-    const textareaWidth = await textarea.evaluate((element) => {
-      const controls = element.querySelector('.t-form__controls-content');
-      const field = element.querySelector('.t-textarea');
-      if (!controls || !field) return null;
-
-      return {
-        controls: controls.getBoundingClientRect().width,
-        field: field.getBoundingClientRect().width,
-      };
-    });
-    expect(textareaWidth).not.toBeNull();
-    expect(Math.abs(textareaWidth!.controls - textareaWidth!.field)).toBeLessThanOrEqual(2);
   } else {
-    // 窄屏：页头改为纵向，保存按钮占满整行
-    const toolbarColumn = await toolbar.evaluate((element) => {
-      const button = element.querySelector('.t-button');
-      return {
-        direction: window.getComputedStyle(element).flexDirection,
-        buttonWidth: button?.getBoundingClientRect().width || 0,
-        toolbarWidth: element.getBoundingClientRect().width,
-      };
-    });
-    expect(toolbarColumn.direction).toBe('column');
-    expect(toolbarColumn.buttonWidth).toBeGreaterThan(toolbarColumn.toolbarWidth - 8);
-
-    // 说明文字在窄屏整段换行，不与开关挤在同一行
-    const switchRow = page.locator('.ticket-pre-reply-form .t-form__item').first();
-    const stacked = await switchRow.evaluate((element) => {
-      const switchElement = element.querySelector('.t-switch');
-      const hint = element.querySelector('.ticket-pre-reply-hint');
-      if (!switchElement || !hint) return null;
-
-      const switchRect = switchElement.getBoundingClientRect();
-      const hintRect = hint.getBoundingClientRect();
-
-      return { hintTop: hintRect.top, switchBottom: switchRect.bottom };
-    });
-    expect(stacked).not.toBeNull();
-    expect(stacked!.hintTop).toBeGreaterThanOrEqual(stacked!.switchBottom - 1);
+    // 窄屏：收窄的控件修饰符失效，控件铺满整行
+    const controlWidth = await page
+      .locator('.ticket-pre-reply-form .admin-field__control--medium')
+      .first()
+      .evaluate((element) => window.getComputedStyle(element).maxWidth);
+    expect(controlWidth).toBe('none');
   }
 
   // 整页不应出现横向溢出

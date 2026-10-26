@@ -359,6 +359,12 @@
       "review_by": "2026-11-14"
     },
     {
+      "path": "internal/execution-plans/active/admin-settings-ux-audit-2026-10-26.md",
+      "status": "active",
+      "summary": "管理端设置信息架构与字段排版整改：设置页分组重组、死 tab 清理、命名自解释、字段三行排版与保存位置统一、三端三档视口实拍复核。",
+      "review_by": "2026-11-26"
+    },
+    {
       "path": "internal/execution-plans/active/ai-assistant-2026-10-26.md",
       "status": "active",
       "summary": "AI 助手与 AI 导购实施计划：P0 网关骨架、P1 只读对话、P2 确认协议与控制台独立页、P3 流式与官网浮窗、P4 管理端治理。",

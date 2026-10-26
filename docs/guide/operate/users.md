@@ -34,7 +34,7 @@
 - **实名与业务的联动**：
   1. 商品的 `purchase_requires.require_verification` 打开后，未实名用户下单被拒（40301「该商品需要实名认证后才能购买，请先完成实名认证」）；同一组开关里的 `require_phone` 用于强制绑定手机号（40302）。
   2. 申请提现必须先实名（见第 7 节）。
-  3. 充值是否必须实名由设置项 `finance.recharge_requires_verification` 决定，默认开启，入口在设置页「账户与财务」标签页，见[财务与账单](finance.md)。
+  3. 充值是否必须实名由设置项 `finance.recharge_requires_verification` 决定，默认开启，入口在管理端「营销推广 → 推广管理 → 推荐与充值」的「账户充值」分段（`/admin/referral-settings`），见[财务与账单](finance.md)。
 
 ## 4. 会员等级与返利比例
 

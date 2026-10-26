@@ -179,8 +179,8 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
         path: '/admin/menu/site-content/site-config',
         title: { zh_CN: '站点配置', en_US: 'Site Config' },
         children: [
-          { path: '/admin/site-info', title: { zh_CN: '站点设置', en_US: 'Site Settings' } },
-          { path: '/admin/site-hero', title: { zh_CN: '首页 Banner', en_US: 'Home Banner' } },
+          { path: '/admin/site-info', title: { zh_CN: '站点信息', en_US: 'Site Settings' } },
+          { path: '/admin/site-hero', title: { zh_CN: '首页轮播', en_US: 'Home Carousel' } },
           { path: '/admin/product-display', title: { zh_CN: '商品展示', en_US: 'Display' } },
         ],
       },
@@ -232,7 +232,7 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
       },
       {
         path: '/admin/menu/system-settings/database',
-        title: { zh_CN: '数据库状态', en_US: 'Database' },
+        title: { zh_CN: '数据库与缓存', en_US: 'Database & Cache' },
         children: ['/admin/system/database', '/admin/system/redis'],
       },
     ],
@@ -253,8 +253,9 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
     orderNo: 80,
     children: [
       {
-        path: '/admin/menu/log-center/log-management',
-        title: { zh_CN: '日志管理', en_US: 'Log Settings' },
+        // 12 个叶子平铺太杂：查询类留在「日志查询」，保留与归档归到「保留与归档」。
+        path: '/admin/menu/log-center/log-search',
+        title: { zh_CN: '日志查询', en_US: 'Log Search' },
         children: [
           '/admin/logs/system',
           '/admin/logs/runtime',
@@ -267,8 +268,13 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
           '/admin/logs/upstream',
           '/admin/logs/upstream-uploads',
           '/admin/logs/schedules',
-          '/admin/logs/cleanup',
         ],
+      },
+      {
+        // 日志归档原来没有任何菜单入口，只能手输 /admin/log-archive，和日志清理一起归到这里
+        path: '/admin/menu/log-center/log-retention',
+        title: { zh_CN: '保留与归档', en_US: 'Retention' },
+        children: ['/admin/logs/cleanup', '/admin/log-archive'],
       },
     ],
   },

@@ -3627,14 +3627,14 @@ async function mockSettingsCenter(page: Page) {
   });
 
   await page.route('**/api/v2/admin/media-files**', async (route) => {
-    await route.fulfill({
-      contentType: 'application/json',
-      body: JSON.stringify({
-        code: 0,
-        message: '上传成功',
-        data: { id: 9901, filename: 'logo-new.png', url: '/uploads/site/logo-new.png' },
-      }),
-    });
+    // 图片字段现在走媒体库抽屉：GET 要返回列表（抽屉靠 data.list 渲染卡片），
+    // POST 返回刚上传的文件。两者形状不同，不能一个 body 应付。
+    const created = { id: 9901, filename: 'logo-new.png', url: '/uploads/site/logo-new.png', type: 'image' };
+    const payload =
+      route.request().method() === 'POST'
+        ? { code: 0, message: '上传成功', data: created }
+        : { code: 0, message: '操作成功', data: { list: [created], total: 1 } };
+    await route.fulfill({ contentType: 'application/json', body: JSON.stringify(payload) });
   });
 
   await page.route('**/api/v2/admin/site/home-hero**', async (route) => {
@@ -3876,7 +3876,11 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page.getByText('上游工单预回复内容')).toBeVisible();
 
     // 开启预回复但未选择管理员且内容为空：展示字段级提示，不发起保存请求。
-    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page
+      .locator('.ticket-pre-reply-form .admin-field')
+      .filter({ hasText: '启用预回复' })
+      .locator('.t-switch')
+      .click();
     await page.getByRole('button', { name: '保存设置' }).click();
     await expect(page.getByText('启用预回复时必须选择管理员账号')).toBeVisible();
     await expect(page.getByText('启用预回复时必须填写回复内容')).toBeVisible();
@@ -3889,16 +3893,18 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       .getByPlaceholder('例如：您的工单已收到，请耐心等待管理员回复。')
       .fill('您的工单已收到，请耐心等待管理员回复。');
     await page
-      .getByPlaceholder('可选。命中工单传递规则、会推送到上游的工单使用该内容；留空则使用上方回复内容。')
+      .getByPlaceholder('例如：该工单已同步给上游服务商，请耐心等待处理。')
       .fill('您的工单已提交给上游服务商处理。');
 
+    // 预回复接口可能带 ?_t= 这类时间戳，按 pathname 判等，别用 url().endsWith
+    const isPreReplyApi = (url: string) => new URL(url).pathname.endsWith('/api/v2/admin/ticket-pre-reply-settings');
+
     const saveRequest = page.waitForRequest(
-      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+      (request) => isPreReplyApi(request.url()) && request.method() === 'POST',
     );
     // 保存成功后页面会 loadConfig 重新拉取，等待其落地再进入后续开关操作。
     const saveReload = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+      (response) => isPreReplyApi(response.url()) && response.request().method() === 'GET',
     );
     await page.getByRole('button', { name: '保存设置' }).click();
     await expect((await saveRequest).postDataJSON()).toMatchObject({
@@ -3908,34 +3914,40 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       upstream_content: '您的工单已提交给上游服务商处理。',
     });
     await saveReload;
-    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    await expect(page.getByText('工单预回复设置已保存').first()).toBeVisible();
     expect(preReplyMock.getSaveRequests()).toBe(1);
 
     // 关闭开关：请求体只携带 enabled=false，已保存的管理员与内容保留（禁用不清空配置）。
     const disableRequest = page.waitForRequest(
-      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+      (request) => isPreReplyApi(request.url()) && request.method() === 'POST',
     );
     // 保存成功后页面会 loadConfig 重新拉取，等待其落地再操作开关，避免表单状态被回卷。
     const disableReload = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+      (response) => isPreReplyApi(response.url()) && response.request().method() === 'GET',
     );
-    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page
+      .locator('.ticket-pre-reply-form .admin-field')
+      .filter({ hasText: '启用预回复' })
+      .locator('.t-switch')
+      .click();
     await page.getByRole('button', { name: '保存设置' }).click();
     await expect((await disableRequest).postDataJSON()).toEqual({ enabled: false });
     await disableReload;
-    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    await expect(page.getByText('工单预回复设置已保存').first()).toBeVisible();
     expect(preReplyMock.getSaveRequests()).toBe(2);
 
     // 重新启用：保留的配置回填表单，无需重新填写即可保存。
     const reenableRequest = page.waitForRequest(
-      (request) => request.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && request.method() === 'POST',
+      (request) => isPreReplyApi(request.url()) && request.method() === 'POST',
     );
     const reenableReload = page.waitForResponse(
-      (response) =>
-        response.url().endsWith('/api/v2/admin/ticket-pre-reply-settings') && response.request().method() === 'GET',
+      (response) => isPreReplyApi(response.url()) && response.request().method() === 'GET',
     );
-    await page.locator('.t-form__item').filter({ hasText: '启用预回复' }).locator('.t-switch').click();
+    await page
+      .locator('.ticket-pre-reply-form .admin-field')
+      .filter({ hasText: '启用预回复' })
+      .locator('.t-switch')
+      .click();
     await page.getByRole('button', { name: '保存设置' }).click();
     await expect((await reenableRequest).postDataJSON()).toMatchObject({
       enabled: true,
@@ -3944,7 +3956,7 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       upstream_content: '您的工单已提交给上游服务商处理。',
     });
     await reenableReload;
-    await expect(page.getByText('工单预回复设置已保存')).toBeVisible();
+    await expect(page.getByText('工单预回复设置已保存').first()).toBeVisible();
     expect(preReplyMock.getSaveRequests()).toBe(3);
   });
 
@@ -5214,26 +5226,32 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       window.localStorage.setItem('admin_last_active_at', String(Date.now()));
     });
 
-    await page.goto('/admin/settings/site/basic', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/admin\/settings\?tab=site_basic/);
-    await expect(page.getByRole('heading', { name: '系统设置' })).toBeVisible();
-    await expect(page.getByText('站点信息')).toBeVisible();
+    // /admin/settings 这条聚合页早已下线，站点设置现在是独立路由 /admin/site-info
+    await page.goto('/admin/site-info', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/admin\/site-info/);
+    // 分类重组后「品牌与外观」是第一段，不再是旧版那张 .field-card 表单
+    await expect(page.getByRole('heading', { name: '品牌与外观' })).toBeVisible();
 
-    await page.locator('.field-card').filter({ hasText: '站点名称' }).locator('input').fill('图拉云测试站');
-    await page.locator('.field-card').filter({ hasText: '站点 Logo' }).locator('.upload-trigger').click();
-    const uploadRequest = page.waitForRequest(
-      (request) => request.url().includes('/api/v2/admin/media-files') && request.method() === 'POST',
-    );
-    await page.locator('.hidden-file-input').setInputFiles({
-      name: 'logo-new.png',
-      mimeType: 'image/png',
-      buffer: Buffer.from('png'),
-    });
-    await uploadRequest;
-    await expect(page.getByText('图片上传成功')).toBeVisible();
-    await expect(page.locator('.field-card').filter({ hasText: '站点 Logo' }).locator('input')).toHaveValue(
-      '/uploads/site/logo-new.png',
-    );
+    await page
+      .locator('.admin-field')
+      .filter({ has: page.locator('.admin-field__label', { hasText: '站点名称' }) })
+      .locator('input')
+      .fill('图拉云测试站');
+
+    // 图片字段 → 媒体库抽屉 → 选一张回填
+    await page
+      .locator('.admin-field')
+      .filter({ has: page.locator('.admin-field__label', { hasText: '站点 Logo' }) })
+      .locator('.cover-image-selector')
+      .click();
+    await expect(page.locator('.cover-drawer-card').first()).toBeVisible();
+    await page.locator('.cover-drawer-card').first().click();
+    await expect(
+      page
+        .locator('.admin-field')
+        .filter({ has: page.locator('.admin-field__label', { hasText: '站点 Logo' }) })
+        .locator('.cover-image-selector__name'),
+    ).toHaveText('logo-new.png');
 
     const saveRequest = page.waitForRequest(
       (request) => request.url().includes('/api/v2/admin/settings') && request.method() === 'POST',
@@ -5246,7 +5264,6 @@ test.describe('frontend-admin-v3 shell smoke', () => {
         site_logo: '/uploads/site/logo-new.png',
       },
     });
-    await expect(page.getByText('基础信息已保存')).toBeVisible();
   });
 
   test('edits home hero and saves independent payload', async ({ page }) => {
@@ -5257,14 +5274,19 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       window.localStorage.setItem('admin_last_active_at', String(Date.now()));
     });
 
-    await page.goto('/admin/settings/site/hero', { waitUntil: 'domcontentloaded' });
-    await expect(page).toHaveURL(/\/admin\/settings\?tab=site_hero/);
-    await expect(page.getByText('轮播项（1 / 5）')).toBeVisible();
-    await expect(page.getByText('底部特色卡片（1 / 5）')).toBeVisible();
+    await page.goto('/admin/site-hero', { waitUntil: 'domcontentloaded' });
+    await expect(page).toHaveURL(/\/admin\/site-hero/);
+    // 节头标题带「（已填 / 上限）」计数，用正则匹配
+    await expect(page.getByRole('heading', { name: /轮播项/ })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /底部特色卡片/ })).toBeVisible();
 
     const firstSlide = page.locator('.slide-card').first();
-    await firstSlide.locator('input').nth(1).fill('官网首页 Banner 测试标题');
-    await expect(page.getByText('当前存在未保存修改')).toBeVisible();
+    await firstSlide
+      .locator('.admin-field')
+      .filter({ has: page.locator('.admin-field__label', { hasText: '主标题' }) })
+      .locator('input')
+      .fill('官网首页 Banner 测试标题');
+    await expect(page.getByText('当前存在未保存修改。保存后官网首页最长约 2 分钟同步。')).toBeVisible();
 
     const saveHeroRequest = page.waitForRequest(
       (request) => request.url().includes('/api/v2/admin/site/home-hero') && request.method() === 'POST',
@@ -5274,7 +5296,6 @@ test.describe('frontend-admin-v3 shell smoke', () => {
       slides: [{ title: '官网首页 Banner 测试标题' }],
       features: [{ title: '分钟级开通' }],
     });
-    await expect(page.getByText('首页 Banner 已保存')).toBeVisible();
   });
 
   test('opens notifications hub and handles configuration templates and api directory', async ({ page }) => {

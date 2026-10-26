@@ -1161,9 +1161,9 @@
       "system": "系统"
     },
     "mode": {
-      "readOnly": "只读",
-      "confirm": "确认后执行",
-      "autoApprove": "自动执行"
+      "readOnly": "仅可查看",
+      "confirm": "完全权限",
+      "autoApprove": "自动审批（beta）"
     },
     "risk": {
       "read": "查询",

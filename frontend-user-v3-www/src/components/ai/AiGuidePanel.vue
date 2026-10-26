@@ -403,7 +403,11 @@ function handleStop() {
   flex: none;
   align-items: center;
   gap: 8px;
-  padding: 8px 16px 0;
+  /* meta 是独立一条，必须自带底色和下边框：
+     否则消息区从它下沿直接滚过去，权限下拉看着像压在正文上 */
+  padding: 8px 16px;
+  background: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .ai-panel__subject {
@@ -418,7 +422,8 @@ function handleStop() {
 
 .ai-panel__mode {
   flex: none;
-  width: 132px;
+  /* 「自动审批（beta）」比原来的 132px 宽，定宽会把字截掉 */
+  width: 11rem;
 }
 
 .ai-panel__alert {

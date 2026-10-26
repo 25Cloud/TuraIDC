@@ -82,6 +82,42 @@ test('商品展示页渲染分组配置并按 basic 组保存', async ({ page })
   await expect(page.getByText('卡片式', { exact: true }).first()).toBeVisible();
   await expect(page.getByText('居中', { exact: true }).first()).toBeVisible();
 
+  // 每个字段都是「标签一行 → 说明一行 → 控件一行」，说明不与控件抢同一行
+  const firstField = page.locator('.admin-field').first();
+  await expect(firstField.locator('.admin-field__label')).toHaveText('商品列表形态');
+  await expect(firstField.locator('.admin-field__desc')).toHaveCount(1);
+
+  const fieldLayout = await firstField.evaluate((element) => {
+    const label = element.querySelector('.admin-field__label')!.getBoundingClientRect();
+    const description = element.querySelector('.admin-field__desc')!.getBoundingClientRect();
+    const control = element.querySelector('.admin-field__control')!.getBoundingClientRect();
+
+    return {
+      labelBottom: label.bottom,
+      descTop: description.top,
+      descBottom: description.bottom,
+      controlTop: control.top,
+    };
+  });
+  expect(fieldLayout.descTop).toBeGreaterThanOrEqual(fieldLayout.labelBottom - 1);
+  expect(fieldLayout.controlTop).toBeGreaterThanOrEqual(fieldLayout.descBottom - 1);
+
+  // 控件宽度按类型收敛：数字收窄到 220px、单选组不超过 320px，不再一行一个长度
+  const controlWidths = await page
+    .locator('.admin-field__control--narrow, .admin-field__control--medium')
+    .evaluateAll((elements) =>
+      elements.map((element) => ({
+        modifier: element.classList.contains('admin-field__control--narrow') ? 'narrow' : 'medium',
+        width: element.getBoundingClientRect().width,
+      })),
+    );
+  expect(controlWidths.length).toBeGreaterThan(0);
+  for (const item of controlWidths) {
+    expect(item.width, `控件宽度应按修饰符收敛：${JSON.stringify(item)}`).toBeLessThanOrEqual(
+      item.modifier === 'narrow' ? 221 : 321,
+    );
+  }
+
   // 切到列表式再保存，验证提交结构
   await page.getByText('列表式', { exact: true }).first().click();
   await page.getByRole('button', { name: '保存设置' }).click();

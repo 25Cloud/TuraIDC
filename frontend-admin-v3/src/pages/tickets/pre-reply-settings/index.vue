@@ -6,62 +6,81 @@
           <strong>{{ $t('tickets.preReplySettings.title') }}</strong>
           <span>{{ $t('tickets.preReplySettings.titleTip') }}</span>
         </div>
-        <t-button v-if="canManage" theme="primary" :loading="saving" @click="save">{{
-          $t('tickets.preReplySettings.saveSettings')
-        }}</t-button>
       </div>
 
-      <t-form
-        ref="formRef"
-        class="ticket-pre-reply-form"
-        :data="form"
-        :rules="formRules"
-        :label-align="isMobile ? 'top' : 'right'"
-        :label-width="isMobile ? undefined : '150px'"
-      >
-        <t-form-item :label="$t('tickets.preReplySettings.enablePreReply')" name="enabled">
-          <t-switch v-model="form.enabled" />
-          <span class="ticket-pre-reply-hint">{{ $t('tickets.preReplySettings.enablePreReplyTip') }}</span>
+      <!-- 每个字段都是「标签一行 → 说明一行 → 控件一行」，
+           说明不跟控件抢同一行，也不会被挤成贴着开关的一条窄字。 -->
+      <t-form ref="formRef" class="ticket-pre-reply-form" :data="form" :rules="formRules">
+        <div class="admin-field admin-field--switch">
+          <span class="admin-field__label">{{ $t('tickets.preReplySettings.enablePreReply') }}</span>
+          <div class="admin-field__control">
+            <t-switch v-model="form.enabled" />
+          </div>
+          <p class="admin-field__desc">{{ $t('tickets.preReplySettings.enablePreReplyTip') }}</p>
+        </div>
+        <!-- 校验仍交给 t-form-item：两个必填字段在启用预回复后才生效，错误文案紧跟在控件下方 -->
+        <t-form-item name="admin_user_id">
+          <div class="admin-field">
+            <span class="admin-field__label" :class="{ 'admin-field__label--required': form.enabled }">{{
+              $t('tickets.preReplySettings.replyAdmin')
+            }}</span>
+            <p class="admin-field__desc">{{ $t('tickets.preReplySettings.replyAdminTip') }}</p>
+            <div class="admin-field__control admin-field__control--medium">
+              <t-select
+                v-model="form.admin_user_id"
+                :disabled="!form.enabled"
+                filterable
+                clearable
+                :placeholder="$t('tickets.preReplySettings.replyAsPlaceholder')"
+              >
+                <t-option v-for="admin in adminUsers" :key="admin.id" :label="adminLabel(admin)" :value="admin.id" />
+              </t-select>
+            </div>
+          </div>
         </t-form-item>
-        <t-form-item :label="$t('tickets.preReplySettings.replyAdmin')" name="admin_user_id">
-          <t-select
-            v-model="form.admin_user_id"
-            :disabled="!form.enabled"
-            filterable
-            clearable
-            :placeholder="$t('tickets.preReplySettings.replyAsPlaceholder')"
-          >
-            <t-option v-for="admin in adminUsers" :key="admin.id" :label="adminLabel(admin)" :value="admin.id" />
-          </t-select>
-          <span class="ticket-pre-reply-hint">{{ $t('tickets.preReplySettings.replyAdminTip') }}</span>
+        <t-form-item name="content">
+          <div class="admin-field">
+            <span class="admin-field__label" :class="{ 'admin-field__label--required': form.enabled }">{{
+              $t('tickets.preReplySettings.replyContent')
+            }}</span>
+            <div class="admin-field__control">
+              <t-textarea
+                v-model="form.content"
+                :disabled="!form.enabled"
+                :autosize="{ minRows: 4, maxRows: 8 }"
+                maxlength="5000"
+                :placeholder="$t('tickets.preReplySettings.replyContentPlaceholder')"
+              />
+            </div>
+          </div>
         </t-form-item>
-        <t-form-item :label="$t('tickets.preReplySettings.replyContent')" name="content">
-          <t-textarea
-            v-model="form.content"
-            :disabled="!form.enabled"
-            :autosize="{ minRows: 4, maxRows: 8 }"
-            maxlength="5000"
-            :placeholder="$t('tickets.preReplySettings.replyContentPlaceholder')"
-          />
-        </t-form-item>
-        <t-form-item :label="$t('tickets.preReplySettings.upstreamReplyContent')" name="upstream_content">
-          <t-textarea
-            v-model="form.upstream_content"
-            :disabled="!form.enabled"
-            :autosize="{ minRows: 4, maxRows: 8 }"
-            maxlength="5000"
-            :placeholder="$t('tickets.preReplySettings.upstreamContentPlaceholder')"
-          />
-          <span class="ticket-pre-reply-hint">{{ $t('tickets.preReplySettings.upstreamContentTip') }}</span>
-        </t-form-item>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('tickets.preReplySettings.upstreamReplyContent') }}</span>
+          <p class="admin-field__desc">{{ $t('tickets.preReplySettings.upstreamContentTip') }}</p>
+          <div class="admin-field__control">
+            <t-textarea
+              v-model="form.upstream_content"
+              :disabled="!form.enabled"
+              :autosize="{ minRows: 4, maxRows: 8 }"
+              maxlength="5000"
+              :placeholder="$t('tickets.preReplySettings.upstreamContentPlaceholder')"
+            />
+          </div>
+        </div>
       </t-form>
     </t-card>
+
+    <!-- 保存操作条与设置页一致：吸在视口底部右对齐，滚到哪都能保存 -->
+    <div v-if="canManage" class="ticket-pre-reply-actions">
+      <t-button theme="primary" :loading="saving" @click="save">{{
+        $t('tickets.preReplySettings.saveSettings')
+      }}</t-button>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
 import './index.less';
 
-import { useMediaQuery } from '@vueuse/core';
 import type { FormInstanceFunctions, FormRule } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
@@ -74,8 +93,6 @@ import { useUserStore } from '@/store';
 import { errorMessage } from '@/utils/userMessage';
 
 const userStore = useUserStore();
-// 与管理端其它页面统一的移动断点（含 768px）：平板竖屏走单列布局
-const isMobile = useMediaQuery('(max-width: 768px)');
 const saving = ref(false);
 const formRef = ref<FormInstanceFunctions>();
 const adminUsers = ref<TicketAdminUser[]>([]);

@@ -1,0 +1,145 @@
+/**
+ * 管理端设置类表单的统一字段排版。
+ *
+ * 约定一句话：标签一行、说明一行、控件一行，说明永远不跟控件抢同一行。
+ * 这样长说明（路径、渠道、限额规则）不会把控件挤成半截，也不会被控件挤成两行。
+ * 需要横排的只有开关：它只有 44px 宽，让开关跟「标签」同行、说明落到下一行整行，
+ * 既省纵向空间，也不违反「说明不与控件同行」。
+ */
+
+.admin-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* 整行字段：长路径、说明多的项、多行文本 */
+.admin-field--full {
+  grid-column: 1 / -1;
+}
+
+.admin-field__label {
+  display: block;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-3, 14px);
+  font-weight: 600;
+  line-height: 1.5;
+}
+
+.admin-field__label--required::before {
+  margin-right: 4px;
+  color: var(--td-error-color);
+  content: '*';
+}
+
+.admin-field__desc {
+  display: block;
+  max-width: 68ch;
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 1.6;
+  /* 说明允许换行，但不要在窄容器里被压成一条竖线 */
+  overflow-wrap: anywhere;
+}
+
+.admin-field__control {
+  min-width: 0;
+  margin-top: 4px;
+}
+
+/* 控件默认铺满所在栅格；需要收窄的用这个修饰符，别用行内 style */
+.admin-field__control--narrow {
+  max-width: 220px;
+}
+
+.admin-field__control--medium {
+  max-width: 320px;
+}
+
+/* 开关字段：标签在左、开关在右同一行，说明独占下一行整行 */
+.admin-field--switch {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 2px 16px;
+}
+
+.admin-field--switch .admin-field__label {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.admin-field--switch .admin-field__control {
+  grid-column: 2;
+  grid-row: 1;
+  margin-top: 0;
+}
+
+.admin-field--switch .admin-field__desc {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+/* 分节：一张卡片一段，段与段之间用标题 + 间距区分，不再套两层卡片 */
+.admin-field-section + .admin-field-section {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--td-component-stroke);
+}
+
+.admin-field-section__head {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 14px;
+}
+
+.admin-field-section__title {
+  margin: 0;
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-4, 16px);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.admin-field-section__desc {
+  margin: 0;
+  max-width: 72ch;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 1.6;
+}
+
+@media (width <= 1024px) {
+  .admin-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-field--full {
+    grid-column: auto;
+  }
+}
+
+/* 手机上数字框、下拉、时点选择器这类「定宽控件」留 220px 会在右侧空一条，
+   统一改成铺满；需要保持窄的（短数字）控制在页面里另加类覆盖 */
+@media (width <= 768px) {
+  .admin-field__control--narrow,
+  .admin-field__control--medium {
+    max-width: none;
+  }
+
+  .admin-field__control .t-input__inner,
+  .admin-field__control .t-input-number,
+  .admin-field__control .t-select,
+  .admin-field__control .t-input {
+    width: 100%;
+  }
+}

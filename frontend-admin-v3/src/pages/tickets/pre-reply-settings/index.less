@@ -1,17 +1,17 @@
 .ticket-pre-reply-page {
+  /* 卡片 + 底部固定操作条纵向排列 */
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
   .ticket-pre-reply-card {
     border-radius: var(--td-radius-large, 8px);
   }
 
-  /*
-   * 卡片内头部：左侧说明、右侧保存。
-   * 此前只有一枚孤零零的保存按钮贴在卡片右上角，下面直接接表单，页头像少了标题。
-   */
+  /* 卡片内头部：只放标题与整页说明，保存按钮在底部操作条 */
   .ticket-pre-reply-toolbar {
     display: flex;
     align-items: flex-start;
-    justify-content: space-between;
-    gap: 16px;
     margin-bottom: 20px;
   }
 
@@ -33,66 +33,70 @@
     }
   }
 
+  /*
+   * 字段排版交给全局 .admin-field：这里只收敛表单宽度与字段间距。
+   * t-form-item 保留下来只为校验，标签与说明都在 .admin-field 内，所以清掉它自带的标签行与下边距。
+   */
   .ticket-pre-reply-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
     max-width: 880px;
 
-    /* 控件与说明统一按「控件 + 可伸缩说明」两段排，窄屏说明整段换行 */
     .t-form__item {
-      margin-bottom: 20px;
+      display: block;
+      min-width: 0;
+      margin-bottom: 0;
+    }
+
+    .t-form__controls {
+      margin-left: 0;
     }
 
     .t-form__controls-content {
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 12px;
-    }
-
-    .t-select {
+      display: block;
       width: 100%;
-      max-width: 520px;
     }
 
-    .t-textarea {
+    .admin-field__control > .t-select,
+    .admin-field__control > .t-textarea {
       width: 100%;
     }
   }
 
-  /*
-   * 说明文字：不再用 margin-left 紧贴控件。
-   * 之前 8px 间距 + 默认行高让开关和说明像同一个标签，窄屏还会被挤成一条窄条。
-   */
-  .ticket-pre-reply-hint {
-    flex: 1 1 280px;
-    min-width: 0;
-    color: var(--td-text-color-secondary);
-    font-size: var(--td-font-size-body-small, 13px);
-    line-height: 1.7;
+  /* 保存操作条：与设置页同一形态，吸在视口底部右对齐 */
+  .ticket-pre-reply-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-l);
+    border-top: 1px solid var(--td-component-stroke);
+    border-radius: var(--td-radius-medium);
+    background: var(--td-bg-color-container);
+    box-shadow: var(--td-shadow-1);
   }
 }
 
 @media (width <= 768px) {
   .ticket-pre-reply-page {
-    .ticket-pre-reply-toolbar {
-      align-items: flex-start;
-      flex-direction: column;
+    .ticket-pre-reply-actions {
+      flex-wrap: wrap;
+      padding-right: 12px;
+      padding-left: 12px;
     }
 
-    .ticket-pre-reply-toolbar .t-button {
+    /* 窄屏按钮铺满整行，收窄的控件修饰符同时失效 */
+    .ticket-pre-reply-actions .t-button {
       width: 100%;
     }
 
     .ticket-pre-reply-form {
-      .t-form__item {
-        margin-bottom: 18px;
-      }
-
-      .t-select {
+      .admin-field__control--narrow,
+      .admin-field__control--medium {
         max-width: none;
       }
-    }
-
-    .ticket-pre-reply-hint {
-      flex: 1 1 100%;
     }
   }
 }

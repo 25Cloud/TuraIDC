@@ -388,13 +388,18 @@ onMounted(async () => {
   white-space: nowrap;
 }
 
+// 会话列表很窄（约 220px）：「N 条消息 + 最近更新时间」一行装不下，
+// 原先是 nowrap + overflow:hidden，时间被切成「最近更新 10-26 2…」。
+// 改成可换行：装不下就整段掉到第二行，任何一段都不再被截断。
 .client-ai__item-meta {
   display: flex;
-  gap: var(--td-comp-margin-s);
+  flex-wrap: wrap;
+  gap: 0 var(--td-comp-margin-s);
   color: var(--td-text-color-placeholder);
   font: var(--td-font-body-small);
-  overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.client-ai__item-meta > span {
   white-space: nowrap;
 }
 

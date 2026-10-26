@@ -1940,7 +1940,8 @@
         "qrExpiresIn": "二维码 {time} 后失效",
         "dialogHeader": "实名认证",
         "nameLine": "姓名：{name}",
-        "idCardLine": "身份证号：{idCard}"
+        "idCardLine": "身份证号：{idCard}",
+        "verifiedAt": "认证时间"
     },
     "checkoutResume": {
         "browse": "去选购商品",

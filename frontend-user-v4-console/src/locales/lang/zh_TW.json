@@ -1940,7 +1940,8 @@
         "qrExpiresIn": "二維碼 {time} 後失效",
         "dialogHeader": "實名認證",
         "nameLine": "姓名：{name}",
-        "idCardLine": "身份證號：{idCard}"
+        "idCardLine": "身份證號：{idCard}",
+        "verifiedAt": "認證時間"
     },
     "checkoutResume": {
         "browse": "去選購商品",

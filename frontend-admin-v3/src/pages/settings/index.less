@@ -4,189 +4,52 @@
   gap: 16px;
 }
 
-.tab-group-first {
-  margin-left: 16px;
-  position: relative;
-}
-
-.tab-group-first::before {
-  content: '';
-  position: absolute;
-  left: -8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1px;
-  height: 16px;
-  background: var(--td-border-level-1-color);
-}
-
-.settings-head {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 16px;
-}
-
-.settings-head h1 {
-  margin: 4px 0 6px;
-  color: var(--td-text-color-primary);
-  font-size: var(--td-font-size-size-7, 22px);
-  line-height: 1.35;
-}
-
-.settings-head p,
-.slides-section-head p,
-.field-info p {
-  margin: 0;
-  color: var(--td-text-color-secondary);
-  line-height: 1.7;
-}
-
-.settings-kicker {
-  color: var(--td-brand-color);
-  font-size: var(--td-font-size-size-2, 13px);
-  font-weight: 600;
-}
-
-.section-nav {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.section-nav > span {
-  flex-shrink: 0;
+// 页面级一句话说明：只解释这一页管什么，不重复字段文案，也不做成说明卡片。
+.settings-page__desc {
+  margin: 0 0 20px;
+  max-width: 72ch;
   color: var(--td-text-color-secondary);
   font-size: var(--td-font-size-size-1, 12px);
-  font-weight: 600;
+  line-height: 1.6;
 }
 
-.settings-field-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.field-card {
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 18px;
-  border: 1px solid var(--td-component-border);
-  border-radius: var(--td-radius-large, 8px);
-  background: var(--td-bg-color-page);
-}
-
-.field-card--wide {
-  grid-column: 1 / -1;
-}
-
-.field-card--switch {
-  flex-direction: row;
-  align-items: center;
-}
-
-.field-info {
-  min-width: 0;
-}
-
-.field-info strong {
-  color: var(--td-text-color-primary);
-  font-weight: 600;
-}
-
-.field-info p {
-  margin-top: 6px;
-  font-size: var(--td-font-size-size-1, 12px);
-}
-
-.required-mark {
-  margin-right: 4px;
-  color: var(--td-error-color);
-}
-
-.field-control {
-  min-width: 0;
-}
-
-.field-card--switch .field-control {
-  flex-shrink: 0;
-}
-
-.field-preview {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 72px;
-  margin-top: 10px;
-  padding: 10px;
-  border: 1px dashed var(--td-component-border);
-  border-radius: var(--td-radius-large, 8px);
-  background: var(--td-bg-color-container);
-}
-
-.field-preview img {
-  display: block;
-  max-width: 220px;
-  max-height: 80px;
-  object-fit: contain;
-}
-
-.upload-trigger {
-  color: var(--td-brand-color);
-  cursor: pointer;
-}
-
-.tool-actions {
+// 圆角是「预设 + 自定义像素」的组合控件，两个控件横排，标签与说明仍由 admin-field 管。
+.settings-radius-control {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  margin-top: 12px;
 }
 
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin-top: 14px;
+.settings-radius-control .t-select {
+  width: 180px;
 }
 
-.stats-grid article {
-  padding: 12px;
-  border: 1px solid var(--td-component-border);
-  border-radius: var(--td-radius-large, 8px);
+.settings-radius-control .t-input-number {
+  width: 160px;
+}
+
+.settings-bottom-actions {
+  // 保存按钮固定在视口底部：字段多的页滚到底之前也能直接保存，
+  // 与其它页对齐时以这条为基准（底部 bar、按钮靠右）。
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  justify-content: flex-end;
+  padding: 12px 0;
+  border-top: 1px solid var(--td-component-stroke);
   background: var(--td-bg-color-page);
 }
 
-.stats-grid span {
-  display: block;
-  color: var(--td-text-color-secondary);
-  font-size: var(--td-font-size-size-1, 12px);
-}
-
-.stats-grid strong {
-  display: block;
-  margin-top: 4px;
-  color: var(--td-text-color-primary);
-  font-size: var(--td-font-size-size-5, 18px);
-}
-
-.table-scroll {
-  margin-top: 14px;
-  overflow-x: auto;
-}
-
-.mono-input :deep(.t-textarea__inner),
-.table-scroll :deep(.t-table) {
-  font-family: "SF Mono", Menlo, Consolas, monospace;
-}
-
-.muted-text {
+// 轮播/特色卡片的字段标签带序号前缀，避免同一屏里多组同名标签分不清属于哪一项。
+.admin-field__label-scope {
+  margin-right: 4px;
   color: var(--td-text-color-placeholder);
+  font-weight: 500;
 }
 
+// ─── 首页 Banner 编辑器 ──────────────────────────────────────────────────────
+// 每个轮播项 / 特色卡片是一组字段，段与段之间用分隔线区分，不再套第二层卡片。
 .slides-config-card {
   display: flex;
   flex-direction: column;
@@ -201,15 +64,24 @@
 
 .slides-section + .slides-section {
   margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--td-component-stroke);
 }
 
-.slides-section-head,
-.slide-card-head {
+.slides-section-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
   flex-wrap: wrap;
+}
+
+// 标题 + 多条节级规则（图片/视频怎么叠）按 4px 紧凑排，避免和正文抢间距。
+.slides-section-head__text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
 }
 
 .slides-section-head h2 {
@@ -218,21 +90,31 @@
   font-size: var(--td-font-size-size-4, 16px);
 }
 
-.slide-card,
-.feature-card {
-  padding: 14px 16px;
-  border: 1px solid var(--td-component-border);
-  border-radius: var(--td-radius-large, 8px);
-  background: var(--td-bg-color-page);
+.slides-section-head p {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  line-height: 1.7;
 }
 
-.slide-card-head {
+.slide-card,
+.feature-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.slide-card + .slide-card,
+.feature-card + .feature-card {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--td-component-stroke);
+}
+
+.slide-card-head,
+.feature-card-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 12px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--td-component-border);
 }
 
 .slide-card-head__index {
@@ -270,71 +152,14 @@
 .slide-body {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-}
-
-// flex-wrap 是给 .slide-row__hint 用的：它是 flex-basis:100% 的说明行，
-// 不换行的话会被挤到同一行右侧、把输入区压窄。
-.slide-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 10px;
-}
-
-.slide-label {
-  flex-shrink: 0;
-  width: 36px;
-  padding-top: 5px;
-  color: var(--td-text-color-secondary);
-  font-size: var(--td-font-size-size-1, 12px);
-  font-weight: 500;
-  text-align: right;
-  user-select: none;
-}
-
-.slide-field--sm {
-  width: 120px;
-  flex-shrink: 0;
-}
-
-.slide-field--lg {
-  flex: 1;
-  min-width: 0;
-}
-
-.slide-field--full {
-  flex: 1;
-  min-width: 0;
-}
-
-.slide-btn-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex: 1;
-  min-width: 0;
-}
-
-.slide-btn-group__tag {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  flex-shrink: 0;
-  border-radius: var(--td-radius-default, 4px);
-  background: var(--td-brand-color-1);
-  color: var(--td-brand-color);
-  font-size: 11px;
-  font-weight: 600;
+  gap: 16px;
 }
 
 .slide-image-field {
   display: flex;
   align-items: center;
   gap: 10px;
-  flex: 1;
+  flex-wrap: wrap;
   min-width: 0;
 }
 
@@ -345,7 +170,7 @@
   overflow: hidden;
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-default, 4px);
-  background: var(--td-bg-color-page);
+  background: var(--td-bg-color-container);
 }
 
 .slide-image-preview img {
@@ -370,14 +195,6 @@
   .slide-video-selector();
 }
 
-.slide-row__hint {
-  flex-basis: 100%;
-  margin: 2px 0 0;
-  color: var(--td-text-color-placeholder);
-  font-size: 12px;
-  line-height: 1.6;
-}
-
 .slide-video-selector {
   display: flex;
   align-items: center;
@@ -385,7 +202,7 @@
   padding: 6px 12px;
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-medium, 6px);
-  background: var(--td-bg-color-page);
+  background: var(--td-bg-color-container);
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   flex: 1;
@@ -413,6 +230,13 @@
   font-size: var(--td-font-size-size-2, 13px);
 }
 
+.feature-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// ─── 视频抽屉 ────────────────────────────────────────────────────────────────
 .video-drawer-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -527,98 +351,7 @@
   justify-content: flex-end;
 }
 
-.feature-list {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-.feature-card {
-  display: grid;
-  grid-template-columns: 80px minmax(120px, 0.8fr) minmax(160px, 1fr) minmax(220px, 1.2fr) minmax(160px, 1fr) 80px;
-  gap: 10px;
-  align-items: start;
-}
-
-.feature-card-sort {
-  display: flex;
-  gap: 4px;
-}
-
-.hidden-file-input {
-  display: none;
-}
-
-@media (width <= 1280px) {
-  .feature-card {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (width <= 1024px) {
-  .settings-field-grid,
-  .stats-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .field-card--wide {
-    grid-column: auto;
-  }
-
-  .slide-row {
-    flex-wrap: wrap;
-  }
-
-  .slide-label {
-    width: 100%;
-    padding-top: 0;
-    text-align: left;
-    border-bottom: 1px solid var(--td-component-border);
-    padding-bottom: 4px;
-  }
-
-  .slide-field--sm {
-    width: 100%;
-  }
-
-  .slide-btn-group {
-    flex-wrap: wrap;
-  }
-}
-
-@media (width <= 768px) {
-  .settings-head,
-  .section-nav {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .settings-head .t-space,
-  .settings-head .t-button,
-  .section-nav .t-radio-group {
-    width: 100%;
-  }
-
-  .field-card--switch {
-    align-items: flex-start;
-  }
-
-  .tool-actions .t-button {
-    flex: 1 1 auto;
-  }
-
-  .feature-card {
-    grid-template-columns: 1fr;
-  }
-}
-
-.settings-bottom-actions {
-  display: flex;
-  justify-content: flex-end;
-  padding: 16px 0;
-}
-
-// 媒体选择器样式
+// ─── 媒体选择器 ──────────────────────────────────────────────────────────────
 .cover-image-selector {
   display: inline-flex;
   align-items: center;
@@ -626,7 +359,7 @@
   padding: 6px 14px;
   border: 1px solid var(--td-component-border);
   border-radius: var(--td-radius-default, 4px);
-  background: var(--td-bg-color-page);
+  background: var(--td-bg-color-container);
   cursor: pointer;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   width: 100%;
@@ -733,4 +466,36 @@
   text-align: center;
   color: var(--td-text-color-placeholder);
   font-size: 14px;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+@media (width <= 768px) {
+  .slides-section-head {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .slides-section-head .t-space,
+  .slides-section-head .t-button {
+    width: 100%;
+  }
+
+  // 手机上一列排布，收窄的控件（数字、下拉、时点）直接改回铺满，避免半截宽。
+  .admin-field__control--narrow,
+  .admin-field__control--medium {
+    max-width: none;
+  }
+
+  .settings-radius-control {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .settings-radius-control .t-select,
+  .settings-radius-control .t-input-number {
+    width: 100%;
+  }
 }

@@ -1,6 +1,6 @@
 ---
 source: guide/operate/finance.md
-sourceHash: 017234702a2e8679fa2ce3b962ffec09581987fd1ef3b3c5f7d806f368d3d3d2
+sourceHash: 3f04dc902fe8f8755abeddb704cc1125f14e1459c4587d142966d5db8ab04e0a
 translatedAt: 2026-10-26
 ---
 
@@ -77,7 +77,7 @@ Where the credit lands: `user_accounts.cash_balance` increases, `account_transac
 
 **Recharge requires real-name verification**: the setting `finance.recharge_requires_verification` is enabled by default (value `1`). While it is enabled, a recharge by a user without real-name verification is rejected (error code 40301 "Please complete real-name verification before continuing").
 
-Where to configure: the "Account and finance" tab of the settings page — open `/admin/automation?tab=finance`, or switch to "Account and finance" at the top of any settings page; saving requires `settings.manage`.
+Where to configure: the "Account top-up" section of Marketing → Referral → Referral & top-up (`/admin/referral-settings`) in the admin panel; saving requires `settings.manage`.
 
 **Recharge management page**: `/admin/finance/recharges` is a **read-only** list: the columns are payment record number, user, payment record, amount, paid amount, status, created at, and paid at; filtering supports keyword, status, and start/end date; there is only a Details button, with no entry point to change status or delete. The details drawer shows the invoice amount, discount amount, paid amount, payment record, and operation log.
 

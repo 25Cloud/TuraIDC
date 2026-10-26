@@ -29,7 +29,7 @@
         <template #role="{ row }">
           <div class="role-cell">
             <strong>{{ row.label || row.name || '-' }}</strong>
-            <span>{{ row.name || '-' }}</span>
+            <span v-if="roleSecondaryText(row)">{{ roleSecondaryText(row) }}</span>
             <t-tag v-if="row.is_builtin" theme="primary" variant="light" size="small">
               {{ $t('roles.index.systemDefault') }}
             </t-tag>
@@ -570,6 +570,14 @@ function permissionSummary(row: RoleRecord) {
   return t('roles.index.permissionCount', { count: resolved.length });
 }
 
+// 角色名下方那行只在「角色标识 ≠ 显示名」时才渲染（后端 label 会回退成 name，
+// 两者相同就是重复文字）；都没有内容时返回空串，由 v-if 拦掉，不留空行。
+function roleSecondaryText(row: RoleRecord) {
+  const label = String(row.label || '').trim();
+  const code = String(row.name || '').trim();
+  return code && code !== label ? code : '';
+}
+
 function riskPermissionCount(row: RoleRecord) {
   const resolved = row.permissions || [];
   if (resolved.includes(AdminPermissions.ALL)) return 1;
@@ -633,3 +641,11 @@ function hasPermission(permission: string) {
   return hasPermissionInList(userPermissions, permission);
 }
 </script>
+<style scoped lang="less">
+// 角色单元格是纵向 flex（默认 align-items: stretch），内置角色标签会被拉伸成
+// 整行宽度的淡紫色空条；这里让它保持内容宽度，与文字左对齐。
+// 子组件根节点同时带父级 scope 标记，所以不用 :deep() 也能命中 t-tag。
+.role-cell > .t-tag {
+  align-self: flex-start;
+}
+</style>

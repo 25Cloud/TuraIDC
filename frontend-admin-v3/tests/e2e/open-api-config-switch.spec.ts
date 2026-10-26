@@ -30,13 +30,17 @@ function configPayload(overrides: Record<string, unknown> = {}): Record<string, 
 }
 
 /**
- * 按配置卡标题定位开关。
+ * 按配置字段的标签定位开关。
  *
  * 不能用 getByRole('switch')：t-switch 渲染成 div 而非 input[type=checkbox]，
- * 没有 a11y 角色可依赖，只能按卡片容器 + 标题文本收敛。
+ * 没有 a11y 角色可依赖；字段结构是 .admin-field（标签 / 说明 / 控件三段），
+ * 只能按容器 + 标签文本收敛。
  */
 function configSwitch(page: Page, title: string): Locator {
-  return page.locator('.config-card').filter({ hasText: title }).locator('.t-switch');
+  return page
+    .locator('.admin-field')
+    .filter({ has: page.locator('.admin-field__label', { hasText: new RegExp(`^\\s*${title}\\s*$`) }) })
+    .locator('.t-switch');
 }
 
 /** 预置 admin 会话并 mock 登录信息，避免路由守卫跳转登录页。 */

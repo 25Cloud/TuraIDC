@@ -8,7 +8,7 @@ import { expect, test } from '@playwright/test';
  * 两张卡片之间没有间距、防护表单里开关与说明文字挤在一起、输入控件宽窄不一，
  * 视觉上像随手堆出来的。这里锁定：
  *  1) 页面卡片之间有一致的纵向间距；
- *  2) 开关与说明文字之间留出空隙，说明独占一行而不贴着开关；
+ *  2) 开关与标签同一行、说明独占下一行，不再紧贴开关；
  *  3) 渲染期没有未捕获错误。
  */
 
@@ -96,31 +96,30 @@ test('工单传递设置页排版：卡片有间距、开关与说明不粘连',
     return { display: computed.display, gap: computed.gap };
   });
   expect(cardGap.display).toBe('flex');
-  expect(parseFloat(cardGap.gap)).toBeGreaterThanOrEqual(12);
+  expect(Number.parseFloat(cardGap.gap)).toBeGreaterThanOrEqual(12);
 
   if (testInfo.project.name === 'desktop') {
-    // 开关与说明文字之间要有间距，说明不能紧贴开关
-    const switchRow = page.locator('.ticket-delivery-guard-form .t-form__item').first();
-    const spacing = await switchRow.evaluate((element) => {
-      const controls = element.querySelector('.t-form__controls-content');
-      const hint = element.querySelector('.ticket-delivery-guard-hint');
-      if (!controls || !hint) return null;
-
-      const controlsStyle = window.getComputedStyle(controls);
-      const hintRect = hint.getBoundingClientRect();
-      const switchRect = controls.firstElementChild?.getBoundingClientRect();
+    // 上传防护表单：开关与标签同一行、说明独占下一行，不再紧贴开关
+    const switchField = page.locator('.ticket-delivery-guard-form .admin-field--switch').first();
+    const spacing = await switchField.evaluate((element) => {
+      const label = element.querySelector('.admin-field__label')!.getBoundingClientRect();
+      const control = element.querySelector('.admin-field__control')!.getBoundingClientRect();
+      const description = element.querySelector('.admin-field__desc')?.getBoundingClientRect();
 
       return {
-        wrap: controlsStyle.flexWrap,
-        gap: parseFloat(controlsStyle.columnGap || '0'),
-        leftGap: switchRect ? hintRect.left - switchRect.right : null,
+        labelTop: label.top,
+        labelRight: label.right,
+        controlLeft: control.left,
+        controlTop: control.top,
+        controlBottom: control.bottom,
+        descTop: description ? description.top : null,
       };
     });
 
-    expect(spacing, '防护表单首个开关行应存在说明文字').not.toBeNull();
-    expect(spacing!.wrap).toBe('wrap');
-    expect(spacing!.gap).toBeGreaterThanOrEqual(8);
-    expect(spacing!.leftGap).toBeGreaterThanOrEqual(8);
+    expect(spacing.controlLeft, '开关应排在标签右侧').toBeGreaterThan(spacing.labelRight);
+    expect(Math.abs(spacing.labelTop - spacing.controlTop), '开关应与标签同一行').toBeLessThanOrEqual(2);
+    expect(spacing.descTop, '说明应独占下一行').not.toBeNull();
+    expect(spacing.descTop!).toBeGreaterThanOrEqual(spacing.controlBottom - 1);
   }
 
   expect(pageErrors, `渲染期不应有未捕获错误：${pageErrors.join(' | ')}`).toEqual([]);
@@ -142,12 +141,21 @@ test('工单传递设置页排版：卡片有间距、开关与说明不粘连',
     // 新建规则默认「全部产品」，打开时不应挂着「至少选择一个产品」的必填红框
     await expect(dialog.locator('.t-is-error')).toHaveCount(0);
 
-    const columns = await dialog.locator('.ticket-delivery-form-grid').evaluate((element) => {
+    const columns = await dialog.locator('.admin-field-grid').evaluate((element) => {
       const computed = window.getComputedStyle(element);
       return { display: computed.display, template: computed.gridTemplateColumns };
     });
     expect(columns.display).toBe('grid');
     expect(columns.template.split(' ').length).toBe(2);
+
+    // 弹窗里每个字段也是「标签 → 控件」两段，标签不再挤在控件右侧
+    const dialogField = dialog.locator('.admin-field').first();
+    const stacked = await dialogField.evaluate((element) => {
+      const label = element.querySelector('.admin-field__label')!.getBoundingClientRect();
+      const control = element.querySelector('.admin-field__control')!.getBoundingClientRect();
+      return { labelBottom: label.bottom, controlTop: control.top };
+    });
+    expect(stacked.controlTop).toBeGreaterThanOrEqual(stacked.labelBottom - 1);
 
     await page.screenshot({
       path: `${process.env.TEMP || '.'}\\turaidc-admin-delivery-settings-dialog.png`,

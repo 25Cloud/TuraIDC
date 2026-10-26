@@ -1,6 +1,6 @@
 ---
 source: guide/operate/finance.md
-sourceHash: 017234702a2e8679fa2ce3b962ffec09581987fd1ef3b3c5f7d806f368d3d3d2
+sourceHash: 3f04dc902fe8f8755abeddb704cc1125f14e1459c4587d142966d5db8ab04e0a
 generated: zh-tw
 ---
 
@@ -78,7 +78,7 @@ generated: zh-tw
 
 **充值須實名**：設定項 `finance.recharge_requires_verification` 預設開啟（值為 `1`）。開啟時未實名使用者充值會被拒（錯誤碼 40301「請先完成實名認證後再繼續操作」）。
 
-配置入口：設定頁的「賬戶與財務」標籤頁 —— 開啟 `/admin/automation?tab=finance`，或從任一設定頁頂部切到「賬戶與財務」；儲存需要 `settings.manage`。
+配置入口：管理端「營銷推廣 → 推廣管理 → 推薦與充值」（`/admin/referral-settings`）的「賬戶充值」分段；儲存需要 `settings.manage`。
 
 **充值管理頁**：`/admin/finance/recharges` 是**只讀**列表：列為 支付單號、使用者、支付記錄、金額、已付金額、狀態、建立時間、支付時間；篩選支援關鍵詞、狀態、起止日期；只有「詳情」按鈕，沒有改狀態或刪除的入口。詳情抽屜展示賬單金額、優惠金額、已付金額、支付記錄與操作日誌。
 

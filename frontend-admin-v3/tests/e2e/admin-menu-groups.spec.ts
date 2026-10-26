@@ -46,7 +46,7 @@ test('服务实例独立成服务管理分组，不再挂在工单处理下', as
   await expect(sidebar).toBeVisible({ timeout: 15000 });
 
   // 分组标题：新的独立分组存在，旧的「服务与工单」标题已移除
-  await expect(sidebar.getByText('服务管理', { exact: true })).toBeVisible();
+  await expect(sidebar.getByText('实例管理', { exact: true })).toBeVisible();
   await expect(sidebar.getByText('服务与工单', { exact: true })).toHaveCount(0);
 
   // 菜单节点本身就是分组路径，用 name 精确定位，避免折叠状态下文本串组
@@ -56,8 +56,8 @@ test('服务实例独立成服务管理分组，不再挂在工单处理下', as
   await expect(ticketGroup).toHaveCount(1);
 
   // 服务实例挂在服务管理分组下；工单分组（含其「工单管理」子分组）里没有服务实例
-  await expect(serviceGroup.getByText('服务实例', { exact: true })).toHaveCount(1);
-  await expect(ticketGroup.getByText('服务实例', { exact: true })).toHaveCount(0);
+  await expect(serviceGroup.getByText('实例', { exact: true })).toHaveCount(1);
+  await expect(ticketGroup.getByText('实例', { exact: true })).toHaveCount(0);
   await expect(ticketGroup.getByText('工单管理', { exact: true })).toHaveCount(1);
 
   // 两个分组都是侧边栏一级分组：父节点同为菜单根容器，且同级还有其它一级分组

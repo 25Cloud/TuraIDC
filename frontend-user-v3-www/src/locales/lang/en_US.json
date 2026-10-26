@@ -1162,8 +1162,8 @@
     },
     "mode": {
       "readOnly": "Read only",
-      "confirm": "Confirm writes",
-      "autoApprove": "Auto run"
+      "confirm": "Full access",
+      "autoApprove": "Auto approve (beta)"
     },
     "risk": {
       "read": "Lookup",

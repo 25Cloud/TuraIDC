@@ -37,10 +37,10 @@
                 </t-tag>
               </t-space>
             </template>
-            <template #preview="{ row }">{{ row.preview }}</template>
-            <template #subject="{ row }">{{
-              row.channel === 'email' ? fieldValue(row.subject) : row.preview
-            }}</template>
+            <template #preview="{ row }"><span class="clamp-cell">{{ row.preview }}</span></template>
+            <template #subject="{ row }">
+              <span class="clamp-cell">{{ row.channel === 'email' ? fieldValue(row.subject) : row.preview }}</span>
+            </template>
             <template #variables="{ row }">{{ row.variables.length }}</template>
             <template #templateType="{ row }">
               <t-tag :theme="row.channel === 'email' ? 'primary' : 'success'" variant="light">{{
@@ -77,56 +77,75 @@
         </div>
 
         <div v-else class="mobile-list">
-          <article v-for="row in filteredTemplates" :key="row.code" class="template-mobile-card">
+          <!-- 手机端默认折叠为紧凑行：只有标题、启用状态与展开按钮，
+               避免 24 张卡片竖排出近 8000px 无法翻找；展开后才渲染明细与操作。 -->
+          <article
+            v-for="row in filteredTemplates"
+            :key="row.code"
+            class="template-mobile-card"
+            :class="{ 'is-expanded': isMobileCardExpanded(row) }"
+          >
             <div class="template-mobile-card__head">
               <strong>{{ row.name }}</strong>
-              <t-tag variant="light">{{ row.code }}</t-tag>
+              <t-tag :theme="row.is_enabled ? 'success' : 'default'" variant="light" size="small">
+                {{ row.is_enabled ? $t('notifications.enabled') : $t('notifications.disabled') }}
+              </t-tag>
+              <t-button size="small" variant="text" @click="toggleMobileCard(row)">
+                {{ isMobileCardExpanded(row) ? $t('notifications.collapseDetails') : $t('notifications.viewDetails') }}
+              </t-button>
             </div>
-            <p>{{ row.description }}</p>
-            <dl>
-              <div>
-                <dt>{{ row.channel === 'email' ? $t('notifications.dtSubject') : $t('notifications.dtBody') }}</dt>
-                <dd>{{ row.channel === 'email' ? fieldValue(row.subject) : row.preview }}</dd>
+            <template v-if="isMobileCardExpanded(row)">
+              <div class="template-mobile-card__meta">
+                <t-tag variant="light" size="small">{{ row.code }}</t-tag>
               </div>
-              <div>
-                <dt>{{ $t('notifications.templateType') }}</dt>
-                <dd>
-                  {{ row.channel === 'email' ? $t('notifications.emailChannel') : $t('notifications.smsChannel') }}
-                </dd>
+              <p>{{ row.description }}</p>
+              <dl>
+                <div>
+                  <dt>{{ row.channel === 'email' ? $t('notifications.dtSubject') : $t('notifications.dtBody') }}</dt>
+                  <dd class="template-mobile-card__subject">
+                    {{ row.channel === 'email' ? fieldValue(row.subject) : row.preview }}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{{ $t('notifications.templateType') }}</dt>
+                  <dd>
+                    {{ row.channel === 'email' ? $t('notifications.emailChannel') : $t('notifications.smsChannel') }}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{{ $t('notifications.variableCount') }}</dt>
+                  <dd>{{ row.variables.length }}</dd>
+                </div>
+                <div>
+                  <dt>{{ $t('notifications.bodyType') }}</dt>
+                  <dd>{{ row.isHtml ? 'HTML' : $t('notifications.textType') }}</dd>
+                </div>
+                <div>
+                  <dt>{{ $t('notifications.sendStatus') }}</dt>
+                  <dd>
+                    <t-switch
+                      v-model="row.is_enabled"
+                      :custom-value="[true, false]"
+                      :label="[$t('notifications.enabled'), $t('notifications.disabled')]"
+                      :loading="statusSavingKey === templateRowKey(row)"
+                      @change="(value: unknown) => updateTemplateEnabled(row, value)"
+                    />
+                  </dd>
+                </div>
+                <div v-if="row.channel === 'email'">
+                  <dt>{{ $t('notifications.audience') }}</dt>
+                  <dd>
+                    {{ row.audience === 'admin' ? $t('notifications.adminAudience') : $t('notifications.userAudience') }}
+                  </dd>
+                </div>
+              </dl>
+              <div class="template-mobile-card__actions">
+                <t-button variant="outline" @click="openTestSend(row)">{{ $t('notifications.testSend') }}</t-button>
+                <t-button theme="primary" variant="outline" @click="openTemplate(row)">{{
+                  $t('notifications.edit')
+                }}</t-button>
               </div>
-              <div>
-                <dt>{{ $t('notifications.variableCount') }}</dt>
-                <dd>{{ row.variables.length }}</dd>
-              </div>
-              <div>
-                <dt>{{ $t('notifications.bodyType') }}</dt>
-                <dd>{{ row.isHtml ? 'HTML' : $t('notifications.textType') }}</dd>
-              </div>
-              <div>
-                <dt>{{ $t('notifications.sendStatus') }}</dt>
-                <dd>
-                  <t-switch
-                    v-model="row.is_enabled"
-                    :custom-value="[true, false]"
-                    :label="[$t('notifications.enabled'), $t('notifications.disabled')]"
-                    :loading="statusSavingKey === templateRowKey(row)"
-                    @change="(value: unknown) => updateTemplateEnabled(row, value)"
-                  />
-                </dd>
-              </div>
-              <div v-if="row.channel === 'email'">
-                <dt>{{ $t('notifications.audience') }}</dt>
-                <dd>
-                  {{ row.audience === 'admin' ? $t('notifications.adminAudience') : $t('notifications.userAudience') }}
-                </dd>
-              </div>
-            </dl>
-            <div class="template-mobile-card__actions">
-              <t-button variant="outline" @click="openTestSend(row)">{{ $t('notifications.testSend') }}</t-button>
-              <t-button theme="primary" variant="outline" @click="openTemplate(row)">{{
-                $t('notifications.edit')
-              }}</t-button>
-            </div>
+            </template>
           </article>
         </div>
       </t-card>
@@ -393,6 +412,7 @@ const templateAudience = ref<TemplateAudience>(normalizeTemplateAudience(route.q
 const activeTab = ref<NotificationTab>(resolveRouteTab());
 const templatesLoading = ref(false);
 const statusSavingKey = ref('');
+const expandedMobileCodes = ref<string[]>([]);
 const testSendVisible = ref(false);
 const testSending = ref(false);
 const testSendRecipient = ref('');
@@ -524,14 +544,17 @@ const filteredApiItems = computed(() => {
   });
 });
 
+// 列宽：只放 1–2 位数的列收窄（变量数 72 / 模板类型 96 / 正文类型 104），
+// 省下的宽度给「正文摘要」（260 → 320，允许多行），避免摘要被挤成一两个变量占位符。
+// 表宽总计与改动前基本持平，窄屏仍然走 .table-scroll 横向滚动。
 const templateColumns: PrimaryTableCol<TableRowData>[] = [
-  { colKey: 'name', title: t('pages.notification.apiTemplate'), minWidth: 260 },
+  { colKey: 'name', title: t('pages.notification.apiTemplate'), minWidth: 240 },
   { colKey: 'code', title: t('pages.notification.apiCodeObject'), minWidth: 180 },
-  { colKey: 'subject', title: t('pages.notification.apiCurrentSubject'), minWidth: 220, ellipsis: true },
-  { colKey: 'preview', title: t('pages.notification.apiBodyPreview'), minWidth: 260, ellipsis: true },
-  { colKey: 'variables', title: t('pages.notification.apiVariableCount'), width: 90 },
-  { colKey: 'templateType', title: t('pages.notification.apiTemplateType'), width: 100 },
-  { colKey: 'bodyType', title: t('pages.notification.apiBodyType'), width: 110 },
+  { colKey: 'subject', title: t('pages.notification.apiCurrentSubject'), minWidth: 200 },
+  { colKey: 'preview', title: t('pages.notification.apiBodyPreview'), minWidth: 320 },
+  { colKey: 'variables', title: t('pages.notification.apiVariableCount'), width: 72 },
+  { colKey: 'templateType', title: t('pages.notification.apiTemplateType'), width: 96 },
+  { colKey: 'bodyType', title: t('pages.notification.apiBodyType'), width: 104 },
   { colKey: 'status', title: t('pages.notification.apiSendStatus'), width: 130 },
   { colKey: 'actions', title: t('common.action'), fixed: 'right', width: 150 },
 ];
@@ -601,6 +624,18 @@ function openTestSend(row: TemplateRow | TableRowData) {
   testSendRecipient.value = '';
   testSendResult.value = null;
   testSendVisible.value = true;
+}
+
+// 手机端紧凑行默认折叠，点「查看详情」才渲染明细与操作按钮
+function isMobileCardExpanded(row: Pick<NotificationTemplateItem, 'channel' | 'code'>) {
+  return expandedMobileCodes.value.includes(templateRowKey(row));
+}
+
+function toggleMobileCard(row: Pick<NotificationTemplateItem, 'channel' | 'code'>) {
+  const key = templateRowKey(row);
+  expandedMobileCodes.value = isMobileCardExpanded(row)
+    ? expandedMobileCodes.value.filter((item) => item !== key)
+    : [...expandedMobileCodes.value, key];
 }
 
 async function submitTestSend() {

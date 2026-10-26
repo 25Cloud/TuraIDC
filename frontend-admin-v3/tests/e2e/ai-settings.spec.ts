@@ -122,7 +122,12 @@ test('AI 设置页按七个分区渲染生效值，并按数组提交工具白�
   }
 
   // 生效值要落到控件上：温度 0.3、单次最大 Token 1200、模型名与网关地址
-  const fieldItem = (label: string) => page.locator('.t-form__item', { hasText: label }).first();
+  // 字段排版已统一成 admin-field（标签/说明/控件三行），不再是 t-form-item
+  const fieldItem = (label: string) =>
+    page
+      .locator('.admin-field')
+      .filter({ has: page.locator('.admin-field__label', { hasText: label }) })
+      .first();
 
   await expect(fieldItem('温度').locator('input').first()).toHaveValue('0.3');
   await expect(fieldItem('单次最大 Token').locator('input').first()).toHaveValue('1200');

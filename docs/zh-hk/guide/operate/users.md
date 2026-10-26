@@ -1,6 +1,6 @@
 ---
 source: guide/operate/users.md
-sourceHash: 0e08133b98ad1119e7a363bd6511769e6f7c453f22ddbb83d42ff06488b8349e
+sourceHash: 1939e2558c48445bc15b483e0ded92ee914ffcf0b172c25a18e514ddc1648907
 generated: zh-hk
 ---
 
@@ -41,7 +41,7 @@ generated: zh-hk
 - **實名與業務的聯動**：
   1. 商品的 `purchase_requires.require_verification` 打開後，未實名用戶下單被拒（40301「該商品需要實名認證後才能購買，請先完成實名認證」）；同一組開關裡的 `require_phone` 用於強制綁定手機號（40302）。
   2. 申請提現必須先實名（見第 7 節）。
-  3. 充值是否必須實名由設置項 `finance.recharge_requires_verification` 決定，默認開啟，入口在設置頁「賬戶與財務」標籤頁，見[財務與賬單](finance.md)。
+  3. 充值是否必須實名由設置項 `finance.recharge_requires_verification` 決定，默認開啟，入口在管理端「營銷推廣 → 推廣管理 → 推薦與充值」的「賬戶充值」分段（`/admin/referral-settings`），見[財務與賬單](finance.md)。
 
 ## 4. 會員等級與返利比例
 

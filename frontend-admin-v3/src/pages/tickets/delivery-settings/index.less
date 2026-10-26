@@ -63,44 +63,54 @@
     padding: 36px 16px;
   }
 
-  .ticket-delivery-form-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    align-items: start;
-    gap: 0 16px;
-
-    /* 两列对齐靠 form-item 自带的下边距，这里统一成 16px，避免行距忽宽忽窄 */
-    .t-form__item {
-      margin-bottom: 16px;
-    }
-  }
-
   /*
-   * 上传防护表单：开关 / 数字输入与说明文字排成可换行的一行，间距 12px。
-   * 此前说明文字紧接着开关，看起来像开关自己的标签；窄屏时整行挤压控件。
+   * 规则弹窗：两列栅格由全局 .admin-field-grid 负责，
+   * 这里只把 t-form-item 还原成普通块——标签与说明都在 .admin-field 里，
+   * 留着它自带的标签行与下边距会出现两层间距、行距忽宽忽窄。
    */
-  .ticket-delivery-guard-form {
-    .t-form__controls-content {
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px 12px;
+  .ticket-delivery-rule-form {
+    .t-form__item {
+      display: block;
+      min-width: 0;
+      margin-bottom: 0;
     }
 
-    .t-textarea {
+    .t-form__controls {
+      margin-left: 0;
+    }
+
+    .t-form__controls-content {
+      display: block;
       width: 100%;
     }
 
-    .t-input-number {
-      width: 220px;
+    .admin-field__control > .t-input,
+    .admin-field__control > .t-select,
+    .admin-field__control > .t-textarea {
+      width: 100%;
     }
+  }
 
-    .ticket-delivery-guard-hint {
-      flex: 1 1 280px;
-      min-width: 0;
-      color: var(--td-text-color-secondary);
-      font-size: var(--td-font-size-body-small, 13px);
-      line-height: 1.6;
+  /* 上传防护表单：开关标签与开关同行，说明独占整行；数字与白名单控件铺满或收窄由修饰符决定 */
+  .ticket-delivery-guard-form {
+    .admin-field__control > .t-textarea,
+    .admin-field__control > .t-input-number {
+      width: 100%;
     }
+  }
+
+  /* 保存操作条：与设置页同一形态，吸在视口底部右对齐 */
+  .ticket-delivery-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 10;
+    display: flex;
+    justify-content: flex-end;
+    padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-l);
+    border-top: 1px solid var(--td-component-stroke);
+    border-radius: var(--td-radius-medium);
+    background: var(--td-bg-color-container);
+    box-shadow: var(--td-shadow-1);
   }
 
   .ticket-delivery-mobile-stack {
@@ -161,6 +171,17 @@
       width: 100%;
     }
 
+    .ticket-delivery-actions {
+      flex-wrap: wrap;
+      padding-right: 12px;
+      padding-left: 12px;
+    }
+
+    /* 窄屏保存按钮铺满整行 */
+    .ticket-delivery-actions .t-button {
+      width: 100%;
+    }
+
     .ticket-delivery-card :deep(.t-table) {
       display: none;
     }
@@ -169,24 +190,14 @@
       display: block;
     }
 
-    .ticket-delivery-form-grid {
-      display: block;
-    }
-
+    /* 窄屏控件铺满整行，收窄的修饰符在这里失效 */
     .ticket-delivery-guard-form {
-      .t-form__item {
-        flex-wrap: wrap;
-      }
-
-      // 控制区默认 nowrap，数字输入框较宽时会把提示文字挤成窄条；改为可换行，
-      // 让提示独占一行，避免手机上竖向堆叠。
-      .t-form__controls-content {
-        flex-wrap: wrap;
+      .admin-field__control--narrow,
+      .admin-field__control--medium {
+        max-width: none;
       }
 
       .t-input-number {
-        width: 100%;
-
         // 手机端按钮默认高度大于输入框，会向下溢出；统一为组件中号高度，
         // 让加减号与输入框同高，避免“加减号太高”。需同时覆盖 min-height，
         // 否则移动端按钮的 min-height(40px) 会撑住高度。
@@ -195,13 +206,6 @@
           height: var(--td-comp-size-m);
           min-height: var(--td-comp-size-m);
         }
-      }
-
-      .ticket-delivery-guard-hint {
-        // 手机端也给一个可伸缩的基准宽度：放得下就贴在开关右侧，放不下再整段换行，
-        // 而不是无论多短都把说明挤到下一行、让开关孤零零占一行。
-        flex: 1 1 160px;
-        width: auto;
       }
     }
 

@@ -5,64 +5,73 @@
         <t-tab-panel value="config" :label="$t('openApi.index.tabConfig')">
           <div v-if="configLoading" class="state-placeholder">{{ $t('openApi.index.loading') }}</div>
           <template v-else>
-            <div class="config-grid">
-              <article class="config-card">
-                <div class="config-card__info">
-                  <strong>{{ $t('openApi.index.enableOpenApi') }}</strong>
-                  <p>{{ $t('openApi.index.enableOpenApiDesc') }}</p>
+            <!-- 先开关、后数值限额，一项占一格：标签一行 → 说明一行 → 控件一行，
+                 说明不再和控件抢同一行（此前说明长了控件被压窄，控件长了说明被压成两行）。 -->
+            <div class="admin-field-grid">
+              <div class="admin-field admin-field--switch">
+                <span class="admin-field__label">{{ $t('openApi.index.enableOpenApi') }}</span>
+                <div class="admin-field__control">
+                  <t-switch v-model="config.enabled" :custom-value="[1, 0]" :disabled="!canManage" />
                 </div>
-                <t-switch v-model="config.enabled" :custom-value="[1, 0]" :disabled="!canManage" />
-              </article>
+                <p class="admin-field__desc">{{ $t('openApi.index.enableOpenApiDesc') }}</p>
+              </div>
 
-              <article class="config-card">
-                <div class="config-card__info">
-                  <strong>{{ $t('openApi.index.requirePhone') }}</strong>
-                  <p>{{ $t('openApi.index.requirePhoneDesc') }}</p>
+              <div class="admin-field admin-field--switch">
+                <span class="admin-field__label">{{ $t('openApi.index.requirePhone') }}</span>
+                <div class="admin-field__control">
+                  <t-switch v-model="config.require_phone" :custom-value="[1, 0]" :disabled="!canManage" />
                 </div>
-                <t-switch v-model="config.require_phone" :custom-value="[1, 0]" :disabled="!canManage" />
-              </article>
+                <p class="admin-field__desc">{{ $t('openApi.index.requirePhoneDesc') }}</p>
+              </div>
 
-              <article class="config-card">
-                <div class="config-card__info">
-                  <strong>{{ $t('openApi.index.requireVerified') }}</strong>
-                  <p>{{ $t('openApi.index.requireVerifiedDesc') }}</p>
+              <div class="admin-field admin-field--switch">
+                <span class="admin-field__label">{{ $t('openApi.index.requireVerified') }}</span>
+                <div class="admin-field__control">
+                  <t-switch v-model="config.require_verified" :custom-value="[1, 0]" :disabled="!canManage" />
                 </div>
-                <t-switch v-model="config.require_verified" :custom-value="[1, 0]" :disabled="!canManage" />
-              </article>
+                <p class="admin-field__desc">{{ $t('openApi.index.requireVerifiedDesc') }}</p>
+              </div>
 
-              <article class="config-card">
-                <div class="config-card__info">
-                  <strong>{{ $t('openApi.index.maxKeysPerUser') }}</strong>
-                  <p>{{ $t('openApi.index.maxKeysPerUserDesc') }}</p>
+              <div class="admin-field">
+                <span class="admin-field__label">{{ $t('openApi.index.maxKeysPerUser') }}</span>
+                <p class="admin-field__desc">{{ $t('openApi.index.maxKeysPerUserDesc') }}</p>
+                <div class="admin-field__control admin-field__control--narrow">
+                  <t-input-number v-model="config.max_keys_per_user" :min="1" :max="100" :disabled="!canManage" />
                 </div>
-                <t-input-number v-model="config.max_keys_per_user" :min="1" :max="100" :disabled="!canManage" />
-              </article>
+              </div>
 
-              <article class="config-card">
-                <div class="config-card__info">
-                  <strong>{{ $t('openApi.index.rateLimit') }}</strong>
-                  <p>{{ $t('openApi.index.rateLimitDesc') }}</p>
+              <div class="admin-field">
+                <span class="admin-field__label">{{ $t('openApi.index.rateLimit') }}</span>
+                <p class="admin-field__desc">{{ $t('openApi.index.rateLimitDesc') }}</p>
+                <div class="admin-field__control admin-field__control--narrow">
+                  <t-input-number v-model="config.rate_limit" :min="1" :max="3600" :disabled="!canManage" />
                 </div>
-                <t-input-number v-model="config.rate_limit" :min="1" :max="3600" :disabled="!canManage" />
-              </article>
+              </div>
 
-              <article class="config-card">
-                <div class="config-card__info">
-                  <strong>{{ $t('openApi.index.writeRateLimit') }}</strong>
-                  <p>{{ $t('openApi.index.writeRateLimitDesc') }}</p>
+              <div class="admin-field">
+                <span class="admin-field__label">{{ $t('openApi.index.writeRateLimit') }}</span>
+                <p class="admin-field__desc">{{ $t('openApi.index.writeRateLimitDesc') }}</p>
+                <div class="admin-field__control admin-field__control--narrow">
+                  <t-input-number v-model="config.write_rate_limit" :min="1" :max="3600" :disabled="!canManage" />
                 </div>
-                <t-input-number v-model="config.write_rate_limit" :min="1" :max="3600" :disabled="!canManage" />
-              </article>
+              </div>
 
-              <article class="config-card">
-                <div class="config-card__info">
-                  <strong>{{ $t('openApi.index.usageLogRetentionDays') }}</strong>
-                  <p>{{ $t('openApi.index.usageLogRetentionDesc') }}</p>
+              <!-- 最后一项整行铺满：7 项两列排下来不留半行空位 -->
+              <div class="admin-field admin-field--full">
+                <span class="admin-field__label">{{ $t('openApi.index.usageLogRetentionDays') }}</span>
+                <p class="admin-field__desc">{{ $t('openApi.index.usageLogRetentionDesc') }}</p>
+                <div class="admin-field__control admin-field__control--narrow">
+                  <t-input-number
+                    v-model="config.usage_log_retention_days"
+                    :min="1"
+                    :max="3650"
+                    :disabled="!canManage"
+                  />
                 </div>
-                <t-input-number v-model="config.usage_log_retention_days" :min="1" :max="3650" :disabled="!canManage" />
-              </article>
+              </div>
             </div>
 
+            <!-- 保存操作条与设置页一致：吸在视口底部右对齐 -->
             <div class="config-actions">
               <t-button theme="primary" :loading="configSaving" :disabled="!canManage" @click="saveConfig">
                 <template #icon><check-icon /></template>
@@ -496,44 +505,44 @@ onMounted(() => {
   color: var(--td-text-color-placeholder);
 }
 
-.config-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr));
-  gap: var(--td-comp-margin-m);
-  margin-bottom: var(--td-comp-margin-l);
-}
-
-.config-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--td-comp-margin-l);
-  padding: var(--td-comp-paddingLR-l) var(--td-comp-paddingLR-m);
-  border: thin solid var(--td-component-border);
-  border-radius: var(--td-radius-medium);
-  background: var(--td-bg-color-secondarycontainer);
-}
-
-.config-card__info {
-  min-width: 0;
-
-  strong {
-    display: block;
-    margin-bottom: var(--td-comp-margin-xxs);
-    color: var(--td-text-color-primary);
-    font: var(--td-font-body-medium);
-  }
-
-  p {
-    margin: 0;
-    color: var(--td-text-color-secondary);
-    font: var(--td-font-body-small);
-  }
-}
-
+/* 配置项排版走全局 .admin-field / .admin-field-grid，页面内不再套一层小卡片 */
+/* 保存操作条：与设置页同一形态，吸在视口底部右对齐 */
 .config-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   display: flex;
   justify-content: flex-end;
+  margin-top: var(--td-comp-margin-l);
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-l);
+  border-top: 1px solid var(--td-component-stroke);
+  border-radius: var(--td-radius-medium);
+  background: var(--td-bg-color-container);
+  box-shadow: var(--td-shadow-1);
+}
+
+/* 数字控件铺满自己的格子，宽度由 --narrow 收窄 */
+.open-api-page :deep(.admin-field__control > .t-input-number) {
+  width: 100%;
+}
+
+/* 窄屏控件铺满整行，加减号也不会被挤成小点 */
+@media (width <= 768px) {
+  .open-api-page :deep(.admin-field__control--narrow),
+  .open-api-page :deep(.admin-field__control--medium) {
+    max-width: none;
+  }
+
+  .config-actions {
+    flex-wrap: wrap;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  /* 窄屏保存按钮铺满整行 */
+  .config-actions .t-button {
+    width: 100%;
+  }
 }
 
 .keys-toolbar {

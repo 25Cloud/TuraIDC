@@ -54,6 +54,7 @@
 
 .preview-params article {
   display: flex;
+  min-width: 0;
   justify-content: space-between;
   gap: 12px;
   padding: 10px 12px;
@@ -63,27 +64,35 @@
 }
 
 .preview-params span {
+  flex: none;
   color: var(--td-text-color-secondary);
   font-size: var(--td-font-size-size-1, 12px);
   white-space: nowrap;
 }
 
+/* 变量里可能有整条 URL 这类超长不可断文本，不换行会把整张卡片撑宽、页面横向滚动 */
 .preview-params strong {
+  min-width: 0;
   color: var(--td-text-color-primary);
   font-size: var(--td-font-size-size-1, 12px);
   text-align: right;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
-.subject-preview {
+/* 模板表单：字段纵向排列，间距统一由这里给，字段内部排版走全局 .admin-field */
+.template-form {
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  margin-bottom: 18px;
-  padding: 12px 14px;
-  border: 1px solid var(--td-brand-color-light-active);
-  border-radius: var(--td-radius-large, 8px);
-  background: var(--td-brand-color-light);
+  gap: 16px;
+}
+
+/* 主题预览直接贴在主题字段下方：不再在卡片里再套一层带框带底色的卡（卡中卡） */
+.subject-preview {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .subject-preview span {
@@ -92,15 +101,11 @@
 }
 
 .subject-preview strong {
+  min-width: 0;
   color: var(--td-text-color-primary);
   line-height: 1.6;
-  overflow-wrap: break-word;
-}
-
-.status-control {
-  display: inline-flex;
-  min-height: 32px;
-  align-items: center;
+  overflow-wrap: anywhere;
+  word-break: break-all;
 }
 
 .editor-grid {
@@ -183,7 +188,7 @@
   font-size: var(--td-font-size-size-3, 14px);
   line-height: 1.8;
   white-space: pre-wrap;
-  overflow-wrap: break-word;
+  overflow-wrap: anywhere;
 }
 
 .template-test-dialog {

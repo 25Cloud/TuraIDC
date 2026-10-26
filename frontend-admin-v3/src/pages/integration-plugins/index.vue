@@ -1,32 +1,34 @@
 <template>
   <div class="integration-plugins-page">
-    <t-card v-if="activeDomain === 'upstream'" :bordered="false" class="upstream-origin-check-card">
-      <div class="upstream-origin-check">
-        <div class="upstream-origin-check__text">
-          <strong>{{ $t('plugins.upstream.originCheckTitle') }}</strong>
-          <span>{{ $t('plugins.upstream.originCheckHint') }}</span>
+    <!-- 上游面板的两个系统开关：与插件配置表单共用同一套字段结构，
+         说明独占一行并限宽，不再被拉成整屏一条 1100px 的长句 -->
+    <t-card v-if="activeDomain === 'upstream'" :bordered="false" class="upstream-panel-settings-card">
+      <div class="admin-field-grid">
+        <div class="admin-field admin-field--switch">
+          <span class="admin-field__label">{{ $t('plugins.upstream.originCheckTitle') }}</span>
+          <div class="admin-field__control">
+            <t-switch
+              v-model="originCheckEnabled"
+              :loading="panelSettingsLoading || originCheckSaving"
+              :disabled="!canManageSettings"
+              @change="saveOriginCheck"
+            />
+          </div>
+          <p class="admin-field__desc">{{ $t('plugins.upstream.originCheckHint') }}</p>
         </div>
-        <t-switch
-          v-model="originCheckEnabled"
-          :loading="panelSettingsLoading || originCheckSaving"
-          :disabled="!canManageSettings"
-          @change="saveOriginCheck"
-        />
-      </div>
-    </t-card>
 
-    <t-card v-if="activeDomain === 'upstream'" :bordered="false" class="upstream-origin-check-card">
-      <div class="upstream-origin-check">
-        <div class="upstream-origin-check__text">
-          <strong>{{ $t('plugins.upstream.panelPreloadTitle') }}</strong>
-          <span>{{ $t('plugins.upstream.panelPreloadHint') }}</span>
+        <div class="admin-field admin-field--switch">
+          <span class="admin-field__label">{{ $t('plugins.upstream.panelPreloadTitle') }}</span>
+          <div class="admin-field__control">
+            <t-switch
+              v-model="areaPreloadAllEnabled"
+              :loading="panelSettingsLoading || areaPreloadAllSaving"
+              :disabled="!canManageSettings"
+              @change="saveAreaPreloadAll"
+            />
+          </div>
+          <p class="admin-field__desc">{{ $t('plugins.upstream.panelPreloadHint') }}</p>
         </div>
-        <t-switch
-          v-model="areaPreloadAllEnabled"
-          :loading="panelSettingsLoading || areaPreloadAllSaving"
-          :disabled="!canManageSettings"
-          @change="saveAreaPreloadAll"
-        />
       </div>
     </t-card>
 
@@ -62,11 +64,10 @@
               </t-tag>
             </div>
             <p>{{ plugin.slug }} / {{ plugin.key }}</p>
+            <!-- 元信息与最近运行状态并成一行，卡片少一整行高度 -->
             <div class="plugin-meta">
               <span>{{ domainLabel(plugin.domain) }}</span>
               <span>v{{ plugin.version || '-' }}</span>
-            </div>
-            <div class="plugin-observability">
               <t-tag v-if="plugin.latest_runtime_log" size="small" variant="light" :theme="runtimeStatusTheme(plugin)">
                 {{ latestRuntimeText(plugin) }}
               </t-tag>
@@ -81,6 +82,7 @@
             :can-manage="canManagePlugins"
             :can-test="canTestPlugins"
             :enable-reason="enableDisabledReason(plugin)"
+            size="small"
             @install="installPlugin(plugin)"
             @config="openConfig(plugin)"
             @disable="disablePlugin(plugin)"
@@ -171,7 +173,9 @@
           </dl>
         </div>
 
-        <t-form label-align="top" class="plugin-config-form">
+        <!-- 每个字段都是「标签一行 → 说明一行 → 控件一行」：
+             抽屉只有 560px 宽，说明与控件挤同一行时两边都会被压成半截。 -->
+        <div class="plugin-config-form">
           <template v-for="field in visibleSchema" :key="field.key">
             <!-- 可折叠分组标题：高级项默认收起，点击展开，避免管理员误改默认值 -->
             <button
@@ -190,169 +194,174 @@
                 {{ collapsedSections[field.key] ? $t('plugins.index.expandConfig') : $t('plugins.index.collapse') }}
               </span>
             </button>
-            <t-divider v-else-if="field.type === 'divider'" align="left">{{ fieldLabel(field) }}</t-divider>
+            <!-- 普通分隔与折叠标题同一视觉层级，只是没有折叠交互 -->
+            <div v-else-if="field.type === 'divider'" class="plugin-config-divider">
+              {{ fieldLabel(field) }}
+            </div>
             <t-alert
               v-else-if="field.type === 'notice'"
               v-show="!isSectionCollapsed(field)"
               class="plugin-config-notice"
               :theme="noticeTheme(field)"
-              :message="field.content || field.description || fieldLabel(field)"
+              :message="plainText(field.content || field.description || fieldLabel(field))"
             />
-            <t-form-item
-              v-else
-              v-show="!isSectionCollapsed(field)"
-              :label="fieldLabel(field)"
-              :class="fieldWidthClass(field)"
-            >
-              <t-switch
-                v-if="field.type === 'switch'"
-                v-model="configForm[field.key]"
-                :disabled="!canManagePlugins || field.disabled"
-              />
-              <t-select
-                v-else-if="field.type === 'select' || field.type === 'multi_select'"
-                v-model="configForm[field.key]"
-                :multiple="field.type === 'multi_select'"
-                :placeholder="fieldPlaceholder(field)"
-                :disabled="!canManagePlugins || field.disabled"
-                clearable
-              >
-                <t-option
-                  v-for="option in fieldOptions(field)"
-                  :key="String(option.value)"
-                  :label="option.label"
-                  :value="option.value"
+            <div v-else v-show="!isSectionCollapsed(field)" :class="fieldWrapperClass(field)">
+              <span class="admin-field__label" :class="{ 'admin-field__label--required': field.required }">
+                {{ fieldLabel(field) }}
+              </span>
+              <!-- description 就是「这个参数是什么、填什么格式、留空会怎样」，有就整行渲染 -->
+              <p v-if="fieldDescription(field)" class="admin-field__desc">{{ fieldDescription(field) }}</p>
+              <div class="admin-field__control" :class="fieldControlClass(field)">
+                <t-switch
+                  v-if="field.type === 'switch'"
+                  v-model="configForm[field.key]"
+                  :disabled="!canManagePlugins || field.disabled"
                 />
-              </t-select>
-              <t-radio-group
-                v-else-if="field.type === 'radio'"
-                v-model="configForm[field.key]"
-                :disabled="!canManagePlugins || field.disabled"
-              >
-                <t-radio-button
-                  v-for="option in fieldOptions(field)"
-                  :key="String(option.value)"
-                  :value="option.value"
-                  :label="option.label"
-                />
-              </t-radio-group>
-              <t-checkbox-group
-                v-else-if="field.type === 'checkbox'"
-                v-model="configForm[field.key]"
-                :disabled="!canManagePlugins || field.disabled"
-              >
-                <t-checkbox v-for="option in fieldOptions(field)" :key="String(option.value)" :value="option.value">
-                  {{ option.label }}
-                </t-checkbox>
-              </t-checkbox-group>
-              <t-input-number
-                v-else-if="field.type === 'number'"
-                v-model="configForm[field.key]"
-                :min="field.min ?? 0"
-                :max="field.max"
-                :step="field.step"
-                :placeholder="fieldPlaceholder(field)"
-                :disabled="!canManagePlugins || field.disabled"
-                theme="column"
-              />
-              <t-input v-else-if="field.type === 'readonly'" :model-value="readonlyValue(field)" readonly />
-              <div v-else-if="isSmtpAccountsField(field)" class="smtp-account-manager">
-                <div v-if="smtpAccounts.length" class="smtp-account-list">
-                  <div
-                    v-for="(account, index) in smtpAccounts"
-                    :key="`${account.__index ?? 'new'}-${index}`"
-                    class="smtp-account-item"
-                  >
-                    <div class="smtp-account-item__main">
-                      <div class="smtp-account-item__title">
-                        <strong>{{ account.host || '-' }}</strong>
-                        <t-tag :theme="account.enabled === false ? 'default' : 'success'" variant="light">
-                          {{ account.enabled === false ? $t('plugins.smtp.paused') : $t('plugins.smtp.enabled') }}
-                        </t-tag>
-                      </div>
-                      <div class="smtp-account-item__meta">
-                        <span>{{ account.username || '-' }}</span>
-                        <span>{{ $t('plugins.smtp.port') }} {{ account.port || '-' }}</span>
-                        <span>{{ account.encryption || $t('plugins.smtp.autoEncryption') }}</span>
-                        <span>{{
-                          account.password_configured || account.password
-                            ? $t('plugins.smtp.passwordConfigured')
-                            : $t('plugins.smtp.passwordNotConfigured')
-                        }}</span>
-                      </div>
-                    </div>
-                    <t-dropdown
-                      v-if="smtpAccountActionOptions(account).length"
-                      trigger="click"
-                      placement="bottom-right"
-                      :options="smtpAccountActionOptions(account)"
-                      @click="handleSmtpAccountActionHandler(index)"
-                    >
-                      <t-button variant="text" shape="square">
-                        <more-icon />
-                      </t-button>
-                    </t-dropdown>
-                  </div>
-                </div>
-                <t-empty v-else :description="$t('plugins.smtp.empty')" />
-                <t-button
-                  v-if="canManagePlugins"
-                  variant="outline"
-                  class="smtp-account-add"
-                  @click="openSmtpAccountDialog()"
+                <t-select
+                  v-else-if="field.type === 'select' || field.type === 'multi_select'"
+                  v-model="configForm[field.key]"
+                  :multiple="field.type === 'multi_select'"
+                  :placeholder="fieldPlaceholder(field)"
+                  :disabled="!canManagePlugins || field.disabled"
+                  clearable
                 >
-                  {{ $t('plugins.smtp.addAccount') }}
-                </t-button>
+                  <t-option
+                    v-for="option in fieldOptions(field)"
+                    :key="String(option.value)"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </t-select>
+                <t-radio-group
+                  v-else-if="field.type === 'radio'"
+                  v-model="configForm[field.key]"
+                  :disabled="!canManagePlugins || field.disabled"
+                >
+                  <t-radio-button
+                    v-for="option in fieldOptions(field)"
+                    :key="String(option.value)"
+                    :value="option.value"
+                    :label="option.label"
+                  />
+                </t-radio-group>
+                <t-checkbox-group
+                  v-else-if="field.type === 'checkbox'"
+                  v-model="configForm[field.key]"
+                  :disabled="!canManagePlugins || field.disabled"
+                >
+                  <t-checkbox v-for="option in fieldOptions(field)" :key="String(option.value)" :value="option.value">
+                    {{ option.label }}
+                  </t-checkbox>
+                </t-checkbox-group>
+                <t-input-number
+                  v-else-if="field.type === 'number'"
+                  v-model="configForm[field.key]"
+                  :min="field.min ?? 0"
+                  :max="field.max"
+                  :step="field.step"
+                  :placeholder="fieldPlaceholder(field)"
+                  :disabled="!canManagePlugins || field.disabled"
+                  theme="column"
+                />
+                <t-input v-else-if="field.type === 'readonly'" :model-value="readonlyValue(field)" readonly />
+                <div v-else-if="isSmtpAccountsField(field)" class="smtp-account-manager">
+                  <div v-if="smtpAccounts.length" class="smtp-account-list">
+                    <div
+                      v-for="(account, index) in smtpAccounts"
+                      :key="`${account.__index ?? 'new'}-${index}`"
+                      class="smtp-account-item"
+                    >
+                      <div class="smtp-account-item__main">
+                        <div class="smtp-account-item__title">
+                          <strong>{{ account.host || '-' }}</strong>
+                          <t-tag :theme="account.enabled === false ? 'default' : 'success'" variant="light">
+                            {{ account.enabled === false ? $t('plugins.smtp.paused') : $t('plugins.smtp.enabled') }}
+                          </t-tag>
+                        </div>
+                        <div class="smtp-account-item__meta">
+                          <span>{{ account.username || '-' }}</span>
+                          <span>{{ $t('plugins.smtp.port') }} {{ account.port || '-' }}</span>
+                          <span>{{ account.encryption || $t('plugins.smtp.autoEncryption') }}</span>
+                          <span>{{
+                            account.password_configured || account.password
+                              ? $t('plugins.smtp.passwordConfigured')
+                              : $t('plugins.smtp.passwordNotConfigured')
+                          }}</span>
+                        </div>
+                      </div>
+                      <t-dropdown
+                        v-if="smtpAccountActionOptions(account).length"
+                        trigger="click"
+                        placement="bottom-right"
+                        :options="smtpAccountActionOptions(account)"
+                        @click="handleSmtpAccountActionHandler(index)"
+                      >
+                        <t-button variant="text" shape="square">
+                          <more-icon />
+                        </t-button>
+                      </t-dropdown>
+                    </div>
+                  </div>
+                  <t-empty v-else :description="$t('plugins.smtp.empty')" />
+                  <t-button
+                    v-if="canManagePlugins"
+                    variant="outline"
+                    class="smtp-account-add"
+                    @click="openSmtpAccountDialog()"
+                  >
+                    {{ $t('plugins.smtp.addAccount') }}
+                  </t-button>
+                </div>
+                <secret-input
+                  v-else-if="isSecretTextareaField(field)"
+                  v-model="configForm[field.key]"
+                  multiline
+                  :autosize="{ minRows: textareaMinRows(field), maxRows: 10 }"
+                  :has-value="fieldHasSecretValue(field)"
+                  :placeholder="fieldPlaceholder(field)"
+                  :disabled="!canManagePlugins || field.disabled"
+                  :reset-key="`plugin:${currentPlugin?.id || 'new'}:${field.key}`"
+                  :can-reveal="canRevealPluginSecrets"
+                  :reveal="() => revealPluginSecret(field)"
+                  @edited-change="(value: boolean) => (editedSecretKeys[field.key] = value)"
+                  @reveal-error="
+                    (error: unknown) => MessagePlugin.error(errorMessage(error, t('plugins.index.revealSecretFailed')))
+                  "
+                />
+                <t-textarea
+                  v-else-if="field.type === 'textarea' || field.type === 'json'"
+                  v-model="configForm[field.key]"
+                  :autosize="{ minRows: textareaMinRows(field), maxRows: 10 }"
+                  :placeholder="fieldPlaceholder(field)"
+                  :disabled="!canManagePlugins || field.disabled"
+                />
+                <t-input
+                  v-else-if="isSecretInputField(field)"
+                  :model-value="secretInputDisplayValue(field)"
+                  :type="secretInputType(field)"
+                  :placeholder="fieldPlaceholder(field)"
+                  :disabled="!canManagePlugins || field.disabled"
+                  @focus="handleSecretFocus(field)"
+                  @update:model-value="(value: string) => handleSecretInput(field, value)"
+                >
+                  <template v-if="fieldHasSecretValue(field) && canRevealPluginSecrets" #suffix-icon>
+                    <span class="plugin-secret-toggle" @click.stop="toggleSecretVisibility(field)">
+                      <browse-off-icon v-if="isSecretVisible(field)" />
+                      <browse-icon v-else />
+                    </span>
+                  </template>
+                </t-input>
+                <t-input
+                  v-else
+                  v-model="configForm[field.key]"
+                  :type="inputType(field)"
+                  :placeholder="fieldPlaceholder(field)"
+                  :disabled="!canManagePlugins || field.disabled"
+                />
               </div>
-              <secret-input
-                v-else-if="isSecretTextareaField(field)"
-                v-model="configForm[field.key]"
-                multiline
-                :autosize="{ minRows: textareaMinRows(field), maxRows: 10 }"
-                :has-value="fieldHasSecretValue(field)"
-                :placeholder="fieldPlaceholder(field)"
-                :disabled="!canManagePlugins || field.disabled"
-                :reset-key="`plugin:${currentPlugin?.id || 'new'}:${field.key}`"
-                :can-reveal="canRevealPluginSecrets"
-                :reveal="() => revealPluginSecret(field)"
-                @edited-change="(value: boolean) => (editedSecretKeys[field.key] = value)"
-                @reveal-error="
-                  (error: unknown) => MessagePlugin.error(errorMessage(error, t('plugins.index.revealSecretFailed')))
-                "
-              />
-              <t-textarea
-                v-else-if="field.type === 'textarea' || field.type === 'json'"
-                v-model="configForm[field.key]"
-                :autosize="{ minRows: textareaMinRows(field), maxRows: 10 }"
-                :placeholder="fieldPlaceholder(field)"
-                :disabled="!canManagePlugins || field.disabled"
-              />
-              <t-input
-                v-else-if="isSecretInputField(field)"
-                :model-value="secretInputDisplayValue(field)"
-                :type="secretInputType(field)"
-                :placeholder="fieldPlaceholder(field)"
-                :disabled="!canManagePlugins || field.disabled"
-                @focus="handleSecretFocus(field)"
-                @update:model-value="(value: string) => handleSecretInput(field, value)"
-              >
-                <template v-if="fieldHasSecretValue(field) && canRevealPluginSecrets" #suffix-icon>
-                  <span class="plugin-secret-toggle" @click.stop="toggleSecretVisibility(field)">
-                    <browse-off-icon v-if="isSecretVisible(field)" />
-                    <browse-icon v-else />
-                  </span>
-                </template>
-              </t-input>
-              <t-input
-                v-else
-                v-model="configForm[field.key]"
-                :type="inputType(field)"
-                :placeholder="fieldPlaceholder(field)"
-                :disabled="!canManagePlugins || field.disabled"
-              />
-            </t-form-item>
+            </div>
           </template>
-        </t-form>
+        </div>
       </template>
     </t-drawer>
 
@@ -516,56 +525,79 @@
       :confirm-btn="{ content: $t('plugins.smtp.saveAccount'), loading: savingConfig }"
       @confirm="confirmSmtpAccount"
     >
-      <t-form label-align="top" class="smtp-account-form">
-        <t-form-item :label="$t('plugins.smtp.host')">
-          <t-input v-model="smtpAccountForm.host" :placeholder="$t('plugins.smtp.hostPlaceholder')" />
-        </t-form-item>
-        <t-form-item :label="$t('plugins.smtp.portLabel')">
-          <t-input-number v-model="smtpAccountForm.port" :min="1" :max="65535" theme="column" />
-        </t-form-item>
-        <t-form-item :label="$t('plugins.smtp.account')">
-          <t-input v-model="smtpAccountForm.username" :placeholder="$t('plugins.smtp.accountPlaceholder')" />
-        </t-form-item>
-        <t-form-item :label="$t('plugins.smtp.password')">
-          <secret-input
-            v-if="editingSmtpAccountIndex >= 0 && smtpAccountForm.password_configured"
-            v-model="smtpAccountForm.password"
-            :has-value="smtpAccountForm.password_configured"
-            :placeholder="$t('plugins.smtp.configuredKeepBlank')"
-            :reset-key="`smtp:${currentPlugin?.id || 'new'}:${smtpAccountForm.__index ?? editingSmtpAccountIndex}`"
-            :can-reveal="canRevealPluginSecrets"
-            :reveal="revealSmtpAccountPassword"
-            @edited-change="(value: boolean) => (smtpAccountPasswordEdited = value)"
-            @reveal-error="
-              (error: unknown) => MessagePlugin.error(errorMessage(error, t('plugins.index.revealSmtpPasswordFailed')))
-            "
-          />
-          <t-input
-            v-else
-            v-model="smtpAccountForm.password"
-            type="password"
-            :placeholder="
-              editingSmtpAccountIndex >= 0
-                ? $t('plugins.smtp.configuredKeepBlank')
-                : $t('plugins.smtp.passwordPlaceholder')
-            "
-          />
-        </t-form-item>
-        <t-form-item :label="$t('plugins.smtp.fromName')">
-          <t-input v-model="smtpAccountForm.from_name" :placeholder="$t('plugins.smtp.fromNamePlaceholder')" />
-        </t-form-item>
-        <t-form-item :label="$t('plugins.smtp.encryption')">
-          <t-select v-model="smtpAccountForm.encryption" clearable>
-            <t-option :label="$t('plugins.smtp.encryptionAuto')" value="" />
-            <t-option label="SSL" value="ssl" />
-            <t-option label="TLS" value="tls" />
-            <t-option :label="$t('plugins.smtp.encryptionNone')" value="none" />
-          </t-select>
-        </t-form-item>
-        <t-form-item :label="$t('plugins.smtp.status')">
-          <t-switch v-model="smtpAccountForm.enabled" />
-        </t-form-item>
-      </t-form>
+      <!-- SMTP 账号弹窗沿用插件配置表单的字段结构，两处排版不再各一套 -->
+      <div class="smtp-account-form">
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('plugins.smtp.host') }}</span>
+          <div class="admin-field__control">
+            <t-input v-model="smtpAccountForm.host" :placeholder="$t('plugins.smtp.hostPlaceholder')" />
+          </div>
+        </div>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('plugins.smtp.portLabel') }}</span>
+          <div class="admin-field__control admin-field__control--narrow">
+            <t-input-number v-model="smtpAccountForm.port" :min="1" :max="65535" theme="column" />
+          </div>
+        </div>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('plugins.smtp.account') }}</span>
+          <div class="admin-field__control">
+            <t-input v-model="smtpAccountForm.username" :placeholder="$t('plugins.smtp.accountPlaceholder')" />
+          </div>
+        </div>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('plugins.smtp.password') }}</span>
+          <div class="admin-field__control">
+            <secret-input
+              v-if="editingSmtpAccountIndex >= 0 && smtpAccountForm.password_configured"
+              v-model="smtpAccountForm.password"
+              :has-value="smtpAccountForm.password_configured"
+              :placeholder="$t('plugins.smtp.configuredKeepBlank')"
+              :reset-key="`smtp:${currentPlugin?.id || 'new'}:${smtpAccountForm.__index ?? editingSmtpAccountIndex}`"
+              :can-reveal="canRevealPluginSecrets"
+              :reveal="revealSmtpAccountPassword"
+              @edited-change="(value: boolean) => (smtpAccountPasswordEdited = value)"
+              @reveal-error="
+                (error: unknown) =>
+                  MessagePlugin.error(errorMessage(error, t('plugins.index.revealSmtpPasswordFailed')))
+              "
+            />
+            <t-input
+              v-else
+              v-model="smtpAccountForm.password"
+              type="password"
+              :placeholder="
+                editingSmtpAccountIndex >= 0
+                  ? $t('plugins.smtp.configuredKeepBlank')
+                  : $t('plugins.smtp.passwordPlaceholder')
+              "
+            />
+          </div>
+        </div>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('plugins.smtp.fromName') }}</span>
+          <div class="admin-field__control">
+            <t-input v-model="smtpAccountForm.from_name" :placeholder="$t('plugins.smtp.fromNamePlaceholder')" />
+          </div>
+        </div>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('plugins.smtp.encryption') }}</span>
+          <div class="admin-field__control admin-field__control--medium">
+            <t-select v-model="smtpAccountForm.encryption" clearable>
+              <t-option :label="$t('plugins.smtp.encryptionAuto')" value="" />
+              <t-option label="SSL" value="ssl" />
+              <t-option label="TLS" value="tls" />
+              <t-option :label="$t('plugins.smtp.encryptionNone')" value="none" />
+            </t-select>
+          </div>
+        </div>
+        <div class="admin-field admin-field--switch">
+          <span class="admin-field__label">{{ $t('plugins.smtp.status') }}</span>
+          <div class="admin-field__control">
+            <t-switch v-model="smtpAccountForm.enabled" />
+          </div>
+        </div>
+      </div>
     </t-dialog>
     <t-dialog
       v-model:visible="emailTestVisible"
@@ -574,19 +606,21 @@
       :confirm-btn="{ content: $t('plugins.test.send'), loading: emailTesting }"
       @confirm="sendTestEmail"
     >
-      <t-form label-align="top" class="email-test-form">
-        <t-form-item
-          :label="$t('plugins.test.recipient')"
-          :status="emailTestErrors.to ? 'error' : undefined"
-          :help="emailTestErrors.to"
-        >
-          <t-input
-            v-model="emailTestForm.to"
-            :placeholder="$t('plugins.test.recipientPlaceholder')"
-            @change="clearEmailTestError('to')"
-          />
-        </t-form-item>
-      </t-form>
+      <div class="email-test-form">
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('plugins.test.recipient') }}</span>
+          <div class="admin-field__control">
+            <t-input
+              v-model="emailTestForm.to"
+              :placeholder="$t('plugins.test.recipientPlaceholder')"
+              :status="emailTestErrors.to ? 'error' : undefined"
+              @change="clearEmailTestError('to')"
+            />
+          </div>
+          <!-- 校验错误紧跟在控件下方，不占标签行 -->
+          <p v-if="emailTestErrors.to" class="admin-field__desc email-test-form__error">{{ emailTestErrors.to }}</p>
+        </div>
+      </div>
     </t-dialog>
   </div>
 </template>
@@ -695,28 +729,48 @@ const columns: PrimaryTableCol[] = [
 /** 可折叠分组的收起状态，键为该分组 divider 的 key */
 const collapsedSections = ref<Record<string, boolean>>({});
 
+/** 带所属分节标记的 schema 字段，分节为空表示不受折叠影响 */
+type ConfigSchemaField = IntegrationPluginConfigSchema & { __section: string | null };
+
 /**
- * 给每个字段标注所属的可折叠分组。
+ * 给每个字段标注所属的可折叠分组，并把 notice 型提示提到所在分节的顶部。
  *
- * 规则：标了 collapsible 的 divider，其后直到下一个 divider 之前的字段都归入该分组；
+ * 分组规则：标了 collapsible 的 divider，其后直到下一个 divider 之前的字段都归入该分组；
  * 普通 divider 会把分组归属清空。divider 自身永远可见——它就是折叠开关。
  *
- * 这里返回带 __section 标记的副本而不是改变循环结构，模板中的字段渲染分支得以保持原样。
+ * 提示前置的原因：notice 是整段配置的补充说明（场景开关为什么强制、账号列表怎么维护），
+ * 夹在两个字段中间时读起来像某一个字段的备注，也切断了相邻字段之间的对照。
  */
-const visibleSchema = computed(() => {
+const visibleSchema = computed<ConfigSchemaField[]>(() => {
+  const result: ConfigSchemaField[] = [];
   let sectionKey: string | null = null;
+  let sectionFields: ConfigSchemaField[] = [];
 
-  return currentSchema.value
+  // 收齐一个分节的字段后再统一写出，notice 排在该分节最前
+  const flushSection = () => {
+    if (!sectionFields.length) return;
+    result.push(
+      ...sectionFields.filter((field) => field.type === 'notice'),
+      ...sectionFields.filter((field) => field.type !== 'notice'),
+    );
+    sectionFields = [];
+  };
+
+  currentSchema.value
     .filter((field) => isFieldVisible(field))
-    .map((field) => {
+    .forEach((field) => {
       if (field.type === 'divider') {
+        flushSection();
         sectionKey = field.collapsible ? field.key : null;
-
-        return { ...field, __section: null as string | null };
+        result.push({ ...field, __section: null });
+        return;
       }
 
-      return { ...field, __section: sectionKey };
+      sectionFields.push({ ...field, __section: sectionKey });
     });
+  flushSection();
+
+  return result;
 });
 
 function isSectionCollapsed(field: IntegrationPluginConfigSchema & { __section?: string | null }) {
@@ -1244,11 +1298,48 @@ function fieldLabel(field: IntegrationPluginConfigSchema) {
   return field.label || field.title || field.key;
 }
 
+/**
+ * schema 文本是纯文本，后端为强调写了 markdown 加粗标记。
+ * 这里直接当纯文本渲染，去掉 ** 才不会在界面上原样露出。
+ */
+function plainText(value: unknown) {
+  return String(value ?? '')
+    .replace(/\*\*/g, '')
+    .trim();
+}
+
+/** 字段说明：这个参数是什么、填什么格式、留空会怎样；没有就整行不渲染 */
+function fieldDescription(field: IntegrationPluginConfigSchema) {
+  return plainText(field.description);
+}
+
+/** 开关只有 44px 宽：标签与开关同行、说明独占下一行，省纵向空间 */
+function fieldWrapperClass(field: IntegrationPluginConfigSchema) {
+  return field.type === 'switch' ? 'admin-field admin-field--switch' : 'admin-field';
+}
+
+/**
+ * 控件宽度按字段类型决定，不再看 schema 里的 width（现有插件一个都没声明，等于靠猜）：
+ * 数字、单选、勾选这类短值收窄；下拉与单行文本 320px；URL、密钥、多行、账号列表铺满整行。
+ * 同一列里的控件长度统一，长说明也不会把控件挤成半截。
+ */
+function fieldControlClass(field: IntegrationPluginConfigSchema) {
+  if (field.secret || field.type === 'password') return '';
+  if (field.type === 'number' || field.type === 'radio' || field.type === 'checkbox') {
+    return 'admin-field__control--narrow';
+  }
+  if (['text', 'email', 'phone', 'select', 'multi_select'].includes(field.type || '')) {
+    return 'admin-field__control--medium';
+  }
+  return '';
+}
+
 function fieldPlaceholder(field: IntegrationPluginConfigSchema) {
   if (field.placeholder) return field.placeholder;
   if (fieldHasSecretValue(field)) return t('plugins.smtp.configuredKeepBlank');
   if (field.type === 'json') return t('plugins.index.jsonPlaceholder');
-  return t('plugins.index.inputField', { label: fieldLabel(field) });
+  // 没有自带示例值就留空：placeholder 里再写一遍「请输入 XX」只是重复旁边的标签
+  return '';
 }
 
 function inputType(field: IntegrationPluginConfigSchema) {
@@ -1364,10 +1455,6 @@ function readonlyValue(field: IntegrationPluginConfigSchema) {
 function noticeTheme(field: IntegrationPluginConfigSchema) {
   if (field.theme === 'success' || field.theme === 'warning' || field.theme === 'error') return field.theme;
   return 'info';
-}
-
-function fieldWidthClass(field: IntegrationPluginConfigSchema) {
-  return field.width === 'half' ? 'plugin-config-form__item--half' : '';
 }
 
 function isDisplayOnlyField(field: IntegrationPluginConfigSchema) {

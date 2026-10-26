@@ -6,96 +6,103 @@
           <h2 class="product-display-title">{{ t('productDisplay.title') }}</h2>
           <p class="product-display-desc">{{ t('productDisplay.description') }}</p>
         </div>
-        <t-button theme="primary" :loading="saving" :disabled="!canManage" @click="save">
-          {{ t('productDisplay.save') }}
-        </t-button>
       </div>
 
       <t-loading :loading="loading" size="small" class="product-display-body">
+        <!-- 每个字段都是「标签一行 → 说明一行 → 控件一行」，说明不再和控件挤同一行 -->
         <!-- 展示形态 -->
-        <section class="product-display-section">
-          <h3 class="product-display-section-title">
-            {{ t('productDisplay.sectionDisplay') }}
-          </h3>
-          <t-form :data="form" :label-align="isMobile ? 'top' : 'right'" :label-width="isMobile ? undefined : '180px'">
-            <t-form-item :label="t('productDisplay.displayMode')" name="product_display_mode">
-              <div class="product-display-field">
+        <section class="admin-field-section">
+          <div class="admin-field-section__head">
+            <h3 class="admin-field-section__title">{{ t('productDisplay.sectionDisplay') }}</h3>
+          </div>
+          <div class="admin-field-grid">
+            <!-- 分节里只有一项时整行铺满，右半行不留空格子 -->
+            <div class="admin-field admin-field--full">
+              <span class="admin-field__label">{{ t('productDisplay.displayMode') }}</span>
+              <p class="admin-field__desc">{{ t('productDisplay.displayModeHint') }}</p>
+              <div class="admin-field__control admin-field__control--medium">
                 <t-radio-group v-model="form.product_display_mode" variant="default-filled">
                   <t-radio-button value="list">{{ t('productDisplay.modeList') }}</t-radio-button>
                   <t-radio-button value="card">{{ t('productDisplay.modeCard') }}</t-radio-button>
                 </t-radio-group>
-                <p class="product-display-hint">{{ t('productDisplay.displayModeHint') }}</p>
               </div>
-            </t-form-item>
-          </t-form>
+            </div>
+          </div>
         </section>
 
-        <!-- 卡片样式 -->
-        <section class="product-display-section">
-          <h3 class="product-display-section-title">
-            {{ t('productDisplay.sectionCard') }}
-          </h3>
-          <t-form :data="form" :label-align="isMobile ? 'top' : 'right'" :label-width="isMobile ? undefined : '180px'">
-            <t-form-item :label="t('productDisplay.cardShowStock')" name="product_card_show_stock">
-              <div class="product-display-field">
+        <!-- 卡片式样式 -->
+        <section class="admin-field-section">
+          <div class="admin-field-section__head">
+            <h3 class="admin-field-section__title">{{ t('productDisplay.sectionCard') }}</h3>
+          </div>
+          <div class="admin-field-grid">
+            <div class="admin-field admin-field--switch admin-field--full">
+              <span class="admin-field__label">{{ t('productDisplay.cardShowStock') }}</span>
+              <div class="admin-field__control">
                 <t-switch v-model="form.product_card_show_stock" />
-                <p class="product-display-hint">{{ t('productDisplay.cardShowStockHint') }}</p>
               </div>
-            </t-form-item>
-          </t-form>
+              <p class="admin-field__desc">{{ t('productDisplay.cardShowStockHint') }}</p>
+            </div>
+          </div>
         </section>
 
         <!-- 独立配置页 -->
-        <section class="product-display-section">
-          <h3 class="product-display-section-title">
-            {{ t('productDisplay.sectionDetail') }}
-          </h3>
-          <t-form :data="form" :label-align="isMobile ? 'top' : 'right'" :label-width="isMobile ? undefined : '180px'">
-            <t-form-item :label="t('productDisplay.detailSpecCompare')" name="product_detail_spec_compare">
-              <div class="product-display-field">
+        <section class="admin-field-section">
+          <div class="admin-field-section__head">
+            <h3 class="admin-field-section__title">{{ t('productDisplay.sectionDetail') }}</h3>
+          </div>
+          <div class="admin-field-grid">
+            <div class="admin-field admin-field--switch admin-field--full">
+              <span class="admin-field__label">{{ t('productDisplay.detailSpecCompare') }}</span>
+              <div class="admin-field__control">
                 <t-switch v-model="form.product_detail_spec_compare" />
-                <p class="product-display-hint">{{ t('productDisplay.detailSpecCompareHint') }}</p>
               </div>
-            </t-form-item>
-          </t-form>
+              <p class="admin-field__desc">{{ t('productDisplay.detailSpecCompareHint') }}</p>
+            </div>
+          </div>
         </section>
 
         <!-- 页面版心 -->
-        <section class="product-display-section">
-          <h3 class="product-display-section-title">
-            {{ t('productDisplay.sectionLayout') }}
-          </h3>
-          <t-form :data="form" :label-align="isMobile ? 'top' : 'right'" :label-width="isMobile ? undefined : '180px'">
-            <t-form-item :label="t('productDisplay.pageLayout')" name="product_page_layout">
-              <div class="product-display-field">
+        <section class="admin-field-section">
+          <div class="admin-field-section__head">
+            <h3 class="admin-field-section__title">{{ t('productDisplay.sectionLayout') }}</h3>
+          </div>
+          <div class="admin-field-grid">
+            <div class="admin-field">
+              <span class="admin-field__label">{{ t('productDisplay.pageLayout') }}</span>
+              <p class="admin-field__desc">{{ t('productDisplay.pageLayoutHint') }}</p>
+              <div class="admin-field__control admin-field__control--medium">
                 <t-radio-group v-model="form.product_page_layout" variant="default-filled">
                   <t-radio-button value="contained">{{ t('productDisplay.layoutContained') }}</t-radio-button>
                   <t-radio-button value="full">{{ t('productDisplay.layoutFull') }}</t-radio-button>
                 </t-radio-group>
-                <p class="product-display-hint">{{ t('productDisplay.pageLayoutHint') }}</p>
               </div>
-            </t-form-item>
-            <t-form-item :label="t('productDisplay.maxWidth')" name="product_page_max_width">
-              <div class="product-display-field">
+            </div>
+            <div class="admin-field">
+              <span class="admin-field__label">{{ t('productDisplay.maxWidth') }}</span>
+              <p class="admin-field__desc">{{ t('productDisplay.maxWidthHint') }}</p>
+              <div class="admin-field__control admin-field__control--narrow">
                 <t-input-number
                   v-model="form.product_page_max_width"
                   :min="960"
                   :max="1920"
                   :step="20"
                   :disabled="form.product_page_layout !== 'contained'"
-                  style="width: 180px"
                 />
-                <p class="product-display-hint">{{ t('productDisplay.maxWidthHint') }}</p>
               </div>
-            </t-form-item>
-          </t-form>
+            </div>
+          </div>
         </section>
       </t-loading>
     </t-card>
+
+    <!-- 保存操作条与设置页一致：吸在视口底部右对齐 -->
+    <div v-if="canManage" class="product-display-actions">
+      <t-button theme="primary" :loading="saving" @click="save">{{ t('productDisplay.save') }}</t-button>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
-import { useWindowSize } from '@vueuse/core';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, reactive, ref } from 'vue';
 
@@ -105,8 +112,6 @@ import { t } from '@/locales';
 import { hasAdminPermission } from '@/utils/permission';
 import { errorMessage } from '@/utils/userMessage';
 
-const { width } = useWindowSize();
-const isMobile = computed(() => width.value < 768);
 const canManage = computed(() => hasAdminPermission(AdminPermissions.SETTINGS_MANAGE));
 
 const loading = ref(false);
@@ -193,17 +198,16 @@ onMounted(loadSettings);
 </script>
 <style lang="less" scoped>
 .product-display-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
   padding: 16px;
 }
 
-.product-display-card {
-  max-width: 960px;
-}
-
+/* 整页铺满可用宽度：两列栅格才用得上右侧空间，不再挤在左侧 940px */
 .product-display-head {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
   gap: 16px;
 }
 
@@ -226,41 +230,51 @@ onMounted(loadSettings);
   margin-top: 16px;
 }
 
-/* 每类配置独立成段，避免和别的输入框挤在一张表单里 */
-.product-display-section {
-  padding: 16px 0;
-  border-top: 1px solid var(--td-component-stroke);
-
-  &:first-of-type {
-    border-top: none;
-    padding-top: 4px;
-  }
+/* 段标题、字段、间距全部走全局 admin-field 体系，页面内不另立一套 */
+.product-display-body :deep(.admin-field-section:first-child) {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
 }
 
-.product-display-section-title {
-  margin: 0 0 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--td-text-color-primary);
+.product-display-body :deep(.admin-field__control > .t-input-number) {
+  width: 100%;
 }
 
-.product-display-hint {
-  margin: 6px 0 0;
-  font-size: 12px;
-  line-height: 1.7;
-  color: var(--td-text-color-placeholder);
-}
-
-/* 控件与说明纵向排列：说明文字不能横向挤在控件右边 */
-.product-display-field {
+/* 保存操作条：与设置页同一形态，吸在视口底部右对齐 */
+.product-display-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  min-width: 0;
+  justify-content: flex-end;
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-l);
+  border-top: 1px solid var(--td-component-stroke);
+  border-radius: var(--td-radius-medium);
+  background: var(--td-bg-color-container);
+  box-shadow: var(--td-shadow-1);
 }
 
-.product-display-field .product-display-hint {
-  margin: 0;
+/* 窄屏控件铺满整行，鼠标点不准的加减号也不会被挤成小点 */
+@media (width <= 768px) {
+  .product-display-page {
+    padding: 12px;
+  }
+
+  .product-display-actions {
+    flex-wrap: wrap;
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  /* 窄屏保存按钮铺满整行 */
+  .product-display-actions .t-button {
+    width: 100%;
+  }
+
+  .product-display-body :deep(.admin-field__control--narrow),
+  .product-display-body :deep(.admin-field__control--medium) {
+    max-width: none;
+  }
 }
 </style>

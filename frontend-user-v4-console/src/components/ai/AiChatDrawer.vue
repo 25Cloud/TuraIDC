@@ -16,7 +16,6 @@
           <div class="ai-drawer-header__title">
             <robot-icon class="ai-drawer-header__logo" />
             <span class="ai-drawer-header__name">{{ $t('ai.title') }}</span>
-            <t-tag v-if="modelLabel" size="small" variant="light" theme="primary">{{ modelLabel }}</t-tag>
           </div>
 
           <div class="ai-drawer-header__tools">
@@ -49,8 +48,11 @@
           </div>
         </div>
 
-        <p v-if="subjectLabel" class="ai-drawer-header__context">
-          {{ $t('ai.context.viewing', { subject: subjectLabel }) }}
+        <!-- 模型名放进这一行：抽屉只有 400px，塞在标题行会被截成「deepseek-v4.1-fla…」 -->
+        <p v-if="modelLabel || subjectLabel" class="ai-drawer-header__context">
+          <span v-if="modelLabel" class="ai-drawer-header__model">{{ modelLabel }}</span>
+          <span v-if="modelLabel && subjectLabel"> · </span>
+          <span v-if="subjectLabel">{{ $t('ai.context.viewing', { subject: subjectLabel }) }}</span>
         </p>
       </div>
     </template>
@@ -278,12 +280,22 @@ const handleOpenRecent = (id: number): void => {
   margin: 0;
   color: var(--td-text-color-placeholder);
   font: var(--td-font-body-small);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-drawer-header__model {
+  color: var(--td-text-color-secondary);
 }
 
 .ai-drawer-composer {
   display: grid;
   gap: var(--td-comp-margin-s);
+  /* TDesign 的 drawer footer 是 flex + 右对齐，子元素默认按内容收缩，
+     不写 flex:1 的话 <768px 全屏时输入框会被挤成半截宽、发送按钮掉到下一行 */
+  flex: 1 1 auto;
+  width: 100%;
 }
 
 // —— 最近对话：一排可横滚的胶囊，点一下进独立页 ——

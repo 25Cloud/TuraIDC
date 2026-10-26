@@ -420,14 +420,16 @@ export const systemRoutes: RouteRecordRaw[] = [
     },
   },
   {
+    // 一页同时管「账户充值门槛」与「推荐返利规则」：充值开关原本挂在一个没有菜单入口的
+    // 独立 tab 上，并进这里以后它才真正可达，菜单名也改成能同时覆盖两件事的说法。
     path: 'referral-settings',
     name: 'AdminReferralSettings',
     component: () => import('@/pages/settings/index.vue'),
     meta: {
       title: {
-        zh_CN: '推荐奖励',
-        zh_TW: '推薦獎勵',
-        en_US: 'Referral',
+        zh_CN: '推荐与充值',
+        zh_TW: '推薦與儲值',
+        en_US: 'Referral & Top-up',
       },
       permission: 'settings.view',
       settingsTab: 'referral',

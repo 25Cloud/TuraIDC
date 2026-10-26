@@ -1,146 +1,135 @@
 <template>
   <div class="settings-page">
     <template v-if="activeTab !== 'site_hero'">
-      <t-card v-if="sections.length > 1" :bordered="false">
-        <div class="section-nav">
-          <span>{{ $t('settings.index.groupLabel') }}</span>
-          <t-radio-group v-model="activeSection" variant="default-filled">
-            <t-radio-button v-for="section in sections" :key="section.anchor" :value="section.anchor">
-              {{ section.title }} · {{ section.fields.length }} {{ $t('settings.index.fieldCountUnit') }}
-            </t-radio-button>
-          </t-radio-group>
-        </div>
-      </t-card>
-
       <t-card :bordered="false" :loading="settingsLoading">
-        <template v-if="currentSection" #title>{{ currentSection.title }}</template>
-        <template v-if="currentSection?.description" #subtitle>{{ currentSection.description }}</template>
+        <p v-if="pageConfig?.description" class="settings-page__desc">{{ pageConfig.description }}</p>
 
-        <t-form :data="form" label-align="top" class="settings-form" :disabled="!canManageCurrentTab">
-          <div class="settings-field-grid">
-            <article
-              v-for="field in currentSection?.fields || []"
-              :key="field.key"
-              class="field-card"
-              :class="{ 'field-card--switch': field.type === 'switch', 'field-card--wide': field.wide }"
-            >
-              <div class="field-info">
-                <strong>
-                  <span v-if="isFieldRequired(field)" class="required-mark">*</span>
+        <t-form :data="form" :disabled="!canManageCurrentTab">
+          <section v-for="section in sections" :key="section.key" class="admin-field-section">
+            <header class="admin-field-section__head">
+              <h2 class="admin-field-section__title">{{ section.title }}</h2>
+              <p v-if="section.description" class="admin-field-section__desc">{{ section.description }}</p>
+            </header>
+
+            <div class="admin-field-grid">
+              <div
+                v-for="field in section.fields"
+                :key="field.key"
+                class="admin-field"
+                :class="{ 'admin-field--full': field.wide, 'admin-field--switch': field.type === 'switch' }"
+              >
+                <span class="admin-field__label" :class="{ 'admin-field__label--required': isFieldRequired(field) }">
                   {{ field.label }}
-                </strong>
-                <p v-if="field.help">{{ field.help }}</p>
-              </div>
-              <div class="field-control">
-                <t-switch v-if="field.type === 'switch'" v-model="form[field.key]" />
-                <t-select
-                  v-else-if="field.type === 'select'"
-                  v-model="form[field.key]"
-                  clearable
-                  :placeholder="field.placeholder || `${$t('settings.index.selectPrefix')}${field.label}`"
-                >
-                  <t-option
-                    v-for="option in field.options || []"
-                    :key="String(option.value)"
-                    :label="option.label"
-                    :value="option.value"
-                  />
-                </t-select>
-                <t-input-number
-                  v-else-if="field.type === 'number'"
-                  :model-value="form[field.key] as FieldNumberValue"
-                  theme="normal"
-                  :min="field.min"
-                  :max="field.max"
-                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
-                  @update:model-value="(value: unknown) => (form[field.key] = value as FieldNumberValue)"
-                />
-                <t-textarea
-                  v-else-if="field.type === 'textarea'"
-                  :model-value="form[field.key] as FieldStringValue"
-                  :autosize="{ minRows: field.rows || 3, maxRows: Math.max(field.rows || 3, 6) }"
-                  :maxlength="field.maxlength"
-                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
-                  @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
-                />
-                <t-time-picker
-                  v-else-if="field.type === 'time'"
-                  :model-value="form[field.key] as string"
-                  clearable
-                  format="HH:mm:ss"
-                  :placeholder="field.placeholder || `${$t('settings.index.selectPrefix')}${field.label}`"
-                  @update:model-value="(value: string) => (form[field.key] = value)"
-                />
-                <t-color-picker
-                  v-else-if="field.type === 'color'"
-                  :model-value="String(form[field.key] ?? '') || undefined"
-                  :show-add-color="false"
-                  format="HEX"
-                  :clearable="true"
-                  @update:model-value="
-                    (value: unknown) => (form[field.key] = value === null ? '' : String(value ?? ''))
-                  "
-                />
-                <t-space v-else-if="field.type === 'radius'">
+                </span>
+                <p v-if="field.help" class="admin-field__desc">{{ field.help }}</p>
+                <div class="admin-field__control" :class="controlWidthClass(field)">
+                  <t-switch v-if="field.type === 'switch'" v-model="form[field.key]" />
                   <t-select
-                    :model-value="radiusPresetOf(form[field.key])"
-                    style="width: 180px"
-                    @update:model-value="(value: unknown) => applyRadiusPreset(field, value)"
+                    v-else-if="field.type === 'select'"
+                    v-model="form[field.key]"
+                    clearable
+                    :placeholder="field.placeholder"
                   >
                     <t-option
-                      v-for="option in RADIUS_PRESETS"
+                      v-for="option in field.options || []"
                       :key="String(option.value)"
                       :label="option.label"
                       :value="option.value"
                     />
-                    <t-option :label="RADIUS_CUSTOM_LABEL" :value="RADIUS_CUSTOM" />
                   </t-select>
                   <t-input-number
-                    v-if="radiusPresetOf(form[field.key]) === RADIUS_CUSTOM"
-                    style="width: 140px"
+                    v-else-if="field.type === 'number'"
                     :model-value="form[field.key] as FieldNumberValue"
                     theme="normal"
-                    :min="0"
-                    :max="24"
-                    :placeholder="`${$t('settings.index.inputPrefix')}${field.label}${$t('settings.index.pxSuffix')}`"
+                    :min="field.min"
+                    :max="field.max"
+                    :placeholder="field.placeholder"
                     @update:model-value="(value: unknown) => (form[field.key] = value as FieldNumberValue)"
                   />
-                </t-space>
-                <div v-else-if="field.type === 'image'" class="cover-image-selector" @click="selectImage(field)">
-                  <image-icon />
-                  <span v-if="form[field.key]" class="cover-image-selector__name">{{
-                    String(form[field.key]).split('/').pop()
-                  }}</span>
-                  <span v-else class="cover-image-selector__placeholder"
-                    >{{ $t('settings.index.clickToSelectPrefix') }}{{ field.label }}</span
-                  >
-                  <chevron-right-icon />
+                  <t-textarea
+                    v-else-if="field.type === 'textarea'"
+                    :model-value="form[field.key] as FieldStringValue"
+                    :autosize="{ minRows: field.rows || 3, maxRows: Math.max(field.rows || 3, 6) }"
+                    :maxlength="field.maxlength"
+                    :placeholder="field.placeholder"
+                    @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
+                  />
+                  <t-time-picker
+                    v-else-if="field.type === 'time'"
+                    :model-value="form[field.key] as string"
+                    clearable
+                    format="HH:mm:ss"
+                    :placeholder="field.placeholder"
+                    @update:model-value="(value: string) => (form[field.key] = value)"
+                  />
+                  <t-color-picker
+                    v-else-if="field.type === 'color'"
+                    :model-value="String(form[field.key] ?? '') || undefined"
+                    :show-add-color="false"
+                    format="HEX"
+                    :clearable="true"
+                    @update:model-value="
+                      (value: unknown) => (form[field.key] = value === null ? '' : String(value ?? ''))
+                    "
+                  />
+                  <div v-else-if="field.type === 'radius'" class="settings-radius-control">
+                    <t-select
+                      :model-value="radiusPresetOf(form[field.key])"
+                      @update:model-value="(value: unknown) => applyRadiusPreset(field, value)"
+                    >
+                      <t-option
+                        v-for="option in RADIUS_PRESETS"
+                        :key="String(option.value)"
+                        :label="option.label"
+                        :value="option.value"
+                      />
+                      <t-option :label="RADIUS_CUSTOM_LABEL" :value="RADIUS_CUSTOM" />
+                    </t-select>
+                    <t-input-number
+                      v-if="radiusPresetOf(form[field.key]) === RADIUS_CUSTOM"
+                      :model-value="form[field.key] as FieldNumberValue"
+                      theme="normal"
+                      :min="0"
+                      :max="24"
+                      @update:model-value="(value: unknown) => (form[field.key] = value as FieldNumberValue)"
+                    />
+                  </div>
+                  <div v-else-if="field.type === 'image'" class="cover-image-selector" @click="selectImage(field)">
+                    <image-icon />
+                    <span v-if="form[field.key]" class="cover-image-selector__name">{{
+                      String(form[field.key]).split('/').pop()
+                    }}</span>
+                    <span v-else class="cover-image-selector__placeholder">{{
+                      $t('settings.index.clickToSelectPrefix')
+                    }}</span>
+                    <chevron-right-icon />
+                  </div>
+                  <secret-input
+                    v-else-if="isSecretSettingField(field)"
+                    v-model="form[field.key]"
+                    :has-value="hasSettingSecretValue(field)"
+                    :placeholder="field.placeholder"
+                    :reset-key="settingSecretResetKey(field)"
+                    :can-reveal="canRevealSettingsSecret"
+                    :reveal="() => revealSettingSecret(field)"
+                    @edited-change="(value: boolean) => (settingsSecretEdited[settingSecretEditKey(field)] = value)"
+                    @reveal-error="
+                      (error: unknown) =>
+                        MessagePlugin.error(errorMessage(error, $t('settings.index.readSensitiveConfigFailed')))
+                    "
+                  />
+                  <t-input
+                    v-else
+                    :model-value="form[field.key] as FieldStringValue"
+                    :type="field.type === 'password' ? 'password' : 'text'"
+                    :maxlength="field.maxlength"
+                    :placeholder="field.placeholder"
+                    @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
+                  />
                 </div>
-                <secret-input
-                  v-else-if="isSecretSettingField(field)"
-                  v-model="form[field.key]"
-                  :has-value="hasSettingSecretValue(field)"
-                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
-                  :reset-key="settingSecretResetKey(field)"
-                  :can-reveal="canRevealSettingsSecret"
-                  :reveal="() => revealSettingSecret(field)"
-                  @edited-change="(value: boolean) => (settingsSecretEdited[settingSecretEditKey(field)] = value)"
-                  @reveal-error="
-                    (error: unknown) =>
-                      MessagePlugin.error(errorMessage(error, $t('settings.index.readSensitiveConfigFailed')))
-                  "
-                />
-                <t-input
-                  v-else
-                  :model-value="form[field.key] as FieldStringValue"
-                  :type="field.type === 'password' ? 'password' : 'text'"
-                  :maxlength="field.maxlength"
-                  :placeholder="field.placeholder || `${$t('settings.index.inputPrefix')}${field.label}`"
-                  @update:model-value="(value: FieldStringValue) => (form[field.key] = value)"
-                />
               </div>
-            </article>
-          </div>
+            </div>
+          </section>
         </t-form>
       </t-card>
 
@@ -158,9 +147,12 @@
 
         <section class="slides-section">
           <div class="slides-section-head">
-            <div>
+            <div class="slides-section-head__text">
               <h2>{{ $t('settings.index.slidesTitle') }}（{{ heroForm.slides.length }} / {{ maxSlides }}）</h2>
               <p>{{ $t('settings.index.slidesTip') }}</p>
+              <!-- 图片/视频的规则对每一项都成立，写在节头一次，不在每张卡里重复 -->
+              <p>{{ $t('settings.index.slideImageHint') }}</p>
+              <p>{{ $t('settings.index.slideVideoHint') }}</p>
             </div>
             <t-space>
               <t-button variant="outline" @click="resetSlidesToDefault">{{
@@ -204,112 +196,175 @@
             </div>
 
             <div class="slide-body">
-              <div class="slide-row">
-                <label class="slide-label">{{ $t('settings.index.slideTitle') }}</label>
-                <t-input
-                  v-model="slide.rail_title"
-                  maxlength="20"
-                  :placeholder="$t('settings.index.railTitlePlaceholder')"
-                  class="slide-field--sm"
-                />
-                <t-input
-                  v-model="slide.title"
-                  maxlength="80"
-                  :placeholder="$t('settings.index.mainTitlePlaceholder')"
-                  class="slide-field--lg"
-                />
-              </div>
-
-              <div class="slide-row">
-                <label class="slide-label">{{ $t('settings.index.slideButtons') }}</label>
-                <div class="slide-btn-group">
-                  <span class="slide-btn-group__tag">{{ $t('settings.index.primary') }}</span>
-                  <t-input
-                    v-model="slide.primary_text"
-                    maxlength="20"
-                    :placeholder="$t('settings.index.buttonTextPlaceholder')"
-                    class="slide-field--sm"
-                  />
-                  <t-input
-                    v-model="slide.primary_path"
-                    maxlength="255"
-                    :placeholder="$t('settings.index.jumpPathPlaceholder')"
-                    class="slide-field--lg"
-                  />
-                </div>
-                <div class="slide-btn-group">
-                  <span class="slide-btn-group__tag">{{ $t('settings.index.secondary') }}</span>
-                  <t-input
-                    v-model="slide.secondary_text"
-                    maxlength="20"
-                    :placeholder="$t('settings.index.buttonTextPlaceholder')"
-                    class="slide-field--sm"
-                  />
-                  <t-input
-                    v-model="slide.secondary_path"
-                    maxlength="255"
-                    :placeholder="$t('settings.index.jumpPathPlaceholder')"
-                    class="slide-field--lg"
-                  />
-                </div>
-              </div>
-
-              <div class="slide-row">
-                <label class="slide-label">{{ $t('settings.index.slideDescription') }}</label>
-                <t-textarea
-                  v-model="slide.desc"
-                  :autosize="{ minRows: 2, maxRows: 4 }"
-                  maxlength="300"
-                  :placeholder="$t('settings.index.slideDescPlaceholder')"
-                  class="slide-field--full"
-                />
-              </div>
-
-              <div class="slide-row">
-                <label class="slide-label">{{ $t('settings.index.slideImage') }}</label>
-                <div class="slide-image-field">
-                  <div class="slide-image-preview">
-                    <img
-                      v-if="slide.image"
-                      :src="resolveAssetUrl(slide.image)"
-                      :alt="slide.rail_title || $t('settings.index.slideBackgroundImage')"
+              <div class="admin-field-grid">
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldRailTitle') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="slide.rail_title"
+                      maxlength="20"
+                      :placeholder="$t('settings.index.railTitlePlaceholder')"
                     />
-                    <span v-else class="slide-image-preview__empty">{{ $t('settings.index.notSet') }}</span>
                   </div>
-                  <div class="slide-image-selector" @click="openHeroImageDrawer(index)">
-                    <image-icon />
-                    <span v-if="slide.image" class="slide-video-selector__name">{{
-                      slide.image.split('/').pop()
+                </div>
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldTitle') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="slide.title"
+                      maxlength="80"
+                      :placeholder="$t('settings.index.mainTitlePlaceholder')"
+                    />
+                  </div>
+                </div>
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldPrimaryText') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="slide.primary_text"
+                      maxlength="20"
+                      :placeholder="$t('settings.index.buttonTextPlaceholder')"
+                    />
+                  </div>
+                </div>
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldPrimaryPath') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="slide.primary_path"
+                      maxlength="255"
+                      :placeholder="$t('settings.index.jumpPathPlaceholder')"
+                    />
+                  </div>
+                </div>
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldSecondaryText') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="slide.secondary_text"
+                      maxlength="20"
+                      :placeholder="$t('settings.index.buttonTextPlaceholder')"
+                    />
+                  </div>
+                </div>
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldSecondaryPath') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="slide.secondary_path"
+                      maxlength="255"
+                      :placeholder="$t('settings.index.jumpPathPlaceholder')"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-field admin-field--full">
+                <span class="admin-field__label">
+                  <span class="admin-field__label-scope">{{
+                    $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                  }}</span>
+                  {{ $t('settings.index.heroFieldDesc') }}
+                </span>
+                <div class="admin-field__control">
+                  <t-textarea
+                    v-model="slide.desc"
+                    :autosize="{ minRows: 2, maxRows: 4 }"
+                    maxlength="300"
+                    :placeholder="$t('settings.index.slideDescPlaceholder')"
+                  />
+                </div>
+              </div>
+
+              <div class="admin-field admin-field--full">
+                <span class="admin-field__label">
+                  <span class="admin-field__label-scope">{{
+                    $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                  }}</span>
+                  {{ $t('settings.index.slideImage') }}
+                </span>
+                <div class="admin-field__control">
+                  <div class="slide-image-field">
+                    <div class="slide-image-preview">
+                      <img
+                        v-if="slide.image"
+                        :src="resolveAssetUrl(slide.image)"
+                        :alt="slide.rail_title || $t('settings.index.slideBackgroundImage')"
+                      />
+                      <span v-else class="slide-image-preview__empty">{{ $t('settings.index.notSet') }}</span>
+                    </div>
+                    <div class="slide-image-selector" @click="openHeroImageDrawer(index)">
+                      <image-icon />
+                      <span v-if="slide.image" class="slide-video-selector__name">{{
+                        slide.image.split('/').pop()
+                      }}</span>
+                      <span v-else class="slide-video-selector__placeholder">{{
+                        $t('settings.index.clickToSelectImage')
+                      }}</span>
+                      <chevron-right-icon />
+                    </div>
+                    <t-button
+                      v-if="slide.image"
+                      variant="text"
+                      size="small"
+                      theme="danger"
+                      @click="clearSlideImage(index)"
+                    >
+                      {{ $t('settings.index.clear') }}
+                    </t-button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-field admin-field--full">
+                <span class="admin-field__label">
+                  <span class="admin-field__label-scope">{{
+                    $t('settings.index.slideIndexPrefix', { index: index + 1 })
+                  }}</span>
+                  {{ $t('settings.index.slideVideo') }}
+                </span>
+                <div class="admin-field__control">
+                  <div class="slide-video-selector" @click="openVideoDrawer(index)">
+                    <video-icon />
+                    <span v-if="slide.video" class="slide-video-selector__name">{{
+                      videoDisplayName(slide.video)
                     }}</span>
                     <span v-else class="slide-video-selector__placeholder">{{
-                      $t('settings.index.clickToSelectImage')
+                      $t('settings.index.clickToSelectVideo')
                     }}</span>
                     <chevron-right-icon />
                   </div>
-                  <t-button
-                    v-if="slide.image"
-                    variant="text"
-                    size="small"
-                    theme="danger"
-                    @click="clearSlideImage(index)"
-                  >
-                    {{ $t('settings.index.clear') }}
-                  </t-button>
                 </div>
-                <p class="slide-row__hint">{{ $t('settings.index.slideImageHint') }}</p>
-              </div>
-
-              <div class="slide-row">
-                <label class="slide-label">{{ $t('settings.index.slideVideo') }}</label>
-                <div class="slide-video-selector" @click="openVideoDrawer(index)">
-                  <video-icon />
-                  <span v-if="slide.video" class="slide-video-selector__name">{{ videoDisplayName(slide.video) }}</span>
-                  <span v-else class="slide-video-selector__placeholder">{{
-                    $t('settings.index.clickToSelectVideo')
-                  }}</span>
-                  <chevron-right-icon />
-                </div>
-                <p class="slide-row__hint">{{ $t('settings.index.slideVideoHint') }}</p>
               </div>
             </div>
           </article>
@@ -317,7 +372,7 @@
 
         <section class="slides-section">
           <div class="slides-section-head">
-            <div>
+            <div class="slides-section-head__text">
               <h2>{{ $t('settings.index.featuresTitle') }}（{{ heroForm.features.length }} / {{ maxFeatures }}）</h2>
               <p>{{ $t('settings.index.featuresTip') }}</p>
             </div>
@@ -334,36 +389,97 @@
 
           <div class="feature-list">
             <article v-for="(feature, index) in heroForm.features" :key="`feature-${index}`" class="feature-card">
-              <div class="feature-card-sort">
-                <t-button variant="text" :disabled="index === 0" @click="moveFeature(index, -1)">
-                  <template #icon><arrow-up-icon /></template>
-                </t-button>
-                <t-button
-                  variant="text"
-                  :disabled="index === heroForm.features.length - 1"
-                  @click="moveFeature(index, 1)"
-                >
-                  <template #icon><arrow-down-icon /></template>
-                </t-button>
+              <div class="feature-card-head">
+                <span class="slide-card-head__index">{{ index + 1 }}</span>
+                <div class="slide-card-head__actions">
+                  <t-button variant="text" size="small" :disabled="index === 0" @click="moveFeature(index, -1)">
+                    <template #icon><arrow-up-icon /></template>
+                  </t-button>
+                  <t-button
+                    variant="text"
+                    size="small"
+                    :disabled="index === heroForm.features.length - 1"
+                    @click="moveFeature(index, 1)"
+                  >
+                    <template #icon><arrow-down-icon /></template>
+                  </t-button>
+                  <t-button
+                    theme="danger"
+                    variant="text"
+                    size="small"
+                    :disabled="heroForm.features.length <= 1"
+                    @click="removeFeature(index)"
+                  >
+                    <template #icon><delete-icon /></template>
+                  </t-button>
+                </div>
               </div>
-              <t-input v-model="feature.kicker" maxlength="20" :placeholder="$t('settings.index.kickerPlaceholder')" />
-              <t-input v-model="feature.title" maxlength="50" :placeholder="$t('settings.index.titlePlaceholder')" />
-              <t-textarea
-                v-model="feature.desc"
-                :autosize="{ minRows: 2, maxRows: 3 }"
-                maxlength="120"
-                :placeholder="$t('settings.index.descriptionPlaceholder')"
-              />
-              <t-input v-model="feature.path" maxlength="255" :placeholder="$t('settings.index.jumpPathOptional')" />
-              <t-button
-                theme="danger"
-                variant="text"
-                :disabled="heroForm.features.length <= 1"
-                @click="removeFeature(index)"
-              >
-                <template #icon><delete-icon /></template>
-                {{ $t('settings.index.delete') }}
-              </t-button>
+
+              <div class="admin-field-grid">
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.featureIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldKicker') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="feature.kicker"
+                      maxlength="20"
+                      :placeholder="$t('settings.index.kickerPlaceholder')"
+                    />
+                  </div>
+                </div>
+                <div class="admin-field">
+                  <span class="admin-field__label">
+                    <span class="admin-field__label-scope">{{
+                      $t('settings.index.featureIndexPrefix', { index: index + 1 })
+                    }}</span>
+                    {{ $t('settings.index.heroFieldTitle') }}
+                  </span>
+                  <div class="admin-field__control">
+                    <t-input
+                      v-model="feature.title"
+                      maxlength="50"
+                      :placeholder="$t('settings.index.titlePlaceholder')"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div class="admin-field admin-field--full">
+                <span class="admin-field__label">
+                  <span class="admin-field__label-scope">{{
+                    $t('settings.index.featureIndexPrefix', { index: index + 1 })
+                  }}</span>
+                  {{ $t('settings.index.heroFieldDesc') }}
+                </span>
+                <div class="admin-field__control">
+                  <t-textarea
+                    v-model="feature.desc"
+                    :autosize="{ minRows: 2, maxRows: 3 }"
+                    maxlength="120"
+                    :placeholder="$t('settings.index.descriptionPlaceholder')"
+                  />
+                </div>
+              </div>
+
+              <div class="admin-field admin-field--full">
+                <span class="admin-field__label">
+                  <span class="admin-field__label-scope">{{
+                    $t('settings.index.featureIndexPrefix', { index: index + 1 })
+                  }}</span>
+                  {{ $t('settings.index.jumpPathOptional') }}
+                </span>
+                <div class="admin-field__control">
+                  <t-input
+                    v-model="feature.path"
+                    maxlength="255"
+                    :placeholder="$t('settings.index.jumpPathPlaceholder')"
+                  />
+                </div>
+              </div>
             </article>
           </div>
         </section>
@@ -377,7 +493,6 @@
       </div>
     </template>
 
-    <input ref="fileInputRef" class="hidden-file-input" type="file" accept="image/*" @change="handleImageFileChange" />
     <input
       ref="mediaDrawerUploadRef"
       class="hidden-file-input"
@@ -514,7 +629,7 @@ import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminSettings' });
 
-type SettingsTab = 'referral' | 'finance' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
+type SettingsTab = 'referral' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
 type FieldType =
   | 'input'
   | 'password'
@@ -587,19 +702,17 @@ interface SettingField {
   rows?: number;
   wide?: boolean;
   required?: boolean;
-  requiredWhen?: (_model: Record<string, FieldValue>) => boolean;
   pattern?: RegExp;
   patternMessage?: string;
-  preview?: 'image';
   maxlength?: number;
   placeholder?: string;
 }
 
 interface SettingSection {
+  key: string;
   title: string;
   description?: string;
   fields: SettingField[];
-  anchor?: string;
 }
 
 interface SettingsConfig {
@@ -614,12 +727,10 @@ const settingsLoading = ref(false);
 const settingsSaving = ref(false);
 const heroLoading = ref(false);
 const heroSaving = ref(false);
-const activeSection = ref('');
 const form = reactive<Record<string, FieldValue>>({});
 const settingsGroupCache = reactive<Record<string, Record<string, unknown>>>({});
 const settingsMetaCache = reactive<Record<string, Record<string, SettingItem>>>({});
 const settingsSecretEdited = reactive<Record<string, boolean>>({});
-const fileInputRef = ref<HTMLInputElement>();
 const pendingImageField = ref<SettingField | null>(null);
 // 媒体抽屉的第二个落点：首页轮播项的背景图。-1 表示当前目标是设置项字段。
 const pendingHeroImageIndex = ref(-1);
@@ -654,394 +765,22 @@ const automationScheduleModeOptions: FieldOption[] = [
   { label: t('settings.index.daily'), value: 'daily' },
 ];
 
-const tabGroups: Array<{ group: string; label: string; tabs: Array<{ label: string; value: SettingsTab }> }> = [
-  {
-    group: 'config',
-    label: t('settings.index.sectionBase'),
-    tabs: [
-      { label: t('settings.index.navReferral'), value: 'referral' },
-      { label: t('settings.index.navAutomation'), value: 'automation' },
-      { label: t('settings.index.navLogArchive'), value: 'log_archive' },
-      { label: t('settings.index.navFinance'), value: 'finance' },
-    ],
-  },
-  {
-    group: 'site',
-    label: t('settings.index.sectionSite'),
-    tabs: [
-      { label: t('settings.index.navSiteBasic'), value: 'site_basic' },
-      { label: t('settings.index.navSiteHero'), value: 'site_hero' },
-    ],
-  },
-];
-const tabOptions = tabGroups.flatMap((g) => g.tabs);
+/**
+ * 本 SFC 被多个菜单路由复用，每页一个 tab（路由 meta.settingsTab 决定显示哪一套字段）。
+ * 这里只维护合法取值，供 ?tab= 查询参数与路由 meta 归一，不承担导航渲染。
+ */
+const SETTINGS_TABS: SettingsTab[] = ['site_basic', 'site_hero', 'automation', 'log_archive', 'referral'];
 
 const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
-  finance: {
-    group: 'finance',
-    title: t('settings.index.navFinance'),
-    description: t('settings.index.financeDesc'),
-    sections: [
-      {
-        title: t('settings.index.topUp'),
-        fields: [
-          {
-            key: 'recharge_requires_verification',
-            label: t('settings.index.topUpRequireVerification'),
-            type: 'switch',
-            default: true,
-            help: t('settings.index.topUpVerificationHint'),
-          },
-        ],
-      },
-    ],
-  },
-  referral: {
-    group: 'referral',
-    title: t('settings.index.referralConfig'),
-    description: t('settings.index.referralDesc'),
-    sections: [
-      {
-        title: t('settings.index.rewardRules'),
-        fields: [
-          { key: 'enabled', label: t('settings.index.referralEnabled'), type: 'switch', default: true },
-          { key: 'reward_rate', label: t('settings.index.rewardRate'), type: 'number', default: 10, min: 0, max: 100 },
-          {
-            key: 'reward_freeze_days',
-            label: t('settings.index.rewardFreezeDays'),
-            type: 'number',
-            default: 4,
-            min: 0,
-            max: 365,
-          },
-          { key: 'withdraw_min_amount', label: t('settings.index.withdrawMin'), type: 'number', default: 20, min: 0 },
-        ],
-      },
-    ],
-  },
-  automation: {
-    group: 'automation',
-    title: t('settings.index.automationConfig'),
-    description: t('settings.index.automationDesc'),
-    sections: [
-      {
-        title: t('settings.index.serviceLifecycle'),
-        fields: [
-          {
-            key: 'expire_suspend_enabled',
-            label: t('settings.index.expireSuspendEnabled'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'expire_suspend_after_days',
-            label: t('settings.index.expireSuspendDays'),
-            type: 'number',
-            default: 0,
-            min: 0,
-            max: 365,
-          },
-          {
-            key: 'expire_suspend_notify_enabled',
-            label: t('settings.index.suspendNotify'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'expire_unsuspend_notify_enabled',
-            label: t('settings.index.resumeNotify'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'expire_terminate_enabled',
-            label: t('settings.index.terminateEnabled'),
-            type: 'switch',
-            default: false,
-          },
-          {
-            key: 'expire_terminate_after_days',
-            label: t('settings.index.terminateDays'),
-            type: 'number',
-            default: 7,
-            min: 1,
-            max: 365,
-          },
-          {
-            key: 'service_lifecycle_schedule_mode',
-            label: t('settings.index.taskInterval'),
-            type: 'select',
-            default: 'every_fifteen_minutes',
-            options: automationScheduleModeOptions,
-          },
-          {
-            key: 'service_lifecycle_schedule_time',
-            label: t('settings.index.runAt'),
-            type: 'time',
-            default: '00:00:00',
-            placeholder: t('settings.index.minutePlaceholder'),
-            pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: t('settings.index.minutePattern'),
-          },
-        ],
-      },
-      {
-        title: t('settings.index.billingReminder'),
-        fields: [
-          { key: 'renew_notice_enabled', label: t('settings.index.renewNoticeEnabled'), type: 'switch', default: true },
-          {
-            key: 'renew_create_invoice_enabled',
-            label: t('settings.index.renewInvoiceEnabled'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'invoice_unpaid_reminder_enabled',
-            label: t('settings.index.unpaidReminderEnabled'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'invoice_unpaid_before_due_days',
-            label: t('settings.index.remindBeforeDueDays'),
-            type: 'number',
-            default: 1,
-            min: 0,
-            max: 30,
-          },
-          {
-            key: 'invoice_overdue_reminder_days',
-            label: t('settings.index.overdueRemindDays'),
-            type: 'input',
-            default: '1,3,5',
-            wide: true,
-            pattern: /^\d+(,\d+)*$/,
-            patternMessage: t('settings.index.overdueDaysPattern'),
-          },
-          {
-            key: 'invoice_overdue_after_days',
-            label: t('settings.index.overdueAfterDays'),
-            type: 'number',
-            default: 0,
-            min: 0,
-            max: 365,
-          },
-          {
-            key: 'billing_maintenance_schedule_mode',
-            label: t('settings.index.taskInterval'),
-            type: 'select',
-            default: 'hourly',
-            options: automationScheduleModeOptions,
-          },
-          {
-            key: 'billing_maintenance_schedule_time',
-            label: t('settings.index.runAt'),
-            type: 'time',
-            default: '00:00:00',
-            placeholder: t('settings.index.minutePlaceholder'),
-            pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: t('settings.index.minutePattern'),
-          },
-        ],
-      },
-      {
-        title: t('settings.index.productDescriptionSync'),
-        fields: [
-          {
-            key: 'product_description_sync_schedule_mode',
-            label: t('settings.index.taskInterval'),
-            type: 'select',
-            default: 'daily',
-            options: automationScheduleModeOptions,
-          },
-          {
-            key: 'product_description_sync_schedule_time',
-            label: t('settings.index.runAt'),
-            type: 'time',
-            default: '03:45:00',
-            placeholder: t('settings.index.minutePlaceholder'),
-            pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: t('settings.index.minutePattern'),
-          },
-        ],
-      },
-      {
-        title: t('settings.index.ticketCleanup'),
-        fields: [
-          {
-            key: 'ticket_auto_close_enabled',
-            label: t('settings.index.ticketAutoClose'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'ticket_auto_close_after_hours',
-            label: t('settings.index.ticketAutoCloseHours'),
-            type: 'number',
-            default: 48,
-            min: 1,
-            max: 720,
-          },
-          {
-            key: 'pending_order_cleanup_enabled',
-            label: t('settings.index.pendingOrderCleanup'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'pending_order_cleanup_after_hours',
-            label: t('settings.index.pendingOrderKeepHours'),
-            type: 'number',
-            default: 1,
-            min: 1,
-            max: 720,
-          },
-          {
-            key: 'pending_recharge_cleanup_enabled',
-            label: t('settings.index.pendingRechargeCleanup'),
-            type: 'switch',
-            default: true,
-          },
-          {
-            key: 'pending_recharge_cleanup_after_days',
-            label: t('settings.index.pendingRechargeKeepDays'),
-            type: 'number',
-            default: 3,
-            min: 0,
-            max: 365,
-          },
-          {
-            key: 'ticket_auto_close_schedule_mode',
-            label: t('settings.index.ticketTaskInterval'),
-            type: 'select',
-            default: 'hourly',
-            options: automationScheduleModeOptions,
-          },
-          {
-            key: 'ticket_auto_close_schedule_time',
-            label: t('settings.index.ticketRunAt'),
-            type: 'time',
-            default: '00:00:00',
-            placeholder: t('settings.index.minutePlaceholder'),
-            pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: t('settings.index.minutePattern'),
-          },
-          {
-            key: 'order_cleanup_schedule_mode',
-            label: t('settings.index.cleanupInterval'),
-            type: 'select',
-            default: 'every_fifteen_minutes',
-            options: automationScheduleModeOptions,
-          },
-          {
-            key: 'order_cleanup_schedule_time',
-            label: t('settings.index.cleanupRunAt'),
-            type: 'time',
-            default: '00:00:00',
-            placeholder: t('settings.index.minutePlaceholder'),
-            pattern: /^\d{2}:(00|15|30|45):00$/,
-            patternMessage: t('settings.index.minutePattern'),
-          },
-          {
-            key: 'supplier_balance_log_retention_days',
-            label: t('settings.index.upstreamLogRetentionDays'),
-            type: 'number',
-            default: 30,
-            min: 1,
-            max: 365,
-            help: t('settings.index.upstreamLogRetentionHint'),
-          },
-        ],
-      },
-      {
-        title: t('settings.index.upstreamBalanceAlert'),
-        fields: [
-          {
-            key: 'supplier_low_balance_alert_repeat_hours',
-            label: t('settings.index.balanceAlertRepeatHours'),
-            type: 'number',
-            default: 24,
-            min: 1,
-            max: 720,
-            help: t('settings.index.balanceAlertHint'),
-          },
-        ],
-      },
-    ],
-  },
-  log_archive: {
-    group: 'log_archive',
-    title: t('settings.index.logArchiveConfig'),
-    description: t('settings.index.logArchiveDesc'),
-    sections: [
-      {
-        title: t('settings.index.runtimeParams'),
-        fields: [
-          {
-            key: 'pt_archiver_binary',
-            label: t('settings.index.archiverBinaryPath'),
-            type: 'input',
-            default: '/usr/bin/pt-archiver',
-            required: true,
-            maxlength: 255,
-          },
-          {
-            key: 'pt_archiver_defaults_file',
-            label: t('settings.index.archiverConfigFile'),
-            type: 'input',
-            default: '/etc/turaidc/pt-archiver.cnf',
-            required: true,
-            maxlength: 255,
-          },
-          { key: 'concurrency', label: t('settings.index.maxConcurrency'), type: 'number', default: 2, min: 1, max: 8 },
-          {
-            key: 'batch_size',
-            label: t('settings.index.batchSize'),
-            type: 'number',
-            default: 1000,
-            min: 100,
-            max: 10000,
-          },
-          {
-            key: 'sleep_seconds',
-            label: t('settings.index.batchInterval'),
-            type: 'number',
-            default: 1,
-            min: 0,
-            max: 60,
-          },
-        ],
-      },
-      {
-        title: t('settings.index.retentionPolicy'),
-        fields: [
-          {
-            key: 'retention_days',
-            label: t('settings.index.logRetentionDays'),
-            type: 'number',
-            default: 30,
-            min: 1,
-            max: 3650,
-          },
-          {
-            key: 'file_retention_days',
-            label: t('settings.index.archiveRetentionDays'),
-            type: 'number',
-            default: 180,
-            min: 1,
-            max: 3650,
-          },
-        ],
-      },
-    ],
-  },
   site_basic: {
     group: 'basic',
-    title: t('settings.index.navSiteBasic'),
+    title: t('settings.index.siteBasicTitle'),
     description: t('settings.index.siteBasicDesc'),
     sections: [
       {
-        title: t('settings.index.siteInfo'),
+        key: 'brand',
+        title: t('settings.index.sectionBrand'),
+        description: t('settings.index.sectionBrandDesc'),
         fields: [
           {
             key: 'site_name',
@@ -1050,6 +789,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '',
             maxlength: 50,
             placeholder: t('settings.index.siteNamePlaceholder'),
+            help: t('settings.index.siteNameHint'),
           },
           {
             key: 'browser_title',
@@ -1058,6 +798,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '',
             maxlength: 80,
             placeholder: t('settings.index.browserTitlePlaceholder'),
+            help: t('settings.index.browserTitleHint'),
           },
           {
             key: 'site_logo',
@@ -1066,6 +807,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '',
             maxlength: 255,
             placeholder: '/branding/logo.png',
+            help: t('settings.index.siteLogoHint'),
           },
           {
             key: 'site_favicon',
@@ -1074,6 +816,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             default: '',
             maxlength: 255,
             placeholder: '/branding/favicon-32.png',
+            help: t('settings.index.siteFaviconHint'),
           },
           {
             key: 'client_console_icon',
@@ -1103,14 +846,20 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             max: 24,
             help: t('settings.index.radiusHint'),
           },
-          // 商品展示方式、卡片库存、机型对比与版心已移到独立页面「商品展示」，
-          // 那里按「展示形态 / 卡片样式 / 独立配置页 / 页面版心」分段，不再挤在这张表单里。
+        ],
+      },
+      {
+        key: 'contact',
+        title: t('settings.index.sectionContact'),
+        description: t('settings.index.sectionContactDesc'),
+        fields: [
           {
             key: 'service_phone',
             label: t('settings.index.officialQqGroup'),
             type: 'input',
             default: '',
             maxlength: 40,
+            help: t('settings.index.officialQqGroupHint'),
           },
           {
             key: 'service_email',
@@ -1136,6 +885,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             type: 'image',
             default: '',
             maxlength: 255,
+            help: t('settings.index.supportQrCodeHint'),
           },
           {
             key: 'support_group_link',
@@ -1143,7 +893,16 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             type: 'input',
             default: '',
             maxlength: 255,
+            placeholder: 'https://your-domain.com/group',
+            help: t('settings.index.supportGroupLinkHint'),
           },
+        ],
+      },
+      {
+        key: 'compliance',
+        title: t('settings.index.sectionCompliance'),
+        description: t('settings.index.sectionComplianceDesc'),
+        fields: [
           {
             key: 'icp_record',
             label: t('settings.index.icpNumber'),
@@ -1162,11 +921,28 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             placeholder: t('settings.index.licenseNumberPlaceholder'),
             help: t('settings.index.footerRowHint'),
           },
-          { key: 'terms_url', label: t('settings.index.termsUrl'), type: 'input', default: '', maxlength: 255 },
-          { key: 'privacy_url', label: t('settings.index.privacyUrl'), type: 'input', default: '', maxlength: 255 },
+          {
+            key: 'terms_url',
+            label: t('settings.index.termsUrl'),
+            type: 'input',
+            default: '',
+            maxlength: 255,
+            placeholder: 'https://your-domain.com/terms',
+            help: t('settings.index.legalUrlHint'),
+          },
+          {
+            key: 'privacy_url',
+            label: t('settings.index.privacyUrl'),
+            type: 'input',
+            default: '',
+            maxlength: 255,
+            placeholder: 'https://your-domain.com/privacy',
+            help: t('settings.index.legalUrlHint'),
+          },
         ],
       },
       {
+        key: 'notification',
         title: t('settings.index.notificationMaster'),
         description: t('settings.index.notificationDesc'),
         fields: [
@@ -1190,17 +966,408 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
       },
     ],
   },
+  referral: {
+    group: 'referral',
+    title: t('settings.index.referralTitle'),
+    description: t('settings.index.referralDesc'),
+    sections: [
+      {
+        key: 'topup',
+        title: t('settings.index.sectionTopUp'),
+        // 账户充值属于「钱怎么进来」，与推荐返利同属交易侧配置，因此并到这一页，
+        // 不再单独占一个只有单个开关的 tab（那个 tab 连菜单入口都没有）。
+        fields: [
+          {
+            key: 'recharge_requires_verification',
+            group: 'finance',
+            label: t('settings.index.topUpRequireVerification'),
+            type: 'switch',
+            default: true,
+            help: t('settings.index.topUpVerificationHint'),
+          },
+        ],
+      },
+      {
+        key: 'reward',
+        title: t('settings.index.sectionReferral'),
+        fields: [
+          {
+            key: 'enabled',
+            label: t('settings.index.referralEnabled'),
+            type: 'switch',
+            default: true,
+            help: t('settings.index.referralEnabledHint'),
+          },
+          {
+            key: 'reward_rate',
+            label: t('settings.index.rewardRate'),
+            type: 'number',
+            default: 10,
+            min: 0,
+            max: 100,
+            help: t('settings.index.rewardRateHint'),
+          },
+          {
+            key: 'reward_freeze_days',
+            label: t('settings.index.rewardFreezeDays'),
+            type: 'number',
+            default: 4,
+            min: 0,
+            max: 365,
+            help: t('settings.index.rewardFreezeDaysHint'),
+          },
+          {
+            key: 'withdraw_min_amount',
+            label: t('settings.index.withdrawMin'),
+            type: 'number',
+            default: 20,
+            min: 0,
+            help: t('settings.index.withdrawMinHint'),
+          },
+        ],
+      },
+    ],
+  },
+  automation: {
+    group: 'automation',
+    title: t('settings.index.automationTitle'),
+    description: t('settings.index.automationDesc'),
+    sections: [
+      {
+        key: 'lifecycle',
+        title: t('settings.index.serviceLifecycle'),
+        description: t('settings.index.serviceLifecycleDesc'),
+        fields: [
+          {
+            key: 'expire_suspend_enabled',
+            label: t('settings.index.expireSuspendEnabled'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'expire_suspend_after_days',
+            label: t('settings.index.expireSuspendDays'),
+            type: 'number',
+            default: 0,
+            min: 0,
+            max: 365,
+            help: t('settings.index.expireSuspendDaysHint'),
+          },
+          {
+            key: 'expire_suspend_notify_enabled',
+            label: t('settings.index.suspendNotify'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'expire_unsuspend_notify_enabled',
+            label: t('settings.index.resumeNotify'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'expire_terminate_enabled',
+            label: t('settings.index.terminateEnabled'),
+            type: 'switch',
+            default: false,
+          },
+          {
+            key: 'expire_terminate_after_days',
+            label: t('settings.index.terminateDays'),
+            type: 'number',
+            default: 7,
+            min: 1,
+            max: 365,
+            help: t('settings.index.terminateDaysHint'),
+          },
+          {
+            key: 'service_lifecycle_schedule_mode',
+            label: t('settings.index.lifecycleTaskInterval'),
+            type: 'select',
+            default: 'every_fifteen_minutes',
+            options: automationScheduleModeOptions,
+            help: t('settings.index.scheduleModeHint'),
+          },
+          {
+            key: 'service_lifecycle_schedule_time',
+            label: t('settings.index.lifecycleTaskRunAt'),
+            type: 'time',
+            default: '00:00:00',
+            placeholder: t('settings.index.minutePlaceholder'),
+            help: t('settings.index.scheduleTimeHint'),
+            pattern: /^\d{2}:(00|15|30|45):00$/,
+            patternMessage: t('settings.index.minutePattern'),
+          },
+        ],
+      },
+      {
+        key: 'billing',
+        title: t('settings.index.billingReminder'),
+        description: t('settings.index.billingReminderDesc'),
+        fields: [
+          { key: 'renew_notice_enabled', label: t('settings.index.renewNoticeEnabled'), type: 'switch', default: true },
+          {
+            key: 'renew_create_invoice_enabled',
+            label: t('settings.index.renewInvoiceEnabled'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'invoice_unpaid_reminder_enabled',
+            label: t('settings.index.unpaidReminderEnabled'),
+            type: 'switch',
+            default: true,
+          },
+          {
+            key: 'invoice_unpaid_before_due_days',
+            label: t('settings.index.remindBeforeDueDays'),
+            type: 'number',
+            default: 1,
+            min: 0,
+            max: 30,
+            help: t('settings.index.remindBeforeDueDaysHint'),
+          },
+          {
+            key: 'invoice_overdue_reminder_days',
+            label: t('settings.index.overdueRemindDays'),
+            type: 'input',
+            default: '1,3,5',
+            wide: true,
+            help: t('settings.index.overdueRemindDaysHint'),
+            pattern: /^\d+(,\d+)*$/,
+            patternMessage: t('settings.index.overdueDaysPattern'),
+          },
+          {
+            key: 'invoice_overdue_after_days',
+            label: t('settings.index.overdueAfterDays'),
+            type: 'number',
+            default: 0,
+            min: 0,
+            max: 365,
+            help: t('settings.index.overdueAfterDaysHint'),
+          },
+          {
+            key: 'billing_maintenance_schedule_mode',
+            label: t('settings.index.billingTaskInterval'),
+            type: 'select',
+            default: 'hourly',
+            options: automationScheduleModeOptions,
+            help: t('settings.index.scheduleModeHint'),
+          },
+          {
+            key: 'billing_maintenance_schedule_time',
+            label: t('settings.index.billingTaskRunAt'),
+            type: 'time',
+            default: '00:00:00',
+            placeholder: t('settings.index.minutePlaceholder'),
+            help: t('settings.index.scheduleTimeHint'),
+            pattern: /^\d{2}:(00|15|30|45):00$/,
+            patternMessage: t('settings.index.minutePattern'),
+          },
+        ],
+      },
+      {
+        key: 'product_description_sync',
+        title: t('settings.index.productDescriptionSync'),
+        description: t('settings.index.productDescriptionSyncDesc'),
+        fields: [
+          {
+            key: 'product_description_sync_schedule_mode',
+            label: t('settings.index.syncTaskInterval'),
+            type: 'select',
+            default: 'daily',
+            options: automationScheduleModeOptions,
+            help: t('settings.index.scheduleModeHint'),
+          },
+          {
+            key: 'product_description_sync_schedule_time',
+            label: t('settings.index.syncTaskRunAt'),
+            type: 'time',
+            default: '03:45:00',
+            placeholder: t('settings.index.minutePlaceholder'),
+            help: t('settings.index.scheduleTimeHint'),
+            pattern: /^\d{2}:(00|15|30|45):00$/,
+            patternMessage: t('settings.index.minutePattern'),
+          },
+        ],
+      },
+      {
+        key: 'ticket_cleanup',
+        title: t('settings.index.ticketCleanup'),
+        description: t('settings.index.ticketCleanupDesc'),
+        fields: [
+          {
+            key: 'ticket_auto_close_enabled',
+            label: t('settings.index.ticketAutoClose'),
+            type: 'switch',
+            default: true,
+            help: t('settings.index.ticketAutoCloseHint'),
+          },
+          {
+            key: 'ticket_auto_close_after_hours',
+            label: t('settings.index.ticketAutoCloseHours'),
+            type: 'number',
+            default: 48,
+            min: 1,
+            max: 720,
+            help: t('settings.index.ticketAutoCloseHoursHint'),
+          },
+          {
+            key: 'ticket_auto_close_schedule_mode',
+            label: t('settings.index.ticketTaskInterval'),
+            type: 'select',
+            default: 'hourly',
+            options: automationScheduleModeOptions,
+            help: t('settings.index.scheduleModeHint'),
+          },
+          {
+            key: 'ticket_auto_close_schedule_time',
+            label: t('settings.index.ticketRunAt'),
+            type: 'time',
+            default: '00:00:00',
+            placeholder: t('settings.index.minutePlaceholder'),
+            help: t('settings.index.scheduleTimeHint'),
+            pattern: /^\d{2}:(00|15|30|45):00$/,
+            patternMessage: t('settings.index.minutePattern'),
+          },
+          {
+            key: 'order_cleanup_schedule_mode',
+            label: t('settings.index.cleanupInterval'),
+            type: 'select',
+            default: 'every_fifteen_minutes',
+            options: automationScheduleModeOptions,
+            help: t('settings.index.cleanupIntervalHint'),
+          },
+          {
+            key: 'order_cleanup_schedule_time',
+            label: t('settings.index.cleanupRunAt'),
+            type: 'time',
+            default: '00:00:00',
+            placeholder: t('settings.index.minutePlaceholder'),
+            help: t('settings.index.scheduleTimeHint'),
+            pattern: /^\d{2}:(00|15|30|45):00$/,
+            patternMessage: t('settings.index.minutePattern'),
+          },
+        ],
+      },
+      {
+        key: 'upstream',
+        title: t('settings.index.upstreamBalanceAlert'),
+        description: t('settings.index.upstreamBalanceAlertDesc'),
+        fields: [
+          {
+            key: 'supplier_balance_log_retention_days',
+            label: t('settings.index.upstreamLogRetentionDays'),
+            type: 'number',
+            default: 30,
+            min: 1,
+            max: 365,
+            help: t('settings.index.upstreamLogRetentionHint'),
+          },
+          {
+            key: 'supplier_low_balance_alert_repeat_hours',
+            label: t('settings.index.balanceAlertRepeatHours'),
+            type: 'number',
+            default: 24,
+            min: 1,
+            max: 720,
+            wide: true,
+            help: t('settings.index.balanceAlertHint'),
+          },
+        ],
+      },
+    ],
+  },
+  log_archive: {
+    group: 'log_archive',
+    title: t('settings.index.logArchiveTitle'),
+    description: t('settings.index.logArchiveDesc'),
+    sections: [
+      {
+        key: 'runtime',
+        title: t('settings.index.runtimeParams'),
+        description: t('settings.index.runtimeParamsDesc'),
+        fields: [
+          {
+            key: 'pt_archiver_binary',
+            label: t('settings.index.archiverBinaryPath'),
+            type: 'input',
+            default: '/usr/bin/pt-archiver',
+            required: true,
+            maxlength: 255,
+            help: t('settings.index.archiverBinaryPathHint'),
+          },
+          {
+            key: 'pt_archiver_defaults_file',
+            label: t('settings.index.archiverConfigFile'),
+            type: 'input',
+            default: '/etc/turaidc/pt-archiver.cnf',
+            required: true,
+            maxlength: 255,
+            help: t('settings.index.archiverConfigFileHint'),
+          },
+          {
+            key: 'concurrency',
+            label: t('settings.index.maxConcurrency'),
+            type: 'number',
+            default: 2,
+            min: 1,
+            max: 8,
+            help: t('settings.index.maxConcurrencyHint'),
+          },
+          {
+            key: 'batch_size',
+            label: t('settings.index.batchSize'),
+            type: 'number',
+            default: 1000,
+            min: 100,
+            max: 10000,
+            help: t('settings.index.batchSizeHint'),
+          },
+          {
+            key: 'sleep_seconds',
+            label: t('settings.index.batchInterval'),
+            type: 'number',
+            default: 1,
+            min: 0,
+            max: 60,
+            help: t('settings.index.batchIntervalHint'),
+          },
+        ],
+      },
+      {
+        key: 'retention',
+        title: t('settings.index.retentionPolicy'),
+        description: t('settings.index.retentionPolicyDesc'),
+        fields: [
+          {
+            key: 'retention_days',
+            label: t('settings.index.logRetentionDays'),
+            type: 'number',
+            default: 30,
+            min: 1,
+            max: 3650,
+            help: t('settings.index.logRetentionDaysHint'),
+          },
+          {
+            key: 'file_retention_days',
+            label: t('settings.index.archiveRetentionDays'),
+            type: 'number',
+            default: 180,
+            min: 1,
+            max: 3650,
+            help: t('settings.index.archiveRetentionDaysHint'),
+          },
+        ],
+      },
+    ],
+  },
 };
 
 const pageConfig = computed<SettingsConfig | null>(() =>
   activeTab.value === 'site_hero' ? null : configs[activeTab.value],
 );
-const sections = computed(() =>
-  (pageConfig.value?.sections || []).map((section, index) => ({ ...section, anchor: `${activeTab.value}-${index}` })),
-);
-const currentSection = computed(
-  () => sections.value.find((section) => section.anchor === activeSection.value) || sections.value[0],
-);
+const sections = computed(() => pageConfig.value?.sections || []);
 const allFields = computed(() => sections.value.flatMap((section) => section.fields));
 const activeGroups = computed(() =>
   Array.from(new Set(allFields.value.map((field) => field.group || pageConfig.value?.group || 'system'))),
@@ -1222,12 +1389,14 @@ const videoDrawerTitle = computed(() => {
 function normalizeTab(value: unknown): SettingsTab {
   const tab = Array.isArray(value) ? value[0] : value;
   if (tab === 'site') return 'site_basic';
-  return tabOptions.some((item) => item.value === tab) ? (tab as SettingsTab) : 'automation';
+  // 旧的「账户与财务」tab 已并入推荐与充值页，历史链接仍要落到能改那个开关的位置
+  if (tab === 'finance') return 'referral';
+  return SETTINGS_TABS.includes(tab as SettingsTab) ? (tab as SettingsTab) : 'automation';
 }
 
 function resolveInitialTab(): SettingsTab {
   const metaTab = route.meta.settingsTab;
-  if (typeof metaTab === 'string' && tabOptions.some((item) => item.value === metaTab)) {
+  if (typeof metaTab === 'string' && SETTINGS_TABS.includes(metaTab as SettingsTab)) {
     return metaTab as SettingsTab;
   }
   return normalizeTab(route.query.tab);
@@ -1250,7 +1419,7 @@ function refreshCurrentTab() {
 watch(
   () => route.meta.settingsTab,
   (newTab) => {
-    if (typeof newTab === 'string' && tabOptions.some((item) => item.value === newTab)) {
+    if (typeof newTab === 'string' && SETTINGS_TABS.includes(newTab as SettingsTab)) {
       activeTab.value = newTab as SettingsTab;
       refreshCurrentTab();
     }
@@ -1437,7 +1606,18 @@ function parseFieldValue(field: SettingField, raw: unknown): FieldValue {
 }
 
 function isFieldRequired(field: SettingField) {
-  return typeof field.requiredWhen === 'function' ? field.requiredWhen(form) : Boolean(field.required);
+  return Boolean(field.required);
+}
+
+/**
+ * 控件宽度：数字、下拉、时点、取色这类短控件收窄，文本与图片选择器铺满所在栅格。
+ * 宽度只在这里给类名，间距与栅格由全局 admin-field 样式统一定义。
+ */
+function controlWidthClass(field: SettingField) {
+  if (field.wide) return '';
+  return ['number', 'select', 'time', 'color', 'radius'].includes(field.type || 'input')
+    ? 'admin-field__control--medium'
+    : '';
 }
 
 function selectImage(field: SettingField) {
@@ -1598,22 +1778,6 @@ async function handleMediaDrawerUpload(event: Event) {
   }
 }
 
-async function handleImageFileChange(event: Event) {
-  const field = pendingImageField.value;
-  const file = (event.target as HTMLInputElement).files?.[0];
-  if (!field || !file) return;
-  const data = new FormData();
-  data.append('file', file);
-  data.append('group', 'site-settings');
-  try {
-    const response = await adminApi.media.upload(data);
-    form[field.key] = String(response.url || '');
-    MessagePlugin.success(t('settings.index.imageUploadSuccess'));
-  } catch (error) {
-    MessagePlugin.error(errorMessage(error, t('settings.index.imageUploadFailed')));
-  }
-}
-
 async function loadHero() {
   heroLoading.value = true;
   try {
@@ -1705,7 +1869,8 @@ function buildBlankSlide(): HomeHeroSlide {
     primary_path: '/products',
     secondary_text: t('settings.index.secondaryButtonText'),
     secondary_path: '/about',
-    video: heroVideoOptions.value[0]?.value || '',
+    // 新卡片的背景视频必须是空的：以前默认取视频列表第一项，新增几张就几张挂着同一个视频被误发布。
+    video: '',
   };
 }
 
@@ -1903,14 +2068,6 @@ watch(
     activeTab.value = next;
     refreshCurrentTab();
   },
-);
-
-watch(
-  sections,
-  (next) => {
-    activeSection.value = next[0]?.anchor || '';
-  },
-  { immediate: true },
 );
 
 onMounted(() => {

@@ -130,108 +130,156 @@
       :width="isMobile ? '94vw' : '720px'"
       @confirm="submitForm"
     >
-      <t-form ref="formRef" :data="form" :rules="formRules" label-align="top">
-        <div class="ticket-delivery-form-grid">
-          <t-form-item :label="$t('tickets.deliverySettings.ruleName')" name="name">
-            <t-input
-              v-model="form.name"
-              :disabled="!canManage"
-              maxlength="120"
-              :placeholder="$t('tickets.deliverySettings.ruleNamePlaceholder')"
-            />
+      <!-- 弹窗里也是「标签一行 → 说明一行 → 控件一行」，两列栅格由 .admin-field-grid 给 -->
+      <t-form ref="formRef" class="ticket-delivery-rule-form" :data="form" :rules="formRules">
+        <div class="admin-field-grid">
+          <t-form-item name="name">
+            <div class="admin-field">
+              <span class="admin-field__label admin-field__label--required">{{
+                $t('tickets.deliverySettings.ruleName')
+              }}</span>
+              <div class="admin-field__control">
+                <t-input
+                  v-model="form.name"
+                  :disabled="!canManage"
+                  maxlength="120"
+                  :placeholder="$t('tickets.deliverySettings.ruleNamePlaceholder')"
+                />
+              </div>
+            </div>
           </t-form-item>
-          <t-form-item :label="$t('tickets.deliverySettings.ticketDepartment')" name="department">
-            <t-select
-              v-model="form.department"
-              :disabled="!canManage"
-              :placeholder="$t('tickets.deliverySettings.ticketDepartmentPlaceholder')"
-            >
-              <t-option
-                v-for="option in departmentOptions"
-                :key="option.value"
-                :label="option.label"
-                :value="option.value"
-              />
-            </t-select>
+          <t-form-item name="department">
+            <div class="admin-field">
+              <span class="admin-field__label admin-field__label--required">{{
+                $t('tickets.deliverySettings.ticketDepartment')
+              }}</span>
+              <div class="admin-field__control">
+                <t-select
+                  v-model="form.department"
+                  :disabled="!canManage"
+                  :placeholder="$t('tickets.deliverySettings.ticketDepartmentPlaceholder')"
+                >
+                  <t-option
+                    v-for="option in departmentOptions"
+                    :key="option.value"
+                    :label="option.label"
+                    :value="option.value"
+                  />
+                </t-select>
+              </div>
+            </div>
           </t-form-item>
-          <t-form-item :label="$t('tickets.deliverySettings.supplier')" name="supplier_id">
-            <t-select
-              v-model="form.supplier_id"
-              :disabled="!canManage || Boolean(editingId)"
-              filterable
-              :placeholder="$t('tickets.deliverySettings.supplierPlaceholder')"
-              @change="handleSupplierChange"
-            >
-              <t-option
-                v-for="supplier in suppliers"
-                :key="supplier.id"
-                :label="supplierLabel(supplier)"
-                :value="supplier.id"
-              />
-            </t-select>
+          <t-form-item name="supplier_id">
+            <div class="admin-field">
+              <span class="admin-field__label admin-field__label--required">{{
+                $t('tickets.deliverySettings.supplier')
+              }}</span>
+              <div class="admin-field__control">
+                <t-select
+                  v-model="form.supplier_id"
+                  :disabled="!canManage || Boolean(editingId)"
+                  filterable
+                  :placeholder="$t('tickets.deliverySettings.supplierPlaceholder')"
+                  @change="handleSupplierChange"
+                >
+                  <t-option
+                    v-for="supplier in suppliers"
+                    :key="supplier.id"
+                    :label="supplierLabel(supplier)"
+                    :value="supplier.id"
+                  />
+                </t-select>
+              </div>
+            </div>
           </t-form-item>
-          <t-form-item :label="$t('tickets.deliverySettings.upstreamDepartment')" name="upstream_department_id">
-            <t-select
-              v-model="form.upstream_department_id"
-              :disabled="!canManage || !form.supplier_id || departmentsLoading"
-              :loading="departmentsLoading"
-              filterable
-              :placeholder="$t('tickets.deliverySettings.upstreamDepartmentPlaceholder')"
-            >
-              <t-option
-                v-for="department in upstreamDepartments"
-                :key="department.id"
-                :label="department.description ? `${department.name} · ${department.description}` : department.name"
-                :value="department.id"
-              />
-            </t-select>
+          <t-form-item name="upstream_department_id">
+            <div class="admin-field">
+              <span class="admin-field__label admin-field__label--required">{{
+                $t('tickets.deliverySettings.upstreamDepartment')
+              }}</span>
+              <div class="admin-field__control">
+                <t-select
+                  v-model="form.upstream_department_id"
+                  :disabled="!canManage || !form.supplier_id || departmentsLoading"
+                  :loading="departmentsLoading"
+                  filterable
+                  :placeholder="$t('tickets.deliverySettings.upstreamDepartmentPlaceholder')"
+                >
+                  <t-option
+                    v-for="department in upstreamDepartments"
+                    :key="department.id"
+                    :label="department.description ? `${department.name} · ${department.description}` : department.name"
+                    :value="department.id"
+                  />
+                </t-select>
+              </div>
+            </div>
           </t-form-item>
-          <t-form-item :label="$t('tickets.deliverySettings.productScope')" name="product_scope_mode">
-            <t-radio-group v-model="form.product_scope_mode" :disabled="!canManage">
-              <t-radio value="all">{{ $t('tickets.deliverySettings.allProducts') }}</t-radio>
-              <t-radio value="selected">{{ $t('tickets.deliverySettings.selectedProducts') }}</t-radio>
-            </t-radio-group>
+          <t-form-item name="product_scope_mode">
+            <div class="admin-field">
+              <span class="admin-field__label admin-field__label--required">{{
+                $t('tickets.deliverySettings.productScope')
+              }}</span>
+              <div class="admin-field__control">
+                <t-radio-group v-model="form.product_scope_mode" :disabled="!canManage">
+                  <t-radio value="all">{{ $t('tickets.deliverySettings.allProducts') }}</t-radio>
+                  <t-radio value="selected">{{ $t('tickets.deliverySettings.selectedProducts') }}</t-radio>
+                </t-radio-group>
+              </div>
+            </div>
           </t-form-item>
-          <t-form-item
-            v-if="form.product_scope_mode === 'selected'"
-            :label="$t('tickets.deliverySettings.selectedProducts')"
-            name="product_ids"
-          >
-            <t-select
-              v-model="form.product_ids"
-              :disabled="!canManage || !form.supplier_id"
-              filterable
-              multiple
-              :placeholder="$t('tickets.deliverySettings.boundProductsPlaceholder')"
-            >
-              <t-option
-                v-for="product in filteredProducts"
-                :key="product.id"
-                :label="productLabel(product)"
-                :value="product.id"
-              />
-            </t-select>
+          <!-- 指定商品时整行铺满：多选下拉在一格里会被截断 -->
+          <t-form-item v-if="form.product_scope_mode === 'selected'" name="product_ids" class="admin-field--full">
+            <div class="admin-field">
+              <span class="admin-field__label admin-field__label--required">{{
+                $t('tickets.deliverySettings.selectedProducts')
+              }}</span>
+              <div class="admin-field__control">
+                <t-select
+                  v-model="form.product_ids"
+                  :disabled="!canManage || !form.supplier_id"
+                  filterable
+                  multiple
+                  :placeholder="$t('tickets.deliverySettings.boundProductsPlaceholder')"
+                >
+                  <t-option
+                    v-for="product in filteredProducts"
+                    :key="product.id"
+                    :label="productLabel(product)"
+                    :value="product.id"
+                  />
+                </t-select>
+              </div>
+            </div>
+          </t-form-item>
+          <div class="admin-field admin-field--full">
+            <span class="admin-field__label">{{ $t('tickets.deliverySettings.ruleOptions') }}</span>
+            <div class="admin-field__control">
+              <t-space direction="vertical" size="small">
+                <t-checkbox v-model="form.enabled" :disabled="!canManage">{{
+                  $t('tickets.deliverySettings.enableRule')
+                }}</t-checkbox>
+                <t-checkbox v-model="form.sync_admin_replies" :disabled="!canManage">{{
+                  $t('tickets.deliverySettings.syncAdminReplies')
+                }}</t-checkbox>
+              </t-space>
+            </div>
+          </div>
+          <t-form-item name="mask_keywords" class="admin-field--full">
+            <div class="admin-field">
+              <span class="admin-field__label">{{ $t('tickets.deliverySettings.maskKeywords') }}</span>
+              <div class="admin-field__control">
+                <t-textarea
+                  v-model="form.mask_keywords"
+                  :disabled="!canManage"
+                  :autosize="{ minRows: 3, maxRows: 6 }"
+                  maxlength="10000"
+                  :placeholder="$t('tickets.deliverySettings.maskKeywordsPlaceholder')"
+                />
+              </div>
+            </div>
           </t-form-item>
         </div>
-        <t-form-item :label="$t('tickets.deliverySettings.ruleOptions')">
-          <t-space direction="vertical" size="small">
-            <t-checkbox v-model="form.enabled" :disabled="!canManage">{{
-              $t('tickets.deliverySettings.enableRule')
-            }}</t-checkbox>
-            <t-checkbox v-model="form.sync_admin_replies" :disabled="!canManage">{{
-              $t('tickets.deliverySettings.syncAdminReplies')
-            }}</t-checkbox>
-          </t-space>
-        </t-form-item>
-        <t-form-item :label="$t('tickets.deliverySettings.maskKeywords')" name="mask_keywords">
-          <t-textarea
-            v-model="form.mask_keywords"
-            :disabled="!canManage"
-            :autosize="{ minRows: 3, maxRows: 6 }"
-            maxlength="10000"
-            :placeholder="$t('tickets.deliverySettings.maskKeywordsPlaceholder')"
-          />
-        </t-form-item>
       </t-form>
     </t-dialog>
 
@@ -241,49 +289,65 @@
           <strong>{{ $t('tickets.deliverySettings.uploadGuardTitle') }}</strong>
           <span>{{ $t('tickets.deliverySettings.uploadGuardTip') }}</span>
         </div>
-        <t-button v-if="canManage" theme="primary" variant="outline" :loading="guardSaving" @click="saveUploadGuard">
-          {{ $t('tickets.deliverySettings.saveGuardConfig') }}
-        </t-button>
       </div>
 
-      <t-form
-        class="ticket-delivery-guard-form"
-        :label-align="isMobile ? 'top' : 'right'"
-        :label-width="isMobile ? undefined : '170px'"
-      >
-        <t-form-item :label="$t('tickets.deliverySettings.enableUploadImage')">
-          <t-switch v-model="uploadGuard.upload_image_enabled" :disabled="!canManage" />
-          <span class="ticket-delivery-guard-hint">{{ $t('tickets.deliverySettings.enableUploadImageTip') }}</span>
-        </t-form-item>
-        <t-form-item :label="$t('tickets.deliverySettings.allowedIps')">
-          <t-textarea
-            v-model="uploadGuard.allowed_ips"
-            :disabled="!canManage"
-            :autosize="{ minRows: 2, maxRows: 5 }"
-            maxlength="2000"
-            :placeholder="$t('tickets.deliverySettings.allowedIpsPlaceholder')"
-          />
-        </t-form-item>
-        <t-form-item :label="$t('tickets.deliverySettings.rateLimit')">
-          <t-input-number
-            v-model="uploadGuard.rate_limit"
-            :disabled="!canManage || uploadGuard.block_non_whitelisted"
-            :min="0"
-            :max="10000"
-          />
-          <span class="ticket-delivery-guard-hint">{{ $t('tickets.deliverySettings.rateLimitTip') }}</span>
-        </t-form-item>
-        <t-form-item :label="$t('tickets.deliverySettings.blockNonWhitelisted')">
-          <t-switch v-model="uploadGuard.block_non_whitelisted" :disabled="!canManage" />
-          <span class="ticket-delivery-guard-hint">{{ $t('tickets.deliverySettings.blockNonWhitelistedTip') }}</span>
-        </t-form-item>
-        <t-form-item :label="$t('tickets.deliverySettings.unusedRetention')">
-          <span
-            >{{ uploadGuard.unused_retention_minutes }} {{ $t('tickets.deliverySettings.unusedRetentionUnit') }}</span
-          >
-        </t-form-item>
-      </t-form>
+      <!-- 两个开关并排，白名单与配额各占一行：说明独占整行，不再挤在控件右边 -->
+      <div class="ticket-delivery-guard-form admin-field-grid">
+        <div class="admin-field admin-field--switch">
+          <span class="admin-field__label">{{ $t('tickets.deliverySettings.enableUploadImage') }}</span>
+          <div class="admin-field__control">
+            <t-switch v-model="uploadGuard.upload_image_enabled" :disabled="!canManage" />
+          </div>
+          <p class="admin-field__desc">{{ $t('tickets.deliverySettings.enableUploadImageTip') }}</p>
+        </div>
+        <div class="admin-field admin-field--switch">
+          <span class="admin-field__label">{{ $t('tickets.deliverySettings.blockNonWhitelisted') }}</span>
+          <div class="admin-field__control">
+            <t-switch v-model="uploadGuard.block_non_whitelisted" :disabled="!canManage" />
+          </div>
+          <p class="admin-field__desc">{{ $t('tickets.deliverySettings.blockNonWhitelistedTip') }}</p>
+        </div>
+        <div class="admin-field admin-field--full">
+          <span class="admin-field__label">{{ $t('tickets.deliverySettings.allowedIps') }}</span>
+          <div class="admin-field__control">
+            <t-textarea
+              v-model="uploadGuard.allowed_ips"
+              :disabled="!canManage"
+              :autosize="{ minRows: 2, maxRows: 5 }"
+              maxlength="2000"
+              :placeholder="$t('tickets.deliverySettings.allowedIpsPlaceholder')"
+            />
+          </div>
+        </div>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('tickets.deliverySettings.rateLimit') }}</span>
+          <p class="admin-field__desc">{{ $t('tickets.deliverySettings.rateLimitTip') }}</p>
+          <div class="admin-field__control admin-field__control--narrow">
+            <t-input-number
+              v-model="uploadGuard.rate_limit"
+              :disabled="!canManage || uploadGuard.block_non_whitelisted"
+              :min="0"
+              :max="10000"
+            />
+          </div>
+        </div>
+        <div class="admin-field">
+          <span class="admin-field__label">{{ $t('tickets.deliverySettings.unusedRetention') }}</span>
+          <div class="admin-field__control">
+            <span
+              >{{ uploadGuard.unused_retention_minutes }} {{ $t('tickets.deliverySettings.unusedRetentionUnit') }}</span
+            >
+          </div>
+        </div>
+      </div>
     </t-card>
+
+    <!-- 保存操作条与设置页一致：吸在视口底部右对齐，规则列表再长也能直接保存防护配置 -->
+    <div v-if="canManage" class="ticket-delivery-actions">
+      <t-button theme="primary" :loading="guardSaving" @click="saveUploadGuard">
+        {{ $t('tickets.deliverySettings.saveGuardConfig') }}
+      </t-button>
+    </div>
   </div>
 </template>
 <script setup lang="ts">

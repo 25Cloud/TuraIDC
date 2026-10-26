@@ -25,6 +25,10 @@
             <span>{{ $t('verification.idCard') }}</span>
             <strong>{{ form.id_card_masked || '--' }}</strong>
           </article>
+          <article v-if="showVerifiedAt" class="verification-meta-item">
+            <span>{{ $t('verification.verifiedAt') }}</span>
+            <strong>{{ verifiedAt }}</strong>
+          </article>
           <article class="verification-meta-item">
             <span>{{ $t('verification.loginEmail') }}</span>
             <strong>{{ form.email || '--' }}</strong>
@@ -36,7 +40,8 @@
         </div>
       </t-card>
 
-      <div class="verification-guide-grid">
+      <!-- 认证流程与温馨提示只在未认证/待认证时给出指引；已认证只保留结果与后续动作 -->
+      <div v-if="!isVerified" class="verification-guide-grid">
         <t-card class="verification-guide-card" :bordered="false">
           <h2>{{ $t('verification.flow') }}</h2>
           <ol>
@@ -138,11 +143,12 @@
 </template>
 <script setup lang="ts">
 import LoadingState from '@shared/user-v3/components/LoadingState.vue';
-import { defineAsyncComponent, onMounted } from 'vue';
+import { computed, defineAsyncComponent, onMounted } from 'vue';
 
 const QrcodeVue = defineAsyncComponent(() => import('qrcode.vue'));
 
 import { useVerification } from '@/domains/account/useVerification';
+import { useUserStore } from '@/store';
 
 const {
   loading,
@@ -174,6 +180,13 @@ const {
   handleCallbackQuery,
   handleVerificationDialogClose,
 } = useVerification();
+
+const userStore = useUserStore();
+
+// 认证时间直接取后端 userinfo 的 verified_at，照原值展示；
+// 后端没返回时整条结果项不渲染，不额外补一个空白的占位。
+const verifiedAt = computed(() => String(userStore.info?.verified_at || '').trim());
+const showVerifiedAt = computed(() => isVerified.value && Boolean(verifiedAt.value));
 
 onMounted(async () => {
   await loadProfile();
