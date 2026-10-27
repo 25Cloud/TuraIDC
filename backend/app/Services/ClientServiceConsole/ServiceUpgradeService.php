@@ -317,12 +317,18 @@ class ServiceUpgradeService
             return Cache::lock("lock:host-upgrade:order:{$order->id}", 300)
                 ->block(3, fn () => $this->processPaidUpgradeOrderLocked($order));
         } catch (LockTimeoutException) {
-            Log::info('[产品升降级] 同一订单正在处理，跳过本次重复履约', [
+            // 不能返回服务快照当「已履约」：调用方 PaymentService::provisionPaidOrder
+            // 拿到返回值后无条件 return true，等于把实际没执行的升级标成完成，
+            // 还会清掉 fulfillment_pending，管理员再也看不到待处理。
+            // 抛普通业务异常交给队列退避重试；重试时对方若已完成，
+            // processPaidUpgradeOrderLocked 里的「订单已完成即幂等边界」会直接返回，
+            // 不会重复升降级。
+            Log::warning('[产品升降级] 同一订单正被其他进程处理，交给队列重试', [
                 'order_id' => (int) $order->id,
                 'order_no' => (string) ($order->order_no ?? ''),
             ]);
 
-            return $order->service?->fresh(['product.supplier', 'order']);
+            throw new BusinessException('该订单的升降级正在其他进程执行，稍后重试');
         }
     }
 

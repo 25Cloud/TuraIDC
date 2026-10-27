@@ -36,6 +36,7 @@ use App\Services\Provisioning\ProvisionService;
 use App\Services\Provisioning\ServiceRenewService;
 use App\Services\Referral\ReferralService;
 use App\Services\User\AccountService;
+use App\Support\StockReservation;
 use App\Support\VersionedJson;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
@@ -2823,11 +2824,17 @@ class PaymentService
         }
 
         if (! $acquired) {
-            Log::info('[支付后自动开通] 已有同订单履约正在执行，跳过重复请求', [
+            // 不能静默 return：调用方是队列 Job，return 等于「履约成功」，
+            // 而持锁方若随后失败，这笔已付款订单就再也没人重试——用户付了钱、
+            // 系统以为已履约、实际没开通，且重试链被自己掐断。
+            // 抛普通业务异常交给队列退避重试；重试时若对方已成功，
+            // provisionPaidOrder 的幂等回查（assertNoUnresolvedUpstreamProvisionInvoice、
+            // resolveReusableServiceUpstreamServiceId）会直接放行，不会重复开通。
+            Log::warning('[支付后自动开通] 该订单履约正被其他进程执行，交给队列重试', [
                 'order_id' => $orderId,
             ]);
 
-            return;
+            throw new BusinessException('该订单的履约正在其他进程执行，稍后重试');
         }
 
         try {
@@ -3277,9 +3284,16 @@ class PaymentService
         }
 
         $product = Product::query()->lockForUpdate()->find((int) $invoice->product_id);
-        if ($product instanceof Product && (int) $product->stock >= 0) {
-            $product->increment('stock', max((int) ($invoice->quantity ?? 1), 1));
+        if (! $product instanceof Product) {
+            return;
         }
+
+        // 必须走 StockReservation::restore 按快照精确回补，不能只看当前库存。
+        // 商品本地 stock=0 但上游 live_stock>0 时下单是放行的（strict 校验读 live_stock），
+        // 此时 reserve() 因 stock>0 不成立而预扣 0；如果这里按「stock>=0 就 += quantity」
+        // 回补，每取消一次就凭空多出可售库存，越滚越多最终超卖。
+        // CheckoutService 的取消路径已经用了同一份真源，这里不能另写一套。
+        StockReservation::restore($product, $invoice->config_snapshot, (int) ($invoice->quantity ?? 1));
     }
 
     private function cancelLinkedPendingOrderForInvoice(Invoice $invoice): void
