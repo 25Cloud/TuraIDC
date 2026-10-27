@@ -1,9 +1,17 @@
 # AI 助手与 AI 导购设计文档
 
-- 文档性质：设计方案（未实施）
+- 文档性质：设计方案（已实施）
 - 对齐时间：`2026-10-26`
 - 读者画像：后端开发、前端开发、运维、产品
 - 上游依据：[后端工程规范](../../../develop/backend.md)、[API 格式规范](../../../develop/api/format.md)、[后端目录分类规范](../../../develop/backend-structure.md)、[开放 API 设计](../backend/2026-08-24-open-api-design.md)
+
+> **路径变更（2026-10-27）**：AI 助手后端已整体插件化，本文中的
+> `backend/config/ai_gateway.php`、`app/Services/Ai/**`、`app/Http/Controllers/{Client,Admin}/V2/Ai*`、
+> `app/Models/Ai*` 现在分别位于
+> `backend/plugins/addons/ai_assistant/config/ai.php`（配置键仍是 `ai_gateway`）、
+> `.../src/Services/**`、`.../src/Http/Controllers/**`、`.../src/Models/**`。
+> 路由、请求体与响应结构未变；`ai_*` 四张表仍在核心迁移里。清单与生命周期见
+> [插件标准 v2](../backend/plugin-standard-v2-2026-10-27.md)。
 
 ## 1. 目标与范围
 

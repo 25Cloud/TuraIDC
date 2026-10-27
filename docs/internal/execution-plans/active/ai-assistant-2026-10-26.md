@@ -1,10 +1,16 @@
 ---
 status: active
-updated: 2026-10-26
+updated: 2026-10-27
 owner: backend-platform
 ---
 
 # AI 助手与 AI 导购
+
+> **路径变更（2026-10-27）**：后端实现已整体插件化到 `backend/plugins/addons/ai_assistant/`，
+> 本文里 `backend/config/ai_gateway.php`、`app/Services/Ai/**`、`app/Models/Ai*`、`app/Http/Requests/**/Ai/*`
+> 等路径对应改为插件内的 `config/ai.php`、`src/Services/**`、`src/Models/**`、`src/Http/Requests/**`。
+> 接口路径与响应结构未变；`ai_*` 四张表仍在核心迁移。规范见
+> [插件标准 v2](../../designs/backend/plugin-standard-v2-2026-10-27.md)。
 
 ## 背景
 

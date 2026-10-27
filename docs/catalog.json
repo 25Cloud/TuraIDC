@@ -320,6 +320,11 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "internal/designs/backend/plugin-standard-v2-2026-10-27.md",
+      "status": "current",
+      "summary": "插件标准 v2：清单字段、生命周期接口、数据边界、路由约束与插件索引 schema。"
+    },
+    {
       "path": "internal/designs/backend/rainyun-rcs-plugin.md",
       "status": "current",
       "summary": "雨云 RCS 插件的隔离、资源交易与控制台设计。",
