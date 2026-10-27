@@ -1,7 +1,7 @@
 {
     "meta": {
-        "generatedAt": "2026-10-25 16:52:51",
-        "total": 450,
+        "generatedAt": "2026-10-27 18:59:13",
+        "total": 468,
         "baseURL": "/api/v2",
         "dataSource": "php artisan route:list --json v2-only",
         "scopeLabels": {
@@ -21,15 +21,15 @@
             "permission": "登录 + 权限"
         },
         "scopeCounts": {
-            "admin": 287,
-            "client": 144,
+            "admin": 293,
+            "client": 156,
             "site": 18,
             "system": 1
         },
         "accessCounts": {
-            "public": 450
+            "public": 468
         },
-        "moduleCount": 86
+        "moduleCount": 89
     },
     "items": [
         {
@@ -166,6 +166,144 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\AgentGroupController@update",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/ai/conversations",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/ai/conversations",
+            "backendPath": "/api/v2/admin/ai/conversations",
+            "normalizedPath": "/admin/ai/conversations",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\AiAdminController@conversations",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/ai/conversations/{conversation}",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/ai/conversations/{conversation}",
+            "backendPath": "/api/v2/admin/ai/conversations/{conversation}",
+            "normalizedPath": "/admin/ai/conversations/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\AiAdminController@showConversation",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/ai/settings",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/ai/settings",
+            "backendPath": "/api/v2/admin/ai/settings",
+            "normalizedPath": "/admin/ai/settings",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\AiAdminController@settings",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "PUT:/api/v2/admin/ai/settings",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "PUT",
+            "methods": [
+                "PUT"
+            ],
+            "callPath": "/admin/ai/settings",
+            "backendPath": "/api/v2/admin/ai/settings",
+            "normalizedPath": "/admin/ai/settings",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\AiAdminController@updateSettings",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/admin/ai/settings/test",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/ai/settings/test",
+            "backendPath": "/api/v2/admin/ai/settings/test",
+            "normalizedPath": "/admin/ai/settings/test",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\AiAdminController@test",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/admin/ai/usage",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/admin/ai/usage",
+            "backendPath": "/api/v2/admin/ai/usage",
+            "normalizedPath": "/admin/ai/usage",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\AiAdminController@usage",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
@@ -5576,29 +5714,6 @@
             "sourceFiles": []
         },
         {
-            "id": "PUT:/api/v2/admin/users/{user}/services/{service}/manual-provision",
-            "scope": "admin",
-            "scopeLabel": "管理端",
-            "module": "users",
-            "moduleLabel": "用户",
-            "method": "PUT",
-            "methods": [
-                "PUT"
-            ],
-            "callPath": "/admin/users/{user}/services/{service}/manual-provision",
-            "backendPath": "/api/v2/admin/users/{user}/services/{service}/manual-provision",
-            "normalizedPath": "/admin/users/{param}/services/{param}/manual-provision",
-            "access": "public",
-            "accessLabel": "公开",
-            "permission": "",
-            "throttle": "",
-            "guards": [],
-            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@manualProvision",
-            "sourceApps": [],
-            "sourceAppLabels": [],
-            "sourceFiles": []
-        },
-        {
             "id": "PUT:/api/v2/admin/users/{user}/services/{service}/meta",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -6404,6 +6519,29 @@
             "sourceFiles": []
         },
         {
+            "id": "POST:/api/v2/admin/users/{user}/services/{service}/upstream-provision",
+            "scope": "admin",
+            "scopeLabel": "管理端",
+            "module": "users",
+            "moduleLabel": "用户",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/admin/users/{user}/services/{service}/upstream-provision",
+            "backendPath": "/api/v2/admin/users/{user}/services/{service}/upstream-provision",
+            "normalizedPath": "/admin/users/{param}/services/{param}/upstream-provision",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Admin\\V2\\UserServiceController@provisionUpstream",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
             "id": "GET:/api/v2/admin/users/{user}/services/{service}/vnc",
             "scope": "admin",
             "scopeLabel": "管理端",
@@ -6629,6 +6767,282 @@
             "throttle": "",
             "guards": [],
             "handler": "App\\Http\\Controllers\\Admin\\V2\\VerificationController@unbind",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/agent/apply",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "agent",
+            "moduleLabel": "Agent",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/agent/apply",
+            "backendPath": "/api/v2/client/agent/apply",
+            "normalizedPath": "/client/agent/apply",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "TuraIDC\\Plugins\\Addons\\ZjmfBridge\\Http\\Controllers\\AgentController@store",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/client/agent/info",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "agent",
+            "moduleLabel": "Agent",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/agent/info",
+            "backendPath": "/api/v2/client/agent/info",
+            "normalizedPath": "/client/agent/info",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "TuraIDC\\Plugins\\Addons\\ZjmfBridge\\Http\\Controllers\\AgentController@info",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/ai/actions/{action}/confirm",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/ai/actions/{action}/confirm",
+            "backendPath": "/api/v2/client/ai/actions/{action}/confirm",
+            "normalizedPath": "/client/ai/actions/{param}/confirm",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@confirmAction",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/ai/actions/{action}/reject",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/ai/actions/{action}/reject",
+            "backendPath": "/api/v2/client/ai/actions/{action}/reject",
+            "normalizedPath": "/client/ai/actions/{param}/reject",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@rejectAction",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/client/ai/bootstrap",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/ai/bootstrap",
+            "backendPath": "/api/v2/client/ai/bootstrap",
+            "normalizedPath": "/client/ai/bootstrap",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@bootstrap",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/client/ai/conversations",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/ai/conversations",
+            "backendPath": "/api/v2/client/ai/conversations",
+            "normalizedPath": "/client/ai/conversations",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@conversations",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/ai/conversations",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/ai/conversations",
+            "backendPath": "/api/v2/client/ai/conversations",
+            "normalizedPath": "/client/ai/conversations",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@storeConversation",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "DELETE:/api/v2/client/ai/conversations/{conversation}",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "DELETE",
+            "methods": [
+                "DELETE"
+            ],
+            "callPath": "/client/ai/conversations/{conversation}",
+            "backendPath": "/api/v2/client/ai/conversations/{conversation}",
+            "normalizedPath": "/client/ai/conversations/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@destroyConversation",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "GET:/api/v2/client/ai/conversations/{conversation}",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "GET",
+            "methods": [
+                "GET"
+            ],
+            "callPath": "/client/ai/conversations/{conversation}",
+            "backendPath": "/api/v2/client/ai/conversations/{conversation}",
+            "normalizedPath": "/client/ai/conversations/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@showConversation",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "PATCH:/api/v2/client/ai/conversations/{conversation}",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "PATCH",
+            "methods": [
+                "PATCH"
+            ],
+            "callPath": "/client/ai/conversations/{conversation}",
+            "backendPath": "/api/v2/client/ai/conversations/{conversation}",
+            "normalizedPath": "/client/ai/conversations/{param}",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@updateConversation",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/ai/messages",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/ai/messages",
+            "backendPath": "/api/v2/client/ai/messages",
+            "normalizedPath": "/client/ai/messages",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@messages",
+            "sourceApps": [],
+            "sourceAppLabels": [],
+            "sourceFiles": []
+        },
+        {
+            "id": "POST:/api/v2/client/ai/messages/stream",
+            "scope": "client",
+            "scopeLabel": "客户端",
+            "module": "ai",
+            "moduleLabel": "Ai",
+            "method": "POST",
+            "methods": [
+                "POST"
+            ],
+            "callPath": "/client/ai/messages/stream",
+            "backendPath": "/api/v2/client/ai/messages/stream",
+            "normalizedPath": "/client/ai/messages/stream",
+            "access": "public",
+            "accessLabel": "公开",
+            "permission": "",
+            "throttle": "",
+            "guards": [],
+            "handler": "App\\Http\\Controllers\\Client\\V2\\AiController@stream",
             "sourceApps": [],
             "sourceAppLabels": [],
             "sourceFiles": []
