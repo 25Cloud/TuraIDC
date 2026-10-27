@@ -16,6 +16,7 @@ use App\Services\OpenApi\OpenApiConfig;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
 use App\Services\System\UploadedAssetReferenceService;
+use App\Services\ZjmfUpstream\UpstreamCatalogCache;
 use App\Support\DatabaseSchema;
 use App\Support\Waf\PayloadScanner;
 use Carbon\CarbonInterface;
@@ -232,6 +233,9 @@ class AppServiceProvider extends ServiceProvider
 
             Cache::tags(['site-products'])->flush();
             Cache::forget('coupon_product_group_tree_v1');
+            // 魔方财务上游的商品目录缓存（infos/all）跟着一起失效，
+            // 否则下游最长要等 60 秒 TTL 才能看到改价/改库存。
+            UpstreamCatalogCache::bump();
         };
 
         foreach ([

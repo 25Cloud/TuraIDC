@@ -66,6 +66,16 @@ class ProductService
         'tenly' => 'tensetupfee',
     ];
 
+    private readonly UpstreamCatalogCache $catalogCache;
+
+    /**
+     * 允许手工 new（有些调用方直接把服务 new 出来用），默认自建缓存器。
+     */
+    public function __construct(?UpstreamCatalogCache $catalogCache = null)
+    {
+        $this->catalogCache = $catalogCache ?? new UpstreamCatalogCache();
+    }
+
     /**
      * cart/all：按三级分组聚合的上架商品列表。
      *
@@ -73,13 +83,25 @@ class ProductService
      */
     public function all(): array
     {
+        return $this->catalogCache->remember('all', [], fn (): array => $this->buildAll());
+    }
+
+    /**
+     * @return array{products: list<array{id:int,name:string,products:list<array>}>, count:int, currency:string}
+     */
+    private function buildAll(): array
+    {
         $products = $this->onSaleProducts();
+
+        $groupNames = $this->groupNames(
+            $products->map(static fn (Product $product): int => (int) ($product->product_group_id ?? 0))->all()
+        );
 
         $groups = $products
             ->groupBy(static fn (Product $product): int => (int) ($product->product_group_id ?? 0))
             ->map(fn (Collection $items, int $gid): array => [
                 'id' => $gid,
-                'name' => $this->groupName($gid),
+                'name' => $groupNames[$gid] ?? '未分组',
                 'products' => $items
                     ->map(fn (Product $product): array => [
                         'id' => (int) $product->id,
@@ -108,6 +130,19 @@ class ProductService
      */
     public function infos(array $pids): array
     {
+        return $this->catalogCache->remember(
+            'infos',
+            ['pids' => array_values($pids)],
+            fn (): array => $this->buildInfos($pids)
+        );
+    }
+
+    /**
+     * @param  list<int>  $pids
+     * @return array{info:list<array>, currency:string}
+     */
+    private function buildInfos(array $pids): array
+    {
         $products = $this->onSaleProducts($pids);
 
         return [
@@ -133,6 +168,19 @@ class ProductService
      */
     public function details(array $pids): array
     {
+        return $this->catalogCache->remember(
+            'details',
+            ['pids' => array_values($pids)],
+            fn (): array => $this->buildDetails($pids)
+        );
+    }
+
+    /**
+     * @param  list<int>  $pids
+     * @return array{detail:array<int,array>}
+     */
+    private function buildDetails(array $pids): array
+    {
         $detail = [];
         foreach ($this->onSaleProducts($pids) as $product) {
             $detail[(int) $product->id] = $this->productDetail($product);
@@ -155,7 +203,7 @@ class ProductService
      */
     public function config(int $pid): array
     {
-        $product = $this->onSaleProducts()->firstWhere('id', $pid);
+        $product = $this->findOnSaleProduct($pid);
 
         if (! $product instanceof Product) {
             return ['status' => 400, 'msg' => '商品不存在或已下架'];
@@ -188,7 +236,7 @@ class ProductService
      */
     public function trialLimit(int $pid): array
     {
-        $product = $this->onSaleProducts()->firstWhere('id', $pid);
+        $product = $this->findOnSaleProduct($pid);
 
         if (! $product instanceof Product) {
             return ['status' => 400, 'msg' => '商品不存在或已下架'];
@@ -434,7 +482,54 @@ class ProductService
     }
 
     /**
+     * 一次性取回多个三级分组名，避免按分组逐个查库（809 个商品曾打出几十条 N+1）。
+     *
+     * @param  list<int>  $groupIds
+     * @return array<int, string>
+     */
+    private function groupNames(array $groupIds): array
+    {
+        $ids = array_values(array_unique(array_filter(
+            array_map('intval', $groupIds),
+            static fn (int $id): bool => $id > 0
+        )));
+
+        if ($ids === []) {
+            return [];
+        }
+
+        $names = [];
+
+        foreach (ThirdProductGroup::query()->whereIn('id', $ids)->get(['id', 'name']) as $group) {
+            $name = trim((string) $group->name);
+            $names[(int) $group->id] = $name !== '' ? $name : '未分组';
+        }
+
+        return $names;
+    }
+
+    /**
+     * 单个上架商品（含全部列）。原先用 onSaleProducts()->firstWhere() 会先取回全部
+     * 800+ 行带大 JSON 的商品再筛一条，改成按 id 直查。
+     */
+    private function findOnSaleProduct(int $pid): ?Product
+    {
+        if ($pid <= 0) {
+            return null;
+        }
+
+        return Product::query()
+            ->where('status', 1)
+            ->where('id', $pid)
+            ->first();
+    }
+
+    /**
      * 上架商品集合；pids 非空时按 id 过滤（pids 为空返回全部）。
+     *
+     * 注意：这里不能收窄列。`products` 没有 name 列，商品名走 Product::getNameAttribute 的
+     * 访问器回退到 ProductDisplayNameResolver，它依赖 custom_display_name 之外的规格列；
+     * 少取一列会让下游看到的名字变化。
      *
      * @param  list<int>  $pids
      */
