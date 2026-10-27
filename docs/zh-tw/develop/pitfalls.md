@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: 9bb4805faddf8ba3e86a80d4466b5f023333aa18ff3157f0bf479baa48d19431
+sourceHash: ce8f513e895b33dad645bbd6c6ac25d47acfc0e3179fb67554f16afb279b569d
 generated: zh-tw
 ---
 
@@ -299,8 +299,37 @@ Set-Content -Path $p -Value $c -Encoding UTF8
 3. 已經寫壞了：`git checkout -- <file>` 會被安全網攔住，用 `git show HEAD:<path>` 取位元組寫回，
    再逐處重新應用改動（**注意會同時丟掉這段時間裡別人對該檔案的改動**，重放前先看清楚要補哪些）。
 
-## 四、提交
+### 3.12 別直接 `new finfo()`：別人的機器沒裝 ext-fileinfo，上傳介面就是 500
 
+`StoreMediaFileRequest` 曾在校驗的 `after()` 裡直接 `new finfo(FILEINFO_MIME_TYPE)` 做二次型別校驗。
+`ext-fileinfo` 並不是 PHP 必裝擴充套件，缺它時 `new finfo()` 拋的是 **`Error` 而不是 `Exception`**，
+框架不會把它翻成 422，直接兜成 500「伺服器內部錯誤」+ 請求編號——客戶完全看不出發生了什麼。
+實測表現：上傳 20ms 就 500，且檔案已經落到 `php` 的臨時目錄裡。
+
+**對策**：用 `class_exists(finfo::class)` 判斷後再用；缺擴充套件時跳過這層二次校驗即可——
+Laravel 的 `mimetypes` 規則本身走 Symfony 的 MimeTypeGuesser，fileinfo 缺失時會退化為副檔名推斷，
+仍然擋得住明顯不對的型別。
+
+同一類「基礎設施問題偽裝成 500」的地方還有：磁碟不足以前拋 `RuntimeException`、
+不支援的媒體型別以前拋 `InvalidArgumentException`。這些都應該拋 `BusinessException`，
+讓前端拿到 422 + 一句能照著做的中文，而不是一個請求編號。
+
+**排查手法**：拿到客戶報的請求編號時，先看是不是 500 且耗時極短（幾十毫秒）——
+那通常是「校驗/入口階段就拋了」，而不是業務邏輯跑掛，優先懷疑擴充套件缺失、目錄許可權、磁碟空間。
+
+### 3.13 「引數驗證失敗」這種兜底文案，會把 422 的真實原因吃掉
+
+`bootstrap/app.php` 把所有 `ValidationException` 統一成
+`{code: 42200, message: '参数验证失败', data: {errors: {...}}}`，真實原因在 `data.errors` 裡。
+管理端的 `errorMessage()` 取到欄位錯誤後還要過一道「必須是中文」的過濾——本意是不讓英文堆疊漏到介面上。
+可部署方的 `APP_LOCALE` 若是 `en`，Laravel 的欄位文案就是
+`The third product group id field is required.`，被這道過濾擋掉，管理員端只剩「引數驗證失敗」。
+
+**對策**：欄位級校驗錯誤來自校驗器，是 name → [message] 的結構化資料，不會夾帶堆疊，
+所以只對「頂層 message」保留中文過濾，對 `errors` 對映**不要求語言**（見 `firstNonEmptyMessage`）。
+真正該做的是把關鍵欄位的文案寫在 FormRequest 的 `messages()` 裡，四語言環境都不會缺。
+
+## 四、提交
 ### 4.1 必須 `--no-verify`
 
 根 `package.json` 的 lint-staged 有 `*.{css,scss,json,md}` → `prettier --write`，

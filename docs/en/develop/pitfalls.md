@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: 9bb4805faddf8ba3e86a80d4466b5f023333aa18ff3157f0bf479baa48d19431
+sourceHash: ce8f513e895b33dad645bbd6c6ac25d47acfc0e3179fb67554f16afb279b569d
 translatedAt: 2026-10-26
 ---
 
@@ -241,6 +241,22 @@ One run corrupted 1090 lines (`git diff` showed 1090 insertions / 1091 deletions
 1. Change one spot at a time with an editing tool (the `edit` tool or an editor's replace), never whole-file read/write in PowerShell;
 2. If a script is genuinely needed, read and write with Node buffers: fetch raw bytes via `execFileSync('git', ['show', 'HEAD:' + p])` and write them back with `fs.writeFileSync(p, buf)`;
 3. If it is already corrupted: `git checkout -- <file>` is blocked by the safety net, so restore with `git show HEAD:<path>` written back as bytes and then re-apply each change by hand (**this also discards anyone else's edits to that file in the meantime**, so check what else has to be replayed first).
+
+### 3.12 Never call `new finfo()` directly: a machine without ext-fileinfo turns the upload endpoint into a 500
+
+`StoreMediaFileRequest` used to call `new finfo(FILEINFO_MIME_TYPE)` inside its `after()` hook for a second type check. `ext-fileinfo` is not a mandatory PHP extension; when it is missing, `new finfo()` throws an **`Error`, not an `Exception`**, so the framework never converts it into a 422 — it becomes a 500 "internal server error" plus a request id, and the customer has no idea what happened. Observed shape: the 500 arrives in about 20 ms and the file has already landed in PHP's temp directory.
+
+**Countermeasure**: gate it with `class_exists(finfo::class)`; when the extension is missing, skip this second check — Laravel's `mimetypes` rule already goes through Symfony's MimeTypeGuesser, which falls back to extension-based detection without fileinfo and still rejects obviously wrong types.
+
+Other places in the same family ("infrastructure problem disguised as a 500"): disk exhaustion used to throw `RuntimeException`, and unsupported media types used to throw `InvalidArgumentException`. All of these should throw `BusinessException` so the frontend receives a 422 plus one actionable sentence instead of a request id.
+
+**Triage habit**: when you get a request id from a customer, first check whether the 500 finished suspiciously fast (tens of milliseconds). That usually means it blew up during validation or entry, not in business logic — suspect missing extensions, directory permissions, or disk space first.
+
+### 3.13 A catch-all message such as "validation failed" swallows the real cause of a 422
+
+`bootstrap/app.php` normalises every `ValidationException` into `{code: 42200, message: '<generic validation-failed text>', data: {errors: {...}}}`, with the real reason inside `data.errors`. The admin's `errorMessage()` then ran the field errors through a "must be Chinese" filter — the intent was to keep English stack traces off the screen. But when a deployment sets `APP_LOCALE=en`, Laravel's field message is `The third product group id field is required.`, which the filter drops, leaving the administrator with nothing but the generic line.
+
+**Countermeasure**: field-level validation errors come from the validator as structured name → [message] data and never carry stack traces, so keep the Chinese filter only for the top-level `message` and require no language for the `errors` map (see `firstNonEmptyMessage`). What you really should do is write the messages for key fields in the FormRequest's `messages()`, so no locale can drop them.
 
 ## 4. Committing
 

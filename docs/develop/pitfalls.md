@@ -292,8 +292,37 @@ Set-Content -Path $p -Value $c -Encoding UTF8
 3. 已经写坏了：`git checkout -- <file>` 会被安全网拦住，用 `git show HEAD:<path>` 取字节写回，
    再逐处重新应用改动（**注意会同时丢掉这段时间里别人对该文件的改动**，重放前先看清楚要补哪些）。
 
-## 四、提交
+### 3.12 别直接 `new finfo()`：别人的机器没装 ext-fileinfo，上传接口就是 500
 
+`StoreMediaFileRequest` 曾在校验的 `after()` 里直接 `new finfo(FILEINFO_MIME_TYPE)` 做二次类型校验。
+`ext-fileinfo` 并不是 PHP 必装扩展，缺它时 `new finfo()` 抛的是 **`Error` 而不是 `Exception`**，
+框架不会把它翻成 422，直接兜成 500「服务器内部错误」+ 请求编号——客户完全看不出发生了什么。
+实测表现：上传 20ms 就 500，且文件已经落到 `php` 的临时目录里。
+
+**对策**：用 `class_exists(finfo::class)` 判断后再用；缺扩展时跳过这层二次校验即可——
+Laravel 的 `mimetypes` 规则本身走 Symfony 的 MimeTypeGuesser，fileinfo 缺失时会退化为扩展名推断，
+仍然挡得住明显不对的类型。
+
+同一类「基础设施问题伪装成 500」的地方还有：磁盘不足以前抛 `RuntimeException`、
+不支持的媒体类型以前抛 `InvalidArgumentException`。这些都应该抛 `BusinessException`，
+让前端拿到 422 + 一句能照着做的中文，而不是一个请求编号。
+
+**排查手法**：拿到客户报的请求编号时，先看是不是 500 且耗时极短（几十毫秒）——
+那通常是「校验/入口阶段就抛了」，而不是业务逻辑跑挂，优先怀疑扩展缺失、目录权限、磁盘空间。
+
+### 3.13 「参数验证失败」这种兜底文案，会把 422 的真实原因吃掉
+
+`bootstrap/app.php` 把所有 `ValidationException` 统一成
+`{code: 42200, message: '参数验证失败', data: {errors: {...}}}`，真实原因在 `data.errors` 里。
+管理端的 `errorMessage()` 取到字段错误后还要过一道「必须是中文」的过滤——本意是不让英文堆栈漏到界面上。
+可部署方的 `APP_LOCALE` 若是 `en`，Laravel 的字段文案就是
+`The third product group id field is required.`，被这道过滤挡掉，管理员端只剩「参数验证失败」。
+
+**对策**：字段级校验错误来自校验器，是 name → [message] 的结构化数据，不会夹带堆栈，
+所以只对「顶层 message」保留中文过滤，对 `errors` 映射**不要求语言**（见 `firstNonEmptyMessage`）。
+真正该做的是把关键字段的文案写在 FormRequest 的 `messages()` 里，四语言环境都不会缺。
+
+## 四、提交
 ### 4.1 必须 `--no-verify`
 
 根 `package.json` 的 lint-staged 有 `*.{css,scss,json,md}` → `prettier --write`，
