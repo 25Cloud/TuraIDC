@@ -48,6 +48,7 @@
 | [官网 SEO 可抓取性修复](completed/seo-crawlability-fix-2026-10-22.md)                                  | completed | 官网 SEO 链路修复：nginx 补齐 SEO 转发、源码部署前端壳走 file://、商品详情页纳入 sitemap。 |
 | [TuraIDC 开放接口上游驱动插件](completed/tura-open-api-driver-2026-09-12.md)                           | completed | tura_open_api 插件打通纯自有协议无限级转售链：目录/开通/续费/状态同步/余额。               |
 | [上游绑定切换提速与状态同步降级](completed/upstream-binding-switch-and-sync-degradation-2026-10-21.md) | completed | 切换上游绑定改为本地写立即返回、回源提速、电源状态失败降级为仅同步实例详情。               |
+| [上游开通去重与管理端一键开通](completed/upstream-provision-dedup-2026-10-27.md) | completed | 上游开通失败不再自动重试、按主机名回查复用，管理端一键开通取代手填上游实例 ID。 |
 | [上下游对接链路加固](completed/upstream-openapi-hardening-2026-09-12.md)                               | completed | 开放 API 写端点与审计加固、能力契约分层、开通失败退款标记、幂等 DB 兜底。                  |
 | [VNC 与业务调度隔离方案](completed/vnc-and-business-scheduling-isolation-2026-08-04.md)                | completed | VNC Relay、业务队列与定时队列隔离实施计划。                                                |
 | [ZJMF 统一迁移方案](completed/zjmf-unified-migration.md)                                               | completed | ZJMF 实时绑定已切换、实例控制已验证，旧插件已卸载且历史已保留。                            |

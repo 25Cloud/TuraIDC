@@ -1601,6 +1601,7 @@
       "refundMethodRequired": "Please select a refund method",
       "refundReasonRequired": "Please enter the refund reason",
       "upstreamProvisionFailed": "Upstream provisioning failed",
+      "upstreamProvisionSuccess": "Upstream provisioning completed",
       "upstreamFallback": "Upstream",
       "loadUpstreamFailed": "Failed to load upstream interfaces",
       "updateUpstreamFailed": "Failed to update the upstream binding",
@@ -1838,6 +1839,7 @@
       "upstreamInstanceIdRequired": "Enter an upstream instance ID when selecting an upstream interface",
       "upstreamInterfaceRequired": "Select an upstream interface when entering an upstream instance ID",
       "upstreamProvisionSuccess": "Upstream provisioning completed",
+      "upstreamProvisionFailed": "Upstream provisioning failed",
       "upstreamBindingUpdated": "Upstream binding updated",
       "priceUpdated": "Price updated",
       "confirmUnbind": "Unbind"
@@ -5041,6 +5043,7 @@
       "description": "Ask things like which instances expire soon, this month's spend, or where a setting lives."
     },
     "panel": {
+      "close": "Close",
       "title": "AI Assistant",
       "subject": "Current object: {label}",
       "thinking": "Thinking…",

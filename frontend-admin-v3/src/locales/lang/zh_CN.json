@@ -1601,6 +1601,7 @@
       "refundMethodRequired": "请选择退款方式",
       "refundReasonRequired": "请填写退款原因",
       "upstreamProvisionFailed": "上游开通失败",
+      "upstreamProvisionSuccess": "上游开通已完成",
       "upstreamFallback": "上游",
       "loadUpstreamFailed": "加载上游接口失败",
       "updateUpstreamFailed": "更新上游绑定失败",
@@ -1838,6 +1839,7 @@
       "upstreamInstanceIdRequired": "选择上游接口时必须填写上游实例 ID",
       "upstreamInterfaceRequired": "填写上游实例 ID 时必须选择上游接口",
       "upstreamProvisionSuccess": "上游开通已完成",
+      "upstreamProvisionFailed": "上游开通失败",
       "upstreamBindingUpdated": "上游绑定已更新",
       "priceUpdated": "价格信息已更新",
       "confirmUnbind": "确认解除"
@@ -5041,6 +5043,7 @@
       "description": "可以直接问：哪些实例快到期、本月支出多少、某个设置在哪里改。"
     },
     "panel": {
+      "close": "关闭",
       "title": "AI 助手",
       "subject": "当前对象：{label}",
       "thinking": "正在思考…",

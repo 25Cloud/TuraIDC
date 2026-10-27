@@ -436,14 +436,12 @@
       "summary": "雨云 RCS 插件移植、授权联调和交付计划。",
       "review_by": "2026-11-21"
     },
-
     {
       "path": "internal/execution-plans/active/scheduler-refactor-2026-08-09.md",
       "status": "active",
       "summary": "ZJMF 定时任务机制与 TuraIDC 心跳、队列、台账、Hook 和人工重跑能力的差距及分阶段重构计划。",
       "review_by": "2026-12-13"
     },
-
     {
       "path": "internal/execution-plans/active/scheduler-vnc-provisioning-renewal-review-2026-08-13.md",
       "status": "active",
@@ -538,6 +536,11 @@
       "path": "internal/execution-plans/completed/upstream-openapi-hardening-2026-09-12.md",
       "status": "completed",
       "summary": "开放 API 写端点与审计加固、上游能力契约分层、开通失败退款标记与下单幂等 DB 兜底。"
+    },
+    {
+      "path": "internal/execution-plans/completed/upstream-provision-dedup-2026-10-27.md",
+      "status": "completed",
+      "summary": "上游开通去重（不可重试闸门 + 主机名回查复用）与管理端一键上游开通。"
     },
     {
       "path": "internal/execution-plans/completed/vnc-and-business-scheduling-isolation-2026-08-04.md",
