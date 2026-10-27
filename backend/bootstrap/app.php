@@ -8,6 +8,7 @@ use App\Http\Middleware\EnsureClientAuthenticated;
 use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\LogOperation;
 use App\Http\Middleware\NormalizeZjmfUpstreamPath;
+use App\Http\Middleware\RecordRequestTiming;
 use App\Http\Middleware\SetJsonEncodingOptions;
 use App\Http\Middleware\SetLocale;
 use App\Http\Middleware\TicketUpstreamUploadThrottle;
@@ -92,7 +93,10 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->api(
             prepend: [
-                // WAF 放在最前：可疑请求应在触及会话、认证与业务逻辑之前就被拒绝，
+                // 计时放在最外层，才能覆盖 WAF、会话与业务逻辑的完整耗时；
+                // 它只做两次 microtime()，不查库不解析 body。
+                RecordRequestTiming::class,
+                // WAF 放在次前：可疑请求应在触及会话、认证与业务逻辑之前就被拒绝，
                 // 既减少无谓开销，也避免攻击载荷进入更深的调用栈。
                 SetLocale::class,
                 WebApplicationFirewall::class,

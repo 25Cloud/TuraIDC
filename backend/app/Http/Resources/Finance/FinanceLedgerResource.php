@@ -123,7 +123,9 @@ class FinanceLedgerResource extends JsonResource
             return true;
         }
 
-        $paymentRaw = method_exists($payment, 'callbackPayload') ? $payment->callbackPayload() : [];
+        // 资金流水不一定关联支付记录（充值、调账、奖励等 payment 为 null），
+        // method_exists() 收到 null 在 PHP 8 会直接抛 TypeError 把整页拖成 500。
+        $paymentRaw = is_object($payment) && method_exists($payment, 'callbackPayload') ? $payment->callbackPayload() : [];
         $values = [
             $this->operator ?? '',
             $this->trace_id ?? '',

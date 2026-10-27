@@ -32,4 +32,7 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
+    // 单次请求在 PHP 侧耗时超过该值（毫秒）时记录一条 [慢请求] 日志，
+    // 响应头 X-Response-Time-Ms 始终返回真实耗时。设为 0 关闭日志，只保留响应头。
+    'slow_request_threshold_ms' => (int) env('SLOW_REQUEST_THRESHOLD_MS', 1000),
 ];

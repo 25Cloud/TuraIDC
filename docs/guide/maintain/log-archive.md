@@ -186,6 +186,39 @@ expire_logs_days=30
 4. 确认每分钟 `schedule:run`、默认队列消费和 `log-archive` 定时任务均正常，并观察首轮完整报告；
 5. `logrotate -d` 无错误，Binlog 过期变量为 2592000 秒。
 
+## 5. 应用日志（Laravel）轮转
+
+应用日志和上面几节的数据库日志是两套东西，需要单独确认。
+
+线上出现过一个实例的 `backend/storage/logs/laravel.log` 长到 **1.2GB 单文件**，原因有三层，缺一层都不会这样：
+
+| 层     | 问题                                                                                       | 现在的口径                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `.env` | `LOG_STACK=single` + `LOG_LEVEL=debug`，`single` 通道写死一个文件且永不切分                 | `.env.example` 已改为 `LOG_STACK=daily`，`LOG_LEVEL` 留空按环境推导（生产为 `info`）             |
+| 代码   | 上游接口每调一次就按 INFO 落一条完整响应摘要，定时任务每天数万次，单条几 KB                 | 只有 4xx/5xx 或耗时 ≥ 2 秒才升级为 warning 并带响应体，正常的 2xx 快响应降为 debug              |
+| 系统   | 没有任何 logrotate 规则管应用日志                                                          | 仓库内 [deploy/logrotate/turaidc](https://github.com/25Cloud/TuraIDC/blob/main/deploy/logrotate/turaidc) |
+
+安装兜底轮转规则（即使有人把 `LOG_STACK` 改回 `single` 也不会无限增长）：
+
+```bash
+# 在仓库根目录执行，需要 root
+install -m 644 deploy/logrotate/turaidc /etc/logrotate.d/turaidc
+logrotate -d /etc/logrotate.d/turaidc     # 干跑，确认匹配到的文件清单
+```
+
+规则用 `copytruncate` 而不是 `create`：Monolog 的 StreamHandler 长期持有 append 句柄，不截断原文件的话，进程会继续往已改名的旧文件里写。
+
+确认生效：
+
+```bash
+ls -lh backend/storage/logs/
+du -sh backend/storage/logs/
+```
+
+期望结果是 `laravel-YYYY-MM-DD.log` 这类按天文件名，或 `laravel.log.1.gz` 这类轮转产物；不再是单个无后缀的巨型 `laravel.log`。
+
+> 排查上游接口时如果要看全量响应，临时把 `LOG_LEVEL` 改成 `debug`，问题定位完立刻改回来——`debug` 下每一条上游调用都会落盘，一天可以产出上百 GB。
+
 ## 关联文档
 
 - [部署与调度指南](../deploy/scheduling.md)：定时任务与队列环境。

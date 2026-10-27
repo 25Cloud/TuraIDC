@@ -259,7 +259,9 @@ final class ServiceConsoleAssetService
         error_clear_last();
         $body = @file_get_contents($url, false, $context);
         $lastError = error_get_last();
-        $responseHeaders = is_array($http_response_header) ? $http_response_header : [];
+        // 连接失败时 $http_response_header 不存在；裸 is_array() 会先抛
+        // "Undefined variable" 警告并把真实网络错误盖掉。
+        $responseHeaders = is_array($http_response_header ?? null) ? $http_response_header : [];
         $httpCode = $this->resolveHttpCode($responseHeaders);
         $contentType = $this->resolveHeaderValue($responseHeaders, 'Content-Type');
 

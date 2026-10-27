@@ -1,6 +1,6 @@
 ---
 source: guide/maintain/log-archive.md
-sourceHash: 07cb38b3eb84eb1c74c44fb1ae932e4aaf57ef1b3a82ffa237d2e95687a062c9
+sourceHash: 933468182b5ead1c3f3d2b4bcaa33dc4b1b2f2d6578c9ca56419cfffbeaef470
 generated: zh-hk
 ---
 
@@ -192,6 +192,39 @@ expire_logs_days=30
 3. `gateway_logs` 小表試運行後，CSV 表頭、行數、數據庫剩餘記錄和審計日誌一致；
 4. 確認每分鐘 `schedule:run`、默認隊列消費和 `log-archive` 定時任務均正常，並觀察首輪完整報告；
 5. `logrotate -d` 無錯誤，Binlog 過期變量為 2592000 秒。
+
+## 5. 應用日誌（Laravel）輪轉
+
+應用日誌和上面幾節的數據庫日誌是兩套東西，需要單獨確認。
+
+線上出現過一個實例的 `backend/storage/logs/laravel.log` 長到 **1.2GB 單文件**，原因有三層，缺一層都不會這樣：
+
+| 層     | 問題                                                                                       | 現在的口徑                                                                                      |
+| ------ | ------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| `.env` | `LOG_STACK=single` + `LOG_LEVEL=debug`，`single` 通道寫死一個文件且永不切分                 | `.env.example` 已改為 `LOG_STACK=daily`，`LOG_LEVEL` 留空按環境推導（生產為 `info`）             |
+| 代碼   | 上游接口每調一次就按 INFO 落一條完整響應摘要，定時任務每天數萬次，單條几 KB                 | 只有 4xx/5xx 或耗時 ≥ 2 秒才升級為 warning 並帶響應體，正常的 2xx 快響應降為 debug              |
+| 系統   | 沒有任何 logrotate 規則管應用日誌                                                          | 倉庫內 [deploy/logrotate/turaidc](https://github.com/25Cloud/TuraIDC/blob/main/deploy/logrotate/turaidc) |
+
+安裝兜底輪轉規則（即使有人把 `LOG_STACK` 改回 `single` 也不會無限增長）：
+
+```bash
+# 在仓库根目录执行，需要 root
+install -m 644 deploy/logrotate/turaidc /etc/logrotate.d/turaidc
+logrotate -d /etc/logrotate.d/turaidc     # 干跑，确认匹配到的文件清单
+```
+
+規則用 `copytruncate` 而不是 `create`：Monolog 的 StreamHandler 長期持有 append 句柄，不截斷原文件的話，進程會繼續往已改名的舊文件裡寫。
+
+確認生效：
+
+```bash
+ls -lh backend/storage/logs/
+du -sh backend/storage/logs/
+```
+
+期望結果是 `laravel-YYYY-MM-DD.log` 這類按天文件名，或 `laravel.log.1.gz` 這類輪轉產物；不再是單個無後綴的巨型 `laravel.log`。
+
+> 排查上游接口時如果要看全量響應，臨時把 `LOG_LEVEL` 改成 `debug`，問題定位完立刻改回來——`debug` 下每一條上游調用都會落盤，一天可以產出上百 GB。
 
 ## 關聯文檔
 

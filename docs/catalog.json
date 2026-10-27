@@ -594,6 +594,11 @@
       "summary": "20260930 增量补丁记录：服务金额改为写回续费基准原价，消除代理用户续费逐轮复利叠加折扣，含存量数据修正 SQL。"
     },
     {
+      "path": "internal/fix-records/2026-10-27-production-api-stability-and-log-bloat-fix.md",
+      "status": "archived",
+      "summary": "20261027 增量补丁记录：修复资金流水空指针导致 ledger 与 balance-logs 稳定 500、上游连接失败被未定义变量警告掩盖真实网络错误、ZJMF 状态同步失败刷屏无上下文，并治理上游响应 INFO 日志与 1.2GB 未轮转日志。"
+    },
+    {
       "path": "internal/frontend-v3/admin-v3-final-acceptance-report.md",
       "status": "archived",
       "summary": "frontend-admin-v3 迁移完成后的最终验收记录。"

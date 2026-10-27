@@ -1,6 +1,6 @@
 ---
 source: guide/maintain/log-archive.md
-sourceHash: 07cb38b3eb84eb1c74c44fb1ae932e4aaf57ef1b3a82ffa237d2e95687a062c9
+sourceHash: 933468182b5ead1c3f3d2b4bcaa33dc4b1b2f2d6578c9ca56419cfffbeaef470
 translatedAt: 2026-10-26
 ---
 
@@ -191,6 +191,39 @@ Confirm the following in order before going live:
 3. after the trial run on the small `gateway_logs` table, the CSV header, the row count, the remaining database records, and the audit log are consistent;
 4. confirm that the per-minute `schedule:run`, the default queue consumption, and the `log-archive` scheduled task all work normally, then watch the first full report;
 5. `logrotate -d` reports no errors, and the Binlog expiration variable is 2592000 seconds.
+
+## 5. Application Log (Laravel) Rotation
+
+Application logs are a separate concern from the database logs above and need their own check.
+
+One production instance grew `backend/storage/logs/laravel.log` to a **single 1.2GB file**. Three layers combined to cause it, and removing any one of them would have prevented it:
+
+| Layer    | Problem                                                                                                      | Current position                                                                                                     |
+| -------- | ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------- |
+| `.env`   | `LOG_STACK=single` + `LOG_LEVEL=debug`; the `single` channel writes one file and never splits it               | `.env.example` now ships `LOG_STACK=daily`, with `LOG_LEVEL` left unset so the environment decides (`info` in production) |
+| Code     | Every upstream call logged a full response summary at INFO; scheduled tasks make tens of thousands of calls a day, a few KB each | Only 4xx/5xx or calls slower than 2 seconds are promoted to warning with the response body; healthy 2xx responses drop to debug |
+| System   | No logrotate rule managed application logs at all                                                             | [deploy/logrotate/turaidc](https://github.com/25Cloud/TuraIDC/blob/main/deploy/logrotate/turaidc) in the repository    |
+
+Install the fallback rotation rule (this keeps growth bounded even if someone changes `LOG_STACK` back to `single`):
+
+```bash
+# 在仓库根目录执行，需要 root
+install -m 644 deploy/logrotate/turaidc /etc/logrotate.d/turaidc
+logrotate -d /etc/logrotate.d/turaidc     # 干跑，确认匹配到的文件清单
+```
+
+The rule uses `copytruncate` rather than `create`: Monolog's StreamHandler holds an append handle open, so without truncating the original file the process keeps writing to the already-renamed one.
+
+Confirm it took effect:
+
+```bash
+ls -lh backend/storage/logs/
+du -sh backend/storage/logs/
+```
+
+You should see dated names such as `laravel-YYYY-MM-DD.log`, or rotation artifacts such as `laravel.log.1.gz`, instead of a single giant `laravel.log` without a suffix.
+
+> To inspect upstream traffic, temporarily set `LOG_LEVEL` to `debug` and change it back as soon as the problem is located. Under `debug` every upstream call hits disk, which can produce hundreds of GB per day.
 
 ## Related Documents
 

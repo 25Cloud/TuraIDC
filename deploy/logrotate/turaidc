@@ -1,0 +1,24 @@
+# TuraIDC 应用日志轮转（源码 / 宝塔 / 裸机部署）
+#
+# 背景：config/logging.php 的 daily 通道只有在 LOG_STACK=daily 时才生效，
+# 而历史 .env.example 一直写的是 LOG_STACK=single + LOG_LEVEL=debug，
+# 于是一个线上实例的 backend/storage/logs/laravel.log 涨到 1.2GB 单文件，
+# 既拖慢写盘，也让真正的错误淹没在噪声里、无法下载排查。
+#
+# 这份规则作为兜底：即使有人把 LOG_STACK 改回 single，日志也不会无限增长。
+# 安装（root）：
+#   install -m 644 deploy/logrotate/turaidc /etc/logrotate.d/turaidc
+#   logrotate -d /etc/logrotate.d/turaidc     # 干跑，确认匹配到的文件
+#
+# copytruncate 而不是 create：Monolog 的 StreamHandler 长期持有 append 句柄，
+# 轮转后不 truncate 原文件，进程会继续往已改名的文件里写。
+/www/wwwroot/TuraIDC/backend/storage/logs/*.log {
+    daily
+    rotate 7
+    missingok
+    notifempty
+    compress
+    delaycompress
+    copytruncate
+    su www www
+}

@@ -46,6 +46,18 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
 
     private const DEFAULT_DNS_RESOLVER_TIMEOUT_SECONDS = 3;
 
+    /**
+     * 上游响应日志的分级阈值（毫秒）。
+     *
+     * 定时任务每天对本类发起数万次调用，每次都在 INFO 级别写完整响应摘要，
+     * 实测把生产 laravel.log 顶到 1.2GB 单文件（占日志体积的绝大部分），
+     * 既拖慢写盘也让真正的错误淹没在噪声里。现在：
+     * - 2xx 且耗时低于该阈值：降到 debug（生产 LOG_LEVEL=info 时不落盘）；
+     * - 4xx/5xx 或耗时超过该阈值：升级为 warning 并保留完整响应摘要。
+     * 排查「上游到底返回了什么」时把 LOG_LEVEL 调成 debug 即可恢复全量。
+     */
+    private const SLOW_UPSTREAM_LOG_MS = 2000;
+
     private const CONFIG_OPTION_FIELD_MAP = [
         1 => null,
         2 => null,
@@ -638,7 +650,11 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         error_clear_last();
         $output = @file_get_contents($url, false, $context);
         $lastError = error_get_last();
-        $responseHeaders = is_array($http_response_header) ? $http_response_header : [];
+        // $http_response_header 只在 HTTP 包装器真正建立连接后于当前作用域生成；
+        // 连接被拒、DNS 解析失败、超时等情况下它根本不存在，裸 is_array() 会触发
+        // "Undefined variable" 警告并被 Laravel 错误处理器转成 ErrorException，
+        // 从而把真实网络错误（如 Could not resolve host）整个吞掉。
+        $responseHeaders = is_array($http_response_header ?? null) ? $http_response_header : [];
         $httpCode = $this->resolveHttpCode($responseHeaders);
 
         if ($output === false) {
@@ -658,14 +674,20 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
             $this->forgetJwtCache($supplier);
         }
 
-        $this->safeLog('info', '[主机面板接口] 文本接口响应', [
-            'supplier_id' => $supplier->id,
-            'method' => $method,
-            'url' => $this->maskUrlForLog($url),
-            'http_code' => $httpCode,
-            'duration_ms' => $this->elapsedMilliseconds($startedAt),
-            'response_preview' => $this->truncateLogValue(trim((string) $output, "\xEF\xBB\xBF")),
-        ]);
+        $durationMs = $this->elapsedMilliseconds($startedAt);
+        $this->logUpstreamResponse(
+            '[主机面板接口] 文本接口响应',
+            [
+                'supplier_id' => $supplier->id,
+                'method' => $method,
+                'url' => $this->maskUrlForLog($url),
+                'http_code' => $httpCode,
+                'duration_ms' => $durationMs,
+            ],
+            $httpCode,
+            $durationMs,
+            fn (): mixed => $this->truncateLogValue(trim((string) $output, "\xEF\xBB\xBF")),
+        );
 
         return (string) $output;
     }
@@ -720,7 +742,8 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         error_clear_last();
         $output = @file_get_contents($url, false, $context);
         $lastError = error_get_last();
-        $responseHeaders = is_array($http_response_header) ? $http_response_header : [];
+        // 连接失败时 $http_response_header 不存在，用 ?? null 兜住，理由同 requestText()。
+        $responseHeaders = is_array($http_response_header ?? null) ? $http_response_header : [];
         $httpCode = $this->resolveHttpCode($responseHeaders);
         $contentType = $this->resolveHeaderValue($responseHeaders, 'Content-Type');
 
@@ -756,7 +779,7 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
                 $retryContext = stream_context_create($this->buildContextOptions($method, $retryHeaders, $body));
                 error_clear_last();
                 $retryOutput = @file_get_contents($url, false, $retryContext);
-                $retryHeadersRaw = is_array($http_response_header) ? $http_response_header : [];
+                $retryHeadersRaw = is_array($http_response_header ?? null) ? $http_response_header : [];
 
                 if ($retryOutput !== false) {
                     $output = $retryOutput;
@@ -787,14 +810,20 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
             $this->forgetJwtCache($supplier);
         }
 
-        $this->safeLog('info', '[主机面板接口] 接口响应', [
-            'supplier_id' => $supplier->id,
-            'method' => $method,
-            'url' => $this->maskUrlForLog($url),
-            'http_code' => $httpCode,
-            'duration_ms' => $this->elapsedMilliseconds($startedAt),
-            'response' => is_array($decoded) ? $this->summarizeLogResponse($decoded) : $this->truncateLogValue($output),
-        ]);
+        $durationMs = $this->elapsedMilliseconds($startedAt);
+        $this->logUpstreamResponse(
+            '[主机面板接口] 接口响应',
+            [
+                'supplier_id' => $supplier->id,
+                'method' => $method,
+                'url' => $this->maskUrlForLog($url),
+                'http_code' => $httpCode,
+                'duration_ms' => $durationMs,
+            ],
+            $httpCode,
+            $durationMs,
+            fn (): mixed => is_array($decoded) ? $this->summarizeLogResponse($decoded) : $this->truncateLogValue($output),
+        );
 
         if (! is_array($decoded)) {
             throw new BusinessException($this->buildInvalidJsonMessage($httpCode, $contentType, $output), 50000);
@@ -1604,6 +1633,29 @@ PHP;
             Log::log($level, $message, $context);
         } catch (\Throwable) {
         }
+    }
+
+    /**
+     * 按响应状态与耗时决定上游响应日志的级别，详见 SLOW_UPSTREAM_LOG_MS 的说明。
+     *
+     * 摘要用闭包延迟构造：正常快响应根本不需要序列化那份几千字节的响应体，
+     * 直接在 debug 分支跳过构造，顺带省掉一次 json 编码开销。
+     *
+     * @param  array<string, mixed>  $context
+     * @param  callable():mixed  $summary
+     */
+    private function logUpstreamResponse(string $message, array $context, int $httpCode, int $durationMs, callable $summary): void
+    {
+        // http_code 为 0 说明连状态行都没拿到（连接失败/超时），必须留全量证据。
+        if ($httpCode === 0 || $httpCode >= 400 || $durationMs >= self::SLOW_UPSTREAM_LOG_MS) {
+            $context['response'] = $summary();
+
+            $this->safeLog('warning', $message, $context);
+
+            return;
+        }
+
+        $this->safeLog('debug', $message, $context);
     }
 
     private function forgetJwtCache(Supplier $supplier): void

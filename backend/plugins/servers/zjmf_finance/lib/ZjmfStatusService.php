@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\Upstream\ProviderKey;
 use App\Support\SensitiveDataSanitizer;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 final class ZjmfStatusService
@@ -77,8 +78,14 @@ final class ZjmfStatusService
                     continue;
                 }
 
+                $logContext = [
+                    'supplier_id' => (int) $supplier->id,
+                    'service_id' => $serviceId,
+                    'host_id' => $hostId,
+                ];
+
                 try {
-                    $host = $this->extractHostPayload($responses['detail_'.$serviceId] ?? []);
+                    $host = $this->extractHostPayload($responses['detail_'.$serviceId] ?? [], $logContext);
                 } catch (\Throwable $exception) {
                     // 实例详情是主数据：读不到就是真故障（上游实例已删除/不存在），整条同步判失败。
                     $results[$serviceId] = [
@@ -90,12 +97,11 @@ final class ZjmfStatusService
 
                 // 电源状态是辅助信息，实例详情才是主数据：读取失败只降级为「仅同步实例详情」，
                 // 不中断整条同步，失败原因放进 runtime_error 交给调用方留痕。
-                $runtime = $this->resolveHostRuntimePayload($supplier, $hostId, $jwt, $host);
+                $runtime = $this->resolveHostRuntimePayload($supplier, $hostId, $jwt, $host, $logContext);
 
-                if ($runtime['error'] !== null) {
-                    Log::warning('[ZJMF 财务状态同步] 读取电源状态失败，降级为仅同步实例详情', [
-                        'service_id' => $serviceId,
-                        'host_id' => $hostId,
+                if ($runtime['error'] !== null && $this->shouldLogStatusFailure('读取电源状态-降级', 0, (string) $runtime['error'], $logContext)) {
+                    $this->safeWarn('[ZJMF 财务状态同步] 读取电源状态失败，降级为仅同步实例详情', [
+                        ...$logContext,
                         'message' => $runtime['error'],
                     ]);
                 }
@@ -193,9 +199,9 @@ final class ZjmfStatusService
         return false;
     }
 
-    private function extractHostPayload(array $response): array
+    private function extractHostPayload(array $response, array $context = []): array
     {
-        $payload = $this->extractParallelPayload($response, '读取主机详情');
+        $payload = $this->extractParallelPayload($response, '读取主机详情', $context);
         $host = $this->transport->normalizeHostDetailPayload($payload);
 
         if ($host === []) {
@@ -220,14 +226,14 @@ final class ZjmfStatusService
      * 返回值为「运行状态载荷 + 失败原因」：电源状态读不到时不再抛异常，
      * 而是降级为仅同步实例详情，失败原因由调用方写进同步失败原因字段。
      */
-    private function resolveHostRuntimePayload(Supplier $supplier, int $hostId, string &$jwt, array $host): array
+    private function resolveHostRuntimePayload(Supplier $supplier, int $hostId, string &$jwt, array $host, array $context = []): array
     {
         if ($this->isHostingHost($host)) {
             return ['payload' => [], 'error' => null];
         }
 
         try {
-            return $this->extractRuntimePayload($this->fetchRuntimeStatus($supplier, $hostId, $jwt), $host);
+            return $this->extractRuntimePayload($this->fetchRuntimeStatus($supplier, $hostId, $jwt), $host, $context);
         } catch (\Throwable $exception) {
             // 传输层失败（网络异常、刷新 JWT 失败）同样只是电源状态读不到，
             // 降级为仅同步实例详情，并把原因交给调用方留痕。
@@ -243,11 +249,11 @@ final class ZjmfStatusService
         return in_array($type, self::HOSTING_HOST_TYPES, true);
     }
 
-    private function extractRuntimePayload(array $response, array $host): array
+    private function extractRuntimePayload(array $response, array $host, array $context = []): array
     {
         try {
             return [
-                'payload' => $this->extractParallelPayload($response, '读取电源状态'),
+                'payload' => $this->extractParallelPayload($response, '读取电源状态', $context),
                 'error' => null,
             ];
         } catch (\Throwable $exception) {
@@ -268,7 +274,7 @@ final class ZjmfStatusService
         }
     }
 
-    private function extractParallelPayload(array $response, string $action): array
+    private function extractParallelPayload(array $response, string $action, array $context = []): array
     {
         if ($response === []) {
             throw new BusinessException($action.'失败：未获取到有效响应', 42200);
@@ -284,12 +290,12 @@ final class ZjmfStatusService
             throw new BusinessException($action.'失败：响应为空', 42200);
         }
 
-        $this->assertSuccess($payload, $action);
+        $this->assertSuccess($payload, $action, $context);
 
         return is_array($payload['data'] ?? null) ? $payload['data'] : $payload;
     }
 
-    private function assertSuccess(array $response, string $action): void
+    private function assertSuccess(array $response, string $action, array $context = []): void
     {
         $status = (int) ($response['status'] ?? $response['code'] ?? $response['status_code'] ?? 0);
 
@@ -298,13 +304,60 @@ final class ZjmfStatusService
         }
 
         $message = trim((string) ($response['msg'] ?? $response['message'] ?? ''));
-        Log::warning('[ZJMF 财务状态同步] 返回失败', [
-            'action' => $action,
-            'status' => $status,
-            'message' => SensitiveDataSanitizer::sanitizeText($message),
-        ]);
+
+        // 同一条失败每 5 分钟只落一条 warning。
+        // 实测生产最近 100MB 日志里「返回失败」独占 13664 条（虚拟主机被回 406
+        // 「不支持的方法」、已删除主机被回「未找到该产品」这类持续性失败，每轮同步都
+        // 重新记一遍），且原日志只有 action/status/message，没有 supplier/service/host，
+        // 既定位不到是哪台机器，也把真正的错误埋在噪声里。去重后仍然能从首条
+        // warning 与服务的 last_sync_error 字段追到问题。
+        if ($this->shouldLogStatusFailure($action, $status, $message, $context)) {
+            $this->safeWarn('[ZJMF 财务状态同步] 返回失败', [
+                ...$context,
+                'action' => $action,
+                'status' => $status,
+                'message' => SensitiveDataSanitizer::sanitizeText($message),
+            ]);
+        }
 
         throw new BusinessException(app(ProviderErrorMapper::class)->toUserMessage(ProviderKey::ZJMF_FINANCE_API, $action, $message), 42200);
+    }
+
+    /**
+     * 同一条状态同步失败的去重闸门：返回 true 表示本次应当写日志。
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function shouldLogStatusFailure(string $action, int $status, string $message, array $context): bool
+    {
+        $fingerprint = 'zjmf:status-fail:'.md5(implode('|', [
+            (string) ($context['supplier_id'] ?? ''),
+            (string) ($context['service_id'] ?? ''),
+            (string) ($context['host_id'] ?? ''),
+            $action,
+            (string) $status,
+            $message,
+        ]));
+
+        try {
+            return Cache::add($fingerprint, 1, 300);
+        } catch (\Throwable) {
+            // 缓存不可用时宁可多记，也不要漏掉失败证据。
+            return true;
+        }
+    }
+
+    /**
+     * 写警告日志，永不因日志本身打断同步。
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function safeWarn(string $message, array $context): void
+    {
+        try {
+            Log::warning($message, $context);
+        } catch (\Throwable) {
+        }
     }
 
     private function resolveRuntimeUnavailableContext(array $response, array $host): ?array
