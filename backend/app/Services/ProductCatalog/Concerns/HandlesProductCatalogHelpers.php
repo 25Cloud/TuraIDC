@@ -23,8 +23,6 @@ trait HandlesProductCatalogHelpers
 
     private const SITE_PRODUCT_DETAIL_CACHE_KEY = 'catalog:site:product_detail';
 
-    private const SITE_PRODUCT_STOCK_CACHE_KEY = 'catalog:site:product_stock';
-
     private const SITE_PRODUCT_TYPES_CACHE_TTL_SECONDS = 900; // 优化：从 300s 提升到 900s（15分钟）
 
     private const SITE_GROUPS_CACHE_TTL_SECONDS = 900; // 优化：从 300s 提升到 900s（15分钟）
@@ -32,8 +30,6 @@ trait HandlesProductCatalogHelpers
     private const SITE_PRODUCTS_CACHE_TTL_SECONDS = 600; // 优化：从 120s 提升到 600s（10分钟）
 
     private const SITE_PRODUCT_DETAIL_CACHE_TTL_SECONDS = 600; // 优化：从 120s 提升到 600s（10分钟）
-
-    private const SITE_PRODUCT_STOCK_CACHE_TTL_SECONDS = 10; // 保持实时性，不调整
 
     private function forgetSiteCatalogCache(): void
     {

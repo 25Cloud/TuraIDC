@@ -51,7 +51,28 @@ return [
     'send_default_pii' => env('SENTRY_SEND_DEFAULT_PII', false),
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore_exceptions
-    // 'ignore_exceptions' => [],
+    //
+    // 这里列出的都是「预期内的受控失败」，不该进错误监控。除了避免噪声，更关键的是性能：
+    // Sentry 的 reportable 回调在发送前要走一次 HTTP，线上实测一个不可达的 DSN
+    // （自建 Sentry 返回 522）会让**每一次异常响应**卡 2 秒以上——404 的商品详情
+    // 2.3 秒、登录失败 3 秒，扫描器连打几个不存在的 ID 就能把 PHP worker 占满。
+    // BusinessException::report() 虽然已经返回 false，但那条路径挡不住 SDK 的传输层，
+    // 必须在配置层忽略。
+    'ignore_exceptions' => [
+        App\Exceptions\BusinessException::class,
+        Illuminate\Validation\ValidationException::class,
+        Illuminate\Auth\AuthenticationException::class,
+        Illuminate\Auth\Access\AuthorizationException::class,
+        Illuminate\Database\Eloquent\ModelNotFoundException::class,
+        Illuminate\Http\Exceptions\ThrottleRequestsException::class,
+        Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
+        Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class,
+        Symfony\Component\HttpKernel\Exception\HttpException::class,
+    ],
+
+    // 监控上报不能拖垮业务响应：默认 2 秒超时让每个真异常多等 2 秒。
+    // 上报晚一点无所谓，用户不能陪着等。
+    'http_timeout' => env('SENTRY_HTTP_TIMEOUT', 1),
 
     // @see: https://docs.sentry.io/platforms/php/guides/laravel/configuration/options/#ignore_transactions
     'ignore_transactions' => [

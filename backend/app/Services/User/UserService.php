@@ -693,12 +693,14 @@ class UserService
             $query->where('action', 'like', "%{$filters['keyword']}%");
         }
 
+        // 用范围比较而不是 whereDate()：whereDate 会把列包进 DATE() 函数，
+        // operation_logs 已有 16 万行，函数包裹后 created_at 上的索引直接失效。
         if (! empty($filters['start_date'])) {
-            $query->whereDate('created_at', '>=', $filters['start_date']);
+            $query->where('created_at', '>=', $filters['start_date'].' 00:00:00');
         }
 
         if (! empty($filters['end_date'])) {
-            $query->whereDate('created_at', '<=', $filters['end_date']);
+            $query->where('created_at', '<=', $filters['end_date'].' 23:59:59');
         }
 
         if (! empty($filters['ip_address'])) {

@@ -32,8 +32,24 @@ class ProductionReadinessService
             'queue' => $queueReadiness,
         ];
 
+        // task_readiness 只作为观测项，**不参与 ready 判定**。
+        // 它统计的是「最近 15 分钟内有任意一条定时任务运行失败」，而定时任务里本来就有
+        // 大量依赖外部上游的作业（商品描述同步、库存同步、余额同步、ZJMF 认证刷新）。
+        // 一次上游超时、一次插件新增任务未注册，都会让 /api/ready 返回 503 ——
+        // 负载均衡据此把整台机器摘掉 15 分钟，等于「后台某个非关键任务失败导致全站不可用」。
+        // 真正的就绪只该由基础设施决定；任务健康度去看 /api/health 的这个字段或告警。
+        $blockingChecks = ['database', 'cache', 'storage', 'scheduler', 'scheduler_liveness', 'queue'];
+
+        $ready = true;
+        foreach ($blockingChecks as $name) {
+            if (($checks[$name] ?? false) === false) {
+                $ready = false;
+                break;
+            }
+        }
+
         return [
-            'ready' => ! in_array(false, $checks, true),
+            'ready' => $ready,
             'checks' => $checks,
         ];
     }

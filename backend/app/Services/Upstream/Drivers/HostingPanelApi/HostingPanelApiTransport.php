@@ -606,12 +606,20 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         }
 
         $totalMs = $this->elapsedMilliseconds($startedAt);
-        $logContext = [
-            'supplier_id' => $supplier->id,
-            'count' => count($requestsByAlias),
-            'duration_ms' => $totalMs,
-            'status_codes' => $statusCodes,
-        ];
+
+        // 此前这里把状态码与错误收进 $statusCodes/$errors/$logContext 后直接丢弃，
+        // 并发请求失败在日志里一点痕迹都没有（串行路径有「接口响应」兜底，并发没有）。
+        // 现在只在出现错误或整批偏慢时记一条，正常快批不增加日志体积。
+        if ($errors !== [] || $totalMs >= self::SLOW_UPSTREAM_LOG_MS) {
+            $this->safeLog('warning', '[主机面板接口] 并发请求存在失败或整体偏慢', [
+                'supplier_id' => $supplier->id,
+                'count' => count($requestsByAlias),
+                'duration_ms' => $totalMs,
+                'status_codes' => $statusCodes,
+                'error_count' => count($errors),
+                'errors' => array_slice($errors, 0, 5, true),
+            ]);
+        }
 
         return $normalized;
     }

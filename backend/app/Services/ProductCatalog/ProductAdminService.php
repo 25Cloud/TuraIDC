@@ -975,7 +975,9 @@ class ProductAdminService
         }
 
         return $this->applyLifecycleScope(Product::query(), $lifecycleStatus)
-            ->select(['id', 'product_type', 'purchase_requires', 'config_options'])
+            // custom_display_name 必须带上：显示名解析器算完候选值后还会回头按 ID 单查这一列，
+            // 缺列时全表 978 个商品就是 978 次额外 SELECT。
+            ->select(['id', 'product_type', 'purchase_requires', 'config_options', 'custom_display_name'])
             ->get()
             ->filter(function (Product $product) use ($keyword): bool {
                 $displayName = trim((string) ($this->resolveProductDisplayNameResolver()->resolveForProduct($product)['product_display_name'] ?? ''));

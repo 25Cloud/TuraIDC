@@ -51,7 +51,9 @@ class AdminServiceListService
             ])
             ->with([
                 'user:id,nickname,email,phone,status',
-                'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+                // custom_display_name 必须一起 select：ProductDisplayNameResolver 在属性缺失时
+                // 会退回按商品 ID 单查该列，列表每行一次 SELECT（52 行 = 52 次额外查询）。
+                'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires,custom_display_name',
                 'product.productGroup:id,second_product_group_id,name,description,slug',
                 'product.productGroup.secondProductGroup:id,first_product_group_id,name,description,slug',
                 'product.productGroup.secondProductGroup.firstProductGroup:id,code,name,description,slug',

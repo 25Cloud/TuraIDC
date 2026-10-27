@@ -1075,7 +1075,6 @@ class ProductSyncService
 
         $cacheKey = 'site_product_stock:'.$productId;
         $store->forget($cacheKey);
-        $store->forget($cacheKey.':stale');
 
         Log::info('[商品库存] 上游拒绝库存不足/已下架，本地快照已归零并写售罄覆盖', [
             'product_id' => $productId,

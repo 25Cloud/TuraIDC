@@ -199,8 +199,10 @@ class InvoiceService
         $query = Invoice::with([
             'user:id,email,nickname,phone',
             'order:id,order_no,status,type,service_id,paid_at,product_id,billing_cycle',
-            'order.product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires',
-            'product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires',
+            // custom_display_name 必须一起 select，理由同 AdminServiceListService：
+            // 缺这一列会让 ProductDisplayNameResolver 对每行商品再发一次单查。
+            'order.product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires,custom_display_name',
+            'product:id,product_type,service_type_code,product_group_id,remark,config_options,purchase_requires,custom_display_name',
             'service:id,name,status,expires_at',
             'payments',
             'items',
