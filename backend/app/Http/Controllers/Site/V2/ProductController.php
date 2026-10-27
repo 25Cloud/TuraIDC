@@ -20,6 +20,8 @@ use App\Models\User;
 use App\Services\ProductCatalog\ProductV2QueryService;
 use App\Services\Site\SiteProductQuoteService;
 use App\Services\Site\SiteProductReadService;
+use App\Support\ApiResponseBuilder;
+use App\Support\SiteProductListCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -30,6 +32,7 @@ class ProductController extends Controller
         private readonly ProductV2QueryService $products,
         private readonly SiteProductReadService $siteProductReadService,
         private readonly SiteProductQuoteService $siteProductQuoteService,
+        private readonly SiteProductListCache $siteProductListCache,
     ) {}
 
     public function types(ListProductTypesRequest $request): JsonResponse
@@ -43,10 +46,21 @@ class ProductController extends Controller
 
     public function index(ListProductsRequest $request): JsonResponse
     {
-        return $this->paginate(
-            $this->products->paginateSiteProducts($request->validated()),
-            SiteProductSummaryResource::class
+        $filters = $request->validated();
+        $userId = $this->resolveClientUser($request)?->id;
+
+        // 商品列表每次要跑 9 条 SQL 再逐条组装资源，生产实测 350~420ms；
+        // 目录只在管理员改商品时变化，按 filters+用户缓存 60 秒，命中时只剩一次 Redis 读。
+        $payload = $this->siteProductListCache->remember(
+            $filters,
+            $userId,
+            fn (): array => ApiResponseBuilder::pagination(
+                $this->products->paginateSiteProducts($filters),
+                SiteProductSummaryResource::class
+            )
         );
+
+        return $this->success($payload);
     }
 
     public function show(ShowProductRequest $request, int $product): JsonResponse

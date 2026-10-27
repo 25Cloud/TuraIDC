@@ -9,11 +9,21 @@ use App\Services\Content\ContentArticleService;
 use App\Services\Content\HomeHeroService;
 use App\Services\Site\SiteHomeService;
 use App\Services\Site\SiteProductReadService;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 
+/**
+ * 官网首页与站点配置接口。
+ *
+ * 用例里会 `Setting::setValue(...)` 改写展示开关，因此必须跑在事务里：
+ * 不包事务时这些写入会留在测试库，第二次跑同一用例时"默认值"已经被自己改掉了，
+ * 于是出现"全量跑通过、单跑必红"的假失败。
+ */
 class V2SiteHomeApiTest extends TestCase
 {
+    use DatabaseTransactions;
+
     public function test_site_config_uses_v2_envelope_and_public_whitelist(): void
     {
         $this->getJson('/api/v2/site/config?per_page=20')
