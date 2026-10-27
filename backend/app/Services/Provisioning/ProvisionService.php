@@ -242,16 +242,21 @@ class ProvisionService
 
         try {
             $result = $this->provisionViaUpstream($order, $service);
-            $hostDetail = $result['host_detail'];
+            // 插件路径（ProvidesOrderProvisioning）的返回结构没有强制契约，缺键直接下标
+            // 会触发 Undefined array key 警告并被转成 ErrorException；它不属于
+            // ProvisionRetryNotAllowedException，队列会照常走满 $tries=3 重试，
+            // 等于对上游重复下单。所以这里结构化取值一律带兜底。
+            $hostDetail = is_array($result['host_detail'] ?? null) ? $result['host_detail'] : [];
+            $requestedHost = (string) ($result['requested_host'] ?? '');
             $serviceStatus = $this->resolveServiceStatusFromUpstream($hostDetail);
 
             $provisionData = array_merge($this->serviceProvisionData($service), [
                 'provider_key' => $providerKey,
                 'supplier_id' => $this->resolveProductSupplierId($order->product),
-                'requested_host' => $result['requested_host'],
-                'upstream_invoice_id' => $result['upstream_invoice_id'],
-                'upstream_host_id' => $result['upstream_host_id'],
-                'upstream_host_ids' => $result['upstream_host_ids'],
+                'requested_host' => $requestedHost !== '' ? $requestedHost : null,
+                'upstream_invoice_id' => $result['upstream_invoice_id'] ?? null,
+                'upstream_host_id' => $result['upstream_host_id'] ?? null,
+                'upstream_host_ids' => $result['upstream_host_ids'] ?? null,
                 'downstream_id' => $result['downstream_id'] ?? null,
                 'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
                 'upstream_product_name' => trim((string) ($hostDetail['product_name'] ?? '')),
@@ -261,7 +266,7 @@ class ProvisionService
                 'host_config_option' => is_array($hostDetail['config_option'] ?? null) ? $hostDetail['config_option'] : [],
                 'os' => (string) ($hostDetail['os'] ?? ''),
                 'connection_secret' => $this->encryptConnectionCache([
-                    'hostname' => (string) ($hostDetail['domain'] ?? $result['requested_host']),
+                    'hostname' => (string) ($hostDetail['domain'] ?? $requestedHost),
                     'username' => (string) ($hostDetail['username'] ?? ''),
                     'password' => (string) ($hostDetail['password'] ?? ''),
                     'port' => (int) (($hostDetail['port'] ?? 0) ?: 0),
@@ -276,7 +281,7 @@ class ProvisionService
             $service->forceFill([
                 'status' => $serviceStatus,
                 'name' => (string) ($service->name ?: $order->display_product_name ?: $order->product?->name ?: '未命名服务'),
-                'domain' => (string) ($hostDetail['domain'] ?? $result['requested_host']),
+                'domain' => (string) ($hostDetail['domain'] ?? $requestedHost),
                 'expires_at' => $this->resolveServiceExpiry($hostDetail, $order),
                 'suspended_reason' => null,
                 'provision_data' => $persistedProvisionData,
@@ -367,6 +372,10 @@ class ProvisionService
                 'supplier_id' => $this->resolveProductSupplierId($order->product),
                 'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
                 'message' => $message,
+                // 非 BusinessException（Undefined array key、TypeError 等）的用户可见文案
+                // 是固定兜底句，原始原因只在异常里。不记 raw_message 时，线上跑了多少轮
+                // 都看不出开通到底为什么失败——上面那条缺键告警就是这么被藏起来的。
+                'raw_message' => $exception->getMessage(),
                 'exception' => $exception::class,
             ]);
 

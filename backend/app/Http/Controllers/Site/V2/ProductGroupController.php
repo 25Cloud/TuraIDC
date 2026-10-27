@@ -13,10 +13,12 @@ use App\Http\Resources\Site\V2\SiteProductCardResource;
 use App\Http\Resources\Site\V2\SiteProductGroupResource;
 use App\Models\Product;
 use App\Models\ThirdProductGroup;
+use App\Models\User;
 use App\Services\ProductCatalog\ProductGroupV2QueryService;
 use App\Support\ApiResponseBuilder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 class ProductGroupController extends Controller
@@ -49,7 +51,13 @@ class ProductGroupController extends Controller
         // 站点商品卡响应缓存（tags: site-products）：目录页递归展开时每个组/分页都命中缓存，
         // 消掉查询与资源拼装成本。管理端对商品/分组/折扣组的增删改会经模型事件主动失效
         // （见 AppServiceProvider），展示实时性不依赖 TTL 过期。
-        $cacheKey = 'v1:'.$group.':'.$level.':'.md5(json_encode($payload));
+        //
+        // 缓存键必须带用户 ID：SiteProductCardResource 内含代理折扣字段
+        // （ResolvesSiteAgentDiscount 会按当前登录用户与其代理组算折扣价）。
+        // 不带用户时，代理用户先行访问就会把自己看到的代理价写进公共缓存，
+        // 之后所有访客和未登录游客都会看到代理价。键变细只会多几个 key，
+        // 绝不会把折扣价泄露给没有折扣身份的人。
+        $cacheKey = 'v1:'.$group.':'.$level.':'.$this->resolveClientUserId($request).':'.md5(json_encode($payload));
 
         $data = Cache::tags(['site-products'])->remember($cacheKey, 60, function () use ($group, $level, $payload): array {
             return ApiResponseBuilder::pagination(
@@ -76,7 +84,8 @@ class ProductGroupController extends Controller
         $payload = $request->validated();
         $childGroupId = (int) ($payload['child_group_id'] ?? 0);
         $resolveId = (int) ($payload['resolve_id'] ?? 0);
-        $cacheKey = 'v2-catalog:'.$group.':'.$childGroupId.':'.$resolveId;
+        // 同 products()：响应里含代理折扣，缓存键必须区分用户。
+        $cacheKey = 'v2-catalog:'.$group.':'.$childGroupId.':'.$resolveId.':'.$this->resolveClientUserId($request);
 
         $data = Cache::tags(['site-products'])->remember($cacheKey, 300, function () use ($request, $group, $childGroupId, $resolveId): array {
             $childrenPaginator = $this->productGroups->paginateSiteChildren($group, [
@@ -116,6 +125,23 @@ class ProductGroupController extends Controller
         });
 
         return $this->success($data);
+    }
+
+    /**
+     * 解析当前请求的登录用户 ID，用于给含用户维度的缓存键分桶。
+     *
+     * 站点公开路由上 $request->user() 通常为空（走的是 sanctum 的 Bearer token），
+     * 必须再显式从 sanctum guard 取一次，否则所有登录用户都会被当成游客。
+     */
+    private function resolveClientUserId(Request $request): int
+    {
+        $user = $request->user();
+
+        if (! $user instanceof User) {
+            $user = Auth::guard('sanctum')->user();
+        }
+
+        return $user instanceof User ? (int) $user->id : 0;
     }
 
     /**

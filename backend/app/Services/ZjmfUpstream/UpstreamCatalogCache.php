@@ -35,6 +35,11 @@ final class UpstreamCatalogCache
     public static function bump(): void
     {
         try {
+            // 必须先把键初始化再自增：Redis 的 INCR 对不存在的键是从 0 加到 1，
+            // 而 version() 在键缺失时的默认值也是 1，于是第一次变更 bump 完版本号
+            // 仍然是 1，旧响应一个都没失效——首次改商品时下游还会看到旧目录。
+            // add() 是原子的「不存在才写」，并发 bump 也不会重复初始化。
+            Cache::add(self::VERSION_KEY, self::version(), 86400);
             Cache::increment(self::VERSION_KEY);
 
             return;

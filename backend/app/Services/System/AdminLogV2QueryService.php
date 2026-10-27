@@ -484,7 +484,14 @@ class AdminLogV2QueryService
     {
         $value = $model->getAttribute($key);
 
-        return method_exists($value, 'format') ? $value->format('Y-m-d H:i:s') : ($value ? (string) $value : null);
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        // 不能用 method_exists($value, 'format')：该列允许为 NULL（message_logs.sent_at、
+        // schedule_run_logs.finished_at 常态为空），method_exists(null, ...) 在 PHP 8
+        // 直接抛 TypeError，把管理端日志详情整页拖成 500。
+        return $value instanceof \DateTimeInterface ? $value->format('Y-m-d H:i:s') : (string) $value;
     }
 
     /**

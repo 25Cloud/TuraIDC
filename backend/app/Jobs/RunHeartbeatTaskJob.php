@@ -76,7 +76,11 @@ class RunHeartbeatTaskJob implements ShouldQueue
         $tick = $ticks->findContext($this->tickId);
         $finalFailure = $this->isFinalAttempt();
 
-        Log::info('[心跳定时任务] 开始执行', [
+        // 开始/完成两条都降到 debug：心跳任务每分钟都在跑，成功路径把整份 result
+        // 落盘没有诊断价值，实测这是应用日志最大的单一来源（日增 1.5~2.5 万行）。
+        // 每次执行的完整记录在 schedule_task_runs 表里（task_run_id 可查），
+        // 失败另有 Runner 与 failed() 单独记录，信息不丢。
+        Log::debug('[心跳定时任务] 开始执行', [
             'task' => $this->taskKey,
             'source' => $this->source,
             'tick_id' => $this->tickId,
@@ -96,7 +100,7 @@ class RunHeartbeatTaskJob implements ShouldQueue
             triggeredAt: CarbonImmutable::now(),
         ), $finalFailure);
 
-        Log::info('[心跳定时任务] 执行完成', [
+        Log::debug('[心跳定时任务] 执行完成', [
             'task' => $this->taskKey,
             'source' => $this->source,
             'tick_id' => $this->tickId,
