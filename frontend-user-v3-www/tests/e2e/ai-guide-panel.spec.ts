@@ -143,8 +143,9 @@ test.describe("AI 浮窗", () => {
     await expect(launcher(page)).toHaveAttribute("aria-label", "AI 导购");
 
     const box = await launcher(page).boundingBox();
-    expect(box?.width).toBe(48);
-    expect(box?.height).toBe(48);
+    // 三端统一尺寸：直径 3.25rem = 52px
+    expect(box?.width).toBe(52);
+    expect(box?.height).toBe(52);
   });
 
   test("助手回复按 markdown 渲染：标题/列表/表格/引用/代码/链接都有结构", async ({ page }) => {

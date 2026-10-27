@@ -217,6 +217,7 @@ class ServiceDetailResource extends JsonResource
             'power' => (bool) ($actions['power'] ?? false),
             'module_status' => (bool) ($actions['module_status'] ?? false),
             'manual_provision' => (bool) ($actions['manual_provision'] ?? false),
+            'upstream_provision' => (bool) ($actions['upstream_provision'] ?? false),
             'password_reset' => (bool) ($actions['password_reset'] ?? false),
             'reinstall' => (bool) ($actions['reinstall'] ?? false),
             'traffic_package' => (bool) ($actions['traffic_package'] ?? false),

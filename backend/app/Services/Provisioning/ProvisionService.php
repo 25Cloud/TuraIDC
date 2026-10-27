@@ -6,6 +6,7 @@ use App\Constants\BillingCycle;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Exceptions\ProvisionRetryNotAllowedException;
 use App\Exceptions\UpstreamStockShortageException;
 use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Jobs\SyncSupplierBalanceJob;
@@ -223,6 +224,12 @@ class ProvisionService
 
         $service = $this->ensureLocalService($order);
 
+        // 已经有上游实例标识（绑定或上次回填）就绝不再下一单：管理员手滑点两下也不该多买一台。
+        throw_if(
+            $this->resolveServiceUpstreamServiceId($service) !== null,
+            new BusinessException('该服务已有上游实例，无需重复开通；如需同步状态请使用「刷新状态」')
+        );
+
         $this->assertNoUnresolvedUpstreamProvisionInvoice($service);
 
         return $this->submitUpstreamProvision($order, $service, true);
@@ -300,6 +307,9 @@ class ProvisionService
                 'service_snapshot' => $this->buildServiceSnapshot($service),
             ])->save();
 
+            // 开通成功：清掉账单上的「已付未履约」标记，否则财务会把它当成待退款单。
+            $this->clearInvoiceRequiresRefundFlag($order);
+
             // 开通成功后刷新该上游余额：开通才是真正扣减上游余额的动作，此刻拉取
             // 才能拿到消耗后的真实值。异步进行，不拖慢开通链路，失败也不影响开通结果。
             $this->dispatchSupplierBalanceSync($order->product, (int) $order->id);
@@ -372,12 +382,76 @@ class ProvisionService
         }
     }
 
+    /**
+     * 开通成功后清掉账单上的 requires_refund 标记。
+     *
+     * 履约失败时会给已付账单打这个标记供人工核实退款；但如果管理员随后手动开通成功，
+     * 标记还留着，财务就会把一台正常在跑的机器当成「已付未开通」去退款。
+     */
+    private function clearInvoiceRequiresRefundFlag(Order $order): void
+    {
+        try {
+            $invoice = $order->invoice()->first();
+
+            if (! $invoice instanceof Invoice) {
+                return;
+            }
+
+            $snapshot = is_array($invoice->config_snapshot ?? null) ? $invoice->config_snapshot : [];
+            if (empty($snapshot['requires_refund'])) {
+                return;
+            }
+
+            unset($snapshot['requires_refund']);
+            $snapshot['requires_refund_cleared_at'] = now()->toDateTimeString();
+
+            $invoice->forceFill(['config_snapshot' => $snapshot])->saveQuietly();
+
+            Log::info('[自动开通] 服务已开通成功，清除账单的待退款标记', [
+                'order_id' => (int) $order->id,
+                'invoice_id' => (int) $invoice->id,
+            ]);
+        } catch (\Throwable $exception) {
+            Log::warning('[自动开通] 清除待退款标记失败', [
+                'order_id' => (int) $order->id,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+        }
+    }
+
     private function ensureLocalService(Order $order): Service
     {
         if ($order->service) {
             return $order->service;
         }
 
+        // 同步履约、队列重试、管理员手动开通可能同时到达同一个订单：三方都读到
+        // order.service_id=null 时各建一条服务，等于一个订单开出多台实例、上游也多笔订单。
+        // 这里按订单串行化，拿到锁后按服务表复查一次再创建。
+        return Cache::lock("lock:order-local-service:{$order->id}", 30)->block(15, function () use ($order) {
+            if ((int) $order->id > 0) {
+                // 同一订单只会有一台实例：并发进来的第二方必须复用第一条，而不是再建一条。
+                // 同时按 product_id 过滤，避免历史脏数据把不同商品的服务挂到这个订单上。
+                $existing = Service::query()
+                    ->where('order_id', (int) $order->id)
+                    ->where('product_id', (int) $order->product_id)
+                    ->latest('id')
+                    ->first();
+
+                if ($existing instanceof Service) {
+                    $order->setRelation('service', $existing);
+
+                    return $existing;
+                }
+            }
+
+            return $this->createLocalService($order);
+        });
+    }
+
+    private function createLocalService(Order $order): Service
+    {
         $hostname = $this->resolveProvisionHostname($order);
         $instanceName = ServiceHostname::resolveInstanceNameFromProduct(
             $order->product,
@@ -1672,17 +1746,72 @@ class ProvisionService
         $service->setAttribute('provision_data', $freshService->provision_data);
     }
 
+    /**
+     * 重新向上游下单前的两道闸门：
+     * 1. 上次开通结果未确认（上游可能已建单）——禁止再下单，必须先人工核实；
+     * 2. 已建上游账单但没拿到实例标识——同样禁止直接重下。
+     *
+     * 两道闸门都用 ProvisionRetryNotAllowedException 上抛，让队列停止自动重试：
+     * 「首轮同步履约 + $tries=3 队列重试」最多会把同一次购买在上游开出 4 笔一模一样的订单。
+     */
     private function assertNoUnresolvedUpstreamProvisionInvoice(Service $service): void
     {
         $provisionData = $this->serviceProvisionData($service);
         $upstreamInvoiceId = (int) ($provisionData['upstream_invoice_id'] ?? 0);
         $upstreamHostId = $this->resolveServiceUpstreamServiceId($service)
             ?? $this->nonBlank($provisionData['upstream_host_id'] ?? null);
+        $uncertainAt = trim((string) ($provisionData['upstream_provision_uncertain_at'] ?? ''));
+
+        throw_if(
+            $uncertainAt !== '',
+            new ProvisionRetryNotAllowedException(sprintf(
+                '上次上游开通（%s）结果未确认，已停止自动下单：请先到上游核实是否已生成订单，确认没有后由管理员发起开通',
+                $uncertainAt
+            ))
+        );
 
         throw_if(
             $upstreamInvoiceId > 0 && $upstreamHostId === null,
-            new BusinessException('已创建上游账单但未取得实例标识，请先核实上游账单状态后再处理，禁止直接重新下单')
+            new ProvisionRetryNotAllowedException('已创建上游账单但未取得实例标识，请先核实上游账单状态后再处理，禁止直接重新下单')
         );
+    }
+
+    /**
+     * 管理员已核实「上一轮上游开通没有在上游生成任何订单」后，清除不确定标记与残留账单号，
+     * 允许重新发起一次上游采购。这是唯一的清除入口，不做任何自动清理。
+     */
+    public function clearUpstreamProvisionUncertainty(Service $service, string $reason = ''): Service
+    {
+        $provisionData = $this->serviceProvisionData($service, includeSecrets: true);
+        $previousUncertainAt = trim((string) ($provisionData['upstream_provision_uncertain_at'] ?? ''));
+        $previousInvoiceId = (int) ($provisionData['upstream_invoice_id'] ?? 0);
+
+        foreach ([
+            'upstream_provision_uncertain_at',
+            'upstream_provision_uncertain_reason',
+            'provision_error',
+        ] as $key) {
+            unset($provisionData[$key]);
+        }
+
+        // 没有实例标识时，残留的上游账单号本身就在拦路；管理员核实过上游无单，一并清掉。
+        if ($this->nonBlank($provisionData['upstream_host_id'] ?? null) === null) {
+            unset($provisionData['upstream_invoice_id'], $provisionData['upstream_host_ids']);
+        }
+
+        $service->forceFill([
+            'provision_data' => $this->pluginBindingResolver()->sanitizeServiceProvisionData($provisionData),
+            'suspended_reason' => null,
+        ])->save();
+
+        Log::warning('[自动开通] 管理员确认上游未生成订单，已清除未确认标记', [
+            'service_id' => (int) $service->id,
+            'previous_uncertain_at' => $previousUncertainAt,
+            'previous_upstream_invoice_id' => $previousInvoiceId,
+            'reason' => $reason,
+        ]);
+
+        return $service;
     }
 
     /**

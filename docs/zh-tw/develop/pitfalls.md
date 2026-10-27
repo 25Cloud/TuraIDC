@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: ce8f513e895b33dad645bbd6c6ac25d47acfc0e3179fb67554f16afb279b569d
+sourceHash: 02fd4ead22323b2dfdd5880efa7f4a4131b5c52a18c2bc7627e8f94accce6728
 generated: zh-tw
 ---
 
@@ -328,6 +328,30 @@ Laravel 的 `mimetypes` 規則本身走 Symfony 的 MimeTypeGuesser，fileinfo �
 **對策**：欄位級校驗錯誤來自校驗器，是 name → [message] 的結構化資料，不會夾帶堆疊，
 所以只對「頂層 message」保留中文過濾，對 `errors` 對映**不要求語言**（見 `firstNonEmptyMessage`）。
 真正該做的是把關鍵欄位的文案寫在 FormRequest 的 `messages()` 裡，四語言環境都不會缺。
+
+### 3.14 上游開通失敗不能當「可重試錯誤」處理，否則一次購買會在上游開出 4 筆訂單
+
+支付後履約是「同步跑一次 + `provision` 佇列 `$tries=3`」。只要失敗被拋成普通異常，佇列就會
+把同一次購買再走一遍「清空購物車 → 加購 → 結算」，上游於是多出 3 筆一模一樣的訂單。
+對接魔方財務的客戶看到的是「一個新訂單，沒成功自動發了 4 筆相同訂單」。
+
+真正的坑在於**結算成功之後**：`/cart/settle` 一旦返回成功，上游訂單就已經存在了，
+此刻只要本地解析不出賬單號、或請求在返回途中斷掉，`provision_data` 裡就不會有
+`upstream_invoice_id`，下一輪重試的閘門（`assertNoUnresolvedUpstreamProvisionInvoice`）
+讀到的仍是 0，於是放行——重複下單就是這麼來的。
+
+**現在的三道防線**（`ProvisionService` + `ZjmfProvisionService`）：
+
+1. 結算成功後按主機名回查上游例項，找到就直接複用，絕不重新下單；
+   找不到或查不動，就落 `upstream_provision_uncertain_at` 標記並拋
+   `ProvisionRetryNotAllowedException`，**停止**佇列重試，轉人工核實。
+2. 閘門只認兩類終止態：`upstream_invoice_id > 0` 卻沒有例項標識、或存在未確認標記。
+   兩者都要求管理員先在上游核實，確認沒有訂單後由「一鍵上游開通」勾選強制重開。
+3. `ensureLocalService` 按訂單加鎖並按 `order_id + product_id` 複查，避免併發履約
+   給同一個訂單建出兩條服務（截圖裡同一臺上遊例項掛著兩行服務就是這麼來的）。
+
+**對策**：任何「會產生上游訂單」的失敗路徑都必須落一個可冪等的檢查點（賬單號、例項號或
+主機名），並用不可重試的異常型別終止自動重試。切不要把這類失敗混進通用異常讓佇列重試。
 
 ## 四、提交
 ### 4.1 必須 `--no-verify`

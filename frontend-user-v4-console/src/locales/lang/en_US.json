@@ -2526,6 +2526,7 @@
         }
     },
     "ai": {
+        "close": "Close",
         "reasoning": { "live": "Thinking…", "done": "Reasoning" },
         "recent": { "title": "Recent" },
         "title": "AI Assistant",

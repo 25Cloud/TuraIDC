@@ -1,7 +1,6 @@
 import {
   ApiIcon,
   CatalogIcon,
-  ChatIcon,
   CouponIcon,
   DashboardIcon,
   FileIcon,
@@ -18,6 +17,7 @@ import {
 import { shallowRef } from 'vue';
 import type { RouteRecordRaw } from 'vue-router';
 
+import AiRobotAvatar from '@/components/ai/AiRobotAvatar.vue';
 import Layout from '@/layouts/index.vue';
 
 // zh_HK 缺省跟随 zh_TW：香港用繁体，缺这一项时面包屑与菜单会回落到简体。
@@ -366,7 +366,9 @@ export default [
         component: () => import('@/pages/client/ai/index.vue'),
         meta: {
           title: title('AI 助手', 'AI Assistant', 'AI 助理'),
-          icon: icon(ChatIcon),
+          // 侧边栏图标与浮球、抽屉头部、消息头像统一用同一个机器人头 SVG，
+          // 不再用 tdesign 的对话气泡（AI 助手不是客服按钮）
+          icon: icon(AiRobotAvatar),
           requireAuth: true,
           orderNo: 110,
           keepAlive: false,

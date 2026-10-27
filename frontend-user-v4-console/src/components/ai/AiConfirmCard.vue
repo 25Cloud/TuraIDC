@@ -32,10 +32,16 @@
     <p class="ai-confirm-card__expires">{{ $t('ai.confirm.expiresAt', { time: expiresText }) }}</p>
 
     <footer class="ai-confirm-card__actions">
-      <t-button theme="primary" size="small" :loading="submitting" :disabled="expired" @click="handleConfirm">
+      <t-button
+        class="ai-confirm-card__btn"
+        theme="primary"
+        :loading="submitting"
+        :disabled="expired"
+        @click="handleConfirm"
+      >
         {{ $t('ai.confirm.confirm') }}
       </t-button>
-      <t-button size="small" variant="outline" :disabled="submitting" @click="handleReject">
+      <t-button class="ai-confirm-card__btn" variant="outline" :disabled="submitting" @click="handleReject">
         {{ $t('ai.confirm.cancel') }}
       </t-button>
       <span v-if="expired" class="ai-confirm-card__hint">{{ $t('ai.confirm.expired') }}</span>
@@ -216,8 +222,14 @@ const handleReject = async (): Promise<void> => {
 .ai-confirm-card__actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--td-comp-margin-s);
+  gap: 8px;
   align-items: center;
+}
+
+.ai-confirm-card__btn {
+  height: 2rem;
+  min-width: 5rem;
+  padding: 0 14px;
 }
 
 .ai-confirm-card__hint {

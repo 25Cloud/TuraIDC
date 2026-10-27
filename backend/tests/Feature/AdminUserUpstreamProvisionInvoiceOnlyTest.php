@@ -26,7 +26,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
-class AdminUserManualProvisionInvoiceOnlyTest extends TestCase
+class AdminUserUpstreamProvisionInvoiceOnlyTest extends TestCase
 {
     use DatabaseTransactions;
 
@@ -190,12 +190,12 @@ class AdminUserManualProvisionInvoiceOnlyTest extends TestCase
             $this->createMock(SettingService::class),
         );
 
-        $result = $userService->manualProvisionService($user, (int) $service->id, [
-            'remark' => '重新提交上游开通',
+        $result = $userService->provisionUpstreamService($user, (int) $service->id, [
+            'remark' => '一键上游开通',
         ], [
             'operator_id' => 9001,
             'operator_name' => 'Admin Reviewer',
-            'trace_id' => 'manual-provision-invoice-only-test',
+            'trace_id' => 'upstream-provision-invoice-only-test',
             'ip_address' => '127.0.0.1',
         ]);
 

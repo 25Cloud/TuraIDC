@@ -346,6 +346,7 @@ class ServiceTransformService
             'power' => $canExecuteConsoleActions,
             'module_status' => $canManageService,
             'manual_provision' => $this->canManualProvisionService($service),
+            'upstream_provision' => $this->canAutoProvisionUpstream($service),
             'password_reset' => $this->canResetPassword($service, $serviceStatus),
             'reinstall' => $canExecuteConsoleActions,
             'rescue' => $canExecuteConsoleActions,
@@ -528,6 +529,28 @@ class ServiceTransformService
 
         return $provisionError !== ''
             && (int) $service->status === ServiceStatus::PENDING;
+    }
+
+    /**
+     * 是否展示「一键上游开通」：服务停在待开通、且还没有拿到上游实例/账单。
+     *
+     * 这是管理员把「向上游下单」自动跑完的入口（加购 → 结算 → 供应商余额支付 → 回填实例 ID），
+     * 不需要手填上游接口和实例 ID。商品到底能不能下单，由
+     * ProvisionService::adminInitiatedProvision() 在服务端兜底校验。
+     */
+    public function canAutoProvisionUpstream(Service $service): bool
+    {
+        if ((int) $service->status !== ServiceStatus::PENDING) {
+            return false;
+        }
+
+        if ((int) ($service->order_id ?? 0) <= 0) {
+            return false;
+        }
+
+        $provisionData = $this->serviceProvisionData($service);
+
+        return (int) ($provisionData['upstream_host_id'] ?? 0) <= 0;
     }
 
     /**

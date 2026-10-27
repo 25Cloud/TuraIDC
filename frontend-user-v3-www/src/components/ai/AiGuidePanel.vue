@@ -10,43 +10,54 @@
     >
       <header class="ai-panel__head">
         <div class="ai-panel__identity">
-          <span class="ai-panel__avatar" aria-hidden="true">
-            <el-icon><Service /></el-icon>
-          </span>
-          <div class="ai-panel__titles">
-            <strong class="ai-panel__title">{{ $t("ai.panel.title") }}</strong>
-            <span v-if="modelLabel" class="ai-panel__model">{{ modelLabel }}</span>
-          </div>
+          <AiRobotAvatar :size="18" class="ai-panel__logo" />
+          <span class="ai-panel__title">{{ $t("ai.panel.title") }}</span>
         </div>
         <div class="ai-panel__head-actions">
-          <el-button text size="small" :disabled="streaming" @click="handleNewConversation">
-            {{ $t("ai.panel.newConversation") }}
-          </el-button>
-          <el-button text size="small" @click="close">
-            {{ $t("ai.panel.close") }}
-          </el-button>
+          <el-select
+            v-if="modeOptions.length > 1"
+            class="ai-panel__mode"
+            size="small"
+            :model-value="permissionMode"
+            @change="handleModeChange"
+          >
+            <el-option
+              v-for="mode in modeOptions"
+              :key="mode.value"
+              :label="mode.label"
+              :value="mode.value"
+            />
+          </el-select>
+          <button
+            type="button"
+            class="ai-panel__icon-btn"
+            :aria-label="$t('ai.panel.newConversation')"
+            :title="$t('ai.panel.newConversation')"
+            :disabled="streaming"
+            @click="handleNewConversation"
+          >
+            <el-icon><Plus /></el-icon>
+          </button>
+          <button
+            type="button"
+            class="ai-panel__icon-btn"
+            :aria-label="$t('ai.panel.close')"
+            :title="$t('ai.panel.close')"
+            @click="close"
+          >
+            <el-icon><Close /></el-icon>
+          </button>
         </div>
       </header>
 
-      <div v-if="subjectLabel || modeOptions.length > 1" class="ai-panel__meta">
-        <span v-if="subjectLabel" class="ai-panel__subject">
+      <!-- 第二行：模型名 / 当前页面上下文；面板窄到这个宽度以下时模型名整行省略，绝不挤压标题 -->
+      <p v-if="modelLabel || subjectLabel" class="ai-panel__context">
+        <span v-if="modelLabel" class="ai-panel__context-model">{{ modelLabel }}</span>
+        <span v-if="modelLabel && subjectLabel" class="ai-panel__context-sep" aria-hidden="true">·</span>
+        <span v-if="subjectLabel" class="ai-panel__context-subject">
           {{ $t("ai.panel.subject", { label: subjectLabel }) }}
         </span>
-        <el-select
-          v-if="modeOptions.length > 1"
-          class="ai-panel__mode"
-          size="small"
-          :model-value="permissionMode"
-          @change="handleModeChange"
-        >
-          <el-option
-            v-for="mode in modeOptions"
-            :key="mode.value"
-            :label="mode.label"
-            :value="mode.value"
-          />
-        </el-select>
-      </div>
+      </p>
 
       <el-alert
         v-if="ready && !enabled"
@@ -73,24 +84,28 @@
       />
 
       <footer class="ai-panel__composer">
-        <el-input
-          v-model="draft"
-          class="ai-panel__input"
-          type="textarea"
-          resize="none"
-          :autosize="{ minRows: 2, maxRows: 5 }"
-          :disabled="!enabled"
-          :placeholder="$t('ai.panel.placeholder')"
-          @keydown.enter.exact.prevent="handleSend"
-        />
-        <div class="ai-panel__composer-actions">
-          <span class="ai-panel__quota">{{ quotaText }}</span>
-          <el-button v-if="streaming" size="small" @click="handleStop">
+        <!-- 输入区：textarea 与发送按钮同一行，按钮高 32px、宽 ≥80px -->
+        <div class="ai-panel__composer-field">
+          <el-input
+            v-model="draft"
+            class="ai-panel__input"
+            type="textarea"
+            resize="none"
+            :autosize="{ minRows: 1, maxRows: 6 }"
+            :disabled="!enabled"
+            :placeholder="$t('ai.panel.placeholder')"
+            @keydown.enter.exact.prevent="handleSend"
+          />
+          <el-button
+            v-if="streaming"
+            class="ai-panel__send"
+            @click="handleStop"
+          >
             {{ $t("ai.panel.stop") }}
           </el-button>
           <el-button
             v-else
-            size="small"
+            class="ai-panel__send"
             type="primary"
             :loading="sending"
             :disabled="!canSend || !draft.trim()"
@@ -99,19 +114,23 @@
             {{ $t("ai.panel.send") }}
           </el-button>
         </div>
+        <div v-if="quotaText" class="ai-panel__composer-meta">
+          <span class="ai-panel__quota">{{ quotaText }}</span>
+        </div>
       </footer>
     </section>
   </transition>
 </template>
 
 <script setup>
-import { Service } from "@element-plus/icons-vue";
+import { Close, Plus } from "@element-plus/icons-vue";
 import { describeSubject } from "@turaidc/shared/runtime";
 import { computed, onBeforeUnmount, ref, watch } from "vue";
 
 import { t } from "@/locales";
 
 import AiGuideMessages from "./AiGuideMessages.vue";
+import AiRobotAvatar from "./AiRobotAvatar.vue";
 
 const props = defineProps({
   modelValue: {
@@ -322,21 +341,24 @@ function handleStop() {
 </script>
 
 <style scoped lang="scss">
+/*
+ * 面板几何与三端统一：桌面右下角 1.5rem、宽 400px、高 min(620px, 100vh - 96px)。
+ * 浮球在打开时隐藏，两者共用同一个角落，因此这里直接锚在 1.5rem 上。
+ */
 .ai-panel {
   position: fixed;
   right: 24px;
-  /* 浮球 48px + 28px 底距 + 12px 间隙 */
-  bottom: calc(28px + 48px + 12px);
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   z-index: 3400;
   display: flex;
   flex-direction: column;
   width: 400px;
-  max-height: min(640px, calc(100vh - 96px));
+  height: min(620px, calc(100vh - 96px));
   overflow: hidden;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
-  box-shadow: var(--el-box-shadow);
+  background: var(--td-bg-color-container, var(--el-bg-color));
+  border: 1px solid var(--td-component-stroke, var(--el-border-color-light));
+  border-radius: var(--td-radius-large, 12px);
+  box-shadow: var(--td-shadow-3, var(--el-box-shadow));
 }
 
 .ai-panel__head {
@@ -345,8 +367,8 @@ function handleStop() {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 12px 16px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  padding: 10px 12px 10px 16px;
+  border-bottom: 1px solid var(--td-component-stroke, var(--el-border-color-lighter));
 }
 
 .ai-panel__identity {
@@ -356,37 +378,16 @@ function handleStop() {
   min-width: 0;
 }
 
-.ai-panel__avatar {
-  display: inline-flex;
-  flex: none;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  color: var(--el-color-primary);
-  font-size: 16px;
-  background: var(--el-color-primary-light-9);
-  border-radius: 50%;
-}
-
-.ai-panel__titles {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+.ai-panel__logo {
+  color: var(--td-brand-color, var(--el-color-primary));
 }
 
 .ai-panel__title {
-  font-size: 14px;
-  font-weight: 600;
-  line-height: 1.4;
-  color: var(--el-text-color-primary);
-}
-
-.ai-panel__model {
   overflow: hidden;
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: 500;
   line-height: 1.4;
-  color: var(--el-text-color-placeholder);
+  color: var(--td-text-color-primary, var(--el-text-color-primary));
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -395,35 +396,91 @@ function handleStop() {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.ai-panel__meta {
+/* 权限下拉最小 96px：「自动审批（beta）」比原来的定宽更长，用 min-width 而不是固定宽 */
+.ai-panel__mode {
+  flex: none;
+  width: 128px;
+  min-width: 96px;
+  max-width: 148px;
+}
+
+/*
+ * 头部图标按钮：视觉 28px，命中区由 ::after 补到 32px，
+ * 与三端「所有可点控件 ≥32×32」的口径一致。
+ */
+.ai-panel__icon-btn {
+  position: relative;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 1rem;
+  line-height: 1;
+  color: var(--td-text-color-secondary, var(--el-text-color-regular));
+  cursor: pointer;
+  background: transparent;
+  border: 0;
+  border-radius: var(--td-radius-default, 4px);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease;
+
+  &::after {
+    position: absolute;
+    inset: -2px;
+    content: "";
+    border-radius: inherit;
+  }
+
+  &:hover {
+    color: var(--td-text-color-primary, var(--el-text-color-primary));
+    background: var(--td-bg-color-container-hover, var(--el-fill-color-light));
+  }
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--td-brand-color-focus, var(--el-color-primary-light-5));
+    outline-offset: 1px;
+  }
+}
+
+/* 第二行上下文：模型名 + 当前对象，窄面板整行省略模型名 */
+.ai-panel__context {
   display: flex;
   flex: none;
   align-items: center;
-  gap: 8px;
-  /* meta 是独立一条，必须自带底色和下边框：
-     否则消息区从它下沿直接滚过去，权限下拉看着像压在正文上 */
-  padding: 8px 16px;
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  gap: 4px;
+  min-width: 0;
+  margin: 0;
+  padding: 6px 16px 8px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--td-text-color-placeholder, var(--el-text-color-placeholder));
 }
 
-.ai-panel__subject {
-  flex: 1;
-  min-width: 0;
+.ai-panel__context-model,
+.ai-panel__context-subject {
   overflow: hidden;
-  font-size: 12px;
-  color: var(--el-text-color-regular);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.ai-panel__mode {
+.ai-panel__context-model {
+  color: var(--td-text-color-secondary, var(--el-text-color-regular));
+}
+
+.ai-panel__context-sep {
   flex: none;
-  /* 「自动审批（beta）」比原来的 132px 宽，定宽会把字截掉 */
-  width: 11rem;
 }
 
 .ai-panel__alert {
@@ -433,32 +490,56 @@ function handleStop() {
 
 .ai-panel__composer {
   flex: none;
-  padding: 12px 16px 16px;
-  background: var(--el-bg-color);
-  border-top: 1px solid var(--el-border-color-light);
+  padding: 12px 16px;
+  background: var(--td-bg-color-container, var(--el-bg-color));
+  border-top: 1px solid var(--td-component-stroke, var(--el-border-color-lighter));
+}
+
+/* 输入区与发送按钮同一行：textarea 吃满剩余宽度，按钮固定 32px 高 */
+.ai-panel__composer-field {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
 }
 
 .ai-panel__input {
+  flex: 1 1 auto;
+  min-width: 0;
+
   :deep(.el-textarea__inner) {
+    min-height: 40px;
+    max-height: 140px;
+    padding: 9px 12px;
+    overflow-y: auto;
     font-size: 13px;
-    line-height: 1.6;
+    line-height: 1.7;
+    border-radius: var(--td-radius-default, 6px);
   }
 }
 
-.ai-panel__composer-actions {
+.ai-panel__send {
+  flex: 0 0 auto;
+  min-width: 80px;
+  height: 32px;
+  padding: 0 14px;
+}
+
+.ai-panel__composer-meta {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 8px;
-  margin-top: 8px;
+  min-height: 1rem;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--td-text-color-placeholder, var(--el-text-color-placeholder));
 }
 
 .ai-panel__quota {
-  flex: 1;
-  min-width: 0;
   overflow: hidden;
-  font-size: 11px;
-  color: var(--el-text-color-placeholder);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -488,23 +569,30 @@ function handleStop() {
   transform: translateY(100%);
 }
 
+@media (max-width: 1024px) {
+  .ai-panel {
+    width: 360px;
+  }
+}
+
 @media (max-width: 767px) {
   .ai-panel {
-    inset: 0;
+    right: 0;
+    left: 0;
+    bottom: 0;
     width: auto;
     height: 100%;
-    max-height: none;
     border: none;
     border-radius: 0;
   }
 
   /* 全屏面板要自己避让刘海与手势条 */
   .ai-panel__head {
-    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
   }
 
   .ai-panel__composer {
-    padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   }
 
   .ai-panel__head-actions {

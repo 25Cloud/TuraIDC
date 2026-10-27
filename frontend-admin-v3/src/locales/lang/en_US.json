@@ -1428,8 +1428,11 @@
       "linuxRescueSystem": "Linux rescue system",
       "longTermValid": "No expiry",
       "manualPrice": "Manual price",
-      "manualProvision": "Provision manually",
-      "manualProvisionLink": "Manual provisioning / upstream link",
+      "upstreamProvision": "Provision upstream",
+      "upstreamProvisionConfirm": "Start provisioning",
+      "upstreamProvisionHint": "Runs the bound upstream automatically: add to cart → checkout → pay with the supplier balance → write back the upstream instance ID. No manual instance ID needed.",
+      "upstreamProvisionForce": "I verified upstream that the previous attempt created no order (clear the unconfirmed flag and order again)",
+      "upstreamProvisionRemark": "Note (optional, written to the operation log)",
       "memory": "Memory",
       "networkInfo": "Network info",
       "noConfigData": "No configuration data",
@@ -1594,11 +1597,10 @@
       "cdnConsoleTitle": "CDN console",
       "instanceDetailTitle": "Instance details",
       "back": "Back",
-      "upstreamHostIdRequired": "Please enter the upstream instance ID",
       "purchasePriceRequired": "Please enter the purchase price",
       "refundMethodRequired": "Please select a refund method",
       "refundReasonRequired": "Please enter the refund reason",
-      "manualProvisionFailed": "Manual provisioning failed",
+      "upstreamProvisionFailed": "Upstream provisioning failed",
       "upstreamFallback": "Upstream",
       "loadUpstreamFailed": "Failed to load upstream interfaces",
       "updateUpstreamFailed": "Failed to update the upstream binding",
@@ -1798,8 +1800,11 @@
       "confirmSuspend": "Confirm suspend",
       "expiresAt": "Expires: ",
       "manualPrice": "Manual price",
-      "manualProvision": "Provision manually",
-      "manualProvisionTitle": "Manual provisioning / upstream link",
+      "upstreamProvision": "Provision upstream",
+      "upstreamProvisionConfirm": "Start provisioning",
+      "upstreamProvisionHint": "Runs the bound upstream automatically: add to cart → checkout → pay with the supplier balance → write back the upstream instance ID. No manual instance ID needed.",
+      "upstreamProvisionForce": "I verified upstream that the previous attempt created no order (clear the unconfirmed flag and order again)",
+      "upstreamProvisionRemark": "Note (optional, written to the operation log)",
       "neverExpires": "No expiry",
       "notConfigured": "Not configured",
       "product": "Product: ",
@@ -1832,7 +1837,7 @@
       "upstreamInterface": "Upstream API",
       "upstreamInstanceIdRequired": "Enter an upstream instance ID when selecting an upstream interface",
       "upstreamInterfaceRequired": "Select an upstream interface when entering an upstream instance ID",
-      "manualProvisionSent": "Manual provisioning request submitted",
+      "upstreamProvisionSuccess": "Upstream provisioning completed",
       "upstreamBindingUpdated": "Upstream binding updated",
       "priceUpdated": "Price updated",
       "confirmUnbind": "Unbind"
@@ -3996,7 +4001,7 @@
       "delegateLoginOpened": "The client login page has been opened",
       "remoteStatusRefreshed": "Remote status refreshed",
       "passwordResetDispatched": "Password reset request dispatched",
-      "manualProvisionDispatched": "Manual provisioning request dispatched",
+      "upstreamProvisionSuccess": "Upstream provisioning completed",
       "upstreamBindingUpdated": "Upstream binding updated",
       "priceUpdated": "Pricing updated",
       "instanceNameUpdated": "Instance name updated",
@@ -4086,8 +4091,11 @@
       "upstreamBinding": "Upstream binding",
       "adjustPrice": "Adjust price",
       "rename": "Rename",
-      "manualProvision": "Manual provisioning",
-      "manualProvisionTitle": "Manual provisioning / link upstream",
+      "upstreamProvision": "Provision upstream",
+      "upstreamProvisionConfirm": "Start provisioning",
+      "upstreamProvisionHint": "Runs the bound upstream automatically: add to cart → checkout → pay with the supplier balance → write back the upstream instance ID. No manual instance ID needed.",
+      "upstreamProvisionForce": "I verified upstream that the previous attempt created no order (clear the unconfirmed flag and order again)",
+      "upstreamProvisionRemark": "Note (optional, written to the operation log)",
       "confirmBind": "Confirm link",
       "upstreamInstanceId": "Upstream instance ID",
       "upstreamInterface": "Upstream interface",
@@ -4152,7 +4160,7 @@
       "powerDispatched": "{action} command dispatched",
       "powerFailed": "{action} failed",
       "passwordResetFailed": "Failed to reset the password",
-      "manualProvisionFailed": "Manual provisioning failed",
+      "upstreamProvisionFailed": "Upstream provisioning failed",
       "upstreamFallback": "Upstream",
       "interfaceWithId": "Interface #{id}",
       "loadUpstreamInterfacesFailed": "Failed to load upstream interfaces",
@@ -4198,7 +4206,6 @@
       "statusRequired": "Select an instance status",
       "serviceAmountRequired": "Enter the instance amount",
       "purchasePriceRequired": "Enter the purchase price",
-      "upstreamInstanceRequired": "Enter the upstream instance ID",
       "refundMethodRequired": "Select a refund method",
       "refundReasonRequired": "Enter the refund reason",
       "loadInvoiceFailed": "Failed to load invoice details"
@@ -5029,10 +5036,13 @@
     "launcher": {
       "label": "AI Assistant"
     },
+    "empty": {
+      "title": "How can I help?",
+      "description": "Ask things like which instances expire soon, this month's spend, or where a setting lives."
+    },
     "panel": {
       "title": "AI Assistant",
       "subject": "Current object: {label}",
-      "empty": "Ask me things like which instances expire soon, this month's spend, or where a setting lives.",
       "thinking": "Thinking…",
       "placeholder": "Type a question. Enter to send, Shift+Enter for a new line",
       "newConversation": "New chat",
@@ -5049,8 +5059,8 @@
     },
     "mode": {
       "readOnly": "Read only",
-      "confirm": "Confirm writes",
-      "autoApprove": "Auto run (beta)"
+      "confirm": "Full access",
+      "autoApprove": "Auto approve (beta)"
     },
     "risk": {
       "read": "Lookup",
@@ -5140,6 +5150,7 @@
       "testReply": "reply: {reply}"
     },
     "conversations": {
+      "title": "AI Conversations",
       "userIdPlaceholder": "Filter by user ID",
       "channelAll": "All channels",
       "search": "Search",

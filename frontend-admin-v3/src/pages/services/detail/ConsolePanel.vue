@@ -108,12 +108,12 @@
                 $t('services.console.rename')
               }}</t-button>
               <t-button
-                theme="default"
+                v-if="detail.actions?.upstream_provision"
+                theme="primary"
                 size="small"
-                :disabled="!detail.actions?.manual_provision"
-                :loading="adminActionLoading === 'manual-provision'"
-                @click="openManualProvisionDialog"
-                >{{ $t('services.console.manualProvision') }}</t-button
+                :loading="adminActionLoading === 'upstream-provision'"
+                @click="openUpstreamProvisionDialog"
+                >{{ $t('services.console.upstreamProvision') }}</t-button
               >
               <t-button
                 v-if="canRefundService"
@@ -140,18 +140,28 @@
     <console-dialogs />
 
     <t-dialog
-      v-model:visible="manualProvisionVisible"
-      :header="$t('services.console.manualProvisionLink')"
-      width="420px"
-      :confirm-btn="{ content: $t('services.console.confirmLink'), loading: adminActionLoading === 'manual-provision' }"
-      @cancel="manualProvisionVisible = false"
-      @confirm="handleManualProvision"
+      v-model:visible="upstreamProvisionVisible"
+      :header="$t('services.console.upstreamProvision')"
+      width="480px"
+      :confirm-btn="{
+        content: $t('services.console.upstreamProvisionConfirm'),
+        theme: 'primary',
+        loading: adminActionLoading === 'upstream-provision',
+      }"
+      @cancel="upstreamProvisionVisible = false"
+      @confirm="handleUpstreamProvision"
     >
-      <t-form ref="manualProvisionFormRef" :data="manualProvisionForm" :rules="manualProvisionRules" label-align="top">
-        <t-form-item :label="$t('services.console.upstreamInstanceId')" name="upstream_host_id">
-          <t-input-number v-model="manualProvisionForm.upstream_host_id" :min="1" style="width: 100%" />
-        </t-form-item>
-      </t-form>
+      <div class="upstream-provision">
+        <p class="upstream-provision__hint">{{ $t('services.console.upstreamProvisionHint') }}</p>
+        <t-checkbox v-model="upstreamProvisionForm.force">{{
+          $t('services.console.upstreamProvisionForce')
+        }}</t-checkbox>
+        <t-input
+          v-model="upstreamProvisionForm.remark"
+          :placeholder="$t('services.console.upstreamProvisionRemark')"
+          :maxlength="200"
+        />
+      </div>
     </t-dialog>
 
     <t-dialog
@@ -395,12 +405,8 @@ const canRefundService = computed(() => {
 // ==================== 管理端专属操作 ====================
 const adminActionLoading = ref('');
 
-const manualProvisionVisible = ref(false);
-const manualProvisionFormRef = ref<FormInstanceFunctions>();
-const manualProvisionForm = reactive({ upstream_host_id: undefined as number | undefined });
-const manualProvisionRules: Record<string, FormRule[]> = {
-  upstream_host_id: [required(t('services.console.upstreamHostIdRequired'))],
-};
+const upstreamProvisionVisible = ref(false);
+const upstreamProvisionForm = reactive({ force: false, remark: '' });
 
 const serviceUpstreamVisible = ref(false);
 const serviceUpstreamLoading = ref(false);
@@ -461,25 +467,24 @@ const serviceRefundAmount = computed(
 const suspendVisible = ref(false);
 const suspendReason = ref('');
 
-function openManualProvisionDialog() {
-  manualProvisionForm.upstream_host_id = Number(detail.value.upstream?.host_id || 0) || undefined;
-  manualProvisionVisible.value = true;
-  manualProvisionFormRef.value?.clearValidate?.();
+function openUpstreamProvisionDialog() {
+  upstreamProvisionForm.force = false;
+  upstreamProvisionForm.remark = '';
+  upstreamProvisionVisible.value = true;
 }
 
-async function handleManualProvision() {
-  const result = await manualProvisionFormRef.value?.validate?.();
-  if (!isValidationPass(result)) return;
-  adminActionLoading.value = 'manual-provision';
+async function handleUpstreamProvision() {
+  adminActionLoading.value = 'upstream-provision';
   try {
-    await userApi.manualProvisionService(props.userId, detail.value.id, {
-      upstream_host_id: Number(manualProvisionForm.upstream_host_id || 0),
+    await userApi.provisionUpstreamService(props.userId, detail.value.id, {
+      force: upstreamProvisionForm.force,
+      remark: upstreamProvisionForm.remark || undefined,
     });
-    MessagePlugin.success(t('services.cdnConsole.manualProvisionSent'));
-    manualProvisionVisible.value = false;
+    MessagePlugin.success(t('services.console.upstreamProvisionSuccess'));
+    upstreamProvisionVisible.value = false;
     await loadDetailBase();
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, t('services.console.manualProvisionFailed')));
+    MessagePlugin.error(errorMessage(error, t('services.console.upstreamProvisionFailed')));
   } finally {
     adminActionLoading.value = '';
   }

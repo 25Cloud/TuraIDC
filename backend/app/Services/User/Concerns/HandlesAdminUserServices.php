@@ -285,6 +285,12 @@ trait HandlesAdminUserServices
                 $supplierProductChanged = (int) $provisionData['upstream_product_id'] !== $previousUpstreamProductId;
                 $provisionData['upstream_host_id'] = $upstreamHostId;
                 $provisionData['last_manual_linked_at'] = now()->format('Y-m-d H:i:s');
+                // 手工绑定实例 = 人已经核实上游确实存在这台机器，上一轮的「结果未确认」标记随之作废，
+                // 否则闸门会一直挡住后续的开通/续费动作。
+                unset(
+                    $provisionData['upstream_provision_uncertain_at'],
+                    $provisionData['upstream_provision_uncertain_reason']
+                );
                 $upstreamHostChanged = $upstreamHostId !== $previousUpstreamHostId;
                 $provisionData = $this->syncUpstreamHostIdsAfterSwitch($provisionData, $upstreamHostId, $upstreamHostChanged);
             }
@@ -1129,37 +1135,28 @@ trait HandlesAdminUserServices
         return $amount > 0 ? $amount : null;
     }
 
+
     /**
-     * 失败服务重新提交上游开通
+     * 管理员一键上游开通：不填上游接口和实例 ID，直接按商品已配置的上游绑定跑完
+     * 「加购 → 结算 → 供应商余额支付」，成功后再把上游实例 ID 回填到服务上。
+     *
+     * 与「上游绑定」的分工：绑定是人工兜底（已有机器、或上游手工建单后补录），
+     * 这里是把「下单给上游」这件事自动化——和魔方财务作为下游对接上游时的行为一致。
      */
-    public function manualProvisionService(User $user, int $serviceId, array $data, array $context = []): array
+    public function provisionUpstreamService(User $user, int $serviceId, array $data, array $context = []): array
     {
         $service = Service::query()
-            ->with(['product', 'order'])
+            ->with(['product.supplier', 'order'])
             ->where('user_id', $user->id)
             ->findOrFail($serviceId);
 
-        $product = $service->product;
-        throw_if(! $product, new BusinessException('服务未关联商品，暂不支持重新提交上游开通'));
+        throw_if(! $service->product, new BusinessException('服务未关联商品，无法向上游下单'));
 
-        $currentProvisionData = $this->serviceProvisionData($service);
-        $provisionError = trim((string) ($currentProvisionData['provision_error'] ?? ''));
+        $order = $service->order;
+        $boundInvoice = null;
 
-        throw_if($provisionError === '', new BusinessException('当前服务不存在上游开通失败记录，无需重新提交'));
-        $operatorId = (int) (($context['operator_id'] ?? 0) ?: 0);
-        $operatorName = trim((string) ($context['operator_name'] ?? ''));
-        $traceId = trim((string) ($context['trace_id'] ?? ''));
-        $ipAddress = trim((string) ($context['ip_address'] ?? ''));
-        $remark = TextSanitizer::clean((string) ($data['remark'] ?? ''), true);
-        $logContext = [
-            'actor_type' => 'admin',
-            'actor_user_id' => $operatorId,
-            'actor_name' => $operatorName,
-            'ip_address' => $ipAddress,
-            'trace_id' => $traceId,
-        ];
-
-        try {
+        if (! $order instanceof Order) {
+            // 历史数据里有一批「只有账单没有订单」的服务，仍然允许从账单发起上游开通
             $boundInvoice = Invoice::query()
                 ->where(function ($query) use ($service) {
                     $query->where('service_id', (int) $service->id);
@@ -1171,57 +1168,99 @@ trait HandlesAdminUserServices
                 ->latest('id')
                 ->first();
 
-            if ($service->order instanceof Order) {
-                $service = $this->provisionService->retryFailedProvision($service->order);
-            } elseif ($boundInvoice instanceof Invoice) {
-                $service = $this->provisionService->retryFailedProvisionByInvoice($boundInvoice);
-            } else {
-                throw new BusinessException('服务未关联账单，无法重新提交上游开通');
-            }
+            throw_if(
+                ! $boundInvoice instanceof Invoice,
+                new BusinessException('服务未关联订单或账单，无法自动向上游下单；请改用「上游绑定」手工填写实例 ID')
+            );
+        }
+
+        $currentProvisionData = $this->serviceProvisionData($service);
+        $boundHostId = $this->resolveServiceUpstreamHostId($service, $currentProvisionData);
+        throw_if(
+            $boundHostId > 0,
+            new BusinessException(sprintf('该服务已绑定上游实例 #%d，无需重复开通；如需同步状态请刷新实例状态', $boundHostId))
+        );
+
+        $uncertainAt = trim((string) ($currentProvisionData['upstream_provision_uncertain_at'] ?? ''));
+        $force = filter_var($data['force'] ?? false, FILTER_VALIDATE_BOOL);
+        $remark = TextSanitizer::clean((string) ($data['remark'] ?? ''), true);
+
+        // 上一轮结果未确认时，默认拦住；force=1 表示管理员已去上游核实过「没有生成订单」。
+        throw_if(
+            $uncertainAt !== '' && ! $force,
+            new BusinessException(sprintf(
+                '上次开通（%s）结果未确认，请先到上游核实是否已生成订单；确认没有后再勾选「已确认上游无此订单」重新发起',
+                $uncertainAt
+            ))
+        );
+
+        if ($uncertainAt !== '') {
+            $service = $this->provisionService->clearUpstreamProvisionUncertainty(
+                $service,
+                $remark !== '' ? $remark : '管理员确认上游无对应订单'
+            );
+        }
+
+        $operatorId = (int) (($context['operator_id'] ?? 0) ?: 0);
+        $operatorName = trim((string) ($context['operator_name'] ?? ''));
+        $traceId = trim((string) ($context['trace_id'] ?? ''));
+        $ipAddress = trim((string) ($context['ip_address'] ?? ''));
+        $logContext = [
+            'actor_type' => 'admin',
+            'actor_user_id' => $operatorId,
+            'actor_name' => $operatorName,
+            'ip_address' => $ipAddress,
+            'trace_id' => $traceId,
+        ];
+
+        try {
+            $service = $order instanceof Order
+                ? $this->provisionService->adminInitiatedProvision($order)
+                : $this->provisionService->retryFailedProvisionByInvoice($boundInvoice);
         } catch (\Throwable $exception) {
-            try {
-                $this->operationLogService->writeServiceConsoleLog($service->refresh()->loadMissing(['product', 'order']), 'service.console.manual_provision', [
-                    'category' => 'service',
-                    'summary' => '管理员重新提交上游开通失败',
-                    'remark' => $remark,
-                    'manual_source' => 'retry_upstream_purchase',
-                    'previous_provision_error' => $provisionError,
-                    'provision_error' => $exception->getMessage(),
-                    'result' => 'failed',
-                ], $logContext);
-            } catch (\Throwable $logException) {
-                Log::warning('[管理员重试上游开通] 失败日志写入失败', [
-                    'user_id' => $user->id,
-                    'service_id' => $service->id,
-                    'operator_id' => $operatorId,
-                    'message' => $logException->getMessage(),
-                    'exception' => $logException::class,
-                ]);
-            }
+            $this->writeUpstreamProvisionLog($service, $remark, 'failed', $exception->getMessage(), $logContext);
 
             throw $exception;
         }
 
+        $this->writeUpstreamProvisionLog($service, $remark, 'submitted', '', $logContext);
+
+        return $this->clientServiceConsoleService->getDetailForUser($user, (int) $service->id, true);
+    }
+
+    private function writeUpstreamProvisionLog(
+        Service $service,
+        string $remark,
+        string $result,
+        string $error,
+        array $logContext,
+    ): void {
         try {
-            $this->operationLogService->writeServiceConsoleLog($service->refresh()->loadMissing(['product', 'order']), 'service.console.manual_provision', [
+            $payload = [
                 'category' => 'service',
-                'summary' => '管理员重新提交上游开通',
+                'summary' => $result === 'submitted' ? '管理员一键上游开通' : '管理员一键上游开通失败',
                 'remark' => $remark,
-                'manual_source' => 'retry_upstream_purchase',
-                'previous_provision_error' => $provisionError,
-                'result' => 'submitted',
-            ], $logContext);
+                'manual_source' => 'admin_initiated_upstream_purchase',
+                'result' => $result,
+            ];
+
+            if ($error !== '') {
+                $payload['provision_error'] = $error;
+            }
+
+            $this->operationLogService->writeServiceConsoleLog(
+                $service->refresh()->loadMissing(['product', 'order']),
+                'service.console.manual_provision',
+                $payload,
+                $logContext
+            );
         } catch (\Throwable $exception) {
-            Log::warning('[管理员重试上游开通] 操作日志写入失败', [
-                'user_id' => $user->id,
-                'service_id' => $service->id,
-                'operator_id' => $operatorId,
+            Log::warning('[管理员一键上游开通] 操作日志写入失败', [
+                'service_id' => (int) $service->id,
                 'message' => $exception->getMessage(),
                 'exception' => $exception::class,
             ]);
         }
-
-        return $this->clientServiceConsoleService->getDetailForUser($user, (int) $service->id, true);
     }
 
     /**

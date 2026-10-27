@@ -1428,8 +1428,11 @@
       "linuxRescueSystem": "Linux 救援系統",
       "longTermValid": "長期有效",
       "manualPrice": "手動價",
-      "manualProvision": "手動開通",
-      "manualProvisionLink": "手動開通 / 關聯上游",
+      "upstreamProvision": "一鍵上游開通",
+      "upstreamProvisionConfirm": "開始開通",
+      "upstreamProvisionHint": "將按商品已綁定的上游介面自動執行：加入購物車 → 結算 → 供應商餘額支付 → 回填上游實例 ID，不需要手動填寫實例 ID。",
+      "upstreamProvisionForce": "我已在上游核實：上一輪沒有生成任何訂單（清掉未確認標記後重新下單）",
+      "upstreamProvisionRemark": "備註（可選，會寫入操作日誌）",
       "memory": "記憶體",
       "networkInfo": "網路資訊",
       "noConfigData": "暫無配置資料",
@@ -1594,11 +1597,10 @@
       "cdnConsoleTitle": "CDN 控制台",
       "instanceDetailTitle": "例項詳情",
       "back": "返回",
-      "upstreamHostIdRequired": "請輸入上游例項 ID",
       "purchasePriceRequired": "請輸入購買價格",
       "refundMethodRequired": "請選擇退款方式",
       "refundReasonRequired": "請填寫退款原因",
-      "manualProvisionFailed": "手動開通失敗",
+      "upstreamProvisionFailed": "上游開通失敗",
       "upstreamFallback": "上游",
       "loadUpstreamFailed": "載入上游介面失敗",
       "updateUpstreamFailed": "更新上游繫結失敗",
@@ -1798,8 +1800,11 @@
       "confirmSuspend": "確認暫停",
       "expiresAt": "到期：",
       "manualPrice": "手動價",
-      "manualProvision": "手動開通",
-      "manualProvisionTitle": "手動開通 / 關聯上游",
+      "upstreamProvision": "一鍵上游開通",
+      "upstreamProvisionConfirm": "開始開通",
+      "upstreamProvisionHint": "將按商品已綁定的上游介面自動執行：加入購物車 → 結算 → 供應商餘額支付 → 回填上游實例 ID，不需要手動填寫實例 ID。",
+      "upstreamProvisionForce": "我已在上游核實：上一輪沒有生成任何訂單（清掉未確認標記後重新下單）",
+      "upstreamProvisionRemark": "備註（可選，會寫入操作日誌）",
       "neverExpires": "長期有效",
       "notConfigured": "未配置",
       "product": "商品：",
@@ -1832,7 +1837,7 @@
       "upstreamInterface": "上游介面",
       "upstreamInstanceIdRequired": "選擇上游介面時必須填寫上游例項 ID",
       "upstreamInterfaceRequired": "填寫上游例項 ID 時必須選擇上游介面",
-      "manualProvisionSent": "手動開通指令已下發",
+      "upstreamProvisionSuccess": "上游開通已完成",
       "upstreamBindingUpdated": "上游繫結已更新",
       "priceUpdated": "價格資訊已更新",
       "confirmUnbind": "確認解除"
@@ -3996,7 +4001,7 @@
       "delegateLoginOpened": "已開啟客戶端登入頁",
       "remoteStatusRefreshed": "遠端狀態已重新整理",
       "passwordResetDispatched": "密碼重置指令已下發",
-      "manualProvisionDispatched": "手動開通指令已下發",
+      "upstreamProvisionSuccess": "上游開通已完成",
       "upstreamBindingUpdated": "上游繫結已更新",
       "priceUpdated": "價格資訊已更新",
       "instanceNameUpdated": "例項名稱已更新",
@@ -4086,8 +4091,11 @@
       "upstreamBinding": "上游繫結",
       "adjustPrice": "調價",
       "rename": "改名稱",
-      "manualProvision": "手動開通",
-      "manualProvisionTitle": "手動開通 / 關聯上游",
+      "upstreamProvision": "一鍵上游開通",
+      "upstreamProvisionConfirm": "開始開通",
+      "upstreamProvisionHint": "將按商品已綁定的上游介面自動執行：加入購物車 → 結算 → 供應商餘額支付 → 回填上游實例 ID，不需要手動填寫實例 ID。",
+      "upstreamProvisionForce": "我已在上游核實：上一輪沒有生成任何訂單（清掉未確認標記後重新下單）",
+      "upstreamProvisionRemark": "備註（可選，會寫入操作日誌）",
       "confirmBind": "確認關聯",
       "upstreamInstanceId": "上游例項 ID",
       "upstreamInterface": "上游介面",
@@ -4152,7 +4160,7 @@
       "powerDispatched": "{action}指令已下發",
       "powerFailed": "{action}失敗",
       "passwordResetFailed": "密碼重置失敗",
-      "manualProvisionFailed": "手動開通失敗",
+      "upstreamProvisionFailed": "上游開通失敗",
       "upstreamFallback": "上游",
       "interfaceWithId": "介面 #{id}",
       "loadUpstreamInterfacesFailed": "載入上游介面失敗",
@@ -4198,7 +4206,6 @@
       "statusRequired": "請選擇例項狀態",
       "serviceAmountRequired": "請輸入例項金額",
       "purchasePriceRequired": "請輸入購買價格",
-      "upstreamInstanceRequired": "請輸入上游例項 ID",
       "refundMethodRequired": "請選擇退款方式",
       "refundReasonRequired": "請填寫退款原因",
       "loadInvoiceFailed": "載入賬單詳情失敗"
@@ -5029,10 +5036,13 @@
     "launcher": {
       "label": "AI 助手"
     },
+    "empty": {
+      "title": "有什麼可以幫你？",
+      "description": "可以直接問：哪些實例快到期、本月支出多少、某個設定在哪裡改。"
+    },
     "panel": {
       "title": "AI 助手",
       "subject": "當前對象：{label}",
-      "empty": "可以直接問：哪些實例快到期、本月支出多少、某個設定在哪裡改。",
       "thinking": "正在思考…",
       "placeholder": "輸入問題，Enter 傳送，Shift+Enter 換行",
       "newConversation": "新對話",
@@ -5048,9 +5058,9 @@
       "system": "系統"
     },
     "mode": {
-      "readOnly": "唯讀",
-      "confirm": "寫操作需確認",
-      "autoApprove": "自動執行（beta）"
+      "readOnly": "僅可檢視",
+      "confirm": "完整權限",
+      "autoApprove": "自動核准（beta）"
     },
     "risk": {
       "read": "查詢",
@@ -5140,6 +5150,7 @@
       "testReply": "回包：{reply}"
     },
     "conversations": {
+      "title": "AI 會話稽核",
       "userIdPlaceholder": "依使用者 ID 篩選",
       "channelAll": "全部渠道",
       "search": "查詢",

@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: ce8f513e895b33dad645bbd6c6ac25d47acfc0e3179fb67554f16afb279b569d
+sourceHash: 02fd4ead22323b2dfdd5880efa7f4a4131b5c52a18c2bc7627e8f94accce6728
 translatedAt: 2026-10-26
 ---
 
@@ -257,6 +257,20 @@ Other places in the same family ("infrastructure problem disguised as a 500"): d
 `bootstrap/app.php` normalises every `ValidationException` into `{code: 42200, message: '<generic validation-failed text>', data: {errors: {...}}}`, with the real reason inside `data.errors`. The admin's `errorMessage()` then ran the field errors through a "must be Chinese" filter — the intent was to keep English stack traces off the screen. But when a deployment sets `APP_LOCALE=en`, Laravel's field message is `The third product group id field is required.`, which the filter drops, leaving the administrator with nothing but the generic line.
 
 **Countermeasure**: field-level validation errors come from the validator as structured name → [message] data and never carry stack traces, so keep the Chinese filter only for the top-level `message` and require no language for the `errors` map (see `firstNonEmptyMessage`). What you really should do is write the messages for key fields in the FormRequest's `messages()`, so no locale can drop them.
+
+### 3.14 A failed upstream provisioning must not be treated as a retryable error, or one purchase creates four upstream orders
+
+Post-payment fulfilment runs once synchronously and then through the `provision` queue with `$tries=3`. As long as the failure is thrown as an ordinary exception, the queue replays the same purchase — clear cart → add to cart → checkout — and the upstream ends up with three identical extra orders. What the customer integrating Mofang Finance saw was "one new order, it failed, and four identical orders were fired off".
+
+The real trap sits **after a successful checkout**: once `/cart/settle` returns success the upstream order already exists, so if the local side cannot parse the invoice number, or the request dies on the way back, `provision_data` never receives `upstream_invoice_id`. The next retry reads 0 from `assertNoUnresolvedUpstreamProvisionInvoice`, the guard lets it through, and that is exactly how the duplicate orders happen.
+
+**Three layers now in place** (`ProvisionService` + `ZjmfProvisionService`):
+
+1. After a successful checkout, look the upstream instance up by hostname and adopt it instead of ordering again. If the lookup finds nothing or cannot run at all, write the `upstream_provision_uncertain_at` marker and throw `ProvisionRetryNotAllowedException`, which **stops** the queue retry and hands the case to a human.
+2. The guard recognises only two terminal states: `upstream_invoice_id > 0` with no instance id, and the uncertain marker. Both require an administrator to verify upstream first and then force a new attempt through "provision upstream" on the admin side.
+3. `ensureLocalService` locks per order and re-checks by `order_id + product_id`, so concurrent fulfilment cannot create two services for one order (the screenshot with two service rows pointing at the same upstream instance came from exactly that).
+
+**Countermeasure**: every failure path that may have created an upstream order must leave an idempotent checkpoint — invoice number, instance id, or hostname — and must end automatic retries with a non-retryable exception type. Never let that class of failure fall into a generic exception that the queue retries.
 
 ## 4. Committing
 

@@ -1,14 +1,17 @@
 <template>
   <div v-if="canUseAi" class="ai-admin-launcher">
+    <!-- 面板展开时隐藏浮球：面板落在同一个右下角，两个入口叠着只会互相盖住 -->
     <button
+      v-show="!panelVisible"
       type="button"
       class="ai-admin-launcher__ball"
       :aria-label="$t('ai.launcher.label')"
       :title="$t('ai.launcher.label')"
       :aria-expanded="panelVisible"
+      data-ai-admin-launcher
       @click="handleToggle"
     >
-      <robot-icon class="ai-admin-launcher__icon" />
+      <ai-robot-avatar :size="26" class="ai-admin-launcher__robot" />
     </button>
 
     <ai-admin-panel v-model="panelVisible" :chat="chat" />
@@ -16,7 +19,6 @@
 </template>
 <script setup lang="ts">
 import { useAiChat } from '@turaidc/shared/runtime';
-import { RobotIcon } from 'tdesign-icons-vue-next';
 import { computed, ref } from 'vue';
 
 import { aiClient } from '@/api/ai';
@@ -24,6 +26,7 @@ import { hasPermissionInList } from '@/constants/permissions';
 import { useUserStore } from '@/store';
 
 import AiAdminPanel from './AiAdminPanel.vue';
+import AiRobotAvatar from './AiRobotAvatar.vue';
 
 const userStore = useUserStore();
 
@@ -50,56 +53,67 @@ function handleToggle() {
 <style scoped lang="less">
 .ai-admin-launcher {
   position: fixed;
-  right: 24px;
-  /* 比「吸底保存条」高：保存条在页面底部约 64px 高，浮球停在 32px 时会正压在
-     保存按钮右下角，手机上尤其明显（把整个按钮盖掉一半） */
-  bottom: 88px;
-  z-index: 100;
+  right: 1.5rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  // 低于面板（3400）、高于页面内容：与官网 / 控制台同一层级梯度
+  z-index: 3300;
 }
 
-/* 只留图标：48px 圆形悬浮球，hover 微放大给一点按压反馈 */
+/*
+ * 尺寸与三端统一：直径 3.25rem（52px），品牌色径向渐变，
+ * 中性阴影 + 品牌色投影；hover 上浮 2px，不做缩放。
+ */
 .ai-admin-launcher__ball {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 3.25rem;
+  height: 3.25rem;
   padding: 0;
-  border: none;
-  border-radius: 50%;
   color: var(--td-text-color-anti);
   cursor: pointer;
-  background: var(--td-brand-color);
-  box-shadow: var(--td-shadow-2);
+  background: radial-gradient(
+    circle at 32% 26%,
+    var(--td-brand-color-hover) 0%,
+    var(--td-brand-color) 58%,
+    var(--td-brand-color-active) 100%
+  );
+  border: 0;
+  border-radius: 50%;
+  box-shadow:
+    0 12px 26px -14px var(--td-brand-color),
+    var(--td-shadow-2);
   transition:
     transform 0.16s ease,
-    box-shadow 0.16s ease;
+    box-shadow 0.16s ease,
+    filter 0.16s ease;
 
   &:hover {
-    transform: scale(1.06);
-    box-shadow: var(--td-shadow-3);
+    box-shadow:
+      0 16px 30px -14px var(--td-brand-color),
+      var(--td-shadow-2);
+    transform: translateY(-2px);
   }
 
   &:active {
-    transform: scale(0.98);
+    filter: brightness(0.96);
+    transform: translateY(0);
   }
 
   &:focus-visible {
     outline: 2px solid var(--td-brand-color-focus);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 }
 
-.ai-admin-launcher__icon {
-  width: 24px;
-  height: 24px;
+.ai-admin-launcher__robot {
+  color: var(--td-text-color-anti);
 }
 
-@media (width <= 960px) {
+@media (width <= 767px) {
   .ai-admin-launcher {
-    right: 16px;
-    /* 手机上吸底条更高（含安全区内边距），浮球再抬高一点 */
-    bottom: 96px;
+    right: 1rem;
+    bottom: calc(1rem + env(safe-area-inset-bottom, 0px));
   }
 }
 

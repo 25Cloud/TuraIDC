@@ -322,6 +322,30 @@ Laravel 的 `mimetypes` 规则本身走 Symfony 的 MimeTypeGuesser，fileinfo �
 所以只对「顶层 message」保留中文过滤，对 `errors` 映射**不要求语言**（见 `firstNonEmptyMessage`）。
 真正该做的是把关键字段的文案写在 FormRequest 的 `messages()` 里，四语言环境都不会缺。
 
+### 3.14 上游开通失败不能当「可重试错误」处理，否则一次购买会在上游开出 4 笔订单
+
+支付后履约是「同步跑一次 + `provision` 队列 `$tries=3`」。只要失败被抛成普通异常，队列就会
+把同一次购买再走一遍「清空购物车 → 加购 → 结算」，上游于是多出 3 笔一模一样的订单。
+对接魔方财务的客户看到的是「一个新订单，没成功自动发了 4 笔相同订单」。
+
+真正的坑在于**结算成功之后**：`/cart/settle` 一旦返回成功，上游订单就已经存在了，
+此刻只要本地解析不出账单号、或请求在返回途中断掉，`provision_data` 里就不会有
+`upstream_invoice_id`，下一轮重试的闸门（`assertNoUnresolvedUpstreamProvisionInvoice`）
+读到的仍是 0，于是放行——重复下单就是这么来的。
+
+**现在的三道防线**（`ProvisionService` + `ZjmfProvisionService`）：
+
+1. 结算成功后按主机名回查上游实例，找到就直接复用，绝不重新下单；
+   找不到或查不动，就落 `upstream_provision_uncertain_at` 标记并抛
+   `ProvisionRetryNotAllowedException`，**停止**队列重试，转人工核实。
+2. 闸门只认两类终止态：`upstream_invoice_id > 0` 却没有实例标识、或存在未确认标记。
+   两者都要求管理员先在上游核实，确认没有订单后由「一键上游开通」勾选强制重开。
+3. `ensureLocalService` 按订单加锁并按 `order_id + product_id` 复查，避免并发履约
+   给同一个订单建出两条服务（截图里同一台上游实例挂着两行服务就是这么来的）。
+
+**对策**：任何「会产生上游订单」的失败路径都必须落一个可幂等的检查点（账单号、实例号或
+主机名），并用不可重试的异常类型终止自动重试。切不要把这类失败混进通用异常让队列重试。
+
 ## 四、提交
 ### 4.1 必须 `--no-verify`
 

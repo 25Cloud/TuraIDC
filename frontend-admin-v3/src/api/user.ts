@@ -277,9 +277,15 @@ export const userApi = {
         timeout: UPSTREAM_SYNC_TIMEOUT,
       })
       .then(normalizeV2ServicePayload),
-  manualProvisionService: (id: number | string, serviceId: number | string, data: { upstream_host_id: number }) =>
+  // 一键上游开通：不填上游实例 ID，后端按商品绑定跑完加购→结算→余额支付
+  // 会把上游的加购/结算/支付串起来，耗时远高于普通请求，因此沿用上游同步的超时
+  provisionUpstreamService: (id: number | string, serviceId: number | string, data: { force?: boolean; remark?: string }) =>
     request
-      .put<UserServiceV2DetailPayload>({ url: `/v2/admin/users/${id}/services/${serviceId}/manual-provision`, data })
+      .post<UserServiceV2DetailPayload>({
+        url: `/v2/admin/users/${id}/services/${serviceId}/upstream-provision`,
+        data,
+        timeout: UPSTREAM_SYNC_TIMEOUT,
+      })
       .then(normalizeV2ServicePayload),
   refundService: (id: number | string, serviceId: number | string, data: RefundPayload) =>
     request.post<{ message?: string }>({ url: `/v2/admin/users/${id}/services/${serviceId}/refunds`, data }),

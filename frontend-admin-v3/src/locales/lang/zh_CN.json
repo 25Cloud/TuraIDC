@@ -1428,8 +1428,11 @@
       "linuxRescueSystem": "Linux 救援系统",
       "longTermValid": "长期有效",
       "manualPrice": "手动价",
-      "manualProvision": "手动开通",
-      "manualProvisionLink": "手动开通 / 关联上游",
+      "upstreamProvision": "一键上游开通",
+      "upstreamProvisionConfirm": "开始开通",
+      "upstreamProvisionHint": "将按商品已绑定的上游接口自动执行：加入购物车 → 结算 → 供应商余额支付 → 回填上游实例 ID，不需要手工填写实例 ID。",
+      "upstreamProvisionForce": "我已在上游核实：上一轮没有生成任何订单（清掉未确认标记后重新下单）",
+      "upstreamProvisionRemark": "备注（可选，会写入操作日志）",
       "memory": "内存",
       "networkInfo": "网络信息",
       "noConfigData": "暂无配置数据",
@@ -1594,11 +1597,10 @@
       "cdnConsoleTitle": "CDN 控制台",
       "instanceDetailTitle": "实例详情",
       "back": "返回",
-      "upstreamHostIdRequired": "请输入上游实例 ID",
       "purchasePriceRequired": "请输入购买价格",
       "refundMethodRequired": "请选择退款方式",
       "refundReasonRequired": "请填写退款原因",
-      "manualProvisionFailed": "手动开通失败",
+      "upstreamProvisionFailed": "上游开通失败",
       "upstreamFallback": "上游",
       "loadUpstreamFailed": "加载上游接口失败",
       "updateUpstreamFailed": "更新上游绑定失败",
@@ -1798,8 +1800,11 @@
       "confirmSuspend": "确认暂停",
       "expiresAt": "到期：",
       "manualPrice": "手动价",
-      "manualProvision": "手动开通",
-      "manualProvisionTitle": "手动开通 / 关联上游",
+      "upstreamProvision": "一键上游开通",
+      "upstreamProvisionConfirm": "开始开通",
+      "upstreamProvisionHint": "将按商品已绑定的上游接口自动执行：加入购物车 → 结算 → 供应商余额支付 → 回填上游实例 ID，不需要手工填写实例 ID。",
+      "upstreamProvisionForce": "我已在上游核实：上一轮没有生成任何订单（清掉未确认标记后重新下单）",
+      "upstreamProvisionRemark": "备注（可选，会写入操作日志）",
       "neverExpires": "长期有效",
       "notConfigured": "未配置",
       "product": "商品：",
@@ -1832,7 +1837,7 @@
       "upstreamInterface": "上游接口",
       "upstreamInstanceIdRequired": "选择上游接口时必须填写上游实例 ID",
       "upstreamInterfaceRequired": "填写上游实例 ID 时必须选择上游接口",
-      "manualProvisionSent": "手动开通指令已下发",
+      "upstreamProvisionSuccess": "上游开通已完成",
       "upstreamBindingUpdated": "上游绑定已更新",
       "priceUpdated": "价格信息已更新",
       "confirmUnbind": "确认解除"
@@ -3996,7 +4001,7 @@
       "delegateLoginOpened": "已打开客户端登录页",
       "remoteStatusRefreshed": "远程状态已刷新",
       "passwordResetDispatched": "密码重置指令已下发",
-      "manualProvisionDispatched": "手动开通指令已下发",
+      "upstreamProvisionSuccess": "上游开通已完成",
       "upstreamBindingUpdated": "上游绑定已更新",
       "priceUpdated": "价格信息已更新",
       "instanceNameUpdated": "实例名称已更新",
@@ -4086,8 +4091,11 @@
       "upstreamBinding": "上游绑定",
       "adjustPrice": "调价",
       "rename": "改名称",
-      "manualProvision": "手动开通",
-      "manualProvisionTitle": "手动开通 / 关联上游",
+      "upstreamProvision": "一键上游开通",
+      "upstreamProvisionConfirm": "开始开通",
+      "upstreamProvisionHint": "将按商品已绑定的上游接口自动执行：加入购物车 → 结算 → 供应商余额支付 → 回填上游实例 ID，不需要手工填写实例 ID。",
+      "upstreamProvisionForce": "我已在上游核实：上一轮没有生成任何订单（清掉未确认标记后重新下单）",
+      "upstreamProvisionRemark": "备注（可选，会写入操作日志）",
       "confirmBind": "确认关联",
       "upstreamInstanceId": "上游实例 ID",
       "upstreamInterface": "上游接口",
@@ -4152,7 +4160,7 @@
       "powerDispatched": "{action}指令已下发",
       "powerFailed": "{action}失败",
       "passwordResetFailed": "密码重置失败",
-      "manualProvisionFailed": "手动开通失败",
+      "upstreamProvisionFailed": "上游开通失败",
       "upstreamFallback": "上游",
       "interfaceWithId": "接口 #{id}",
       "loadUpstreamInterfacesFailed": "加载上游接口失败",
@@ -4198,7 +4206,6 @@
       "statusRequired": "请选择实例状态",
       "serviceAmountRequired": "请输入实例金额",
       "purchasePriceRequired": "请输入购买价格",
-      "upstreamInstanceRequired": "请输入上游实例 ID",
       "refundMethodRequired": "请选择退款方式",
       "refundReasonRequired": "请填写退款原因",
       "loadInvoiceFailed": "加载账单详情失败"
@@ -5029,10 +5036,13 @@
     "launcher": {
       "label": "AI 助手"
     },
+    "empty": {
+      "title": "有什么可以帮你？",
+      "description": "可以直接问：哪些实例快到期、本月支出多少、某个设置在哪里改。"
+    },
     "panel": {
       "title": "AI 助手",
       "subject": "当前对象：{label}",
-      "empty": "可以直接问：哪些实例快到期、本月支出多少、某个设置在哪里改。",
       "thinking": "正在思考…",
       "placeholder": "输入问题，Enter 发送，Shift+Enter 换行",
       "newConversation": "新对话",
@@ -5048,9 +5058,9 @@
       "system": "系统"
     },
     "mode": {
-      "readOnly": "只读",
-      "confirm": "写操作需确认",
-      "autoApprove": "自动执行（beta）"
+      "readOnly": "仅可查看",
+      "confirm": "完全权限",
+      "autoApprove": "自动审批（beta）"
     },
     "risk": {
       "read": "查询",
@@ -5140,6 +5150,7 @@
       "testReply": "回包：{reply}"
     },
     "conversations": {
+      "title": "AI 会话审计",
       "userIdPlaceholder": "按用户 ID 筛选",
       "channelAll": "全部渠道",
       "search": "查询",

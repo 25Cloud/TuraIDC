@@ -1,17 +1,12 @@
 <template>
   <div ref="listRef" class="ai-message-list" @scroll="handleScroll">
     <div v-if="!messages.length" class="ai-message-list__empty">
-      <robot-icon class="ai-message-list__empty-icon" />
+      <ai-robot-avatar :size="56" class="ai-message-list__empty-icon" />
       <p class="ai-message-list__empty-title">{{ $t('ai.empty.title') }}</p>
       <p class="ai-message-list__empty-desc">{{ $t('ai.empty.description') }}</p>
     </div>
 
-    <article
-      v-for="message in messages"
-      :key="message.id"
-      class="ai-message"
-      :class="`ai-message--${message.role}`"
-    >
+    <article v-for="message in messages" :key="message.id" class="ai-message" :class="`ai-message--${message.role}`">
       <!-- 用户消息：右侧气泡 -->
       <template v-if="message.role === 'user'">
         <div class="ai-message__user">{{ message.content }}</div>
@@ -26,7 +21,7 @@
       <!-- 助手消息：头像 + 思考过程 + 正文 -->
       <template v-else>
         <div class="ai-message__avatar">
-          <robot-icon />
+          <ai-robot-avatar :size="16" />
         </div>
         <div class="ai-message__body">
           <div v-if="message.tool_runs.length" class="ai-message__tools">
@@ -44,7 +39,10 @@
           <!-- 思考过程：流式时自动展开，结束后收起成一行摘要 -->
           <section v-if="message.reasoning" class="ai-reason" :class="{ 'ai-reason--live': message.streaming }">
             <button type="button" class="ai-reason__head" @click="toggleReasoning(message.id)">
-              <chevron-down-icon class="ai-reason__chevron" :class="{ 'ai-reason__chevron--open': isReasoningOpen(message) }" />
+              <chevron-down-icon
+                class="ai-reason__chevron"
+                :class="{ 'ai-reason__chevron--open': isReasoningOpen(message) }"
+              />
               <span class="ai-reason__title">
                 {{ message.streaming ? $t('ai.reasoning.live') : $t('ai.reasoning.done') }}
               </span>
@@ -58,7 +56,9 @@
           <!-- 正文：流式期间按纯文本渲染（每 16ms 合并一次增量，不再逐 token 重排 markdown），
                结束后再切到 markdown-it 结果；两者都做了换行与断行保护 -->
           <div v-if="message.content && !message.error" class="ai-message__content">
-            <div v-if="message.streaming" class="ai-message__plain">{{ message.content }}<span class="ai-message__caret" /></div>
+            <div v-if="message.streaming" class="ai-message__plain">
+              {{ message.content }}<span class="ai-message__caret" />
+            </div>
             <!-- markdown-it 已关闭原始 HTML，产物是转义后的安全结构 -->
             <!-- eslint-disable-next-line vue/no-v-html -->
             <div v-else class="ai-message__markdown" v-html="renderMarkdown(message.content)"></div>
@@ -74,10 +74,11 @@
 import type { AiChatMessage } from '@turaidc/shared/runtime';
 import type { RendererRule } from 'markdown-it';
 import MarkdownIt from 'markdown-it';
-import { ChevronDownIcon, RobotIcon } from 'tdesign-icons-vue-next';
-import { computed, nextTick, onMounted, ref, watch } from 'vue';
+import { ChevronDownIcon } from 'tdesign-icons-vue-next';
+import { nextTick, onMounted, ref, watch } from 'vue';
 
 import AiConfirmCard from './AiConfirmCard.vue';
+import AiRobotAvatar from './AiRobotAvatar.vue';
 import AiToolRuns from './AiToolRuns.vue';
 
 const props = defineProps<{ messages: AiChatMessage[] }>();
@@ -177,7 +178,7 @@ watch(
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: var(--td-comp-margin-s);
+  gap: 8px;
   align-items: center;
   justify-content: center;
   padding: var(--td-comp-paddingTB-xxl) var(--td-comp-paddingLR-l);
@@ -185,27 +186,30 @@ watch(
 }
 
 .ai-message-list__empty-icon {
-  color: var(--td-brand-color);
-  font-size: 2.25rem;
+  color: var(--td-text-color-placeholder);
 }
 
 .ai-message-list__empty-title {
-  margin: var(--td-comp-margin-s) 0 0;
+  margin: 8px 0 0;
   color: var(--td-text-color-primary);
-  font: var(--td-font-title-small);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.5;
+  text-wrap: balance;
 }
 
 .ai-message-list__empty-desc {
-  max-width: 20rem;
+  max-width: 24rem;
   margin: 0;
   color: var(--td-text-color-secondary);
-  font: var(--td-font-body-small);
+  font-size: 0.8125rem;
   line-height: 1.6;
+  text-wrap: balance;
 }
 
 .ai-message {
   display: flex;
-  gap: var(--td-comp-margin-s);
+  gap: var(--td-comp-margin-l);
   min-width: 0;
 }
 
@@ -224,14 +228,13 @@ watch(
 
 .ai-message__avatar {
   display: inline-flex;
-  flex: 0 0 1.75rem;
+  flex: 0 0 1.5rem;
   align-items: center;
   justify-content: center;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin-top: 2px;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-top: 1px;
   color: var(--td-brand-color);
-  font-size: 1rem;
   background: var(--td-brand-color-light);
   border-radius: 50%;
 }
@@ -242,13 +245,13 @@ watch(
   flex-direction: column;
   gap: var(--td-comp-margin-s);
   min-width: 0;
-  // 独立页很宽，正文限宽保证行长可读；抽屉里自然撑满
-  max-width: 56rem;
+  // 气泡限宽：行长可读 + 不撑破容器
+  max-width: min(72ch, 88%);
 }
 
 .ai-message__user {
-  max-width: 86%;
-  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+  max-width: min(72ch, 88%);
+  padding: 10px 14px;
   color: var(--td-text-color-primary);
   font: var(--td-font-body-medium);
   line-height: 1.7;
@@ -339,7 +342,8 @@ watch(
   gap: var(--td-comp-margin-xs);
   align-items: center;
   width: 100%;
-  padding: var(--td-comp-paddingTB-xs) var(--td-comp-paddingLR-s);
+  min-height: 2rem;
+  padding: 2px var(--td-comp-paddingLR-s);
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-small);
   text-align: left;
@@ -369,9 +373,13 @@ watch(
 }
 
 .ai-reason--live .ai-reason__title {
-  background: linear-gradient(90deg, var(--td-text-color-secondary), var(--td-brand-color), var(--td-text-color-secondary));
+  background: linear-gradient(
+    90deg,
+    var(--td-text-color-secondary),
+    var(--td-brand-color),
+    var(--td-text-color-secondary)
+  );
   background-size: 200% 100%;
-  -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: ai-reason-shimmer 1.6s linear infinite;
@@ -508,6 +516,7 @@ watch(
   }
 
   :deep(pre) {
+    max-width: 100%;
     padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
     margin: 0 0 var(--td-comp-margin-s);
     overflow-x: auto;
@@ -537,6 +546,7 @@ watch(
   :deep(table) {
     display: block;
     width: 100%;
+    max-width: 100%;
     margin: 0 0 var(--td-comp-margin-s);
     overflow-x: auto;
     border-collapse: collapse;

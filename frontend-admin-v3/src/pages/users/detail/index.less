@@ -340,6 +340,20 @@
   padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
 }
 
+// 一键上游开通：说明 + 强制确认 + 备注，纵向排列
+.upstream-provision {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-m);
+}
+
+.upstream-provision__hint {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-medium);
+  line-height: 1.7;
+}
+
 .spec-chip span,
 .invoice-summary span,
 .invoice-detail-grid span,

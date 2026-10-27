@@ -7,15 +7,15 @@
     :title="$t('ai.launcherLabel')"
     @click="handleOpen"
   >
-    <chat-bubble-icon class="ai-assistant-launcher__icon" />
+    <ai-robot-avatar :size="26" class="ai-assistant-launcher__robot" />
   </button>
 </template>
 <script setup lang="ts">
-import { ChatBubbleIcon } from 'tdesign-icons-vue-next';
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 
 import { getClientToken } from '@/app/runtime/session';
+import AiRobotAvatar from '@/components/ai/AiRobotAvatar.vue';
 import { useAiStore } from '@/store/modules/ai';
 
 /** 独立页的路由名，页面上不再叠浮球 */
@@ -51,47 +51,57 @@ const handleOpen = (): void => {
   bottom: calc(var(--td-comp-margin-xxl) + env(safe-area-inset-bottom, 0px));
   // 低于启动骨架、高于页面内容：抽屉面板取 3400，浮球取 3300
   z-index: 3300;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 3rem;
-  height: 3rem;
+  width: 3.25rem;
+  height: 3.25rem;
   padding: 0;
   color: var(--td-text-color-anti);
   cursor: pointer;
-  background: var(--td-brand-color);
+  background: radial-gradient(
+    circle at 32% 26%,
+    var(--td-brand-color-hover) 0%,
+    var(--td-brand-color) 58%,
+    var(--td-brand-color-active) 100%
+  );
   border: 0;
   border-radius: 50%;
-  box-shadow: var(--td-shadow-2);
+  // 品牌色做投影、再叠一层中性阴影：柔和但能压住深色背景
+  box-shadow:
+    0 12px 26px -14px var(--td-brand-color),
+    var(--td-shadow-2);
   transition:
     transform @anim-duration-base @anim-time-fn-easing,
-    background-color @anim-duration-base @anim-time-fn-easing;
+    box-shadow @anim-duration-base @anim-time-fn-easing,
+    filter @anim-duration-base @anim-time-fn-easing;
 
   &:hover {
-    background: var(--td-brand-color-hover);
+    box-shadow:
+      0 16px 30px -14px var(--td-brand-color),
+      var(--td-shadow-2);
     transform: translateY(-2px);
   }
 
   &:active {
-    background: var(--td-brand-color-active);
+    filter: brightness(0.96);
+    transform: translateY(0);
   }
 
   &:focus-visible {
     outline: 2px solid var(--td-brand-color-focus);
-    outline-offset: 2px;
+    outline-offset: 3px;
   }
 }
 
-.ai-assistant-launcher__icon {
-  font-size: 1.375rem;
+.ai-assistant-launcher__robot {
+  color: var(--td-text-color-anti);
 }
 
 @media (max-width: @screen-sm-rem) {
   .ai-assistant-launcher {
     right: var(--td-comp-margin-l);
     bottom: calc(var(--td-comp-margin-l) + env(safe-area-inset-bottom, 0px));
-    width: 2.75rem;
-    height: 2.75rem;
   }
 }
 </style>

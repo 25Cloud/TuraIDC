@@ -17,7 +17,7 @@ use App\Http\Requests\Admin\V2\UserService\DeleteServiceSecurityRuleRequest;
 use App\Http\Requests\Admin\V2\UserService\DeleteUserServiceRequest;
 use App\Http\Requests\Admin\V2\UserService\ListServiceOperationLogsRequest;
 use App\Http\Requests\Admin\V2\UserService\ListUserServicesRequest;
-use App\Http\Requests\Admin\V2\UserService\ManualProvisionUserServiceRequest;
+use App\Http\Requests\Admin\V2\UserService\ProvisionUpstreamUserServiceRequest;
 use App\Http\Requests\Admin\V2\UserService\QuoteServiceHostUpgradeRequest;
 use App\Http\Requests\Admin\V2\UserService\QuoteServiceTrafficPackageRequest;
 use App\Http\Requests\Admin\V2\UserService\RefreshUserServiceStatusesRequest;
@@ -129,13 +129,17 @@ class UserServiceController extends Controller
         ], '服务信息已更新');
     }
 
-    public function manualProvision(ManualProvisionUserServiceRequest $request, User $user, int $service): JsonResponse
+    /**
+     * 一键上游开通：按商品绑定的上游直接下单、结算并用供应商余额支付，成功后回填上游实例 ID。
+     * 不需要管理员填写上游接口与实例 ID —— 那是「上游绑定」的人工兜底路径。
+     */
+    public function provisionUpstream(ProvisionUpstreamUserServiceRequest $request, User $user, int $service): JsonResponse
     {
-        $detail = $this->users->manualProvisionService($user, $service, $request->payload(), $this->adminContext($request));
+        $detail = $this->users->provisionUpstreamService($user, $service, $request->payload(), $this->adminContext($request));
 
         return $this->success([
             'service' => ServiceDetailResource::make($detail)->resolve(),
-        ], '已重新提交上游开通');
+        ], '上游开通已完成');
     }
 
     public function destroy(DeleteUserServiceRequest $request, User $user, int $service): JsonResponse

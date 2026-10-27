@@ -1,7 +1,9 @@
 <template>
   <div class="ai-guide-launcher">
-    <!-- 只留一个圆形机器人头像按钮：文字在窄视口上挤成一团，也没有任何信息增量 -->
+    <!-- 只留一个圆形机器人头按钮：文字在窄视口上挤成一团，也没有任何信息增量。
+         面板展开时隐藏浮球——面板就落在同一个右下角，两个入口叠着只会互相盖住。 -->
     <button
+      v-show="!panelVisible"
       type="button"
       class="ai-guide-launcher__ball"
       data-ai-launcher
@@ -9,7 +11,7 @@
       :aria-expanded="panelVisible ? 'true' : 'false'"
       @click="handleToggle"
     >
-      <el-icon class="ai-guide-launcher__icon"><Service /></el-icon>
+      <AiRobotAvatar :size="26" class="ai-guide-launcher__robot" />
     </button>
 
     <AiGuidePanel v-model="panelVisible" :chat="chat" />
@@ -17,7 +19,6 @@
 </template>
 
 <script setup>
-import { Service } from "@element-plus/icons-vue";
 import { useAiChat } from "@turaidc/shared/runtime";
 import { ElMessage } from "element-plus/es/components/message/index.mjs";
 import { ref } from "vue";
@@ -28,6 +29,7 @@ import { isLoggedIn } from "@/utils/auth";
 import { navigateToConsole } from "@/utils/consoleUrl";
 
 import AiGuidePanel from "./AiGuidePanel.vue";
+import AiRobotAvatar from "./AiRobotAvatar.vue";
 
 /**
  * 浮球挂在 App.vue，切路由不销毁，因此会话状态就活在这里。
@@ -68,50 +70,59 @@ function handleToggle() {
 .ai-guide-launcher {
   position: fixed;
   right: 24px;
-  bottom: 28px;
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
   /* 浮球层级夹在 Element 全局弹层（3200）与启动骨架（9999）之间，面板与它同层 */
   z-index: 3300;
 }
 
+/*
+ * 尺寸与三端统一：直径 3.25rem（52px），品牌色做径向渐变，
+ * 中性阴影 + 品牌色投影；hover 上浮 2px，不做缩放。
+ */
 .ai-guide-launcher__ball {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   padding: 0;
-  border: none;
-  border-radius: 50%;
-  color: var(--el-color-white);
+  color: var(--td-text-color-anti, #fff);
   cursor: pointer;
-  /* 左下角品牌色 → 右上角浅一档的品牌色，比纯色更有体积感 */
-  background-image: linear-gradient(
-    to top right,
-    var(--el-color-primary),
-    var(--el-color-primary-light-3)
+  background: radial-gradient(
+    circle at 32% 26%,
+    /* 官网没有 --td-* 变量：回退到 Element Plus 确实存在的三个品牌色档位 */
+    var(--td-brand-color-hover, var(--el-color-primary-light-3)),
+    var(--td-brand-color, var(--el-color-primary)) 58%,
+    var(--td-brand-color-active, var(--el-color-primary-dark-2))
   );
-  box-shadow: var(--el-box-shadow);
+  border: 0;
+  border-radius: 50%;
+  box-shadow:
+    0 12px 26px -14px var(--td-brand-color, var(--el-color-primary)),
+    var(--td-shadow-2, 0 6px 16px rgba(15, 23, 42, 0.16));
   transition:
     transform 0.16s ease,
     box-shadow 0.16s ease;
 
   &:hover {
-    transform: scale(1.06);
-    box-shadow: var(--el-box-shadow-dark);
+    transform: translateY(-2px);
+    box-shadow:
+      0 16px 30px -14px var(--td-brand-color, var(--el-color-primary)),
+      var(--td-shadow-2, 0 6px 16px rgba(15, 23, 42, 0.16));
   }
 
   &:active {
-    transform: scale(0.98);
+    transform: translateY(0);
   }
 
   &:focus-visible {
-    outline: 2px solid var(--el-color-primary-light-5);
-    outline-offset: 2px;
+    outline: 2px solid var(--td-brand-color-focus, var(--el-color-primary-light-5));
+    outline-offset: 3px;
   }
 }
 
-.ai-guide-launcher__icon {
-  font-size: 24px;
+.ai-guide-launcher__robot {
+  color: var(--td-text-color-anti, #fff);
 }
 
 @media (max-width: 767px) {
@@ -119,6 +130,13 @@ function handleToggle() {
     right: 16px;
     /* 全面屏手机底部有手势条，浮球必须避让安全区 */
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ai-guide-launcher__ball:hover,
+  .ai-guide-launcher__ball:active {
+    transform: none;
   }
 }
 </style>

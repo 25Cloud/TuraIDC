@@ -14,6 +14,7 @@ use App\Constants\ServiceStatus;
 use App\Constants\UserNotificationType;
 use App\Contracts\Integrations\Payments\PaymentGatewayInterface;
 use App\Exceptions\BusinessException;
+use App\Exceptions\ProvisionRetryNotAllowedException;
 use App\Models\AccountTransaction;
 use App\Models\Invoice;
 use App\Models\Order;
@@ -2918,6 +2919,14 @@ class PaymentService
 
             if ((int) $order->status !== OrderStatus::COMPLETED) {
                 $provisionData = is_array($service->provision_data ?? null) ? $service->provision_data : [];
+
+                // 上游开通已失败（含结果未确认）：自动重试只会把同一笔购买在上游再开一遍
+                // ——「首轮同步履约 + provision 队列 $tries=3」正是客户看到的 4 笔相同订单。
+                // 这里用「不允许重试」的异常终止履约，交给管理员核实后手动发起。
+                $provisionError = trim((string) ($provisionData['provision_error'] ?? ''));
+                if ($provisionError !== '') {
+                    throw new ProvisionRetryNotAllowedException('上游开通未完成：'.$provisionError);
+                }
 
                 // 待人工开通：服务停在 PENDING 且带人工原因，没有任何自动流程会把它推进到 COMPLETED。
                 // 这类状态没有 provision_error，但同样不构成「已履约」——若放行会清掉

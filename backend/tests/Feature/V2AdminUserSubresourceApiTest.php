@@ -77,7 +77,7 @@ class V2AdminUserSubresourceApiTest extends TestCase
             $mock->shouldReceive('updateServiceMeta')
                 ->once()
                 ->andReturn($serviceDetail);
-            $mock->shouldReceive('manualProvisionService')
+            $mock->shouldReceive('provisionUpstreamService')
                 ->once()
                 ->andReturn($serviceDetail);
             $mock->shouldReceive('deleteService')
@@ -162,12 +162,12 @@ class V2AdminUserSubresourceApiTest extends TestCase
             ->assertJsonPath('data.service.id', 321);
         $this->assertNoSensitiveKeys($metaResponse->json());
 
-        $manualProvisionResponse = $this->putJson('/api/v2/admin/users/'.$user->id.'/services/321/manual-provision', [
+        $upstreamProvisionResponse = $this->postJson('/api/v2/admin/users/'.$user->id.'/services/321/upstream-provision', [
             'remark' => 'retry',
         ])
             ->assertOk()
             ->assertJsonPath('data.service.id', 321);
-        $this->assertNoSensitiveKeys($manualProvisionResponse->json());
+        $this->assertNoSensitiveKeys($upstreamProvisionResponse->json());
 
         $this->deleteJson('/api/v2/admin/users/'.$user->id.'/services/321')
             ->assertOk()

@@ -1140,12 +1140,15 @@
       "label": "AI 导购",
       "loginRequired": "登录后使用 AI 导购"
     },
+    "empty": {
+      "title": "有什么可以帮你？",
+      "description": "说说你的用途、地区和预算，我帮你挑合适的配置。"
+    },
     "panel": {
       "title": "AI 导购",
       "close": "收起",
       "newConversation": "新对话",
       "subject": "正在看：{label}",
-      "empty": "说说你的用途、地区和预算，我来帮你挑配置。",
       "thinking": "正在思考…",
       "placeholder": "例如：十来人同时访问的小站，预算 50 元/月，选哪个配置？",
       "send": "发送",

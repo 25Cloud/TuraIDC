@@ -1,5 +1,10 @@
 <template>
   <div class="ai-conversations-page">
+    <header class="ai-page-head">
+      <ai-robot-avatar :size="22" class="ai-page-head__logo" />
+      <h1 class="ai-page-head__title">{{ $t('ai.conversations.title') }}</h1>
+    </header>
+
     <t-card :bordered="false">
       <div class="ai-conversations-filter">
         <t-input
@@ -27,7 +32,9 @@
     </t-card>
 
     <t-card :bordered="false" class="ai-conversations-table-card">
+      <!-- 空数据时不渲染表格：否则 t-table 自带的「暂无数据」会和下面的空态叠两层 -->
       <t-table
+        v-if="list.length"
         row-key="id"
         :data="list"
         :columns="columns"
@@ -62,7 +69,12 @@
         </template>
       </t-table>
 
-      <t-empty v-if="!list.length && !loading" :description="$t('ai.conversations.empty')" />
+      <!-- 空态与浮窗同一套：机器人头 56px + 16px 标题 + 13px 灰色副标题 -->
+      <div v-if="!list.length && !loading" class="ai-empty">
+        <ai-robot-avatar :size="56" class="ai-empty__icon" />
+        <p class="ai-empty__title">{{ $t('ai.empty.title') }}</p>
+        <p class="ai-empty__desc">{{ $t('ai.conversations.empty') }}</p>
+      </div>
 
       <div v-if="total > 0" class="ai-conversations-pagination">
         <t-pagination
@@ -133,7 +145,7 @@
               :class="`ai-conversations-message--${message.role}`"
             >
               <t-avatar v-if="message.role === 'assistant'" class="ai-conversations-message__avatar" size="32px">
-                <template #icon><robot-icon /></template>
+                <template #icon><ai-robot-avatar :size="16" /></template>
               </t-avatar>
 
               <div class="ai-conversations-message__body">
@@ -198,13 +210,13 @@
 </template>
 <script setup lang="ts">
 import type { AiConversationDetail, AiMessageRow } from '@turaidc/shared/runtime';
-import { RobotIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onMounted, ref } from 'vue';
 
 import type { AiAdminConversation, AiUsageResponse } from '@/api/ai';
 import { aiAdminApi } from '@/api/ai';
+import AiRobotAvatar from '@/components/ai/AiRobotAvatar.vue';
 import { useListPage } from '@/hooks/useListPage';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { t } from '@/locales';
@@ -394,7 +406,60 @@ onMounted(loadUsage);
   display: flex;
   flex-direction: column;
   gap: var(--td-comp-margin-xl);
+  width: 100%;
+  /* 与「AI 设置」同一版心：内容区最大 920px 居中 */
+  max-width: 920px;
+  margin: 0 auto;
   padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+}
+
+/* 页面头：机器人头 + 标题，不写说明文案（管理端不加头部说明卡片） */
+.ai-page-head {
+  display: flex;
+  gap: var(--td-comp-margin-s);
+  align-items: center;
+}
+
+.ai-page-head__logo {
+  color: var(--td-brand-color);
+}
+
+.ai-page-head__title {
+  margin: 0;
+  color: var(--td-text-color-primary);
+  font: var(--td-font-title-medium);
+}
+
+/* 空态：机器人头 56px + 16px 标题 + 13px 灰色副标题，垂直居中 */
+.ai-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 320px;
+  padding: 32px 0;
+  text-align: center;
+}
+
+.ai-empty__icon {
+  color: var(--td-text-color-placeholder);
+}
+
+.ai-empty__title {
+  margin: 8px 0 0;
+  color: var(--td-text-color-primary);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.ai-empty__desc {
+  max-width: 20rem;
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .ai-conversations-filter {
@@ -521,7 +586,7 @@ onMounted(loadUsage);
   flex-direction: column;
   gap: var(--td-comp-margin-xs);
   min-width: 0;
-  max-width: 88%;
+  max-width: 100%;
 }
 
 .ai-conversations-message--user .ai-conversations-message__body {
@@ -556,7 +621,8 @@ onMounted(loadUsage);
 }
 
 .ai-conversations-message__bubble {
-  width: 100%;
+  /* 与浮窗同一条可读性规则：一行不超过 72ch，也不超过容器的 88% */
+  max-width: min(72ch, 88%);
   padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
   border-radius: var(--td-radius-medium);
   background: var(--td-bg-color-container-hover);

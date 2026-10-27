@@ -1140,12 +1140,15 @@
       "label": "AI 導購",
       "loginRequired": "登入後使用 AI 導購"
     },
+    "empty": {
+      "title": "有咩可以幫你？",
+      "description": "講講你嘅用途、地區同預算，我幫你揀合適嘅配置。"
+    },
     "panel": {
       "title": "AI 導購",
       "close": "收起",
       "newConversation": "新對話",
       "subject": "現正查看：{label}",
-      "empty": "講講你的用途、地區和預算，我幫你揀配置。",
       "thinking": "正在思考…",
       "placeholder": "例如：十幾人同時訪問的小站，預算 50 元/月，揀邊個配置？",
       "send": "傳送",

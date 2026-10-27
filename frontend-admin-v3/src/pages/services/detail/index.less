@@ -107,6 +107,20 @@
   margin-top: var(--td-comp-margin-l);
 }
 
+// 一键上游开通：说明 + 强制确认 + 备注，纵向排列，控件之间留统一间距
+.upstream-provision {
+  display: flex;
+  flex-direction: column;
+  gap: var(--td-comp-margin-m);
+}
+
+.upstream-provision__hint {
+  margin: 0;
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-medium);
+  line-height: 1.7;
+}
+
 .dialog-alert {
   margin-bottom: var(--td-comp-margin-l);
 }

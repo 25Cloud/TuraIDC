@@ -718,12 +718,12 @@
             $t('users.detail.rename')
           }}</t-button>
           <t-button
-            theme="default"
+            v-if="serviceActions.upstream_provision"
+            theme="primary"
             size="small"
-            :disabled="!serviceActions.manual_provision"
-            :loading="serviceDrawer.actionLoading === 'manual-provision'"
-            @click="openManualProvisionDialog"
-            >{{ $t('users.detail.manualProvision') }}</t-button
+            :loading="serviceDrawer.actionLoading === 'upstream-provision'"
+            @click="openUpstreamProvisionDialog"
+            >{{ $t('users.detail.upstreamProvision') }}</t-button
           >
           <t-button
             v-if="canRefundService"
@@ -765,21 +765,28 @@
     </t-dialog>
 
     <t-dialog
-      v-model:visible="manualProvisionVisible"
-      :header="$t('users.detail.manualProvisionTitle')"
-      width="420px"
+      v-model:visible="upstreamProvisionVisible"
+      :header="$t('users.detail.upstreamProvision')"
+      width="480px"
       :confirm-btn="{
-        content: $t('users.detail.confirmBind'),
-        loading: serviceDrawer.actionLoading === 'manual-provision',
+        content: $t('users.detail.upstreamProvisionConfirm'),
+        theme: 'primary',
+        loading: serviceDrawer.actionLoading === 'upstream-provision',
       }"
-      @cancel="manualProvisionVisible = false"
-      @confirm="handleManualProvision"
+      @cancel="upstreamProvisionVisible = false"
+      @confirm="handleUpstreamProvision"
     >
-      <t-form ref="manualProvisionFormRef" :data="manualProvisionForm" :rules="manualProvisionRules" label-align="top">
-        <t-form-item :label="$t('users.detail.upstreamInstanceId')" name="upstream_host_id">
-          <t-input-number v-model="manualProvisionForm.upstream_host_id" :min="1" style="width: 100%" />
-        </t-form-item>
-      </t-form>
+      <div class="upstream-provision">
+        <p class="upstream-provision__hint">{{ $t('users.detail.upstreamProvisionHint') }}</p>
+        <t-checkbox v-model="upstreamProvisionForm.force">{{
+          $t('users.detail.upstreamProvisionForce')
+        }}</t-checkbox>
+        <t-input
+          v-model="upstreamProvisionForm.remark"
+          :placeholder="$t('users.detail.upstreamProvisionRemark')"
+          :maxlength="200"
+        />
+      </div>
     </t-dialog>
 
     <t-dialog
@@ -1159,7 +1166,7 @@ const servicePricingSubmitting = ref(false);
 const serviceNameVisible = ref(false);
 const serviceNameSubmitting = ref(false);
 const resetPasswordVisible = ref(false);
-const manualProvisionVisible = ref(false);
+const upstreamProvisionVisible = ref(false);
 const serviceRefundVisible = ref(false);
 const invoiceRefundVisible = ref(false);
 const invoiceRefundLoading = ref(false);
@@ -1169,7 +1176,6 @@ const addServiceFormRef = ref<FormInstanceFunctions>();
 const serviceUpstreamFormRef = ref<FormInstanceFunctions>();
 const servicePricingFormRef = ref<FormInstanceFunctions>();
 const resetPasswordFormRef = ref<FormInstanceFunctions>();
-const manualProvisionFormRef = ref<FormInstanceFunctions>();
 const serviceRefundFormRef = ref<FormInstanceFunctions>();
 const invoiceRefundFormRef = ref<FormInstanceFunctions>();
 const editForm = reactive({
@@ -1214,7 +1220,7 @@ const servicePricingForm = reactive({
 });
 const serviceNameForm = reactive({ service_name: '' });
 const resetPasswordForm = reactive({ password: '' });
-const manualProvisionForm = reactive({ upstream_host_id: undefined as number | undefined });
+const upstreamProvisionForm = reactive({ force: false, remark: '' });
 const serviceRefundForm = reactive({ refund_method: 'balance' as 'balance' | 'original', remark: '' });
 const invoiceRefundForm = reactive({ refund_method: 'balance' as 'balance' | 'original', remark: '' });
 const serviceDrawer = reactive({ visible: false, loading: false, actionLoading: '', serviceId: 0, detail: {} as Row });
@@ -1316,9 +1322,6 @@ const resetPasswordRules: Record<string, FormRule[]> = {
   password: [
     { validator: (val) => String(val || '').length >= 8, message: t('users.detail.passwordLengthMin'), type: 'error' },
   ],
-};
-const manualProvisionRules: Record<string, FormRule[]> = {
-  upstream_host_id: [required(t('users.detail.upstreamInstanceRequired'))],
 };
 const refundRules: Record<string, FormRule[]> = {
   refund_method: [required(t('users.detail.refundMethodRequired'))],
@@ -2126,25 +2129,25 @@ async function handleResetServicePassword() {
   }
 }
 
-function openManualProvisionDialog() {
-  manualProvisionForm.upstream_host_id = undefined;
-  manualProvisionVisible.value = true;
-  manualProvisionFormRef.value?.clearValidate?.();
+function openUpstreamProvisionDialog() {
+  upstreamProvisionForm.force = false;
+  upstreamProvisionForm.remark = '';
+  upstreamProvisionVisible.value = true;
 }
 
-async function handleManualProvision() {
-  const result = await manualProvisionFormRef.value?.validate?.();
-  if (!isValidationPass(result) || !serviceDrawer.serviceId) return;
-  serviceDrawer.actionLoading = 'manual-provision';
+async function handleUpstreamProvision() {
+  if (!serviceDrawer.serviceId) return;
+  serviceDrawer.actionLoading = 'upstream-provision';
   try {
-    await userApi.manualProvisionService(userId.value, serviceDrawer.serviceId, {
-      upstream_host_id: Number(manualProvisionForm.upstream_host_id || 0),
+    await userApi.provisionUpstreamService(userId.value, serviceDrawer.serviceId, {
+      force: upstreamProvisionForm.force,
+      remark: upstreamProvisionForm.remark || undefined,
     });
-    MessagePlugin.success(t('users.detail.manualProvisionDispatched'));
-    manualProvisionVisible.value = false;
+    MessagePlugin.success(t('users.detail.upstreamProvisionSuccess'));
+    upstreamProvisionVisible.value = false;
     await Promise.all([reloadServiceDrawer(), loadServices()]);
   } catch (error) {
-    MessagePlugin.error(errorMessage(error, t('users.detail.manualProvisionFailed')));
+    MessagePlugin.error(errorMessage(error, t('users.detail.upstreamProvisionFailed')));
   } finally {
     serviceDrawer.actionLoading = '';
   }

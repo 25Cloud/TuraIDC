@@ -11,10 +11,9 @@
     </div>
 
     <div v-else-if="!messages.length" class="ai-messages__empty">
-      <span class="ai-messages__empty-icon" aria-hidden="true">
-        <el-icon><Service /></el-icon>
-      </span>
-      <p class="ai-messages__empty-text">{{ $t("ai.panel.empty") }}</p>
+      <AiRobotAvatar :size="56" class="ai-messages__empty-icon" />
+      <p class="ai-messages__empty-title">{{ $t("ai.empty.title") }}</p>
+      <p class="ai-messages__empty-desc">{{ $t("ai.empty.description") }}</p>
     </div>
 
     <article
@@ -41,7 +40,7 @@
       <!-- 助手消息：左侧圆形头像 + 工具胶囊 / 思考 / 正文 -->
       <template v-else>
         <span class="ai-msg__avatar" aria-hidden="true">
-          <el-icon><Service /></el-icon>
+          <AiRobotAvatar :size="16" />
         </span>
 
         <div class="ai-msg__body">
@@ -121,13 +120,14 @@
 </template>
 
 <script setup>
-import { ArrowDown, Service } from "@element-plus/icons-vue";
+import { ArrowDown } from "@element-plus/icons-vue";
 import MarkdownIt from "markdown-it";
 import { nextTick, onMounted, ref, watch } from "vue";
 
 import { t } from "@/locales";
 
 import AiGuideConfirmCard from "./AiGuideConfirmCard.vue";
+import AiRobotAvatar from "./AiRobotAvatar.vue";
 
 const props = defineProps({
   messages: {
@@ -250,11 +250,11 @@ watch(
   display: flex;
   flex: 1;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   min-height: 0;
   padding: 16px;
   overflow-y: auto;
-  background: var(--el-fill-color-light);
+  background: var(--td-bg-color-container-hover, var(--el-fill-color-light));
   overscroll-behavior: contain;
   /* 不启用 scroll-behavior: smooth：流式每个增量都会重设 scrollTop，动画会一直被打断 */
 }
@@ -263,34 +263,37 @@ watch(
   padding: 0;
 }
 
-/* ===== 空态 ===== */
+/* ===== 空态：机器人头 56px + 16px 标题 + 13px 灰色副标题，整块垂直居中 ===== */
 .ai-messages__empty {
   display: flex;
+  flex: 1;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   margin: auto 0;
+  padding: 24px 0;
   text-align: center;
 }
 
 .ai-messages__empty-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  font-size: 20px;
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
-  border-radius: 50%;
+  color: var(--td-text-color-placeholder, var(--el-text-color-placeholder));
 }
 
-.ai-messages__empty-text {
-  max-width: 280px;
+.ai-messages__empty-title {
+  margin: 8px 0 0;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--td-text-color-primary, var(--el-text-color-primary));
+}
+
+.ai-messages__empty-desc {
+  max-width: 20rem;
   margin: 0;
   font-size: 13px;
   line-height: 1.7;
-  color: var(--el-text-color-placeholder);
+  color: var(--td-text-color-secondary, var(--el-text-color-regular));
 }
 
 /* ===== 消息骨架 ===== */
@@ -319,12 +322,11 @@ watch(
   flex: none;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 1.5rem;
+  height: 1.5rem;
   margin-top: 2px;
-  font-size: 15px;
-  color: var(--el-color-primary);
-  background: var(--el-color-primary-light-9);
+  color: var(--td-brand-color, var(--el-color-primary));
+  background: var(--td-brand-color-light, var(--el-color-primary-light-9));
   border-radius: 50%;
 }
 
@@ -334,10 +336,12 @@ watch(
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+  /* 助手正文同样限宽：一行超过 72ch 就开始难读 */
+  max-width: min(72ch, 88%);
 }
 
 .ai-msg__user {
-  max-width: 86%;
+  max-width: min(72ch, 88%);
   padding: 8px 12px;
   margin: 0;
   font-size: 13px;

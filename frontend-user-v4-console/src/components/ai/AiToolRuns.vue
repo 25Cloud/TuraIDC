@@ -65,10 +65,12 @@ const statusTheme = (status: string): TagTheme => STATUS_THEMES[status] ?? 'defa
 }
 
 .ai-tool-runs__toggle {
+  position: relative;
   display: flex;
   gap: var(--td-comp-margin-xs);
   align-items: center;
   width: 100%;
+  min-height: 2rem;
   padding: 0;
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-small);

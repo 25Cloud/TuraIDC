@@ -2526,6 +2526,7 @@
         }
     },
     "ai": {
+        "close": "关闭",
         "reasoning": { "live": "思考中…", "done": "已深度思考" },
         "recent": { "title": "最近对话" },
         "title": "AI 助手",

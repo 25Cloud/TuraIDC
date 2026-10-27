@@ -7,7 +7,14 @@
     :popup-props="{ overlayInnerStyle: { minWidth: '12rem' } }"
     @click="handleSelect"
   >
-    <t-button class="ai-permission-switch" size="small" variant="outline" shape="round" :disabled="disabled">
+    <t-button
+      class="ai-permission-switch"
+      variant="outline"
+      shape="round"
+      :style="switchStyle"
+      :disabled="disabled"
+      :aria-label="$t('ai.permission.label')"
+    >
       <template #icon><lock-on-icon v-if="modelValue === 'read_only'" /><lock-off-icon v-else /></template>
       <span class="ai-permission-switch__label">{{ currentLabel }}</span>
       <chevron-down-icon class="ai-permission-switch__caret" />
@@ -55,10 +62,19 @@ const menuOptions = computed(() =>
 
 const currentLabel = computed(() => t(MODE_LABEL_KEYS[props.modelValue]));
 
+/**
+ * 宽度按内容、最小 96px（下拉项里还有 `✓` 与图标，不能按文字硬算宽度）。
+ * 高度交给项目全局基线（reset.less: ≥32px，≤768px 40px），不再写死 28px。
+ */
+const switchStyle = {
+  minWidth: '6rem',
+  fontSize: 'var(--td-font-size-body-small)',
+};
+
 const handleSelect = (dropdownItem: string | number | Record<string, unknown>): void => {
-  const mode = (typeof dropdownItem === 'object' && dropdownItem !== null
-    ? dropdownItem.value
-    : dropdownItem) as AiPermissionMode;
+  const mode = (
+    typeof dropdownItem === 'object' && dropdownItem !== null ? dropdownItem.value : dropdownItem
+  ) as AiPermissionMode;
   if (!mode || mode === props.modelValue || !props.allowedModes.includes(mode)) {
     return;
   }
@@ -70,19 +86,27 @@ const handleSelect = (dropdownItem: string | number | Record<string, unknown>): 
   display: inline-flex;
   gap: 2px;
   align-items: center;
-  height: 1.75rem;
-  padding: 0 var(--td-comp-paddingLR-xs);
+  justify-content: center;
+  max-width: 100%;
+  padding: 0 10px;
   font: var(--td-font-body-small);
+  white-space: nowrap;
+
+  :deep(.t-icon) {
+    font-size: 0.875rem;
+  }
 }
 
+// 文案过长时省略，但不撑破 96px 的下限
 .ai-permission-switch__label {
-  max-width: 6rem;
+  max-width: 7rem;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ai-permission-switch__caret {
+  flex: none;
   margin-left: 2px;
   font-size: 0.75rem;
 }

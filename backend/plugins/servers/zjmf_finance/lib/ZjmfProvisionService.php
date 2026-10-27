@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
 use App\Exceptions\BusinessException;
+use App\Exceptions\ProvisionRetryNotAllowedException;
 use App\Exceptions\UpstreamStockShortageException;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
+use App\Models\ServiceUpstreamBinding;
 use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Support\ProviderErrorMapper;
@@ -51,6 +53,12 @@ final class ZjmfProvisionService
         $product = $order->product;
         if (! $product instanceof Product) {
             throw new BusinessException('商品信息不存在，无法自动开通');
+        }
+
+        // 上一轮开通失败时上游可能已经建出实例（结算成功但账单号解析不出来，或请求在返回途中断掉）。
+        // 先按主机名把上游实例找回来复用，绝不重新下一单。
+        if ($existingService && $this->resolveExistingHostId($existingService) <= 0) {
+            $this->adoptExistingUpstreamHost($existingService, $supplier, $order, $product);
         }
 
         if ($existingService && $this->resolveExistingHostId($existingService) > 0) {
@@ -194,7 +202,31 @@ final class ZjmfProvisionService
             $this->checkpointUpstreamProvision($existingService, $supplier, $product, $invoiceId, $hostIds, $requestedHost);
 
             if ($invoiceId <= 0) {
-                throw new BusinessException('上游已接受结算，但未返回账单 ID');
+                // 结算返回成功却没有账单号：上游已经记下一笔订单，本地无法确认支付状态。
+                // 先按主机名把它找回来写进 checkpoint，再落 uncertain 标记拦住所有自动重试。
+                $recoveredHostIds = [];
+                if ($requestedHost !== '') {
+                    try {
+                        $recoveredHostIds = $this->findHostIdsForProvision($supplier, $jwt, 0, $requestedHost);
+                    } catch (\Throwable $lookupException) {
+                        Log::warning('[ZJMF 财务开通] 结算后按主机名回查上游实例失败', [
+                            'order_id' => (int) $order->id,
+                            'requested_host' => $requestedHost,
+                            'message' => $lookupException->getMessage(),
+                        ]);
+                    }
+                }
+
+                $this->markProvisionUncertain(
+                    $existingService,
+                    $supplier,
+                    $product,
+                    $requestedHost,
+                    $recoveredHostIds,
+                    '结算成功但未返回账单号'
+                );
+
+                throw new ProvisionRetryNotAllowedException('上游已接受结算但未返回账单号，已停止自动重试：请在上游核实这笔订单后处理');
             }
 
             if ($this->extractResponseStatus($checkoutResponse) !== 1001) {
@@ -319,7 +351,7 @@ final class ZjmfProvisionService
             (array) (($product->purchase_requires ?? [])['upstream_default_config'] ?? []),
             (array) ($order->config_snapshot ?? [])
         );
-        $hostname = trim((string) ($configSnapshot['hostname'] ?? $order->domain ?? ''));
+        $hostname = $this->resolveRequestedHostname($order, $product);
         $password = trim((string) ($configSnapshot['password'] ?? ''));
 
         if ($password === '') {
@@ -394,6 +426,143 @@ final class ZjmfProvisionService
         ])->save();
 
         $service->setAttribute('provision_data', $freshService->provision_data);
+    }
+
+    /**
+     * 上一轮开通失败、本地又没有实例标识时，按主机名把上游可能已建好的实例找回来复用。
+     *
+     * 为什么必须这一步：`/cart/settle` 一旦成功，上游就已经有一笔订单了；只要本地解析不出
+     * 账单号、或请求在返回途中断掉，本地就落不到任何 checkpoint，队列重试会重新走
+     * 「加购 → 结算」，上游于是多出一笔一模一样的订单。主机名是本地生成、同一服务恒定的
+     * 幂等锚点，用它回查最可靠。
+     */
+    private function adoptExistingUpstreamHost(Service $service, Supplier $supplier, Order $order, Product $product): void
+    {
+        $provisionData = (array) ($service->provision_data ?? []);
+        $hasPriorAttempt = (int) ($provisionData['upstream_invoice_id'] ?? 0) > 0
+            || trim((string) ($provisionData['last_provision_attempt_at'] ?? '')) !== ''
+            || trim((string) ($provisionData['provision_error'] ?? '')) !== ''
+            || trim((string) ($provisionData['upstream_provision_uncertain_at'] ?? '')) !== '';
+
+        // 首次开通没有「上一轮」可查，直接走正常购买流程。
+        if (! $hasPriorAttempt) {
+            return;
+        }
+
+        $hostname = $this->resolveRequestedHostname($order, $product);
+        if ($hostname === '') {
+            return;
+        }
+
+        try {
+            $jwt = $this->transport->login($supplier);
+            $hostIds = array_values(array_filter(
+                $this->findHostIdsForProvision($supplier, $jwt, (int) ($provisionData['upstream_invoice_id'] ?? 0), $hostname),
+                fn (int $hostId): bool => ! $this->upstreamHostBoundToOtherService($hostId, (int) $service->id)
+            ));
+
+            if ($hostIds === []) {
+                return;
+            }
+
+            $hostId = (int) $hostIds[0];
+            $this->checkpointUpstreamProvision(
+                $service,
+                $supplier,
+                $product,
+                (int) ($provisionData['upstream_invoice_id'] ?? 0),
+                [$hostId],
+                $hostname
+            );
+
+            Log::warning('[ZJMF 财务开通] 上一轮已在上游建出实例，改为复用而不是重新下单', [
+                'order_id' => (int) $order->id,
+                'service_id' => (int) $service->id,
+                'requested_host' => $hostname,
+                'upstream_host_id' => $hostId,
+            ]);
+        } catch (\Throwable $exception) {
+            // 有上一轮痕迹却查不动上游：无法确认是否已经建过单，继续结算就是赌博。
+            // 与「已绑定实例但回查失败」同一口径——阻断并转人工。
+            Log::warning('[ZJMF 财务开通] 回查上一轮上游实例失败，已停止本次开通', [
+                'order_id' => (int) $order->id,
+                'service_id' => (int) $service->id,
+                'requested_host' => $hostname,
+                'message' => $exception->getMessage(),
+            ]);
+
+            throw new ProvisionRetryNotAllowedException('无法确认上一轮是否已在上游生成实例，已停止自动开通，请先在上游核实');
+        }
+    }
+
+    /**
+     * 该上游实例是否已被别的本地服务占用：占用就不复用，避免把别人的机器绑过来。
+     */
+    private function upstreamHostBoundToOtherService(int $upstreamHostId, int $serviceId): bool
+    {
+        if ($upstreamHostId <= 0) {
+            return false;
+        }
+
+        return ServiceUpstreamBinding::query()
+            ->where('upstream_service_id', (string) $upstreamHostId)
+            ->where('service_id', '!=', $serviceId)
+            ->exists();
+    }
+
+    /**
+     * 结算已成功但账单号拿不到：上游必然存在一笔订单，本地却无法确认支付状态。
+     * 落 uncertain 标记，让编排层的闸门拦住所有自动重试，交管理员核实。
+     */
+    private function markProvisionUncertain(
+        ?Service $service,
+        Supplier $supplier,
+        Product $product,
+        string $requestedHost,
+        array $recoveredHostIds,
+        string $reason,
+    ): void {
+        if (! $service instanceof Service || ! $service->exists) {
+            return;
+        }
+
+        $freshService = $service->fresh() ?? $service;
+        $provisionData = (array) ($freshService->provision_data ?? []);
+        $recoveredHostId = (int) ($recoveredHostIds[0] ?? 0);
+
+        $freshService->forceFill([
+            'provision_data' => array_merge($provisionData, array_filter([
+                'provider_key' => ProviderKey::ZJMF_FINANCE_API,
+                'supplier_id' => (int) $supplier->id,
+                'requested_host' => trim($requestedHost) !== '' ? trim($requestedHost) : null,
+                'upstream_host_ids' => $recoveredHostIds !== [] ? array_values($recoveredHostIds) : null,
+                'upstream_host_id' => $recoveredHostId > 0 ? $recoveredHostId : null,
+                'upstream_product_id' => $this->resolveProductUpstreamProductId($product),
+                'upstream_provision_uncertain_at' => now()->format('Y-m-d H:i:s'),
+                'upstream_provision_uncertain_reason' => $reason,
+                'last_provision_attempt_at' => now()->format('Y-m-d H:i:s'),
+            ], static fn (mixed $value): bool => $value !== null)),
+        ])->save();
+
+        $service->setAttribute('provision_data', $freshService->provision_data);
+
+        Log::error('[ZJMF 财务开通] 开通结果未确认，已落 uncertain 标记并停止自动重试', [
+            'service_id' => (int) $freshService->id,
+            'supplier_id' => (int) $supplier->id,
+            'requested_host' => $requestedHost,
+            'recovered_host_ids' => $recoveredHostIds,
+            'reason' => $reason,
+        ]);
+    }
+
+    private function resolveRequestedHostname(Order $order, Product $product): string
+    {
+        $configSnapshot = array_merge(
+            (array) (($product->purchase_requires ?? [])['upstream_default_config'] ?? []),
+            (array) ($order->config_snapshot ?? [])
+        );
+
+        return trim((string) ($configSnapshot['hostname'] ?? $order->domain ?? ''));
     }
 
     private function resolveProductUpstreamProductId(Product $product): int

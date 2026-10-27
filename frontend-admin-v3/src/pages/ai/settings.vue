@@ -1,5 +1,10 @@
 <template>
   <div class="ai-settings-page">
+    <header class="ai-page-head">
+      <ai-robot-avatar :size="22" class="ai-page-head__logo" />
+      <h1 class="ai-page-head__title">{{ $t('ai.settings.title') }}</h1>
+    </header>
+
     <t-loading :loading="loading" size="small" show-overlay class="ai-settings-loading">
       <t-form ref="formRef" class="ai-settings-form" :data="form" :rules="formRules">
         <!-- 每个字段都是「标签一行 → 说明一行 → 控件一行」：
@@ -344,6 +349,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import type { AiAdminSettings, AiAdminSettingsCatalog, AiAdminSettingsPayload, AiSettingsTestResult } from '@/api/ai';
 import { AI_PERMISSION_MODES, AI_PROTOCOL_OPTIONS, AI_SETTINGS_DEFAULTS, aiAdminApi } from '@/api/ai';
+import AiRobotAvatar from '@/components/ai/AiRobotAvatar.vue';
 import { t } from '@/locales';
 import { errorMessage } from '@/utils/userMessage';
 
@@ -551,7 +557,28 @@ onMounted(loadSettings);
   display: flex;
   flex-direction: column;
   gap: var(--td-comp-margin-xl);
+  width: 100%;
+  /* 与「AI 会话审计」同一版心：内容区最大 920px 居中 */
+  max-width: 920px;
+  margin: 0 auto;
   padding: var(--td-comp-paddingTB-l) var(--td-comp-paddingLR-l);
+}
+
+/* 页面头：机器人头 + 标题，不写说明文案（管理端不加头部说明卡片） */
+.ai-page-head {
+  display: flex;
+  gap: var(--td-comp-margin-s);
+  align-items: center;
+}
+
+.ai-page-head__logo {
+  color: var(--td-brand-color);
+}
+
+.ai-page-head__title {
+  margin: 0;
+  color: var(--td-text-color-primary);
+  font: var(--td-font-title-medium);
 }
 
 .ai-settings-loading {
