@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Support;
 
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
@@ -44,8 +45,14 @@ final class SiteProductListCache
 
         try {
             return Cache::tags([self::TAG])->remember($key, self::TTL_SECONDS, $resolver);
-        } catch (Throwable) {
-            // 缓存驱动不支持标签或 Redis 不可用：直接算，功能不受影响
+        } catch (Throwable $exception) {
+            // 缓存驱动不支持标签或 Redis 不可用：直接算，功能不受影响。
+            // 必须留日志，否则"缓存悄悄失效、接口一直慢"这种问题查不到根因。
+            Log::warning('[官网商品列表缓存] 读写失败，本次直接查库', [
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+
             return $resolver();
         }
     }
