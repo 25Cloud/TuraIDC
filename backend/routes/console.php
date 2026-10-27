@@ -63,6 +63,8 @@ $pruneOpenApiUsageLogs = Schedule::command('open-api:prune-usage-logs')
     ->runInBackground();
 
 // AI 会话保留期清理：每天凌晨归档过期会话，并物理删除软删满 7 天的会话与工具记录。
+// 命令实现随 AI 能力一起搬进了 ai_assistant 插件（命令名不变）；
+// 插件停用后该命令不存在，这一项会以“命令不存在”失败，重启用插件即可恢复。
 $pruneAiConversations = Schedule::command('ai:prune-conversations')
     ->dailyAt('04:40')
     ->name('ai-prune-conversations')

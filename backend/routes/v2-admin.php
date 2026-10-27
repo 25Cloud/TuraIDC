@@ -2,7 +2,6 @@
 
 use App\Http\Controllers\Admin\V2\AgentGroupController;
 use App\Http\Controllers\Admin\V2\AgentGroupDiscountController;
-use App\Http\Controllers\Admin\V2\AiAdminController;
 use App\Http\Controllers\Admin\V2\AuthController;
 use App\Http\Controllers\Admin\V2\ContentArticleController;
 use App\Http\Controllers\Admin\V2\ContentCategoryController;
@@ -530,18 +529,5 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/referral-withdrawals/{withdrawal}/approvals', [ReferralWithdrawalController::class, 'approve']);
         Route::post('/referral-withdrawals/{withdrawal}/rejections', [ReferralWithdrawalController::class, 'reject']);
         Route::post('/referral-withdrawals/{withdrawal}/payment-confirmations', [ReferralWithdrawalController::class, 'confirmPayment']);
-    });
-
-    // AI 治理：设置与连通性测试需要 ai.manage，用量与会话审计需要 ai.view
-    Route::middleware(['permission:'.AdminPermissions::AI_VIEW])->group(function (): void {
-        Route::get('/ai/usage', [AiAdminController::class, 'usage']);
-        Route::get('/ai/conversations', [AiAdminController::class, 'conversations']);
-        Route::get('/ai/conversations/{conversation}', [AiAdminController::class, 'showConversation']);
-        Route::get('/ai/settings', [AiAdminController::class, 'settings']);
-    });
-
-    Route::middleware(['permission:'.AdminPermissions::AI_MANAGE])->group(function (): void {
-        Route::put('/ai/settings', [AiAdminController::class, 'updateSettings']);
-        Route::post('/ai/settings/test', [AiAdminController::class, 'test']);
     });
 });
