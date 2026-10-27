@@ -52,4 +52,32 @@ class StoreProductRequest extends AdminFormRequest
             ...$this->allPaginationRules(),
         ];
     }
+
+    /**
+     * 层级校验必须给中文、可操作的说法。
+     *
+     * `products.product_group_id` 外键指向 third_product_groups，商品只能挂在三级分组下；
+     * 默认的 Laravel 文案在英文 locale 下是「The third product group id field is required.」，
+     * 前端再被过滤成「参数验证失败」，管理员根本不知道该做什么。
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'third_product_group_id.required' => '请选择三级分类：商品必须挂载到三级分组下（二级分组下需要先建三级分组）',
+            'third_product_group_id.integer' => '三级分类不合法，请重新选择',
+            'third_product_group_id.min' => '三级分类不合法，请重新选择',
+            'third_product_group_id.exists' => '所选三级分类不存在或已被删除，请刷新后重新选择',
+            'pricing.required' => '请至少配置一个计费周期的价格',
+            'pricing.array' => '计费周期价格格式不正确',
+            'pricing.monthly.numeric' => '月付价格必须是数字',
+            'pricing.quarterly.numeric' => '季付价格必须是数字',
+            'pricing.semiannually.numeric' => '半年付价格必须是数字',
+            'pricing.annually.numeric' => '年付价格必须是数字',
+            'console_template.in' => '用户控制台模板不在允许范围内',
+            'product_discount_group_id.exists' => '所选商品折扣分组不存在',
+            'upstream_binding.supplier_id.exists' => '所选供应商不存在',
+        ];
+    }
 }

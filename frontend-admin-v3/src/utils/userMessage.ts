@@ -22,23 +22,33 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-function firstTrustedMessage(value: unknown): string | null {
+/**
+ * 结构化校验错误里的第一条消息。
+ *
+ * 与 firstTrustedMessage 的区别：这里**不要求中文**。422 的字段级错误来自 Laravel 校验器，
+ * 是 name → [message] 的结构化数据，不会夹带堆栈或 SQL；只认中文会让
+ * 「后端 locale 为英文」的部署把真实原因（The third product group id field is required.）
+ * 过滤掉，管理员端只剩一句「参数验证失败」——那正是客户报障时看到的东西。
+ */
+function firstNonEmptyMessage(value: unknown): string | null {
   if (Array.isArray(value)) {
     for (const item of value) {
-      const message = firstTrustedMessage(item);
+      const message = firstNonEmptyMessage(item);
       if (message) return message;
     }
 
     return null;
   }
 
-  if (isTrustedChineseMessage(value)) {
-    return String(value).trim();
+  if (typeof value === 'string') {
+    const text = value.trim();
+
+    return text !== '' ? text : null;
   }
 
   if (isRecord(value)) {
     for (const item of Object.values(value)) {
-      const message = firstTrustedMessage(item);
+      const message = firstNonEmptyMessage(item);
       if (message) return message;
     }
   }
@@ -66,7 +76,7 @@ export function validationErrorMessage(error: unknown): string | null {
   const candidates = [payload?.response?.data, payload?.data, error];
 
   for (const candidate of candidates) {
-    const message = firstTrustedMessage(getValidationErrors(candidate));
+    const message = firstNonEmptyMessage(getValidationErrors(candidate));
     if (message) return message;
   }
 

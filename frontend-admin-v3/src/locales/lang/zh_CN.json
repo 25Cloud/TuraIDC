@@ -3122,6 +3122,8 @@
       "sectionConfigHint": "规格与可选项",
       "nameRequired": "请输入商品名称",
       "categoryRequired": "请选择所属分类",
+      "thirdCategoryRequired": "请选择三级分类：商品必须挂在三级分组下，二级分组需要先建三级分组",
+      "groupNeedsThirdLevel": "需先建三级分类",
       "discountNone": "无优惠",
       "discountAnnual": "年付优惠",
       "discountBulk": "大额优惠",

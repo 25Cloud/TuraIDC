@@ -3122,6 +3122,8 @@
       "sectionConfigHint": "規格與可選項",
       "nameRequired": "請輸入商品名稱",
       "categoryRequired": "請選擇所屬分類",
+      "thirdCategoryRequired": "請選擇三級分類：商品必須掛在三級分組下，二級分組需要先建三級分組",
+      "groupNeedsThirdLevel": "需先建三級分類",
       "discountNone": "無優惠",
       "discountAnnual": "年付優惠",
       "discountBulk": "大額優惠",

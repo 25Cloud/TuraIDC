@@ -277,6 +277,34 @@ class V2AdminProductCoreActionApiTest extends TestCase
         }
     }
 
+    /**
+     * 客户报障回归：后台选了一个「没有三级子级的二级分组」，提交时 third 为 null。
+     *
+     * products.product_group_id 外键指向 third_product_groups，商品只能挂三级分组，
+     * 所以 422 本身是对的；错的是以前只有一句「参数验证失败」，管理员无从判断该做什么。
+     * 这里锁两件事：仍然 422（不是 500），并且文案必须点明「三级分组」。
+     */
+    public function test_product_create_without_third_group_returns_actionable_message(): void
+    {
+        $secondGroup = $this->createSecondGroup();
+        $thirdGroup = $this->createThirdGroup($secondGroup);
+
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_MANAGE]));
+
+        $payload = $this->productPayload($thirdGroup);
+        $payload['first_product_group_id'] = (int) $secondGroup->first_product_group_id;
+        $payload['second_product_group_id'] = (int) $secondGroup->id;
+        $payload['third_product_group_id'] = null;
+
+        $response = $this->postJson('/api/v2/admin/products', $payload)
+            ->assertUnprocessable()
+            ->assertJsonPath('code', 42200)
+            ->assertJsonStructure(['data' => ['errors' => ['third_product_group_id']]]);
+
+        $message = (string) ($response->json('data.errors.third_product_group_id')[0] ?? '');
+        $this->assertStringContainsString('三级', $message, '错误文案要告诉管理员必须选三级分类');
+    }
+
     private function createProduct(): Product
     {
         $secondGroup = $this->createSecondGroup();

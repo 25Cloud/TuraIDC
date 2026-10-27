@@ -501,6 +501,7 @@ import {
   errorMessage,
   findProductGroupByKey,
   flattenCategories,
+  productGroupLevel,
   productGroupOptionKey,
   productGroupPayload,
   providerTypeFallbackLabels,
@@ -613,11 +614,24 @@ const categoryOptions = ref<ProductCategoryRecord[]>([]);
 const categoryCascaderOptions = computed(() => decorateCascaderKeys(categoryTree.value));
 
 function decorateCascaderKeys(nodes: ProductCategoryRecord[]): ProductCategoryRecord[] {
-  return nodes.map((node) => ({
-    ...node,
-    option_key: productGroupOptionKey(node),
-    children: Array.isArray(node.children) ? decorateCascaderKeys(node.children) : [],
-  }));
+  return nodes.map((node) => {
+    const children = Array.isArray(node.children) ? decorateCascaderKeys(node.children) : [];
+    // 商品只能挂在三级分组下（products.product_group_id 外键指向 third_product_groups）。
+    // 级联是 onlyLeaf：一棵没有子级的二级分组会被当成叶子、放管理员选中，
+    // 提交出去就是 third_product_group_id = null，后端必 422。
+    // 这里把这类「不是三级又没有子级」的节点标成不可选，从入口上堵掉；
+    // 光置灰不够，标签后半句直接告诉他下一步要做什么。
+    const selectable = children.length > 0 || productGroupLevel(node) === 3;
+    const baseLabel = String(node.label ?? node.name ?? '');
+
+    return {
+      ...node,
+      label: selectable ? node.label : `${baseLabel}（${t('products.edit.groupNeedsThirdLevel')}）`,
+      option_key: productGroupOptionKey(node),
+      children,
+      disabled: !selectable,
+    };
+  });
 }
 
 // --- Pricing ---
@@ -1450,9 +1464,18 @@ async function submit() {
   submitting.value = true;
   try {
     const group = findProductGroupByKey(categoryOptions.value, form.selected_product_group_key);
+    const groupPayload = productGroupPayload(group);
+    // 兜底拦截：即使分类树里出现了未标 disabled 的非三级叶子（老缓存/接口异常），
+    // 也不要把它发给后端换一个「参数验证失败」。这里直接说清楚要选三级分类。
+    if (!Number(groupPayload.third_product_group_id || 0)) {
+      activeSection.value = 'detail';
+      MessagePlugin.warning(t('products.edit.thirdCategoryRequired'));
+
+      return;
+    }
     const payload = {
       custom_display_name: resolveCustomDisplayNamePayload(),
-      ...productGroupPayload(group),
+      ...groupPayload,
       pricing: {
         monthly: form.monthly_price,
         quarterly: form.quarterly_price,

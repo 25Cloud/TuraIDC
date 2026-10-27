@@ -296,6 +296,25 @@ class V2AdminContentMediaApiTest extends TestCase
     }
 
     /**
+     * 回归：上传不支持的媒体类型必须是 422，不能变成 500。
+     *
+     * 以前 MediaFileService::detectMedia() 抛 InvalidArgumentException，框架兜成 500
+     * 「服务器内部错误」+ 请求编号，客户完全看不出是类型不支持。
+     */
+    public function test_media_upload_rejects_unsupported_type_with_422(): void
+    {
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::CONTENT_MANAGE]));
+
+        $response = $this->post('/api/v2/admin/media-files', [
+            'file' => UploadedFile::fake()->create('v2-notes.txt', 1, 'text/plain'),
+            'group' => 'content',
+        ], ['Accept' => 'application/json']);
+
+        $response->assertUnprocessable()->assertJsonPath('code', 42200);
+        $this->assertNotEmpty($response->json('data.errors.file'), '要返回字段级错误，而不是 500');
+    }
+
+    /**
      * @return array{category: ContentCategory, article: ContentArticle}
      */
     private function createContentFixture(string $prefix): array

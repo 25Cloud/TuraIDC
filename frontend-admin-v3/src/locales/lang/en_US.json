@@ -3122,6 +3122,8 @@
       "sectionConfigHint": "Specifications and options",
       "nameRequired": "Please enter the product name",
       "categoryRequired": "Please select a category",
+      "thirdCategoryRequired": "Select a third-level category: products must live under a level-3 group, so create one under that level-2 group first.",
+      "groupNeedsThirdLevel": "create a level-3 category first",
       "discountNone": "No discount",
       "discountAnnual": "Annual discount",
       "discountBulk": "Bulk discount",

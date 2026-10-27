@@ -42,6 +42,14 @@ class StoreMediaFileRequest extends AdminFormRequest
                     return;
                 }
 
+                // ext-fileinfo 不是必装扩展：缺它时 `new finfo()` 抛的是 Error 而不是 Exception，
+                // 框架会直接当 500 抛出——没装该扩展的部署上，上传接口必然 500。
+                // 上面的 mimetypes 规则本身走 Symfony 的 MimeTypeGuesser，fileinfo 缺失时会退化成
+                // 扩展名推断，仍然挡得住明显不对的类型，所以这里跳过二次校验即可。
+                if (! class_exists(finfo::class)) {
+                    return;
+                }
+
                 $realMime = (new finfo(FILEINFO_MIME_TYPE))->file($realPath);
 
                 if (! in_array($realMime, MediaAssetTypes::allowedMimeTypes(), true)) {

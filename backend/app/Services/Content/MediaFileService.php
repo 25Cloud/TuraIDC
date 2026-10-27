@@ -2,6 +2,8 @@
 
 namespace App\Services\Content;
 
+use App\Exceptions\BusinessException;
+use App\Support\MediaAssetTypes;
 use App\Support\SqlLike;
 use App\Models\MediaFile;
 use App\Support\UploadedImage;
@@ -44,6 +46,24 @@ class MediaFileService
         'video/x-m4v' => 'm4v',
     ];
 
+    /**
+     * fileinfo 缺失时按扩展名兜底的映射。
+     *
+     * 只列白名单内的类型：DIRECTORY_EXTENSION_MIME_MAP 里还带着 svg（那是给历史目录扫描用的），
+     * 拿它做上传兜底会把 SVG 放进来。
+     */
+    private const EXTENSION_MIME_MAP = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'mp4' => 'video/mp4',
+        'webm' => 'video/webm',
+        'ogg' => 'video/ogg',
+        'mov' => 'video/quicktime',
+        'm4v' => 'video/x-m4v',
+    ];
+
     private const DIRECTORY_EXTENSION_MIME_MAP = [
         'jpg' => 'image/jpeg',
         'jpeg' => 'image/jpeg',
@@ -81,17 +101,34 @@ class MediaFileService
 
     public function upload(UploadedFile $file, int $adminId, string $group = 'content'): MediaFile
     {
-        $group = UploadedImage::group($group);
+        if (! $file->isValid()) {
+            throw new BusinessException($this->uploadErrorMessage($file));
+        }
+
+        try {
+            $group = UploadedImage::group($group);
+        } catch (InvalidArgumentException) {
+            throw new BusinessException('上传分组名不合法：只允许字母、数字、下划线与横线');
+        }
+
         $media = $this->detectMedia($file);
         $directory = public_path(self::MEDIA_ROOT);
         File::ensureDirectoryExists($directory);
+
+        // 目录存在但不可写时 move() 会静默失败，后面读尺寸/大小全拿到空值，
+        // 最后落库一条指向不存在文件的记录——不如在这里直接给出可操作的信息。
+        if (! is_writable($directory)) {
+            throw new BusinessException('上传目录不可写：'.$directory.'，请给运行 PHP 的用户写权限');
+        }
 
         $this->guardDiskSpace($directory, (int) $file->getSize());
 
         $filename = sprintf('%s_%s_%s.%s', $media['prefix'], now()->format('His'), Str::random(8), $media['extension']);
         $originalName = UploadedImage::originalName($file, $filename);
 
-        $file->move($directory, $filename);
+        if (! $file->move($directory, $filename)) {
+            throw new BusinessException('上传文件保存失败，请检查上传目录权限与磁盘空间');
+        }
 
         $relativePath = self::relativePath($filename);
         $fullPath = $directory.DIRECTORY_SEPARATOR.$filename;
@@ -106,21 +143,47 @@ class MediaFileService
             }
         }
 
-        $mediaFile = MediaFile::query()->create([
-            'filename' => $originalName,
-            'path' => $relativePath,
-            'url' => UploadUrl::resolve($relativePath),
-            'mime_type' => $media['mime_type'],
-            'size' => @filesize($fullPath) ?: 0,
-            'width' => $width,
-            'height' => $height,
-            'group' => $group,
-            'uploaded_by' => $adminId,
-        ]);
+        try {
+            $mediaFile = MediaFile::query()->create([
+                'filename' => $originalName,
+                'path' => $relativePath,
+                'url' => UploadUrl::resolve($relativePath),
+                'mime_type' => $media['mime_type'],
+                'size' => @filesize($fullPath) ?: 0,
+                'width' => $width,
+                'height' => $height,
+                'group' => $group,
+                'uploaded_by' => $adminId,
+            ]);
+        } catch (\Throwable $exception) {
+            // 落库失败就把刚搬过去的文件删掉，别在磁盘上留一个无人引用的孤儿文件
+            @unlink($fullPath);
+
+            throw $exception;
+        }
 
         $this->bustHeroVideoCache();
 
         return $mediaFile;
+    }
+
+    /**
+     * 把 PHP 的上传错误码翻成运维能照着做的中文提示。
+     *
+     * 这些场景以前一律表现成 500「服务器内部错误」，客户拿不到任何线索；
+     * 真正的成因通常只是 php.ini 的 upload_max_filesize / post_max_size 或临时目录权限。
+     */
+    private function uploadErrorMessage(UploadedFile $file): string
+    {
+        return match ((int) $file->getError()) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => '文件超过服务器允许的上传上限（upload_max_filesize / post_max_size）',
+            UPLOAD_ERR_PARTIAL => '文件只上传了一部分，请重试',
+            UPLOAD_ERR_NO_FILE => '没有收到上传文件',
+            UPLOAD_ERR_NO_TMP_DIR => '服务器缺少上传临时目录，无法接收文件',
+            UPLOAD_ERR_CANT_WRITE => '服务器无法写入上传临时文件，请检查磁盘空间与权限',
+            UPLOAD_ERR_EXTENSION => '上传被服务器上的某个 PHP 扩展中断',
+            default => '上传文件无效，请重新选择文件',
+        };
     }
 
     private const CACHE_KEY_HERO_VIDEOS = 'media:hero-videos:list';
@@ -297,7 +360,7 @@ class MediaFileService
      */
     private function detectMedia(UploadedFile $file): array
     {
-        $mimeType = strtolower(trim((string) $file->getMimeType()));
+        $mimeType = $this->resolveMimeType($file);
 
         if (isset(self::IMAGE_MIME_EXTENSION_MAP[$mimeType])) {
             return [
@@ -319,7 +382,31 @@ class MediaFileService
             ];
         }
 
-        throw new InvalidArgumentException('Unsupported media type.');
+        // 这里以前抛 InvalidArgumentException，会一路变成 500「服务器内部错误」。
+        // 类型不支持是**请求**的问题，要按 422 带中文说明返回。
+        throw new BusinessException(sprintf(
+            '不支持的媒体类型：%s。仅支持 %s',
+            $mimeType !== '' ? $mimeType : '未知类型',
+            implode('、', MediaAssetTypes::allowedMimeTypes()),
+        ));
+    }
+
+    /**
+     * 取上传文件的 MIME。
+     *
+     * 优先用 Symfony 的探测（有 ext-fileinfo 时读文件头）；没装该扩展时
+     * `getMimeType()` 可能返回空，这时按扩展名兜底，而不是直接判成「不支持」。
+     */
+    private function resolveMimeType(UploadedFile $file): string
+    {
+        $detected = strtolower(trim((string) $file->getMimeType()));
+        if ($detected !== '') {
+            return $detected;
+        }
+
+        $extension = strtolower(trim((string) $file->getClientOriginalExtension()));
+
+        return self::EXTENSION_MIME_MAP[$extension] ?? '';
     }
 
     /**
@@ -503,7 +590,8 @@ class MediaFileService
         $minFree = max($fileSize * 2, 50 * 1024 * 1024); // 至少预留 50MB
 
         if ($freeSpace < $minFree) {
-            throw new \RuntimeException('服务器磁盘空间不足，请联系管理员');
+            // 磁盘满是运维可处理的状态，不是「服务器内部错误」：走 422 把原因直接说给管理员
+            throw new BusinessException('服务器磁盘空间不足，请清理磁盘后重试');
         }
     }
 
