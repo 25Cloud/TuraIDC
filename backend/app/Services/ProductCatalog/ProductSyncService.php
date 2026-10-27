@@ -1137,7 +1137,12 @@ class ProductSyncService
             'stock' => (int) ($product->live_stock ?? $product->stock),
         ];
 
-        Cache::store('redis_volatile')->put($cacheKey, $result, now()->addSeconds(15));
+        // 缓存 60 秒而不是 15 秒：这条路径每次未命中都要打一次上游面板，实测冷态
+        // 900ms 上下（上游均价 2 秒级），而商品页会同时请求多个商品的库存，15 秒的
+        // TTL 让热门商品几乎每分钟都在重新拉上游。
+        // 放宽到 60 秒是安全的：真正决定能不能下单的是 assertProductCanBeProvisioned()
+        // 的 strict 实时校验，它不读这份缓存；这里只服务前台展示。
+        Cache::store('redis_volatile')->put($cacheKey, $result, now()->addSeconds(60));
 
         return $result;
     }

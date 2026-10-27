@@ -47,6 +47,20 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
     private const DEFAULT_DNS_RESOLVER_TIMEOUT_SECONDS = 3;
 
     /**
+     * 单个上游请求的硬上限（秒）。
+     *
+     * 线上曾把 idc.hosting_panel_api.timeout 配成 900 秒，而上游日志里确实出现过
+     * 182 秒、138 秒级别的调用。问题在于 php-fpm 的 request_terminate_timeout 只有
+     * 100 秒：上游一旦卡住，PHP worker 会被占满整整 100 秒再被强杀，200 个 worker
+     * 只需 200 个这样的请求就足以让整站 502。
+     *
+     * 上游正常响应在 2 秒量级，60 秒已经能覆盖全部慢响应；超过 60 秒基本就是对方
+     * 挂了，早点失败让用户重试要好过拖死 worker。所以这里做硬钳制，配置文件写多大
+     * 都不会超过本值。
+     */
+    private const MAX_REQUEST_TIMEOUT_SECONDS = 60;
+
+    /**
      * 上游响应日志的分级阈值（毫秒）。
      *
      * 定时任务每天对本类发起数万次调用，每次都在 INFO 级别写完整响应摘要，
@@ -156,8 +170,8 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
                 (int) ($defaultConfig['dns_resolver_timeout'] ?? self::DEFAULT_DNS_RESOLVER_TIMEOUT_SECONDS),
                 1
             ),
-            'timeout' => max((int) ($defaultConfig['timeout'] ?? 30), 1),
-            'connect_timeout' => max((int) ($defaultConfig['connect_timeout'] ?? 10), 1),
+            'timeout' => min(max((int) ($defaultConfig['timeout'] ?? 30), 1), self::MAX_REQUEST_TIMEOUT_SECONDS),
+            'connect_timeout' => min(max((int) ($defaultConfig['connect_timeout'] ?? 10), 1), self::MAX_REQUEST_TIMEOUT_SECONDS),
         ];
     }
 
@@ -518,7 +532,12 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
                 'pool_alias' => $urlsAlias,
                 'url' => $this->buildUrl($baseUrl, (string) ($request['uri'] ?? ''), $query),
                 'connect_timeout' => max((int) ($request['connect_timeout'] ?? $this->serviceConfig['connect_timeout']), 1),
-                'timeout' => max((int) ($request['timeout'] ?? $this->serviceConfig['timeout']), 1),
+                // 批量请求允许调用方按请求覆盖超时，但同样受全局硬上限约束，
+                // 避免某个调用点写出比 php-fpm request_terminate_timeout 更大的值。
+                'timeout' => min(
+                    max((int) ($request['timeout'] ?? $this->serviceConfig['timeout']), 1),
+                    self::MAX_REQUEST_TIMEOUT_SECONDS
+                ),
             ];
         }
 
