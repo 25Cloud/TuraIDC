@@ -104,6 +104,20 @@ class ServiceDetailService
 
     public function getDetailForUser(User $user, int $serviceId, bool $refreshRemote = false): array
     {
+        // 先做一次轻量查询（只要缓存键需要的两个 updated_at）判断缓存是否命中：
+        // 命中就直接返回，不必为一个缓存命中预载 7 个关系（实测命中路径 11 条 SQL，
+        // 其中 9 条最终只用于渲染——命中时全是白查）。未命中才走完整关系查询，
+        // 代价只是多一条按主键的轻量 SELECT。
+        $lightService = $this->findUserService($user, $serviceId, ['product:id,updated_at']);
+        $cacheKey = $this->buildDetailResponseCacheKey($lightService);
+
+        if (! $refreshRemote) {
+            $cached = Cache::get($cacheKey);
+            if (is_array($cached) && $cached !== []) {
+                return $this->syncChangedMarkerForDetail($cached, $lightService);
+            }
+        }
+
         $service = $this->findUserService($user, $serviceId, [
             'product:id,product_type,service_type_code,product_group_id,console_template,updated_at,config_options,pricing,purchase_requires',
             'product.productGroup.secondProductGroup.firstProductGroup',
@@ -113,8 +127,6 @@ class ServiceDetailService
             'invoice:id,invoice_no,status,paid_at,order_id',
             'invoice.order:id,order_no',
         ]);
-
-        $cacheKey = $this->buildDetailResponseCacheKey($service);
         if (! $refreshRemote) {
             $cached = Cache::get($cacheKey);
             if (is_array($cached) && $cached !== []) {
