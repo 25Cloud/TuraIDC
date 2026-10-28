@@ -87,10 +87,6 @@ return [
         'allow_private_upstream' => (bool) env('VNC_RELAY_ALLOW_PRIVATE_UPSTREAM', env('APP_ENV') === 'local'),
     ],
 
-    'frontend' => [
-        'dist_path' => env('FRONTEND_DIST_PATH', base_path('../frontend-client/dist')),
-    ],
-
     // 官网 SEO 动态渲染（Laravel 生成完整 HTML，解决 SPA 无 SEO 问题）
     'seo' => [
         // 前端构建产物 shell（index.html）地址。
