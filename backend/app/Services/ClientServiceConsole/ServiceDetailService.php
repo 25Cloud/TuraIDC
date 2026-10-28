@@ -102,7 +102,28 @@ class ServiceDetailService
         return $payload;
     }
 
+    /**
+     * 服务详情：整条渲染链包进一个只读作用域，并一次性预载绑定与两张快照。
+     *
+     * 这条链会反复问同一个 service 的绑定与快照——实测未命中路径 134 条 SQL，
+     * 其中 service_upstream_bindings 被查 31 次、运行时快照 11 次、连接快照 11 次、
+     * supplier_plugin_bindings 9 次，全是同一个 service 的重复查询。
+     * 包进作用域 + whereIn 预载后，每一类降为 1 条。
+     */
     public function getDetailForUser(User $user, int $serviceId, bool $refreshRemote = false): array
+    {
+        return $this->bindingResolver->withReadScope(function () use ($user, $serviceId, $refreshRemote): array {
+            $this->bindingResolver->preloadServiceBindings([$serviceId]);
+            $this->bindingResolver->preloadServiceSnapshots([$serviceId], true);
+
+            return $this->resolveDetailForUser($user, $serviceId, $refreshRemote);
+        });
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function resolveDetailForUser(User $user, int $serviceId, bool $refreshRemote): array
     {
         // 先做一次轻量查询（只要缓存键需要的两个 updated_at）判断缓存是否命中：
         // 命中就直接返回，不必为一个缓存命中预载 7 个关系（实测命中路径 11 条 SQL，
