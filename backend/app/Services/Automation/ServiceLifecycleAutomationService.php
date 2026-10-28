@@ -117,66 +117,70 @@ class ServiceLifecycleAutomationService
             ->where('status', ServiceStatus::SUSPENDED)
             ->where('suspended_reason', Service::SUSPENDED_REASON_EXPIRED)
             ->whereNotNull('expires_at')
-            ->get();
+            // 只回看最近 90 天：暂停通知是一次性事件，更早的到期服务不值得每 15 分钟
+            // 重新加载一遍（AutomationLog::recordOnce 虽然会跳过，但记录仍要先读进内存）。
+            // 默认 expire_terminate_enabled=false 时暂停集合只增不减，不加这个窗口
+            // 就是 O(历史暂停总数) 的永久开销。
+            ->where('expires_at', '>=', now()->subDays(90))
+            ->orderBy('id')
+            ->chunkById(200, function ($services) use (&$count, $siteName): void {
+                foreach ($services as $service) {
+                    $email = trim((string) ($service->user?->email ?? ''));
+                    $expiryDate = $service->expires_at?->format('Y-m-d') ?? 'unknown';
+                    $ruleKey = "expiry:{$expiryDate}";
 
-        $count = 0;
+                    if ($email === '' || ! AutomationLog::recordOnce(
+                        'service-lifecycle-maintenance', 'service_suspend_notify', 'service', (int) $service->id, $ruleKey
+                    )) {
+                        continue;
+                    }
 
-        foreach ($services as $service) {
-            $email = trim((string) ($service->user?->email ?? ''));
-            $expiryDate = $service->expires_at?->format('Y-m-d') ?? 'unknown';
-            $ruleKey = "expiry:{$expiryDate}";
+                    $displayName = $service->user?->display_name ?? '客户';
+                    $expiryStr = $service->expires_at?->format('Y-m-d H:i') ?? '-';
 
-            if ($email === '' || ! AutomationLog::recordOnce(
-                'service-lifecycle-maintenance', 'service_suspend_notify', 'service', (int) $service->id, $ruleKey
-            )) {
-                continue;
-            }
-
-            $displayName = $service->user?->display_name ?? '客户';
-            $expiryStr = $service->expires_at?->format('Y-m-d H:i') ?? '-';
-
-            try {
-                $this->notificationService->sendTemplateEmail($email, NotificationService::TEMPLATE_SERVICE_SUSPENDED, [
-                    'site_name' => $siteName,
-                    'display_name' => $displayName,
-                    'service_name' => (string) $service->name,
-                    'expires_at' => $expiryStr,
-                ]);
-                $this->userNotificationService->create(
-                    (int) $service->user_id,
-                    UserNotificationType::SERVICE_EXPIRE_REMINDER,
-                    '服务已到期暂停',
-                    "您的服务「{$service->name}」已于 {$expiryStr} 到期并暂停，请尽快续费恢复使用。",
-                    '/client/services/'.$service->id,
-                    ['service_id' => (int) $service->id, 'expires_at' => $expiryStr]
-                );
-                AutomationLog::markExecuted(
-                    'service-lifecycle-maintenance',
-                    'service_suspend_notify',
-                    'service',
-                    (int) $service->id,
-                    $ruleKey,
-                    [
-                        'email' => $email,
-                        'expires_at' => $expiryStr,
-                    ]
-                );
-                $count++;
-            } catch (\Throwable $exception) {
-                AutomationLog::forgetRecord(
-                    'service-lifecycle-maintenance',
-                    'service_suspend_notify',
-                    'service',
-                    (int) $service->id,
-                    $ruleKey
-                );
-                Log::warning('[定时任务] 服务到期暂停通知发送失败', [
-                    'service_id' => $service->id,
-                    'email' => $email,
-                    'message' => $exception->getMessage(),
-                ]);
-            }
-        }
+                    try {
+                        $this->notificationService->sendTemplateEmail($email, NotificationService::TEMPLATE_SERVICE_SUSPENDED, [
+                            'site_name' => $siteName,
+                            'display_name' => $displayName,
+                            'service_name' => (string) $service->name,
+                            'expires_at' => $expiryStr,
+                        ]);
+                        $this->userNotificationService->create(
+                            (int) $service->user_id,
+                            UserNotificationType::SERVICE_EXPIRE_REMINDER,
+                            '服务已到期暂停',
+                            "您的服务「{$service->name}」已于 {$expiryStr} 到期并暂停，请尽快续费恢复使用。",
+                            '/client/services/'.$service->id,
+                            ['service_id' => (int) $service->id, 'expires_at' => $expiryStr]
+                        );
+                        AutomationLog::markExecuted(
+                            'service-lifecycle-maintenance',
+                            'service_suspend_notify',
+                            'service',
+                            (int) $service->id,
+                            $ruleKey,
+                            [
+                                'email' => $email,
+                                'expires_at' => $expiryStr,
+                            ]
+                        );
+                        $count++;
+                    } catch (\Throwable $exception) {
+                        AutomationLog::forgetRecord(
+                            'service-lifecycle-maintenance',
+                            'service_suspend_notify',
+                            'service',
+                            (int) $service->id,
+                            $ruleKey
+                        );
+                        Log::warning('[定时任务] 服务到期暂停通知发送失败', [
+                            'service_id' => $service->id,
+                            'email' => $email,
+                            'message' => $exception->getMessage(),
+                        ]);
+                    }
+                }
+            });
 
         return $count;
     }
@@ -196,6 +200,13 @@ class ServiceLifecycleAutomationService
             ->where('status', ServiceStatus::SUSPENDED)
             ->where('suspended_reason', Service::SUSPENDED_REASON_EXPIRED)
             ->whereNotNull('expires_at')
+            // 只扫「已到期且最近 90 天内」的暂停服务：终止只可能发生在到期之后，
+            // 没到期的候选一定会在循环里被 terminateAt->isFuture() 跳过，白读一遍。
+            // 循环内仍用 resolveExpiredSuspendedAt() + graceDays 做精确判定，
+            // SQL 只是把候选集收窄，不改变终止条件语义。
+            ->where('expires_at', '<=', now())
+            ->where('expires_at', '>=', now()->subDays(90))
+            ->orderBy('id')
             ->get();
 
         $count = 0;
