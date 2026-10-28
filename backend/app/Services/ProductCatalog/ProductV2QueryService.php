@@ -182,6 +182,11 @@ class ProductV2QueryService
                 'cpu_model',
                 'cpu_turbo',
                 'product_discount_group_id',
+                // description 必须选：AdminProductDetailResource 的 display.description 就是
+                // 编辑器回填的那份原文。此前这里只选了 description_sync_enabled /
+                // description_synced_at 两个开关列却漏了正文列，导致后台商品编辑页的
+                // 「商品描述」永远空白、点「从上游同步」后重新加载仍然空白——库里明明有值。
+                'description',
                 'description_sync_enabled',
                 'description_synced_at',
             ]),
