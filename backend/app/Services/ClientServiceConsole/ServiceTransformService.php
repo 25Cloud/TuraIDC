@@ -119,10 +119,12 @@ class ServiceTransformService
     public function transformListItems(array $services): array
     {
         $serviceIds = array_map(static fn (Service $service): int => (int) $service->id, $services);
+        $productIds = array_map(static fn (Service $service): int => (int) $service->product_id, $services);
 
-        return $this->bindingResolver()->withReadScope(function () use ($services, $serviceIds): array {
+        return $this->bindingResolver()->withReadScope(function () use ($services, $serviceIds, $productIds): array {
             $this->bindingResolver()->preloadServiceBindings($serviceIds);
             $this->bindingResolver()->preloadServiceSnapshots($serviceIds);
+            $this->bindingResolver()->preloadProductBindings($productIds);
 
             return array_map(fn (Service $service): array => $this->buildListItem($service), $services);
         });

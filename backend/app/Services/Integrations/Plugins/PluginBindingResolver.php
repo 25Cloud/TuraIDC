@@ -483,6 +483,57 @@ class PluginBindingResolver
         return $binding;
     }
 
+    /**
+     * 批量预载 product 绑定，供列表类调用方在只读作用域内一次性取全。
+     *
+     * productBinding() 是逐 product 查的（列表 50 行里 6 个不同商品 = 6 次四表 join），
+     * 这里用 whereIn 一次取回后按 product_id 取 status/id 最大的那条写进缓存。
+     *
+     * @param  array<int, mixed>  $productIds
+     */
+    public function preloadProductBindings(array $productIds): void
+    {
+        if (! $this->readScopeActive() || ! $this->hasTable('product_upstream_bindings')) {
+            return;
+        }
+
+        $pending = [];
+        foreach ($productIds as $raw) {
+            $id = (int) $raw;
+            if ($id > 0 && ! array_key_exists($id, $this->productBindingCache)) {
+                $pending[$id] = $id;
+            }
+        }
+
+        if ($pending === []) {
+            return;
+        }
+
+        $query = DB::table('product_upstream_bindings as pub')
+            ->whereIn('pub.product_id', array_values($pending))
+            ->orderByDesc('pub.status')
+            ->orderByDesc('pub.id');
+
+        $columns = ['pub.*'];
+        if ($this->hasTable('supplier_plugin_bindings')) {
+            $query->leftJoin('supplier_plugin_bindings as spb', 'spb.id', '=', 'pub.supplier_plugin_binding_id');
+            $columns[] = 'spb.supplier_id';
+        }
+
+        $latest = [];
+        foreach ($query->get($columns) as $row) {
+            $id = (int) ($row->product_id ?? 0);
+            if ($id > 0 && ! array_key_exists($id, $latest)) {
+                $latest[$id] = $row;
+            }
+        }
+
+        // 查不到的也占位成 null，否则逐行取用时会回退成单条查询。
+        foreach ($pending as $id) {
+            $this->productBindingCache[$id] = $latest[$id] ?? null;
+        }
+    }
+
     private function productBinding(int $productId): ?object
     {
         if ($productId <= 0 || ! $this->hasTable('product_upstream_bindings')) {
