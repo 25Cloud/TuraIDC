@@ -376,11 +376,11 @@ class TicketService
      */
     public function clientList(int $userId, array $filters, int $perPage): LengthAwarePaginator
     {
+        // 不预加载 replies：客户端列表页不消费它（只有详情页用 detail.replies）。
+        // 原来这里写的是 with(['replies' => fn ($q) => $q->latest()->limit(1)])，
+        // 而 limit(1) 作用于**整条 eager load 查询**而不是每个工单——结果是整页里
+        // 只有 1 张工单带最后回复、其余全空，纯属白查一次加一个错数据。
         $query = Ticket::where('user_id', $userId);
-
-        if (self::tableExists('ticket_replies')) {
-            $query->with(['replies' => fn ($q) => $q->latest('created_at')->limit(1)]);
-        }
 
         if (isset($filters['status']) && $filters['status'] !== '') {
             $query->where('status', $filters['status']);
