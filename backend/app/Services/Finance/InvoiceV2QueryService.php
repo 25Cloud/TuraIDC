@@ -190,7 +190,9 @@ class InvoiceV2QueryService
             'product.productGroup.secondProductGroup:id,first_product_group_id,name',
             'product.productGroup.secondProductGroup.firstProductGroup:id,code,name',
             'service:id,name,status,expires_at',
-            'payments',
+            // callbacks 必须一起预加载：列表项要读支付回调（trace_id/operator 等），
+            // 不预加载就会按 payment 逐条查 payment_callbacks（实测 20 行账单 9 次）。
+            'payments.callbacks',
             'items',
         ];
     }
