@@ -6,9 +6,9 @@ namespace App\Services\Integrations\Plugins;
 
 use App\Models\IntegrationPlugin;
 use App\Models\Supplier;
+use App\Support\DatabaseSchema;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 class SupplierPluginCardRenderer
 {
@@ -29,7 +29,9 @@ class SupplierPluginCardRenderer
             ? (array) $context['binding']
             : $this->bindingResolver->supplierBindingProjection($supplier);
 
-        if ($binding === [] || ! Schema::hasTable('integration_plugins')) {
+        // DatabaseSchema 记忆化：本方法在供应商列表里逐行渲染，裸 Schema::hasTable
+        // 每次调用都打一条 information_schema（19 行供应商 = 19 次白查）。
+        if ($binding === [] || ! DatabaseSchema::hasTable('integration_plugins')) {
             return $this->placeholderCard();
         }
 
