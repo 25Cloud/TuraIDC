@@ -559,12 +559,6 @@ parameters:
 			path: app/Http/Controllers/Site/V2/ProductController.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Controllers/SiteProductController.php
-
-		-
 			message: '#^Call to function method_exists\(\) with App\\Models\\User and ''trashed'' will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
@@ -1271,54 +1265,6 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/Admin/V2/TicketUpstreamDeliveryLogResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$description\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Content/ContentArticleResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Http/Resources/Content/ContentArticleResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 3
-			path: app/Http/Resources/Content/ContentArticleResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nickname\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Content/ContentArticleResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Content/ContentArticleResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$sort_order\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentArticleResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$status\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/Content/ContentArticleResource.php
-
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$username\.$#'
-			identifier: property.notFound
-			count: 2
-			path: app/Http/Resources/Content/ContentArticleResource.php
 
 		-
 			message: '#^Using nullsafe property access "\?\-\>config_snapshot" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'

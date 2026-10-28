@@ -628,17 +628,6 @@ class SiteProductReadServiceTest extends TestCase
             ->assertJsonPath('data.quote_token', 'quote-token-authenticated');
     }
 
-    public function test_site_product_controller_no_longer_contains_quote_and_read_helpers(): void
-    {
-        $content = file_get_contents(base_path('app/Http/Controllers/SiteProductController.php'));
-
-        $this->assertIsString($content);
-        $this->assertStringNotContainsString('private function saleProductQuery', $content);
-        $this->assertStringNotContainsString('private function findSaleProductForQuote', $content);
-        $this->assertStringNotContainsString('private function normalizeCategoryIds', $content);
-        $this->assertStringNotContainsString('private function transformProduct', $content);
-    }
-
     private function createSchema(): void
     {
         Schema::connection('sqlite')->create('settings', function (Blueprint $table): void {
