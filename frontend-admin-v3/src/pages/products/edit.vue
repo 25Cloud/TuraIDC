@@ -874,8 +874,11 @@ async function syncDescriptionFromUpstream() {
   descriptionSyncing.value = true;
   try {
     await productApi.syncDescription(productId.value);
+    // 同步写的是 products.description（表单里的 form.description 就是它），
+    // 只重拉 loadProductDescription()（自动生成预览）不会更新编辑器里那份原文，
+    // 于是表现为「点了同步没反应，刷新才看到」。这里必须连商品详情一起重拉。
+    await Promise.all([loadProductDetail(), loadProductDescription()]);
     MessagePlugin.success(t('products.description.syncDone'));
-    await loadProductDescription();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, t('products.description.syncFailed')));
   } finally {

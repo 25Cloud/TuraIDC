@@ -130,8 +130,21 @@ interface EditorRow {
 }
 
 // --- 内部状态 ---
-const activeMode = ref<'structured' | 'advanced'>('structured');
+/**
+ * 结构化模式只能表达「键: 值」的扁平列表；一旦内容里带图标、加粗、链接、
+ * 嵌套容器这类语义，拆成行就会把它们抹平（上游卡片描述就是
+ * `<li><img src=".."><span>CPU：2核</span></li>` 这种形态）。
+ * 遇到这类内容直接进高级模式，让商家看到并编辑真实源码，而不是面对一个
+ * 「看起来被清空了」的结构化表格。
+ */
+const STRUCTURED_UNSUPPORTED_TAGS = /<(img|b|strong|em|i|u|a|span|div|table|thead|tbody|tr|td|th|h[1-6])\b/i;
+
+function preferredMode(html: string): 'structured' | 'advanced' {
+  return STRUCTURED_UNSUPPORTED_TAGS.test(String(html ?? '')) ? 'advanced' : 'structured';
+}
+
 const htmlDraft = ref(String(props.modelValue || ''));
+const activeMode = ref<'structured' | 'advanced'>(preferredMode(htmlDraft.value));
 
 let uidSeed = 0;
 
@@ -173,6 +186,9 @@ function rehydrateFrom(html: string) {
   rehydrating = true;
   htmlDraft.value = html;
   rows.value = toEditorRows(parseDescriptionRows(html));
+  // 外部回填（首次加载 /「从上游同步」）时按内容重新选模式：
+  // 带图标、加粗、链接的描述自动落到高级模式，避免结构化把它拆没了。
+  activeMode.value = preferredMode(html);
   void nextTick(() => {
     rehydrating = false;
   });
