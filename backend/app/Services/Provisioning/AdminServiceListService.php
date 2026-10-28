@@ -75,12 +75,21 @@ class AdminServiceListService
         }
 
         $paginator = $query->orderByDesc('id')->paginate($pageSize, ['*'], 'page', $page);
+        $serviceIds = array_map(static fn (Service $service): int => (int) $service->id, $paginator->items());
 
         return [
-            'list' => collect($paginator->items())
-                ->map(fn (Service $service) => $this->transform($service))
-                ->values()
-                ->all(),
+            // 只读作用域要包住**整页**而不是每行：它内部的供应商绑定/商品绑定缓存
+            // 在作用域退出时清空，包在单行上等于每行重新查一遍（20 行就是 20 次
+            // service_upstream_bindings 的四表 join）。包到外层后再一次性预载绑定，
+            // 整页只剩 1 条绑定查询。
+            'list' => $this->bindingResolver()->withReadScope(function () use ($paginator, $serviceIds): array {
+                $this->bindingResolver()->preloadServiceBindings($serviceIds);
+
+                return collect($paginator->items())
+                    ->map(fn (Service $service) => $this->buildRow($service))
+                    ->values()
+                    ->all();
+            }),
             'total' => $paginator->total(),
             'page' => $paginator->currentPage(),
             'page_size' => $paginator->perPage(),
@@ -89,7 +98,7 @@ class AdminServiceListService
 
     private function transform(Service $service): array
     {
-        // 同 ServiceTransformService::transformListItem：逐行渲染包进只读作用域
+        // 单条渲染（详情页等）仍各自开作用域；列表走上面整页共享的那个。
         return $this->bindingResolver()->withReadScope(fn (): array => $this->buildRow($service));
     }
 

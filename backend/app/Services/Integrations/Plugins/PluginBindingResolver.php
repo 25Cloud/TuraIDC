@@ -538,29 +538,97 @@ class PluginBindingResolver
             return null;
         }
 
+        return $this->serviceBindingQuery()
+            ->where('sub.service_id', $serviceId)
+            ->orderByDesc('sub.id')
+            ->first($this->serviceBindingColumns());
+    }
+
+    /**
+     * 批量预载 service 绑定，供列表类调用方在只读作用域内一次性取全。
+     *
+     * 逐行渲染时每行都要跑一次四表 left join，20 行列表就是 20 次同样的查询；
+     * 这里用一次 whereIn 取回后按 service_id 分组写进缓存，后续逐行取用直接命中。
+     * 只在只读作用域内生效——作用域外不缓存是既有约定（写路径不能读到旧绑定）。
+     *
+     * @param  array<int, mixed>  $serviceIds
+     */
+    public function preloadServiceBindings(array $serviceIds): void
+    {
+        if (! $this->readScopeActive() || ! $this->hasTable('service_upstream_bindings')) {
+            return;
+        }
+
+        $pending = [];
+        foreach ($serviceIds as $raw) {
+            $id = (int) $raw;
+            if ($id > 0 && ! array_key_exists($id, $this->serviceBindingCache)) {
+                $pending[$id] = $id;
+            }
+        }
+
+        if ($pending === []) {
+            return;
+        }
+
+        $rows = $this->serviceBindingQuery()
+            ->whereIn('sub.service_id', array_values($pending))
+            ->orderByDesc('sub.id')
+            ->get($this->serviceBindingColumns(includeServiceId: true));
+
+        // 每个 service 只保留 sub.id 最大的那条，与 fetchServiceBinding 的
+        // orderByDesc('sub.id')->first() 同口径。
+        foreach ($rows as $row) {
+            $id = (int) ($row->service_id ?? 0);
+            if ($id > 0 && ! array_key_exists($id, $this->serviceBindingCache)) {
+                $this->serviceBindingCache[$id] = $row;
+            }
+        }
+
+        // 查不到的也要占位成 null，否则逐行取用时会回退成单条查询。
+        foreach ($pending as $id) {
+            if (! array_key_exists($id, $this->serviceBindingCache)) {
+                $this->serviceBindingCache[$id] = null;
+            }
+        }
+    }
+
+    private function serviceBindingQuery(): \Illuminate\Database\Query\Builder
+    {
         return DB::table('service_upstream_bindings as sub')
             ->leftJoin('supplier_plugin_bindings as spb', 'spb.id', '=', 'sub.supplier_plugin_binding_id')
             ->leftJoin('product_upstream_bindings as pub', 'pub.id', '=', 'sub.product_upstream_binding_id')
-            ->leftJoin('supplier_plugin_bindings as pub_spb', 'pub_spb.id', '=', 'pub.supplier_plugin_binding_id')
-            ->where('sub.service_id', $serviceId)
-            ->orderByDesc('sub.id')
-            ->first([
-                'sub.id',
-                'sub.provider_key',
-                'sub.upstream_service_id',
-                'sub.product_upstream_binding_id',
-                'sub.supplier_plugin_binding_id',
-                'sub.plugin_id',
-                'sub.upstream_account_id',
-                'sub.runtime_snapshot_json',
-                'sub.connection_snapshot_json',
-                'sub.status_snapshot',
-                'sub.last_synced_at',
-                'sub.last_sync_error',
-                DB::raw('COALESCE(spb.supplier_id, pub_spb.supplier_id) as supplier_id'),
-                'pub.product_id',
-                'pub.upstream_product_id',
-            ]);
+            ->leftJoin('supplier_plugin_bindings as pub_spb', 'pub_spb.id', '=', 'pub.supplier_plugin_binding_id');
+    }
+
+    /**
+     * @return array<int, string|\Illuminate\Contracts\Database\Query\Expression>
+     */
+    private function serviceBindingColumns(bool $includeServiceId = false): array
+    {
+        $columns = [
+            'sub.id',
+            'sub.provider_key',
+            'sub.upstream_service_id',
+            'sub.product_upstream_binding_id',
+            'sub.supplier_plugin_binding_id',
+            'sub.plugin_id',
+            'sub.upstream_account_id',
+            'sub.runtime_snapshot_json',
+            'sub.connection_snapshot_json',
+            'sub.status_snapshot',
+            'sub.last_synced_at',
+            'sub.last_sync_error',
+            DB::raw('COALESCE(spb.supplier_id, pub_spb.supplier_id) as supplier_id'),
+            'pub.product_id',
+            'pub.upstream_product_id',
+        ];
+
+        if ($includeServiceId) {
+            $columns[] = 'sub.service_id';
+        }
+
+        return $columns;
     }
 
     /**
