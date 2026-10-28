@@ -150,9 +150,8 @@ class ServiceOverviewService
         $paginator = $query->orderByDesc('id')->paginate($pageSize);
 
         return [
-            'list' => collect($paginator->items())
-                ->map(fn (Service $service) => $this->transformService->transformListItem($service))
-                ->values()->all(),
+            // 整页共享一个只读作用域并预载绑定/快照，避免逐行各查一次（见 transformListItems）。
+            'list' => $this->transformService->transformListItems($paginator->items()),
             'total' => $paginator->total(),
             'page' => $paginator->currentPage(),
             'page_size' => $paginator->perPage(),

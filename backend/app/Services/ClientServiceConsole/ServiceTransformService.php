@@ -107,6 +107,28 @@ class ServiceTransformService
     }
 
     /**
+     * 批量渲染列表项：整页共享一个只读作用域，并一次性预载绑定与两张快照。
+     *
+     * transformListItem() 每行各开一个作用域，退出即清缓存——行与行之间不共享，
+     * 20 行就是 20 次绑定 + 20 次运行时快照 + 20 次连接快照。这里把作用域提到整页外层
+     * 并用 whereIn 预载，整页只剩 3 条。管理端服务列表已走同一套（73 → 17 条 SQL）。
+     *
+     * @param  array<int, Service>  $services
+     * @return array<int, array<string, mixed>>
+     */
+    public function transformListItems(array $services): array
+    {
+        $serviceIds = array_map(static fn (Service $service): int => (int) $service->id, $services);
+
+        return $this->bindingResolver()->withReadScope(function () use ($services, $serviceIds): array {
+            $this->bindingResolver()->preloadServiceBindings($serviceIds);
+            $this->bindingResolver()->preloadServiceSnapshots($serviceIds);
+
+            return array_map(fn (Service $service): array => $this->buildListItem($service), $services);
+        });
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function buildListItem(Service $service): array
