@@ -347,7 +347,9 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 key: 'provision-retry-failed',
                 title: '上游开通孤儿单补偿告警',
                 category: '上游开通',
-                description: '默认 dry-run 扫描上游开通失败孤儿单并写日志告警。',
+                // 写明「只告警不重试」：之前描述含糊，面板上看起来像有自动补偿，
+                // 实际 dry-run 从不重试，孤儿单只能靠人翻日志发现。
+                description: '只告警不重试：扫描「已付款但上游未开通」的孤儿单，命中时写 error 级日志并列出服务/订单/重试次数。核实上游实际状态后，需要用 artisan provision:retry-failed --execute 手动重试，或走退款。',
                 triggers: [ScheduleRule::everyTicks(1)],
                 handler: fn (): array => $this->runArtisan('provision:retry-failed'),
                 timeout: 900,

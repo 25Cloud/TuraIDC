@@ -71,9 +71,12 @@ $pruneAiConversations = Schedule::command('ai:prune-conversations')
     ->runInBackground();
 
 if ($shouldUseScheduleMutex) {
+    // 每分钟跑的秒级任务，2 分钟锁足够。
     $cleanupUpstreamUploads->withoutOverlapping(2);
-    $pruneOpenApiUsageLogs->withoutOverlapping(2);
-    $pruneAiConversations->withoutOverlapping(2);
+    // 批量清理可能跑几分钟：锁 TTL 短于实际耗时时，下一轮会拿到已过期锁再起一个实例，
+    // 两个进程同时 DELETE 同一批数据只会叠加锁等待。按「最长容忍耗时」而不是「预期耗时」设。
+    $pruneOpenApiUsageLogs->withoutOverlapping(30);
+    $pruneAiConversations->withoutOverlapping(30);
 }
 
 if ($shouldUseScheduleMutex) {

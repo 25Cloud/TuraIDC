@@ -68,7 +68,16 @@ class RetryFailedProvisionCommand extends Command
             'max_retries' => $maxRetries,
             'services' => $rows,
         ];
-        Log::warning('[上游开通补偿] 发现上游开通失败孤儿单', $summary);
+
+        // 用 error 而不是 warning：这些是「已付款但没开通」的单，属于必须有人处理的资金悬挂。
+        // 之前写 warning，混在每天几万条日志里根本没人看得到——那 6 个孤儿单就是这么躺了两个月的。
+        // dry-run 下同样记 error，只是不自动重试（自动重试可能在上游重复下单）。
+        Log::error(
+            $execute
+                ? '[上游开通补偿] 发现上游开通失败孤儿单，开始按上限重试'
+                : '[上游开通补偿] 发现上游开通失败孤儿单，当前仅告警未重试，需人工核实上游后决定重试或退款',
+            $summary
+        );
 
         if (! $execute) {
             $this->line('当前为 dry-run 模式，仅告警未自动重试。核实上游实际开通状态后，可用 --execute 手动触发重试。');
