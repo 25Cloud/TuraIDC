@@ -11,6 +11,7 @@ use App\Models\Setting;
 use App\Models\ThirdProductGroup;
 use App\Services\Auth\LegacyPasswordVerifier;
 use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
+use App\Services\Finance\AgentDiscountService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\OpenApi\OpenApiConfig;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
@@ -77,6 +78,11 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PluginBindingResolver::class);
         $this->app->singleton(ProductDisplayNameResolver::class);
         $this->app->singleton(ProductSpecHighlightService::class);
+        // 请求级单例：AgentDiscountService 内部缓存同一请求的代理组与折扣矩阵，
+        // 目录页一次渲染 200 张商品卡时把 ~400 条 SQL 压到 2 条。
+        // 必须用 scoped 而不是 singleton——长驻 queue worker / Octane 下 singleton
+        // 会把上一个用户的代理组残留给下一个请求，造成折扣串号。
+        $this->app->scoped(AgentDiscountService::class);
 
         // WAF 引擎：规则库与限额从配置注入而非在类内读 config()，这样引擎既可
         // 单测也可在别处复用。singleton 让配置只解析一次，避免每个请求重复拷贝。

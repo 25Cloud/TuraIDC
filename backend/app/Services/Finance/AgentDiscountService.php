@@ -12,15 +12,30 @@ use App\Support\Money;
 
 class AgentDiscountService
 {
+    /**
+     * 请求内的代理组与折扣矩阵缓存（按用户 ID）。
+     *
+     * 目录页一次请求会渲染 200 张商品卡（4 页 × 50），每张卡都调一次
+     * resolveForProduct()。原来每次都重新查 agentGroup() 与 discounts()，
+     * 单请求因此产生约 400 条 SQL（2 条/卡），是站点目录接口最大的查询来源。
+     * 这些数据在同一请求内不会变，缓存起来把 400 条压到 2 条。
+     *
+     * @var array<int, array{group: mixed, discounts: mixed}>
+     */
+    private array $agentDiscountCache = [];
+
+    /**
+     * 商品折扣组缓存（按商品 ID），同样用于消除逐卡查询。
+     *
+     * @var array<int, mixed>
+     */
+    private array $productDiscountGroupCache = [];
+
     public function resolveForProduct(?User $user, Product $product): array
     {
         $result = $this->emptyPricing();
-        $group = $product->relationLoaded('productDiscountGroup')
-            ? $product->productDiscountGroup
-            : (! $product->getKey() ? null : $product->productDiscountGroup()->first());
-        $agentGroup = $user?->relationLoaded('agentGroup')
-            ? $user->agentGroup
-            : (! $user || ! $user->getKey() ? null : $user->agentGroup()->first());
+        $group = $this->resolveProductDiscountGroup($product);
+        $agentGroup = $this->resolveAgentGroup($user);
 
         if (! $agentGroup || (int) $agentGroup->status !== 1) {
             return $result;
@@ -28,9 +43,7 @@ class AgentDiscountService
 
         $discount = null;
         if ($group instanceof ProductDiscountGroup && (int) $group->status === 1) {
-            $discounts = $agentGroup->relationLoaded('discounts')
-                ? $agentGroup->discounts
-                : $agentGroup->discounts()->get();
+            $discounts = $this->resolveAgentDiscounts($user, $agentGroup);
             $discount = $discounts->firstWhere('product_discount_group_id', $group->getKey());
 
             if ($discount) {
@@ -104,6 +117,75 @@ class AgentDiscountService
         if ($discountRate < $minDiscountRate) {
             throw new BusinessException('折扣率不能低于商品折扣组最低折扣率');
         }
+    }
+
+    private function resolveProductDiscountGroup(Product $product): mixed
+    {
+        if ($product->relationLoaded('productDiscountGroup')) {
+            return $product->productDiscountGroup;
+        }
+
+        $productId = (int) $product->getKey();
+        if ($productId <= 0) {
+            return null;
+        }
+
+        if (! array_key_exists($productId, $this->productDiscountGroupCache)) {
+            $this->productDiscountGroupCache[$productId] = $product->productDiscountGroup()->first();
+        }
+
+        return $this->productDiscountGroupCache[$productId];
+    }
+
+    private function resolveAgentGroup(?User $user): mixed
+    {
+        if (! $user) {
+            return null;
+        }
+
+        // 预先加载的关系优先且不要求模型已持久化：调用方显式 setRelation 的内存模型
+        // （测试、以及把用户构造成快照的场景）也必须能算出折扣。
+        if ($user->relationLoaded('agentGroup')) {
+            return $user->agentGroup;
+        }
+
+        $userId = (int) $user->getKey();
+        if ($userId <= 0) {
+            return null;
+        }
+
+        if (! array_key_exists($userId, $this->agentDiscountCache)) {
+            $this->agentDiscountCache[$userId] = [
+                'group' => $user->agentGroup()->first(),
+                'discounts' => null,
+            ];
+        }
+
+        return $this->agentDiscountCache[$userId]['group'];
+    }
+
+    /**
+     * @return \Illuminate\Support\Collection<int, mixed>
+     */
+    private function resolveAgentDiscounts(?User $user, mixed $agentGroup): \Illuminate\Support\Collection
+    {
+        $userId = $user && $user->getKey() ? (int) $user->getKey() : 0;
+
+        if ($userId > 0
+            && isset($this->agentDiscountCache[$userId])
+            && $this->agentDiscountCache[$userId]['discounts'] !== null) {
+            return $this->agentDiscountCache[$userId]['discounts'];
+        }
+
+        $discounts = $agentGroup->relationLoaded('discounts')
+            ? $agentGroup->discounts
+            : $agentGroup->discounts()->get();
+
+        if ($userId > 0) {
+            $this->agentDiscountCache[$userId]['discounts'] = $discounts;
+        }
+
+        return $discounts;
     }
 
     private function emptyPricing(): array
