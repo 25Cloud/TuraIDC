@@ -11,6 +11,7 @@ use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\Support\WebSessionCookieParser;
 use Illuminate\Support\Facades\DB;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 
 class UpstreamBindingWriter
@@ -195,7 +196,7 @@ class UpstreamBindingWriter
 
     private function pluginIdForProvider(string $providerKey): ?int
     {
-        if ($providerKey === '' || ! Schema::hasTable('integration_plugins')) {
+        if ($providerKey === '' || ! DatabaseSchema::hasTable('integration_plugins')) {
             return null;
         }
 
@@ -221,7 +222,7 @@ class UpstreamBindingWriter
 
     private function existingSupplierBinding(int $supplierId): ?object
     {
-        if ($supplierId <= 0 || ! Schema::hasTable('supplier_plugin_bindings')) {
+        if ($supplierId <= 0 || ! DatabaseSchema::hasTable('supplier_plugin_bindings')) {
             return null;
         }
 
@@ -235,7 +236,7 @@ class UpstreamBindingWriter
 
     private function existingProductBindingId(int $productId): ?int
     {
-        if ($productId <= 0 || ! Schema::hasTable('product_upstream_bindings')) {
+        if ($productId <= 0 || ! DatabaseSchema::hasTable('product_upstream_bindings')) {
             return null;
         }
 
@@ -272,7 +273,7 @@ class UpstreamBindingWriter
     private function hasTables(array $tables): bool
     {
         foreach ($tables as $table) {
-            if (! Schema::hasTable($table)) {
+            if (! DatabaseSchema::hasTable($table)) {
                 return false;
             }
         }

@@ -8,6 +8,7 @@ use App\Exceptions\BusinessException;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 
 class PluginScanner
@@ -160,7 +161,7 @@ class PluginScanner
     private function assertManifestHash(string $domain, string $slug, PluginManifest $manifest): void
     {
         try {
-            if (! Schema::hasTable('integration_plugins') || ! Schema::hasColumn('integration_plugins', 'manifest_hash')) {
+            if (! DatabaseSchema::hasTable('integration_plugins') || ! DatabaseSchema::hasColumn('integration_plugins', 'manifest_hash')) {
                 return;
             }
 
