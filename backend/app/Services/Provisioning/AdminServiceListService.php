@@ -84,6 +84,8 @@ class AdminServiceListService
             // 整页只剩 1 条绑定查询。
             'list' => $this->bindingResolver()->withReadScope(function () use ($paginator, $serviceIds): array {
                 $this->bindingResolver()->preloadServiceBindings($serviceIds);
+                // 快照同样逐行查（每行各一次运行时 + 连接快照），一并批量预载。
+                $this->bindingResolver()->preloadServiceSnapshots($serviceIds, true);
 
                 return collect($paginator->items())
                     ->map(fn (Service $service) => $this->buildRow($service))

@@ -17,6 +17,12 @@ use Illuminate\Support\Facades\DB;
 
 class PluginBindingResolver
 {
+    /** 运行时快照查询列：单条查询与批量预载共用同一份，避免两处列表走形 */
+    private const RUNTIME_SNAPSHOT_COLUMNS = ['provider_key', 'status_key', 'status_text', 'resource_json', 'metrics_json', 'snapshot_json', 'synced_at'];
+
+    /** 连接快照查询列：同上 */
+    private const CONNECTION_SNAPSHOT_COLUMNS = ['provider_key', 'hostname', 'ip_address', 'port', 'connection_json', 'secret_json', 'checked_at'];
+
     /**
      * @var array<int, object|null>
      */
@@ -593,9 +599,108 @@ class PluginBindingResolver
         }
     }
 
-    private function serviceBindingQuery(): \Illuminate\Database\Query\Builder
+    /**
+     * 批量预载运行时快照与连接快照，供列表类调用方在只读作用域内一次性取全。
+     *
+     * 这两张快照表此前是逐行各查一次：20 行列表 = 20 次运行时快照 + 20 次连接快照。
+     * 用 whereIn 一次取回后按 service_id 取 id 最大的那条写进缓存，后续逐行取用命中。
+     *
+     * @param  array<int, mixed>  $serviceIds
+     */
+    public function preloadServiceSnapshots(array $serviceIds, bool $includeSecrets = false): void
     {
-        return DB::table('service_upstream_bindings as sub')
+        if (! $this->readScopeActive()) {
+            return;
+        }
+
+        $ids = [];
+        foreach ($serviceIds as $raw) {
+            $id = (int) $raw;
+            if ($id > 0) {
+                $ids[$id] = $id;
+            }
+        }
+
+        if ($ids === []) {
+            return;
+        }
+
+        $this->preloadRuntimeSnapshots(array_values($ids));
+        $this->preloadConnectionSnapshots(array_values($ids), $includeSecrets);
+    }
+
+    /**
+     * @param  array<int, int>  $serviceIds
+     */
+    private function preloadRuntimeSnapshots(array $serviceIds): void
+    {
+        $pending = array_values(array_filter(
+            $serviceIds,
+            fn (int $id): bool => ! array_key_exists($id, $this->serviceRuntimeSnapshotCache)
+        ));
+
+        if ($pending === [] || ! $this->hasTable('service_runtime_snapshots')) {
+            return;
+        }
+
+        $rows = DB::table('service_runtime_snapshots')
+            ->whereIn('service_id', $pending)
+            ->orderByDesc('id')
+            ->get([...self::RUNTIME_SNAPSHOT_COLUMNS, 'service_id']);
+
+        $latest = [];
+        foreach ($rows as $row) {
+            $id = (int) ($row->service_id ?? 0);
+            if ($id > 0 && ! array_key_exists($id, $latest)) {
+                $latest[$id] = $row;
+            }
+        }
+
+        foreach ($pending as $id) {
+            $this->serviceRuntimeSnapshotCache[$id] = isset($latest[$id])
+                ? $this->normalizeRuntimeSnapshotRow($latest[$id])
+                : [];
+        }
+    }
+
+    /**
+     * @param  array<int, int>  $serviceIds
+     */
+    private function preloadConnectionSnapshots(array $serviceIds, bool $includeSecrets): void
+    {
+        $suffix = $includeSecrets ? '1' : '0';
+        $pending = array_values(array_filter(
+            $serviceIds,
+            fn (int $id): bool => ! array_key_exists($id.':'.$suffix, $this->serviceConnectionSnapshotCache)
+        ));
+
+        if ($pending === [] || ! $this->hasTable('service_connection_snapshots')) {
+            return;
+        }
+
+        $rows = DB::table('service_connection_snapshots')
+            ->whereIn('service_id', $pending)
+            ->where('connection_type', 'default')
+            ->orderByDesc('id')
+            ->get([...self::CONNECTION_SNAPSHOT_COLUMNS, 'service_id']);
+
+        $latest = [];
+        foreach ($rows as $row) {
+            $id = (int) ($row->service_id ?? 0);
+            if ($id > 0 && ! array_key_exists($id, $latest)) {
+                $latest[$id] = $row;
+            }
+        }
+
+        foreach ($pending as $id) {
+            $this->serviceConnectionSnapshotCache[$id.':'.$suffix] = isset($latest[$id])
+                ? $this->normalizeConnectionSnapshotRow($latest[$id], $includeSecrets)
+                : [];
+        }
+    }
+
+    private function serviceBindingQuery(): \Illuminate\Database\Query\Builder
+    {        return DB::table('service_upstream_bindings as sub')
             ->leftJoin('supplier_plugin_bindings as spb', 'spb.id', '=', 'sub.supplier_plugin_binding_id')
             ->leftJoin('product_upstream_bindings as pub', 'pub.id', '=', 'sub.product_upstream_binding_id')
             ->leftJoin('supplier_plugin_bindings as pub_spb', 'pub_spb.id', '=', 'pub.supplier_plugin_binding_id');
@@ -659,20 +764,16 @@ class PluginBindingResolver
         $snapshot = DB::table('service_runtime_snapshots')
             ->where('service_id', $serviceId)
             ->orderByDesc('id')
-            ->first([
-                'provider_key',
-                'status_key',
-                'status_text',
-                'resource_json',
-                'metrics_json',
-                'snapshot_json',
-                'synced_at',
-            ]);
+            ->first(self::RUNTIME_SNAPSHOT_COLUMNS);
 
-        if ($snapshot === null) {
-            return [];
-        }
+        return $snapshot === null ? [] : $this->normalizeRuntimeSnapshotRow($snapshot);
+    }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function normalizeRuntimeSnapshotRow(object $snapshot): array
+    {
         $resource = $this->decodePayload($snapshot->resource_json ?? null);
         $metrics = $this->decodePayload($snapshot->metrics_json ?? null);
         $rawSnapshot = $this->decodePayload($snapshot->snapshot_json ?? null);
@@ -718,20 +819,16 @@ class PluginBindingResolver
             ->where('service_id', $serviceId)
             ->where('connection_type', 'default')
             ->orderByDesc('id')
-            ->first([
-                'provider_key',
-                'hostname',
-                'ip_address',
-                'port',
-                'connection_json',
-                'secret_json',
-                'checked_at',
-            ]);
+            ->first(self::CONNECTION_SNAPSHOT_COLUMNS);
 
-        if ($snapshot === null) {
-            return [];
-        }
+        return $snapshot === null ? [] : $this->normalizeConnectionSnapshotRow($snapshot, $includeSecrets);
+    }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function normalizeConnectionSnapshotRow(object $snapshot, bool $includeSecrets): array
+    {
         $connection = $this->decodePayload($snapshot->connection_json ?? null);
         $connection = array_replace($connection, [
             'provider_key' => $this->nullableString($snapshot->provider_key ?? null),
