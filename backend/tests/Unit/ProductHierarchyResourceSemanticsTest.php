@@ -69,12 +69,10 @@ class ProductHierarchyResourceSemanticsTest extends TestCase
         $this->assertSame('精品线路', $payload['third_product_group_name']);
     }
 
-    public function test_product_resources_do_not_emit_legacy_group_aliases(): void
+    public function test_product_summary_resource_does_not_emit_legacy_group_aliases(): void
     {
         foreach ([
-            app_path('Http/Resources/Product/ProductResource.php'),
             app_path('Http/Resources/Admin/V2/AdminProductSummaryResource.php'),
-            app_path('Http/Resources/Product/ProductCategoryResource.php'),
         ] as $resourcePath) {
             $source = (string) file_get_contents($resourcePath);
 

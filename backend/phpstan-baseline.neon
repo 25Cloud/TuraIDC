@@ -1297,30 +1297,6 @@ parameters:
 			path: app/Http/Resources/Finance/FinanceLedgerResource.php
 
 		-
-			message: '#^Offset ''combined_display…'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Http/Resources/Product/ProductResource.php
-
-		-
-			message: '#^Offset ''cpu_memory_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Http/Resources/Product/ProductResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>label" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Resources/Product/ProductResource.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>label" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Http/Resources/Product/SupplierResource.php
-
-		-
 			message: '#^Offset ''cpu_display'' on array\{product_display_name\: string, product_spec_display\: string, custom_display_name\: string, cpu_memory_display\: string, combined_display_name\: string, instance_spec_text\: string, cpu_display\: string, memory_display\: string\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
@@ -6577,12 +6553,6 @@ parameters:
 			path: app/Services/Site/SiteProductQuoteService.php
 
 		-
-			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: app/Services/System/AccountMigrationService.php
-
-		-
 			message: '#^Using nullsafe method call on non\-nullable type Illuminate\\Http\\Request\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 3
@@ -6919,18 +6889,6 @@ parameters:
 			path: app/Services/System/AdminLogV2QueryService.php
 
 		-
-			message: '#^Variable \$base on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.variable
-			count: 1
-			path: app/Services/System/CatalogMigrationService.php
-
-		-
-			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
-			count: 1
-			path: app/Services/System/ContentSystemMigrationService.php
-
-		-
 			message: '#^Access to an undefined property App\\Models\\Invoice\:\:\$count\.$#'
 			identifier: property.notFound
 			count: 1
@@ -7255,42 +7213,6 @@ parameters:
 			path: app/Services/System/ScheduleRunLogService.php
 
 		-
-			message: '#^Offset ''id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/System/ServiceMigrationService.php
-
-		-
-			message: '#^Offset ''object_id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/System/ServiceMigrationService.php
-
-		-
-			message: '#^Offset ''order_id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 2
-			path: app/Services/System/ServiceMigrationService.php
-
-		-
-			message: '#^Offset ''product_id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/System/ServiceMigrationService.php
-
-		-
-			message: '#^Offset ''service_id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 4
-			path: app/Services/System/ServiceMigrationService.php
-
-		-
-			message: '#^Offset ''subject_id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 1
-			path: app/Services/System/ServiceMigrationService.php
-
-		-
 			message: '#^Method App\\Services\\System\\SettingService\:\:syncFallbackSettingsToDatabase\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
@@ -7331,18 +7253,6 @@ parameters:
 			identifier: property.onlyWritten
 			count: 1
 			path: app/Services/System/SmsService.php
-
-		-
-			message: '#^Offset ''order_id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 2
-			path: app/Services/System/TradeMigrationService.php
-
-		-
-			message: '#^Offset ''product_id'' on non\-empty\-array\<string, mixed\> on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.offset
-			count: 2
-			path: app/Services/System/TradeMigrationService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$attachments\.$#'

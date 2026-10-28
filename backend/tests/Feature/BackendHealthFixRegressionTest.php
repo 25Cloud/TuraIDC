@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Exceptions\BusinessException;
-use App\Http\Resources\Product\SupplierResource;
 use App\Jobs\DeliverTicketReplyToUpstreamJob;
 use App\Jobs\DeliverTicketToUpstreamJob;
 use App\Jobs\ProcessPaidOrderFulfillmentJob;
@@ -73,22 +72,6 @@ class BackendHealthFixRegressionTest extends TestCase
         $this->expectException(BusinessException::class);
 
         (new SettingService)->revealSensitiveSetting('notification', 'email_password');
-    }
-
-    public function test_supplier_resource_does_not_return_api_key(): void
-    {
-        $suffix = bin2hex(random_bytes(4));
-        $supplier = Supplier::query()->create([
-            'name' => '测试供应商',
-            'code' => 'supplier_test_'.$suffix,
-            'status' => 1,
-        ]);
-        $this->syncSupplierBinding($supplier, 'secret-value');
-
-        $payload = (new SupplierResource($supplier))->toArray(Request::create('/'));
-
-        $this->assertArrayNotHasKey('api_key', $payload);
-        $this->assertTrue($payload['has_api_key']);
     }
 
     public function test_supplier_show_does_not_return_api_key(): void
