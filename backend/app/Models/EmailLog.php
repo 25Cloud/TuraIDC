@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\DatabaseSchema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class EmailLog extends Model
 {
@@ -31,7 +31,9 @@ class EmailLog extends Model
 
     public function syncNotificationProjection(): void
     {
-        if (! $this->exists || ! Schema::hasTable('notification_logs')) {
+        // DatabaseSchema 记忆化：本方法挂在 saved 事件上，每次写日志都会走一次探测。
+        // 群发场景（公告发给上千用户）下裸 Schema::hasTable 就是上千条 information_schema。
+        if (! $this->exists || ! DatabaseSchema::hasTable('notification_logs')) {
             return;
         }
 

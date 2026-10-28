@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Constants\PaymentGatewayCode;
 use App\Models\Concerns\EnsuresTraceId;
 use App\Models\Concerns\NormalizesTraceId;
+use App\Support\DatabaseSchema;
 use App\Support\VersionedJson;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -14,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -142,7 +142,11 @@ class Payment extends Model
 
     public function callbackPayload(string $callbackType = 'payment'): array
     {
-        if (! Schema::hasTable('payment_callbacks') || ! $this->exists) {
+        // 用 DatabaseSchema 而不是裸 Schema::hasTable：本方法在列表渲染时按 payment 逐条调用，
+        // 裸探测每次都打一条 information_schema 查询（实测账单列表 3 行就打了 12 次
+        // payment_callbacks 探测，20 行时近百次）。DatabaseSchema 按连接+库名记忆化，
+        // 语义与 Schema::hasTable() 严格等价。
+        if (! DatabaseSchema::hasTable('payment_callbacks') || ! $this->exists) {
             return [];
         }
 
@@ -240,7 +244,7 @@ class Payment extends Model
 
     private static function paymentColumnExists(string $column): bool
     {
-        return Schema::hasTable('payments') && Schema::hasColumn('payments', $column);
+        return DatabaseSchema::hasTable('payments') && DatabaseSchema::hasColumn('payments', $column);
     }
 
     private function resolveGatewayKeyFromAttributes(array $attributes): string
@@ -252,7 +256,7 @@ class Payment extends Model
 
     private function resolveCallbackPayloadFromStructure(): ?array
     {
-        if (! Schema::hasTable('payment_callbacks') || ! $this->exists) {
+        if (! DatabaseSchema::hasTable('payment_callbacks') || ! $this->exists) {
             return null;
         }
 

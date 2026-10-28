@@ -8,6 +8,7 @@ use App\Contracts\Integrations\Payments\PaymentGatewayInterface;
 use App\Services\Integrations\Payments\PaymentGatewayManager;
 use App\Services\Integrations\Payments\PaymentGatewayRegistry;
 use App\Services\Integrations\Plugins\PluginInstaller;
+use App\Support\DatabaseSchema;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
 use Tests\Fakes\TestPaymentGateway;
@@ -26,6 +27,12 @@ abstract class TestCase extends BaseTestCase
         // SetLocale 中间件按浏览器语言把业务消息协商成英文，凡是断言中文消息的
         // 用例全部翻车。个别用例自己传 X-Locale / Accept-Language 时会覆盖此默认。
         $this->withHeaders(['X-Locale' => 'zh_CN']);
+
+        // DatabaseSchema 把「表/列是否存在」按连接+库名记忆化（生产上是纯收益：
+        // 同一进程内表结构不变）。但测试会在同一进程里 mock Schema::hasTable 或
+        // 切换连接，残留的探测结果会跨用例泄漏，表现为「单跑绿、全量红」。
+        // 每个用例起点清空，语义回到「真实探测」。
+        DatabaseSchema::resetCache();
 
         // 应用已存在的后续测试也再次校验，防止测试中修改连接配置后继续执行。
         $this->guardAgainstProductionDatabaseForTests();

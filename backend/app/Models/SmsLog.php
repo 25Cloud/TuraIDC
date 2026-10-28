@@ -2,9 +2,9 @@
 
 namespace App\Models;
 
+use App\Support\DatabaseSchema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class SmsLog extends Model
 {
@@ -38,7 +38,7 @@ class SmsLog extends Model
 
     public function syncNotificationProjection(): void
     {
-        if (! $this->exists || ! Schema::hasTable('notification_logs')) {
+        if (! $this->exists || ! DatabaseSchema::hasTable('notification_logs')) {
             return;
         }
 
