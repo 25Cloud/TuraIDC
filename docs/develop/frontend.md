@@ -126,11 +126,10 @@ pnpm run verify:refactor
 
 主要导出：
 
-- `@turaidc/shared/status`
+- `@turaidc/shared/statusConfig`（状态文案、颜色与标签的唯一真源）
 - `@turaidc/shared/runtime`
 - `@turaidc/shared/content`
-- `@turaidc/shared/components/StatusTag.vue`
-- `shared/user-v3`
+- `@turaidc/shared/user-v3`（含 `StatusTag.vue` 等共用组件）
 
 规则：
 

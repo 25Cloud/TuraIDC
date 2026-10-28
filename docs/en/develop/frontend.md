@@ -129,11 +129,10 @@ For small changes, run at least `pnpm run build`; add `verify:refactor` when ref
 
 Main exports:
 
-- `@turaidc/shared/status`
+- `@turaidc/shared/statusConfig` (the single source of truth for status labels, colors and tags)
 - `@turaidc/shared/runtime`
 - `@turaidc/shared/content`
-- `@turaidc/shared/components/StatusTag.vue`
-- `shared/user-v3`
+- `@turaidc/shared/user-v3` (contains shared components such as `StatusTag.vue`)
 
 Rules:
 
