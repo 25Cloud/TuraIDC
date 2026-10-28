@@ -125,16 +125,18 @@ class AgentDiscountService
             return $product->productDiscountGroup;
         }
 
-        $productId = (int) $product->getKey();
-        if ($productId <= 0) {
+        // 按折扣组 ID 缓存而不是按商品 ID：折扣组是配置类小表，同一组会被大量商品共用，
+        // 按商品缓存等于每个商品各查一次（50 张卡 50 条）。按组缓存后一组只查一次。
+        $groupId = (int) ($product->product_discount_group_id ?? 0);
+        if ($groupId <= 0) {
             return null;
         }
 
-        if (! array_key_exists($productId, $this->productDiscountGroupCache)) {
-            $this->productDiscountGroupCache[$productId] = $product->productDiscountGroup()->first();
+        if (! array_key_exists($groupId, $this->productDiscountGroupCache)) {
+            $this->productDiscountGroupCache[$groupId] = $product->productDiscountGroup()->first();
         }
 
-        return $this->productDiscountGroupCache[$productId];
+        return $this->productDiscountGroupCache[$groupId];
     }
 
     private function resolveAgentGroup(?User $user): mixed
