@@ -8,12 +8,12 @@ use App\Constants\PaymentGatewayCode;
 use App\Exceptions\BusinessException;
 use App\Services\Integrations\Payments\Data\PaymentRefundRequest;
 use App\Services\System\GatewayLogService;
+use App\Support\DatabaseSchema;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Schema;
 
 class EpayClient
 {
@@ -587,7 +587,7 @@ class EpayClient
      */
     private function recordSuccess(string $action, string $outTradeNo, array $requestData, array $responseData): void
     {
-        if (! Schema::hasTable('gateway_logs')) {
+        if (! DatabaseSchema::hasTable('gateway_logs')) {
             return;
         }
 
@@ -607,7 +607,7 @@ class EpayClient
      */
     private function recordFailure(string $action, string $message, string $outTradeNo, array $requestData, array $responseData): void
     {
-        if (! Schema::hasTable('gateway_logs')) {
+        if (! DatabaseSchema::hasTable('gateway_logs')) {
             return;
         }
 

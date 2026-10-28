@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Integrations\Plugins;
 
 use App\Models\IntegrationPlugin;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 class IntegrationDriverBindingResolver
 {
@@ -125,7 +125,7 @@ class IntegrationDriverBindingResolver
 
     private function selectedBindingProviderKey(string $domain, string $bindingKey): string
     {
-        if (! Schema::hasTable('integration_plugin_bindings')) {
+        if (! DatabaseSchema::hasTable('integration_plugin_bindings')) {
             return '';
         }
 
@@ -149,7 +149,7 @@ class IntegrationDriverBindingResolver
             return null;
         }
 
-        if (Schema::hasTable('integration_plugin_bindings')) {
+        if (DatabaseSchema::hasTable('integration_plugin_bindings')) {
             $binding = DB::table('integration_plugin_bindings')
                 ->where('domain', $domain)
                 ->where('provider_key', $driverKey)
@@ -164,7 +164,7 @@ class IntegrationDriverBindingResolver
             }
         }
 
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return null;
         }
 
@@ -184,7 +184,7 @@ class IntegrationDriverBindingResolver
 
     private function firstEnabledPluginKey(string $domain): string
     {
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return '';
         }
 
