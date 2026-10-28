@@ -1,6 +1,6 @@
 ---
 source: develop/backend-structure.md
-sourceHash: 6ab362a484c0c922a100c0afd10890e6c7313a0e320da3c65f1429908c40eb05
+sourceHash: 915c6d1592589d88f73c2812c46c3dd8dcd48e55a595c1a39901744201ec6880
 generated: zh-hk
 ---
 
@@ -76,14 +76,16 @@ generated: zh-hk
 - `app/Http/Controllers/`
   - 只保留以下兩類
   - 基類控制器
-  - 公開站點/公共入口控制器，例如 `SiteConfigController.php`、`SiteHomeController.php`、`SecureAssetController.php`
+  - 公共入口控制器，例如 `SecureAssetController.php`
+- `app/Http/Controllers/Site/V2/`
+  - 公開站點接口（首頁聚合、商品目錄、內容公告）
 
 ### 4.2 Controllers 落點規則
 
 - 新增管理端接口：放 `Controllers/Admin/`
 - 新增用戶端接口：放 `Controllers/Client/`
-- 新增公開站點接口：放 `Controllers/` 頂層，且文件名以 `Site` 或明確公共資源語義命名
-- 頂層 `Controllers/` 禁止新增後台/用戶側控制器
+- 新增公開站點接口：放 `Controllers/Site/V2/`，與既有首頁/商品/內容控制器同域
+- 頂層 `Controllers/` 禁止新增後台/用戶側/站點側控制器
 
 ### 4.3 Requests
 

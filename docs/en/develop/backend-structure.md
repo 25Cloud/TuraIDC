@@ -75,14 +75,16 @@ Current controller classification:
 - `app/Http/Controllers/`
   - Keep only the following two kinds
   - Base controller classes
-  - Public site / public entry controllers, such as `SiteConfigController.php`, `SiteHomeController.php`, `SecureAssetController.php`
+  - Public entry controllers, such as `SecureAssetController.php`
+- `app/Http/Controllers/Site/V2/`
+  - Public site endpoints (home aggregate, product catalog, notices and help articles)
 
 ### 4.2 Controllers Placement Rules
 
 - New admin-side endpoint: put it in `Controllers/Admin/`
 - New user-side endpoint: put it in `Controllers/Client/`
-- New public site endpoint: put it at the top level of `Controllers/`, and name the file with `Site` or an explicit public-resource meaning
-- Do not add admin-side or user-side controllers at the top level of `Controllers/`
+- New public site endpoint: put it in `Controllers/Site/V2/`, alongside the existing home, product and content controllers
+- Do not add admin-side, user-side or site-side controllers at the top level of `Controllers/`
 
 ### 4.3 Requests
 

@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/architecture.md
-sourceHash: 3fec19539f44c9ba8385420bcc0b164a9fb01fa1b3058990e74e4f95b6c69fa4
+sourceHash: 965039831acfd7259096942bba5e8222dbec842228c65395a536ef6b89f2d703
 generated: zh-tw
 ---
 
@@ -42,7 +42,7 @@ turaidc/
 
 - `app/Http/Controllers/Admin/V2/`：管理端 API 控制器。
 - `app/Http/Controllers/Client/V2/`：使用者端 API 控制器。
-- `app/Http/Controllers/`：公共站點 API 與基類，如 `SiteHomeController`、`SiteProductController`、`SecureAssetController`。
+- `app/Http/Controllers/`：基類控制器與公共入口（如 `SecureAssetController`）；公開站點 API 在 `Controllers/Site/V2/` 下。
 - `app/Http/Requests/Admin/V2|Client/V2/`：管理端和使用者端 FormRequest。
 - `app/Http/Resources/Admin/V2|Client/V2/`：管理端和使用者端 API Resource；其餘 Resource 按公共業務域組織。
 - `app/Services/`：業務主層，已按 `Finance`、`Order`、`ProductCatalog`、`ClientServiceConsole`、`Provisioning`、`Upstream`、`Supplier`、`Integrations`、`OpenApi`、`ZjmfUpstream`、`Notification`、`Ticket` 等領域收斂。

@@ -69,14 +69,16 @@
 - `app/Http/Controllers/`
   - 只保留以下两类
   - 基类控制器
-  - 公开站点/公共入口控制器，例如 `SiteConfigController.php`、`SiteHomeController.php`、`SecureAssetController.php`
+  - 公共入口控制器，例如 `SecureAssetController.php`
+- `app/Http/Controllers/Site/V2/`
+  - 公开站点接口（首页聚合、商品目录、内容公告）
 
 ### 4.2 Controllers 落点规则
 
 - 新增管理端接口：放 `Controllers/Admin/`
 - 新增用户端接口：放 `Controllers/Client/`
-- 新增公开站点接口：放 `Controllers/` 顶层，且文件名以 `Site` 或明确公共资源语义命名
-- 顶层 `Controllers/` 禁止新增后台/用户侧控制器
+- 新增公开站点接口：放 `Controllers/Site/V2/`，与既有首页/商品/内容控制器同域
+- 顶层 `Controllers/` 禁止新增后台/用户侧/站点侧控制器
 
 ### 4.3 Requests
 

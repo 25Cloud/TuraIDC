@@ -41,7 +41,7 @@ Main directories:
 
 - `app/Http/Controllers/Admin/V2/`: admin-side API controllers.
 - `app/Http/Controllers/Client/V2/`: client-side API controllers.
-- `app/Http/Controllers/`: public site API and base classes, such as `SiteHomeController`, `SiteProductController`, `SecureAssetController`.
+- `app/Http/Controllers/`: the base controller and public entry points (such as `SecureAssetController`); public site APIs live under `Controllers/Site/V2/`.
 - `app/Http/Requests/Admin/V2|Client/V2/`: admin-side and client-side FormRequests.
 - `app/Http/Resources/Admin/V2|Client/V2/`: admin-side and client-side API Resources; the remaining Resources are organized by public business domain.
 - `app/Services/`: the main business layer, already consolidated by domain into `Finance`, `Order`, `ProductCatalog`, `ClientServiceConsole`, `Provisioning`, `Upstream`, `Supplier`, `Integrations`, `OpenApi`, `ZjmfUpstream`, `Notification`, `Ticket`, and others.

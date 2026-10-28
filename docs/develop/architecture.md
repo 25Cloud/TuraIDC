@@ -38,7 +38,7 @@ turaidc/
 
 - `app/Http/Controllers/Admin/V2/`：管理端 API 控制器。
 - `app/Http/Controllers/Client/V2/`：用户端 API 控制器。
-- `app/Http/Controllers/`：公共站点 API 与基类，如 `SiteHomeController`、`SiteProductController`、`SecureAssetController`。
+- `app/Http/Controllers/`：基类控制器与公共入口（如 `SecureAssetController`）；公开站点 API 在 `Controllers/Site/V2/` 下。
 - `app/Http/Requests/Admin/V2|Client/V2/`：管理端和用户端 FormRequest。
 - `app/Http/Resources/Admin/V2|Client/V2/`：管理端和用户端 API Resource；其余 Resource 按公共业务域组织。
 - `app/Services/`：业务主层，已按 `Finance`、`Order`、`ProductCatalog`、`ClientServiceConsole`、`Provisioning`、`Upstream`、`Supplier`、`Integrations`、`OpenApi`、`ZjmfUpstream`、`Notification`、`Ticket` 等领域收敛。
