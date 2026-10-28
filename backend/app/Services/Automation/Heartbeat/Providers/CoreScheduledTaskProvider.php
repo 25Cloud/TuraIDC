@@ -181,7 +181,19 @@ class CoreScheduledTaskProvider implements ScheduledTaskProvider
                 description: '每个心跳槽（15 分钟）刷新一次已绑定上游商品的库存。批间等待 500ms，把并发打散成平缓请求，避免被上游风控拦截。',
                 triggers: [ScheduleRule::everyTicks(1)],
                 handler: function (): array {
-                    $summary = app(ProductCatalogService::class)->syncUpstreamProductStocks();
+                    // 与 service-status-sync 同口径：插件任务 sync-zjmf-finance-inventory-and-services
+                    // 已经定向同步 ZJMF 库存时，核心任务排除 ZJMF，否则同一批商品每 15 分钟被完整
+                    // 拉两遍，对上游请求量翻倍、放大被风控拦截的概率。插件禁用时回退全量兜底。
+                    $excludedProviderKeys = app(HeartbeatTaskRegistry::class)
+                        ->supports('sync-zjmf-finance-inventory-and-services')
+                        ? [ProviderKey::ZJMF_FINANCE_API]
+                        : [];
+                    $summary = app(ProductCatalogService::class)->syncUpstreamProductStocks(
+                        null,
+                        0,
+                        null,
+                        $excludedProviderKeys
+                    );
                     Log::info('[定时任务] 上游商品库存同步执行完成', $summary);
 
                     return $summary;

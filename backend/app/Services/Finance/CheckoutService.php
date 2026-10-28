@@ -91,6 +91,10 @@ class CheckoutService
                     }
                 }
 
+                // 上游实时库存校验放在事务外：它会打一次上游面板并回写 products.stock，
+                // 持着 products 行锁做这件事会把同商品的所有并发下单串行化到上游往返时长上。
+                $this->inspectStockBeforeCheckout($productId, $quantity);
+
                 return DB::transaction(function () use (
                     $userId,
                     $productId,
@@ -106,7 +110,11 @@ class CheckoutService
                     throw_if($product->status !== 1, new BusinessException('产品已下架'));
                     $product->loadMissing('supplier');
                     $user = User::query()->findOrFail($userId);
-                    $this->productCatalogService->assertProductCanBeProvisioned($product, $quantity);
+                    // 上游实时库存校验已移到事务外（见 inspectStockBeforeCheckout）。
+                    // 它走 strict 模式：不读缓存、直接打上游面板，并把结果回写 products.stock。
+                    // 原来在这里执行 = 持着 products 行锁做一次网络往返（最坏 60 秒），
+                    // 同一商品的其他用户全部阻塞在这把行锁上，超过
+                    // innodb_lock_wait_timeout（默认 50 秒）直接 SQLSTATE 1205 → 下单 500。
                     $this->assertPurchaseRequires($product, $userId);
 
                     $normalizedConfig = $this->normalizeConfig($product, $rawConfig);
@@ -477,6 +485,31 @@ class CheckoutService
      * 注意：中国大陆的 IDC / 云服务受实名制约束，面向大陆主体的部署应在商品上开启
      * require_verification；本系统同时存在非大陆主体的部署场景，故不在此处硬编码强制。
      */
+    /**
+     * 下单前的上游实时库存校验（在 DB::transaction 之外执行）。
+     *
+     * assertProductCanBeProvisioned 走 strict 模式：不读缓存、直接打上游面板
+     * （单次请求有 60 秒硬上限），并把结果回写 products.stock。这个动作必须在
+     * products 行锁之外完成——否则同一商品的所有并发下单都被串行化到上游往返
+     * 时长上，后来的请求等锁超过 innodb_lock_wait_timeout（默认 50 秒）就是
+     * SQLSTATE 1205 → 下单 500，热门商品的成交能力与上游延迟成反比。
+     *
+     * 事务内仍然保留 lockForUpdate() + StockReservation::reserve()，
+     * 保证「预扣库存 + 建单」原子；两者之间只隔毫秒级。
+     */
+    private function inspectStockBeforeCheckout(int $productId, int $quantity): void
+    {
+        $product = Product::query()->with('supplier')->find($productId);
+
+        if (! $product instanceof Product) {
+            throw new BusinessException('产品不存在或已下架');
+        }
+
+        throw_if($product->status !== 1, new BusinessException('产品已下架'));
+
+        $this->productCatalogService->assertProductCanBeProvisioned($product, $quantity);
+    }
+
     private function assertPurchaseRequires(Product $product, int $userId): void
     {
         $requires = (array) ($product->purchase_requires ?? []);

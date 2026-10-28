@@ -62,53 +62,53 @@ class InvoiceCleanupAutomationService
         $ttlSeconds = CheckoutSecurityService::paymentSessionTtlSeconds();
         $threshold = now()->subSeconds($ttlSeconds);
 
-        $invoices = Invoice::query()
-            ->with(['product'])
-            ->whereIn('status', [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE])
-            ->where('created_at', '<=', $threshold)
-            ->get();
-
         $count = 0;
 
-        foreach ($invoices as $invoice) {
-            // 管理员手动开通产生的挂账账单按 due_date 计费，不受 5 分钟支付会话窗口约束
-            if ($this->isAdminManualInvoice($invoice)) {
-                continue;
-            }
+        // 两处收紧，与同文件 cleanupPendingOrders() 同口径：
+        // 1) 续费账单在 SQL 层排除，不再「全部读进内存后 continue」。续费账单按 due_date
+        //    计费、永远不会被本任务取消，所以它们会一直留在结果集里——这是本类唯一
+        //    随业务单调增长且没有上界的加载，未付续费单一多就是一次内存尖峰。
+        // 2) 改 chunkById 分批，积压时不会一次性把全部历史未付账单（含 product 关系）
+        //    读进内存。
+        // 管理员挂账账单仍走 PHP 判断（标记在 config_snapshot 里，且数量很少）。
+        Invoice::query()
+            ->with(['product'])
+            ->whereIn('status', [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE])
+            ->where('type', '<>', InvoiceType::RENEW)
+            ->where('created_at', '<=', $threshold)
+            ->chunkById(200, function ($invoices) use (&$count, $ttlSeconds): void {
+                foreach ($invoices as $invoice) {
+                    // 管理员手动开通产生的挂账账单按 due_date 计费，不受 5 分钟支付会话窗口约束
+                    if ($this->isAdminManualInvoice($invoice)) {
+                        continue;
+                    }
 
-            // 系统生成的续费账单（自动续费扣款账单、到期前定时建单）按 due_date 计费，
-            // 到期前/逾期 1、3、5 天的提醒与催收链路都依赖这张账单存活；
-            // 创建 5 分钟即被取消会导致催收提醒永不可达、用户账单「闪现即消失」。
-            // 续费账单不走 5 分钟支付会话，豁免本轮清理。
-            if ((string) $invoice->type === InvoiceType::RENEW) {
-                continue;
-            }
+                    try {
+                        $updated = $this->checkoutService->cancelExpiredUnpaidInvoice($invoice, [
+                            'actor_type' => 'system',
+                            'actor_name' => 'schedule:invoice-cleanup',
+                            'reason' => 'payment_window_expired',
+                        ]);
 
-            try {
-                $updated = $this->checkoutService->cancelExpiredUnpaidInvoice($invoice, [
-                    'actor_type' => 'system',
-                    'actor_name' => 'schedule:invoice-cleanup',
-                    'reason' => 'payment_window_expired',
-                ]);
+                        if ((int) $updated->status !== InvoiceStatus::CANCELLED) {
+                            continue;
+                        }
 
-                if ((int) $updated->status !== InvoiceStatus::CANCELLED) {
-                    continue;
+                        Log::info('[定时任务] 超时未支付账单自动关闭', [
+                            'invoice_id' => $invoice->id,
+                            'invoice_no' => $invoice->invoice_no,
+                            'expire_after_seconds' => $ttlSeconds,
+                            'age_minutes' => $invoice->created_at ? $invoice->created_at->diffInMinutes(now()) : null,
+                        ]);
+                        $count++;
+                    } catch (\Throwable $exception) {
+                        Log::warning('[定时任务] 账单自动关闭失败', [
+                            'invoice_id' => $invoice->id,
+                            'message' => $exception->getMessage(),
+                        ]);
+                    }
                 }
-
-                Log::info('[定时任务] 超时未支付账单自动关闭', [
-                    'invoice_id' => $invoice->id,
-                    'invoice_no' => $invoice->invoice_no,
-                    'expire_after_seconds' => $ttlSeconds,
-                    'age_minutes' => $invoice->created_at ? $invoice->created_at->diffInMinutes(now()) : null,
-                ]);
-                $count++;
-            } catch (\Throwable $exception) {
-                Log::warning('[定时任务] 账单自动关闭失败', [
-                    'invoice_id' => $invoice->id,
-                    'message' => $exception->getMessage(),
-                ]);
-            }
-        }
+            });
 
         return $count;
     }

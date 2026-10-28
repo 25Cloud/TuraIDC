@@ -245,9 +245,10 @@ class ProductCatalogService
     public function syncUpstreamProductStocks(
         ?string $providerKey = null,
         int $batchSize = 0,
-        ?int $pacingMs = null
+        ?int $pacingMs = null,
+        array $excludedProviderKeys = []
     ): array {
-        return $this->syncService->syncUpstreamProductStocks($providerKey, $batchSize, $pacingMs);
+        return $this->syncService->syncUpstreamProductStocks($providerKey, $batchSize, $pacingMs, $excludedProviderKeys);
     }
 
     public function applyLiveStockToProduct(Product $product, bool $strict = false): Product

@@ -882,11 +882,18 @@ class ProductSyncService
      *
      * @param  int  $batchSize  单轮最多同步多少个商品，<=0 表示全量
      * @param  int|null  $pacingMs  批间等待毫秒，null 取默认值；实时查询路径不走本方法，不受影响
+     * @param  array<int, string>  $excludedProviderKeys  这些上游 provider 的商品不在本任务范围内。
+     *                                插件自己注册了定时任务同步同一批商品时（如 zjmf_finance 的
+     *                                sync-zjmf-finance-inventory-and-services），核心任务必须排除它，
+     *                                否则同一批 ZJMF 商品每 15 分钟被完整拉两遍，对上游请求量翻倍、
+     *                                放大被风控拦截的概率。语义与 ServiceStatusSyncService 的
+     *                                excludedProviderKeys 一致。
      */
     public function syncUpstreamProductStocks(
         ?string $providerKey = null,
         int $batchSize = 0,
-        ?int $pacingMs = null
+        ?int $pacingMs = null,
+        array $excludedProviderKeys = []
     ): array {
         $pacingMs = max(0, $pacingMs ?? self::STOCK_SYNC_PACING_MS);
         $normalizedProviderKey = trim((string) $providerKey);
@@ -903,6 +910,7 @@ class ProductSyncService
             ->tap(fn (Builder $query) => $this->applyHasUpstreamProductBindingScope(
                 $query,
                 $normalizedProviderKey !== '' ? $normalizedProviderKey : null,
+                $excludedProviderKeys,
             ))
             ->tap(fn (Builder $query) => $this->applyStockSyncPriority($query, $batchSize))
             ->get();
@@ -2580,12 +2588,19 @@ class ProductSyncService
         );
     }
 
-    private function applyHasUpstreamProductBindingScope(Builder $query, ?string $providerKey = null): void
+    /**
+     * @param  array<int, string>  $excludedProviderKeys
+     */
+    private function applyHasUpstreamProductBindingScope(Builder $query, ?string $providerKey = null, array $excludedProviderKeys = []): void
     {
         if (Schema::hasTable('product_upstream_bindings')) {
             $normalizedProviderKey = trim((string) $providerKey);
+            $excluded = array_values(array_filter(array_map(
+                static fn ($key): string => trim((string) $key),
+                $excludedProviderKeys
+            ), static fn (string $key): bool => $key !== ''));
 
-            $query->whereExists(function ($subQuery) use ($normalizedProviderKey): void {
+            $query->whereExists(function ($subQuery) use ($normalizedProviderKey, $excluded): void {
                 $subQuery
                     ->selectRaw('1')
                     ->from('product_upstream_bindings as pub')
@@ -2594,6 +2609,12 @@ class ProductSyncService
 
                 if ($normalizedProviderKey !== '') {
                     $subQuery->where('pub.provider_key', $normalizedProviderKey);
+                }
+
+                // whereNotIn 放进 EXISTS 子查询：只要商品还有一条「不在排除名单里」的绑定就纳入。
+                // 因为同步是按商品主供应商分组取数的，被排除的 provider 由它自己的插件任务负责。
+                if ($excluded !== []) {
+                    $subQuery->whereNotIn('pub.provider_key', $excluded);
                 }
             });
 

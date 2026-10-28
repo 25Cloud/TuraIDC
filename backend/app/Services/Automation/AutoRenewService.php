@@ -22,8 +22,17 @@ class AutoRenewService
     public function handle(): array
     {
         $aheadDays = (int) config('idc.auto_renew_days_before', 3);
-        // 自动续费在到期前 $aheadDays 天执行，窗口为当天
-        $targetDate = now()->addDays($aheadDays)->toDateString();
+        // 滚动窗口，而不是「只认 now+aheadDays 落在那一个自然日」。
+        //
+        // 原来的 whereBetween 把范围锁死在单日：如果当天最后一轮之后进程被 kill、
+        // 或 cron 整体停摆了一天，这批服务就永久错过自动续费，直接进入到期暂停/终止
+        // —— 用户余额充足也照停。窗口错过没有任何补偿路径。
+        //
+        // 现在取「到期时间落在 [今天, aheadDays 天后] 之间」的全部服务，
+        // 靠 AutomationLog::recordOnce 的 ruleKey（含到期日）保证同一续费周期只扣一次，
+        // 所以同一天重复运行不会被重复扣款。已过期的服务仍交给暂停/终止链路，不在这里补扣。
+        $windowStart = now()->startOfDay()->toDateTimeString();
+        $windowEnd = now()->addDays($aheadDays)->endOfDay()->toDateTimeString();
 
         $summary = [
             'matched' => 0,
@@ -40,10 +49,7 @@ class AutoRenewService
             ->where('auto_renew', 1)
             ->whereIn('status', [ServiceStatus::ACTIVE, ServiceStatus::EXPIRED])
             ->whereNotNull('expires_at')
-            ->whereBetween('expires_at', [
-                $targetDate.' 00:00:00',
-                $targetDate.' 23:59:59',
-            ])
+            ->whereBetween('expires_at', [$windowStart, $windowEnd])
             ->orderBy('id')
             ->chunkById(100, function ($services) use (&$summary, $aheadDays) {
                 foreach ($services as $service) {
