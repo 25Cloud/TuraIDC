@@ -5,13 +5,13 @@ namespace App\Models;
 use App\Constants\BillingCycle;
 use App\Models\Concerns\EnsuresTraceId;
 use App\Models\Concerns\NormalizesTraceId;
+use App\Support\DatabaseSchema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Illuminate\Support\Facades\Schema;
 
 class Service extends Model
 {
@@ -25,7 +25,7 @@ class Service extends Model
     {
         $model = new static;
 
-        if (Schema::hasColumn($model->getTable(), $model->getDeletedAtColumn())) {
+        if (DatabaseSchema::hasColumn($model->getTable(), $model->getDeletedAtColumn())) {
             static::addGlobalScope(new SoftDeletingScope);
         }
     }

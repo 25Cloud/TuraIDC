@@ -10,9 +10,9 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\SupplierPluginCardRenderer;
 use App\Services\Upstream\ProviderRegistry;
 use App\Support\AdminPrivacy;
+use App\Support\DatabaseSchema;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Schema;
 
 /** @mixin Supplier */
 class AdminSupplierResource extends JsonResource
@@ -87,7 +87,9 @@ class AdminSupplierResource extends JsonResource
             'is_below_threshold' => false,
         ];
 
-        if (! Schema::hasTable('supplier_balances')) {
+        // DatabaseSchema 记忆化：本 Resource 逐行渲染，裸 Schema::hasTable 每次调用
+        // 都会打一条 information_schema（20 行供应商列表 = 20+ 次白查）。
+        if (! DatabaseSchema::hasTable('supplier_balances')) {
             return $defaults;
         }
 
@@ -117,7 +119,7 @@ class AdminSupplierResource extends JsonResource
      */
     private function upstreamBindingPayload(array $binding): ?array
     {
-        if (! Schema::hasTable('supplier_plugin_bindings') || $binding === []) {
+        if (! DatabaseSchema::hasTable('supplier_plugin_bindings') || $binding === []) {
             return null;
         }
 
