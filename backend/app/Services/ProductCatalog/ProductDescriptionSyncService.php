@@ -6,6 +6,7 @@ namespace App\Services\ProductCatalog;
 
 use App\Exceptions\BusinessException;
 use App\Models\Product;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 
 /**
@@ -34,6 +35,24 @@ final class ProductDescriptionSyncService
         $this->assertColumnsReady();
 
         $result = $this->productSync->syncUpstreamProductDescriptions($productIds, $overwrite);
+
+        // 手动同步此前完全不留日志：管理员点完只看到前端一句结果，出问题时
+        // （例如「明明改了上游描述却没变」）无从判断是拉取失败、上游没描述、
+        // 还是内容被判为一致。这里把每个商品的判定结果落一条日志。
+        try {
+            Log::info('[商品描述同步] 执行完成', [
+                'overwrite' => $overwrite,
+                'summary' => $result['summary'] ?? [],
+                'items' => array_map(static fn (array $item): array => [
+                    'id' => $item['id'] ?? null,
+                    'status' => $item['status'] ?? '',
+                    'changed' => $item['changed'] ?? null,
+                    'message' => $item['message'] ?? '',
+                ], $result['items'] ?? []),
+            ]);
+        } catch (\Throwable) {
+            // 日志失败不影响同步结果
+        }
 
         if (($result['summary']['synced'] ?? 0) > 0) {
             // 描述进了前台商品目录缓存，不失效的话前台仍展示旧描述。
