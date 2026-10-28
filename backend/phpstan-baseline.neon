@@ -2299,12 +2299,6 @@ parameters:
 			path: app/Services/Automation/Heartbeat/ScheduleTickRepository.php
 
 		-
-			message: '#^Property App\\Services\\Automation\\OrderCleanupAutomationService\:\:\$settingService is never read, only written\.$#'
-			identifier: property.onlyWritten
-			count: 1
-			path: app/Services/Automation/OrderCleanupAutomationService.php
-
-		-
 			message: '#^Cannot call method toDateTimeString\(\) on string\.$#'
 			identifier: method.nonObject
 			count: 2
