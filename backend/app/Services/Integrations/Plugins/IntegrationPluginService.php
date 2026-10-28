@@ -17,6 +17,7 @@ use App\Services\System\SmsService;
 use App\Support\PublicUrl;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\DB;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 
 class IntegrationPluginService
@@ -211,7 +212,7 @@ class IntegrationPluginService
      */
     public function detectMissingManifests(): array
     {
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return [];
         }
 
@@ -229,7 +230,7 @@ class IntegrationPluginService
 
     public function healthCheck(IntegrationPlugin $plugin): array
     {
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             throw new BusinessException('插件系统尚未初始化', 42200);
         }
 
@@ -521,7 +522,7 @@ class IntegrationPluginService
      */
     private function assertTestDomain(IntegrationPlugin $plugin, string $expectedDomain, string $label): void
     {
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             throw new BusinessException('插件系统尚未初始化', 42200);
         }
 
@@ -544,7 +545,7 @@ class IntegrationPluginService
      */
     private function installedPluginMap(?string $domain = null): array
     {
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return [];
         }
 
@@ -560,7 +561,7 @@ class IntegrationPluginService
      */
     private function enabledPluginMap(?string $domain = null): array
     {
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return [];
         }
 

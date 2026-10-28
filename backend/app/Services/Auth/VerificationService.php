@@ -25,6 +25,7 @@ use App\Support\TextSanitizer;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 
 class VerificationService
@@ -688,7 +689,7 @@ class VerificationService
 
     private function activeVerificationPlugin(): ?IntegrationPlugin
     {
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return null;
         }
 

@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 
 class PluginConfigRepository
@@ -42,7 +43,7 @@ class PluginConfigRepository
             'plugin_record_'.trim($domain).'_'.md5(trim($slug)),
             60,
             function () use ($domain, $slug): ?IntegrationPlugin {
-                if (! Schema::hasTable('integration_plugins')) {
+                if (! DatabaseSchema::hasTable('integration_plugins')) {
                     return null;
                 }
 

@@ -21,6 +21,7 @@ use App\Support\SensitiveDataSanitizer;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -85,7 +86,7 @@ class PluginRuntimeRegistry
         $cacheKey = 'plugin_record_'.$domain.'_'.md5($identifier);
 
         return Cache::remember($cacheKey, 60, function () use ($domain, $identifier): ?IntegrationPlugin {
-            if (! Schema::hasTable('integration_plugins')) {
+            if (! DatabaseSchema::hasTable('integration_plugins')) {
                 return null;
             }
 
@@ -352,7 +353,7 @@ class PluginRuntimeRegistry
     {
         $resolvedDomain = PluginDomain::assertValid($domain);
 
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return [];
         }
 

@@ -7,6 +7,7 @@ namespace App\Services\Integrations\Plugins;
 use App\Constants\PaymentGatewayCode;
 use App\Models\Payment;
 use Illuminate\Support\Facades\DB;
+use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 
 class PaymentGatewayBindingResolver
@@ -49,7 +50,7 @@ class PaymentGatewayBindingResolver
             return null;
         }
 
-        if (! Schema::hasTable('integration_plugins')) {
+        if (! DatabaseSchema::hasTable('integration_plugins')) {
             return null;
         }
 
