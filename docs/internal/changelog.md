@@ -13,6 +13,23 @@
   对账不通过（上游不可达、账单号未知）才维持拦截，既不放过也不重复提交上游续费。
 - **到期时间以上游口径为准**：已履约续费的到期时间不再被本地估算（支付时间 + 周期）覆盖，
   上游给多久就按多久生效，避免凭空多给或少给周期。
+- **后台同步了商品描述，前台卡片却还是旧的**：两个缺陷叠在一起。① 官网商品卡的响应缓存
+  （`ProductGroupController::products` / `catalog`，按标签 `site-products` 存 60 / 300 秒）
+  键里不含目录版本号，只有 `SiteCatalogCacheInvalidator::flush()` 漏清这个标签，而管理端
+  保存商品走 `Product::withoutEvents()` 不触发模型事件那条失效链——于是后台任何商品保存，
+  卡片最长 300 秒都还在展示旧描述；② 「从上游同步」三个入口无论结果如何都回
+  「商品描述同步完成」，「上游商品没有描述」「目录里已找不到该商品」「拉取目录失败」
+  以及「上游与本地逐字一致、什么都没改」全被报成成功。现失效入口统一清标签缓存并收敛了
+  三处重复实现；同步接口按真实结果返回 `outcome`（synced / unchanged / skipped / failed /
+  partial）与对应提示，前端按成功 / 警告 / 失败三档提示并直接说明「为什么没变」
+- **保存商品不再抹掉描述**：`description` 此前是 `sanitize($data['description'] ?? null)`
+  无条件回写，任何不携带该字段的保存（前端详情接口失败后表单里是空串、脚本按最小字段集
+  改商品）都会把描述写成空串，前台随即退回 `remark` 里的旧上游描述。现在只有提交里真的
+  带了 `description` 才动这一列
+- **站点商品查询补选描述列**：`ProductSiteService` 的分组商品与选购页商品详情两处显式
+  `select` 漏选 `products.description`（此前 `ProductGroupV2QueryService::paginateSiteProducts`
+  与 `ProductV2QueryService::siteProductListColumns` 已修过同一处），描述服务会静默退回
+  255 字节的 `remark`
 
 ### 新增
 

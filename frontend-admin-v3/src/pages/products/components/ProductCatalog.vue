@@ -1539,6 +1539,8 @@ import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { useAdminViewMode } from '@/composables/useAdminViewMode';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { t } from '@/locales';
+import { describeDescriptionSyncResult } from '@/utils/descriptionSyncResult';
+import type { DescriptionSyncResult } from '@/utils/descriptionSyncResult';
 import { useUserStore } from '@/store';
 import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
 
@@ -3294,14 +3296,10 @@ async function syncProductDescription(rows: ProductRecord[]) {
 
   descriptionSyncLoading.value = true;
   try {
-    const response = (await productApi.syncDescriptionBatch({ product_ids: productIds })) as Record<string, unknown>;
-    const summary = (response.summary || {}) as Record<string, number>;
-    MessagePlugin.success(
-      t('products.catalog.descriptionSyncDone', {
-        count: Number(summary.synced || 0),
-        skipped: Number(summary.skipped || 0),
-      }),
-    );
+    const response = (await productApi.syncDescriptionBatch({
+      product_ids: productIds,
+    })) as DescriptionSyncResult;
+    notifyDescriptionSyncResult(response);
     await loadProducts();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, t('products.catalog.descriptionSyncFailed')));
@@ -3316,19 +3314,28 @@ async function syncGroupDescription(group: ProductCategoryRecord) {
   try {
     const response = (await productApi.syncGroupDescription(productGroupEffectiveId(group), {
       level: productGroupLevel(group),
-    })) as Record<string, unknown>;
-    const summary = (response.summary || {}) as Record<string, number>;
-    MessagePlugin.success(
-      t('products.catalog.descriptionSyncDone', {
-        count: Number(summary.synced || 0),
-        skipped: Number(summary.skipped || 0),
-      }),
-    );
+    })) as DescriptionSyncResult;
+    notifyDescriptionSyncResult(response);
     await loadProducts();
   } catch (error) {
     MessagePlugin.error(errorMessage(error, t('products.catalog.descriptionSyncFailed')));
   } finally {
     descriptionSyncLoading.value = false;
+  }
+}
+
+/**
+ * 描述同步的提示必须反映真实结果：全部跳过、拉取失败、以及「上游与本地一致」
+ * 此前都弹成功，管理员只能判断成同步坏了。口径见 descriptionSyncResult。
+ */
+function notifyDescriptionSyncResult(result: DescriptionSyncResult) {
+  const notice = describeDescriptionSyncResult(result);
+  if (notice.tone === 'error') {
+    MessagePlugin.error(notice.message);
+  } else if (notice.tone === 'warning') {
+    MessagePlugin.warning(notice.message);
+  } else {
+    MessagePlugin.success(notice.message);
   }
 }
 

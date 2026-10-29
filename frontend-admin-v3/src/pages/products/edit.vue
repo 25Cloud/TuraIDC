@@ -495,6 +495,8 @@ import { productApi } from '@/api/product';
 import type { SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
 import { t } from '@/locales';
+import { describeDescriptionSyncResult } from '@/utils/descriptionSyncResult';
+import type { DescriptionSyncResult } from '@/utils/descriptionSyncResult';
 
 import ProductDescriptionEditor from './components/ProductDescriptionEditor.vue';
 import {
@@ -873,12 +875,21 @@ async function syncDescriptionFromUpstream() {
   if (!isEdit.value) return;
   descriptionSyncing.value = true;
   try {
-    await productApi.syncDescription(productId.value);
+    const result = (await productApi.syncDescription(productId.value)) as DescriptionSyncResult;
     // 同步写的是 products.description（表单里的 form.description 就是它），
     // 只重拉 loadProductDescription()（自动生成预览）不会更新编辑器里那份原文，
     // 于是表现为「点了同步没反应，刷新才看到」。这里必须连商品详情一起重拉。
     await Promise.all([loadProductDetail(), loadProductDescription()]);
-    MessagePlugin.success(t('products.description.syncDone'));
+    // 提示必须反映真实结果：「上游没有描述」「目录里找不到商品」「与上游一致」
+    // 曾经都只弹一句「上游描述已同步」，管理员因此以为同步坏了。
+    const notice = describeDescriptionSyncResult(result);
+    if (notice.tone === 'error') {
+      MessagePlugin.error(notice.message);
+    } else if (notice.tone === 'warning') {
+      MessagePlugin.warning(notice.message);
+    } else {
+      MessagePlugin.success(notice.message);
+    }
   } catch (error) {
     MessagePlugin.error(errorMessage(error, t('products.description.syncFailed')));
   } finally {

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\ProductCatalog;
 
 use App\Models\Product;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -95,10 +94,10 @@ class ProductNameNormalizationService
             });
         }
 
-        // 走 query builder 不会触发模型事件，商品目录缓存要显式失效，
-        // 口径与 AppServiceProvider::invalidateCatalogCacheOnCatalogChanges 保持一致。
-        Cache::tags(['site-products'])->flush();
-        Cache::forget('coupon_product_group_tree_v1');
+        // 走 query builder 不会触发模型事件，商品目录缓存必须显式失效。
+        // 统一交给唯一失效入口，别在这里重写一份清理清单（此前这里清标签不清版本号，
+        // 与 invalidator 的口径不一致）。
+        app(SiteCatalogCacheInvalidator::class)->flush();
 
         return [
             'mode' => 'execute',

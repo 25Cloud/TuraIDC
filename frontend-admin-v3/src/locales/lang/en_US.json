@@ -2227,6 +2227,12 @@
       "syncFromUpstream": "Sync from upstream",
       "syncDone": "Upstream description synced",
       "syncFailed": "Failed to sync description from upstream",
+      "syncAllDone": "Upstream description synced ({changed} products)",
+      "syncPartial": "Sync finished: {changed} updated, {skipped} skipped, {failed} failed",
+      "syncUnchanged": "Upstream description is identical to the local one; nothing changed",
+      "syncSkipped": "Description not synced: {reason}",
+      "syncRejected": "Description sync failed: {reason}",
+      "syncNoReason": "Upstream returned no usable description",
       "syncSettingsConfirm": "Confirm"
     },
     "couponCampaigns": {
@@ -2741,7 +2747,6 @@
       "syncUpstreamDescription": "Sync description from upstream",
       "descriptionAutoSync": "Auto sync description",
       "descriptionSyncSettings": "Sync settings",
-      "descriptionSyncDone": "Synced {count} products, skipped {skipped}",
       "descriptionSyncFailed": "Failed to sync description"
     },
     "coupons": {

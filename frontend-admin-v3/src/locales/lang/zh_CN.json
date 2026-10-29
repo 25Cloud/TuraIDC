@@ -2227,6 +2227,12 @@
       "syncFromUpstream": "从上游同步",
       "syncDone": "上游描述已同步",
       "syncFailed": "从上游同步描述失败",
+      "syncAllDone": "已同步上游描述（{changed} 个商品）",
+      "syncPartial": "描述同步完成：已更新 {changed} 个商品，{skipped} 个跳过，{failed} 个失败",
+      "syncUnchanged": "上游描述与本地一致，未产生变更",
+      "syncSkipped": "商品描述未同步：{reason}",
+      "syncRejected": "商品描述同步失败：{reason}",
+      "syncNoReason": "上游没有返回可用的描述",
       "syncSettingsConfirm": "确认"
     },
     "couponCampaigns": {
@@ -2741,7 +2747,6 @@
       "syncUpstreamDescription": "同步上游描述",
       "descriptionAutoSync": "描述自动同步",
       "descriptionSyncSettings": "同步设置",
-      "descriptionSyncDone": "已同步 {count} 个商品，跳过 {skipped} 个",
       "descriptionSyncFailed": "描述同步失败"
     },
     "coupons": {

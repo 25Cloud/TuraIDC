@@ -730,7 +730,7 @@ class ProductSyncService
             ->unique()
             ->values();
 
-        $summary = ['total' => $productIds->count(), 'synced' => 0, 'skipped' => 0, 'failed' => 0];
+        $summary = ['total' => $productIds->count(), 'synced' => 0, 'changed' => 0, 'skipped' => 0, 'failed' => 0];
 
         if ($productIds->isEmpty()) {
             return ['items' => [], 'summary' => $summary];
@@ -836,12 +836,16 @@ class ProductSyncService
                 $product->description_synced_at = now();
                 $product->save();
 
+                $changed = $before !== $html;
                 $summary['synced']++;
+                if ($changed) {
+                    $summary['changed']++;
+                }
                 $items[] = $this->buildDescriptionSyncItem(
                     $product,
                     'synced',
-                    $before === $html ? '描述内容与上游一致' : '已同步上游描述',
-                    ['changed' => $before !== $html]
+                    $changed ? '已同步上游描述' : '描述内容与上游一致',
+                    ['changed' => $changed]
                 );
             }
         }

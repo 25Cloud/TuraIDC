@@ -1779,7 +1779,15 @@ class ProductAdminService
                     : []),
                 'remark' => $this->normalizeNullableString($data['remark'] ?? null),
                 // 落库即消毒：前台直接 v-html 渲染这一列，存什么就该是什么。
-                'description' => app(ProductDescriptionService::class)->sanitize($data['description'] ?? null),
+                //
+                // 只有提交里真的带了 description 才动这一列。此前是
+                // sanitize($data['description'] ?? null)，任何一个不携带该字段的保存
+                // （前端详情接口异常导致表单里是空串、批量/脚本按最小字段集改商品）
+                // 都会把已编辑好的描述写成空串，前台卡片随之退回 remark 里的旧上游
+                // 描述——现象就是「同步过、保存一下又变回老的」。
+                ...(array_key_exists('description', $data)
+                    ? ['description' => app(ProductDescriptionService::class)->sanitize($data['description'] ?? null)]
+                    : []),
                 'pricing' => $pricing,
                 'setup_fee' => max((float) ($data['setup_fee'] ?? 0), 0),
                 'config_options' => $this->normalizeConfigOptions($data['config_options'] ?? []),

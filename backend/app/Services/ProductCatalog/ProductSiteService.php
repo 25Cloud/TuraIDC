@@ -271,6 +271,11 @@ class ProductSiteService
                     'cpu_turbo',
                 ]),
                 'remark',
+                // 描述真源是 description；remark 只是 varchar(255) 的历史上游描述回退。
+                // 这里漏选过一次（同 ProductGroupV2QueryService::paginateSiteProducts
+                // 与 ProductV2QueryService::siteProductListColumns 的那两处），
+                // 表现是卡片描述被截断成半句并带出 remark 里的旧行。
+                'description',
                 'purchase_requires',
                 'config_options',
                 'pricing',
@@ -392,6 +397,8 @@ class ProductSiteService
                     'cpu_turbo',
                 ]),
                 'remark',
+                // 与列表/卡片同源：漏选 description 会让详情侧描述退化成 remark 回退。
+                'description',
                 'pricing',
                 'setup_fee',
                 'config_options',

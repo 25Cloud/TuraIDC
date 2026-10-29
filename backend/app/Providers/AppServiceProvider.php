@@ -16,6 +16,7 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\OpenApi\OpenApiConfig;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductSpecHighlightService;
+use App\Services\ProductCatalog\SiteCatalogCacheInvalidator;
 use App\Services\System\UploadedAssetReferenceService;
 use App\Services\ZjmfUpstream\UpstreamCatalogCache;
 use App\Support\DatabaseSchema;
@@ -25,7 +26,6 @@ use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Events\MigrationsEnded;
 use Illuminate\Http\Request;
 use Illuminate\Queue\Events\JobTimedOut;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Facades\Schema;
@@ -223,22 +223,21 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
-     * 商品/分组/折扣组的任何增删改都主动失效商品目录缓存：
-     * 官网商品卡（tags: site-products）与管理端整树缓存均实时刷新，不依赖 TTL 过期。
-     * 批量写入（如状态同步批量更新商品）会在 2s 内合并为一次失效，避免反复清缓存。
+     * 商品/分组/折扣组的任何增删改都主动失效商品目录缓存。
+     *
+     * 清理动作全部委托给 SiteCatalogCacheInvalidator——它是这件事的唯一所有者。
+     * 这里只额外 bump 魔方财务上游的商品目录缓存（infos/all）：那是「我们对外暴露的
+     * 上游目录」，与站内目录缓存不是同一份数据。
+     *
+     * 此前本方法自己 redispatch 了一份清理清单（清标签、清券树），与 invalidator 漏的
+     * 步骤不一样：invalidator 不清标签，本方法不清版本号。管理端保存商品走
+     * Product::withoutEvents()，模型事件不触发，于是只剩 invalidator 那条链，
+     * 标签缓存就永远清不掉，官网卡片最长 300 秒展示旧描述。
      */
     private function invalidateCatalogCacheOnCatalogChanges(): void
     {
-        $lastFlushAt = null;
-        $flush = function () use (&$lastFlushAt): void {
-            $now = microtime(true);
-            if ($lastFlushAt !== null && $now - $lastFlushAt < 2) {
-                return;
-            }
-            $lastFlushAt = $now;
-
-            Cache::tags(['site-products'])->flush();
-            Cache::forget('coupon_product_group_tree_v1');
+        $flush = function (): void {
+            app(SiteCatalogCacheInvalidator::class)->flush();
             // 魔方财务上游的商品目录缓存（infos/all）跟着一起失效，
             // 否则下游最长要等 60 秒 TTL 才能看到改价/改库存。
             UpstreamCatalogCache::bump();

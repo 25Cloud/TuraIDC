@@ -81,11 +81,47 @@ class V2AdminProductDescriptionSyncApiTest extends TestCase
 
         $response = $this->postJson("/api/v2/admin/products/{$product->id}/description/sync")
             ->assertOk()
-            ->assertJsonPath('code', 0);
+            ->assertJsonPath('code', 0)
+            // 一条都没同步成功时不能报「同步完成」：此前三个入口一律回成功，
+            // 管理员看到成功提示、前台毫无变化，只能判断成同步坏了。
+            ->assertJsonPath('data.outcome', 'skipped');
 
         $this->assertSame(0, (int) $response->json('data.summary.synced'));
         $this->assertSame(1, (int) $response->json('data.summary.skipped'));
         $this->assertStringContainsString('供应商', (string) $response->json('data.items.0.message'));
+        $this->assertStringContainsString('未同步', (string) $response->json('message'));
+    }
+
+    /**
+     * 保存商品时没带 description 不能把已有描述抹掉。
+     *
+     * 描述只由「商品表单 / 从上游同步」两处维护；任何最小字段集的保存
+     * （脚本、批量改价、前端详情接口失败导致表单里是空串）都不该顺手清空它。
+     * 此前 `sanitize($data['description'] ?? null)` 会把它写成空串，前台卡片随即
+     * 退回 remark 里的旧上游描述——现象就是「同步完、再保存一下又变回老的」。
+     */
+    public function test_it_keeps_the_stored_description_when_the_update_payload_omits_it(): void
+    {
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::PRODUCT_MANAGE]));
+        $secondGroup = $this->createSecondGroup();
+        $thirdGroup = $this->createThirdGroup($secondGroup);
+        $product = $this->createProductIn($thirdGroup);
+
+        Product::query()->whereKey((int) $product->id)->update([
+            'description' => '<ul><li>CPU：2 核</li></ul>',
+        ]);
+
+        $this->putJson("/api/v2/admin/products/{$product->id}", [
+            'third_product_group_id' => (int) $thirdGroup->id,
+            'pricing' => ['monthly' => '29.00'],
+        ])
+            ->assertOk()
+            ->assertJsonPath('code', 0);
+
+        $this->assertSame(
+            '<ul><li>CPU：2 核</li></ul>',
+            (string) Product::query()->findOrFail((int) $product->id)->description
+        );
     }
 
     public function test_it_reads_and_writes_the_global_sync_schedule(): void

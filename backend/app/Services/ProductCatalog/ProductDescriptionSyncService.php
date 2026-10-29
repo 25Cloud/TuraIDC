@@ -141,7 +141,7 @@ final class ProductDescriptionSyncService
             ->all();
 
         if ($ids === []) {
-            return ['items' => [], 'summary' => ['total' => 0, 'synced' => 0, 'skipped' => 0, 'failed' => 0]];
+            return ['items' => [], 'summary' => ['total' => 0, 'synced' => 0, 'changed' => 0, 'skipped' => 0, 'failed' => 0]];
         }
 
         return $this->syncProducts($ids);
