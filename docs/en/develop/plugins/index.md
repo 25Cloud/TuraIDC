@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: 04ce3a49a438d7cd0d82b60faa48ba2d608d65d6fba3f36053c2272707ddac10
+sourceHash: cd79ce7345f6ac3912250cf3bc7806c9bfac1c49383da40193348400b55da9c1
 translatedAt: 2026-10-26
 ---
 
@@ -693,6 +693,7 @@ Every demo package contains:
 - [Plugin package specification (standalone repository distribution and plugin marketplace)](package-spec.md)
 - [Alipay face-to-face payment plugin demo](demo-ali-pay.md)
 - [AI assistant plugin (chat, tool calls, shopping guide and governance)](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
+- [AI assistant plugin release mirror](https://github.com/25Cloud/turaidc-plugin-ai-assistant): a read-only mirror of the built-in plugin (tags align with the manifest `info.version`) so other sites can install it via `plugin:market:install` or a local zip. **The main repository is still the single source of truth** — do not open PRs against the mirror; see its `MIRROR.md` for the sync procedure.
 - [KangLe virtual host plugin](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/kanghostx/README.md)
 - [TuraIDC open API upstream driver plugin](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/tura_open_api/README.md)
 

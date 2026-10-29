@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: 04ce3a49a438d7cd0d82b60faa48ba2d608d65d6fba3f36053c2272707ddac10
+sourceHash: cd79ce7345f6ac3912250cf3bc7806c9bfac1c49383da40193348400b55da9c1
 generated: zh-hk
 ---
 
@@ -707,6 +707,7 @@ php artisan schedule:list
 - [插件包規範（獨立倉庫分發與插件市場）](package-spec.md)
 - [支付寶當面付插件 demo](demo-ali-pay.md)
 - [AI 助手插件（對話、工具調用、導購與治理）](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
+- [AI 助手插件發行鏡像](https://github.com/25Cloud/turaidc-plugin-ai-assistant)：內置插件的只讀鏡像（tag 與 manifest `info.version` 對齊），供其它站點用 `plugin:market:install` 或本地 zip 安裝。**唯一真源仍在主倉**，不要在鏡像倉提 PR；同步方式見該倉 `MIRROR.md`
 - [康樂虛擬主機插件](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/kanghostx/README.md)
 - [TuraIDC 開放接口上游驅動插件](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/tura_open_api/README.md)
 

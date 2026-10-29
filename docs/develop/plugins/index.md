@@ -700,6 +700,7 @@ php artisan schedule:list
 - [插件包规范（独立仓库分发与插件市场）](package-spec.md)
 - [支付宝当面付插件 demo](demo-ali-pay.md)
 - [AI 助手插件（对话、工具调用、导购与治理）](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
+- [AI 助手插件发行镜像](https://github.com/25Cloud/turaidc-plugin-ai-assistant)：内置插件的只读镜像（tag 与 manifest `info.version` 对齐），供其它站点用 `plugin:market:install` 或本地 zip 安装。**唯一真源仍在主仓**，不要在镜像仓提 PR；同步方式见该仓 `MIRROR.md`
 - [康乐虚拟主机插件](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/kanghostx/README.md)
 - [TuraIDC 开放接口上游驱动插件](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/tura_open_api/README.md)
 
