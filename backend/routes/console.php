@@ -1,6 +1,5 @@
 <?php
 
-use App\Support\OptionalFeature;
 use Illuminate\Support\Facades\Schedule;
 
 /**
@@ -63,15 +62,10 @@ $pruneOpenApiUsageLogs = Schedule::command('open-api:prune-usage-logs')
     ->name('open-api-prune-usage-logs')
     ->runInBackground();
 
-// AI 会话保留期清理：每天凌晨归档过期会话，并物理删除软删满 7 天的会话与工具记录。
-// 命令实现随 AI 能力一起搬进了 ai_assistant 插件（命令名不变），所以**插件不在时不能登记**：
-// 登记了它就是一条每天必然「命令不存在」的失败记录。与侧栏菜单同一个口径（App\Support\OptionalFeature）。
-$pruneAiConversations = OptionalFeature::enabled(OptionalFeature::AI_ASSISTANT)
-    ? Schedule::command('ai:prune-conversations')
-        ->dailyAt('04:40')
-        ->name('ai-prune-conversations')
-        ->runInBackground()
-    : null;
+// AI 会话保留期清理不在这里登记：它由 ai_assistant 插件清单的 extra.scheduled_tasks
+// 声明，走 PluginScheduledTaskProvider → 心跳派发（见插件规范第 7 节）。核心去 schedule
+// 插件命令会在插件停用/卸载后留下每天必然「命令不存在」的失败记录，而且核心得额外
+// 知道这个功能装没装。清单声明的话，插件不在，任务就没了，这里一行都不用改。
 
 if ($shouldUseScheduleMutex) {
     // 每分钟跑的秒级任务，2 分钟锁足够。
@@ -79,7 +73,6 @@ if ($shouldUseScheduleMutex) {
     // 批量清理可能跑几分钟：锁 TTL 短于实际耗时时，下一轮会拿到已过期锁再起一个实例，
     // 两个进程同时 DELETE 同一批数据只会叠加锁等待。按「最长容忍耗时」而不是「预期耗时」设。
     $pruneOpenApiUsageLogs->withoutOverlapping(30);
-    $pruneAiConversations?->withoutOverlapping(30);
 }
 
 if ($shouldUseScheduleMutex) {

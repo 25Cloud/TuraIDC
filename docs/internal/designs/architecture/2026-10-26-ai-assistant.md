@@ -303,7 +303,10 @@ shared/runtime/ai/context.ts    # aiContextBus：页面注册当前主体（商�
 - 装配：`system`（角色 + 工具纪律 + 站点品牌 + 当前主体）→ 最近 `history_message_limit` 条消息 → 当前用户消息。
 - 裁剪：超过阈值时用一次模型调用生成会话摘要，替换早期消息（摘要单独存一行，`tool_calls` 标记 `summary`）。
 - 不做跨会话长期记忆一期；用户偏好（常用地区、预算）通过工具现查，不落画像。
-- 会话保留 `retention_days`，由 `ai:prune-conversations` 每日清理，软删后 7 天物理清理。
+- 会话保留 `retention_days`，由插件清单声明的定时任务 `Automation/AiPruneConversationsTask`
+  每日清理（cron `30 4 * * *`，心跳 15 分钟槽位派发），软删后 7 天物理清理；运维命令
+  `ai:prune-conversations --dry-run` 与它共用 `Services/AiConversationPruner`。
+  不放核心 `routes/console.php`：核心 schedule 插件命令会在插件卸载后留下每天必然失败的任务。
 
 ## 10. 实施分期
 

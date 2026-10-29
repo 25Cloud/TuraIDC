@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: 6fe02ad608a8c8215148ead2a5f400719ab10b673c6e4eec7e9b401dd0d84e6d
+sourceHash: 04ce3a49a438d7cd0d82b60faa48ba2d608d65d6fba3f36053c2272707ddac10
 translatedAt: 2026-10-26
 ---
 
@@ -46,7 +46,33 @@ The loading order is controlled by `PluginFileLoader`:
 1. Recursively load PHP files under `lib/`, `logic/`, and `controller/`.
 2. If `vendor/autoload.php` exists, load the plugin dependencies.
 3. Load PHP files in the plugin root directory, skipping `config.php`.
-4. Load `src/` for compatibility, to ease the transition from legacy structures.
+4. Recursively load `src/`, the preferred location for large plugins organised by PSR-4 (`AiAssistant` and `zjmf_bridge` both use it).
+
+### Large plugins must register PSR-4 themselves
+
+The first three steps `require` every file in directory order. That is fine for a plugin with a handful of classes; once there are dozens of classes and some interfaces are `extends`/`implements`-ed in many places (`AiTool`, `AiProviderInterface`), a `require` order that loads a child before its parent or interface makes PHP fail at **declaration time** (`Interface "..." not found`), and the error location looks unrelated to the real cause (the ordering).
+
+`AiAssistant` solves this with a `logic/autoload.php` that registers `spl_autoload_register` for its own namespace only, so parents and interfaces load on demand:
+
+```php
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'TuraIDC\\Plugins\\Addons\\AiAssistant\\';
+    if (! str_starts_with($class, $prefix)) {
+        return;
+    }
+    $relativePath = str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
+    foreach (['/src/', '/logic/'] as $segment) {
+        $path = dirname(__DIR__).$segment.$relativePath;
+        if (is_file($path)) {
+            require_once $path;
+
+            return;
+        }
+    }
+});
+```
+
+It registers only its own prefix, takes over no other namespace, and loads no business class on its own — it simply stops `require` ordering from being a correctness precondition. `logic/` sorts before `src/`, so this file always takes effect before any business class.
 
 ## 3. config.php Specification
 
@@ -337,6 +363,8 @@ Runtime rules:
 ## 7. Scheduled Tasks and Scheduling Hooks
 
 When a plugin needs scheduling capability, it can only hook into platform scheduling through the plugin manifest; do not register Laravel `Schedule`, system-level Cron, global middleware, or system-level API routes inside the plugin. The production environment still keeps only BaoTa Panel running `php artisan schedule:run` once per minute; `backend/routes/console.php` drives the heartbeat every minute, specific business tasks are still deduplicated by 15-minute slots, and are discovered by `HeartbeatTaskRegistry` and the plugin provider.
+
+**The reverse holds too: core must not `Schedule::command()` a plugin command.** This is not the other side of "plugins must not register schedules" — it is another hole in the same boundary. Once core schedules a plugin command, that `Schedule` entry outlives plugin disable/uninstall and produces a "command does not exist" failure every day, and core is forced to know whether the feature is installed. Declaring it in the manifest has none of that: only enabled plugins are scanned by `PluginScheduledTaskProvider`, so when the plugin is gone the task is gone and core needs no change at all. The `AiAssistant` conversation cleanup used to be a counter-example (core `routes/console.php` ran `Schedule::command('ai:prune-conversations')`); it is manifest-declared now.
 
 There are two ways for plugins to hook in:
 
@@ -648,6 +676,7 @@ The following plugins are placed directly under `backend/plugins/{能力域}/` a
 | Upstream provisioning/control | `backend/plugins/servers/kanghostx`               | KangLe virtual host plugin                                      |
 | Upstream provisioning/control | `backend/plugins/servers/rainyun_rcs`             | Rainyun RCS and add-on resource billing                         |
 | Upstream provisioning/control | `backend/plugins/servers/demo_servers`            | Simulated upstream plugin                                       |
+| Feature extension             | `backend/plugins/addons/ai_assistant`             | In-site AI assistant: chat, tool calls, shopping guide and admin governance |
 | Feature extension             | `backend/plugins/addons/demo_style`               | Addon, scheduled task, and hook example plugin                  |
 | Feature extension             | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge compatibility interface plugin                      |
 
@@ -663,6 +692,7 @@ Every demo package contains:
 
 - [Plugin package specification (standalone repository distribution and plugin marketplace)](package-spec.md)
 - [Alipay face-to-face payment plugin demo](demo-ali-pay.md)
+- [AI assistant plugin (chat, tool calls, shopping guide and governance)](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
 - [KangLe virtual host plugin](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/kanghostx/README.md)
 - [TuraIDC open API upstream driver plugin](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/tura_open_api/README.md)
 
@@ -689,6 +719,21 @@ Email plugin involved:
 ```bash
 cd backend
 php artisan test tests/Feature/MultiSmtpRoundRobinPluginTest.php
+```
+
+Scaffold templates changed (`backend/stubs/plugin/*.stub`, the same source as the standalone template repository):
+
+```bash
+cd backend
+php vendor/bin/phpunit tests/Feature/PluginMakeCommandTest.php
+```
+
+A plugin's own tests live with the plugin directory; the `Plugins` suite in `phpunit.xml.dist`
+scans every `*Test.php` under `plugins`:
+
+```bash
+cd backend
+php vendor/bin/phpunit plugins/addons/ai_assistant/tests
 ```
 
 Admin-side pages involved:

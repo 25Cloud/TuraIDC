@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use TuraIDC\Plugins\Addons\AiAssistant\AiAssistantLifecycle;
 use TuraIDC\Plugins\Addons\AiAssistant\AiAssistantPlugin;
+use TuraIDC\Plugins\Addons\AiAssistant\Automation\AiPruneConversationsTask;
 use TuraIDC\Plugins\Addons\AiAssistant\Providers\AiAssistantServiceProvider;
 
 /**
@@ -21,7 +22,7 @@ return [
         'slug' => 'ai_assistant',
         'key' => 'ai_assistant',
         'name' => 'AI 助手',
-        'version' => '1.0.0',
+        'version' => '1.1.0',
         'entry' => AiAssistantPlugin::class,
         'capabilities' => ['ai.chat', 'ai.tools'],
 
@@ -43,6 +44,12 @@ return [
             // 运行时可调配置所在的 settings 分组，供运维与后续插件市场展示使用
             'settings_group' => 'ai',
             'config_key' => 'ai_gateway',
+            // 周期能力只能走清单接入平台调度（插件规范第 7 节）：
+            // 只有已启用的插件会被 PluginScheduledTaskProvider 扫到，
+            // 插件停用/卸载后任务自动消失，核心不需要知道这个功能存不存在。
+            'scheduled_tasks' => [
+                AiPruneConversationsTask::class,
+            ],
         ],
     ],
     'config' => [

@@ -11,6 +11,8 @@ use App\Models\IntegrationPlugin;
 use App\Models\Role;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Automation\Heartbeat\Contracts\ScheduledTask;
+use App\Services\Automation\Heartbeat\Providers\PluginScheduledTaskProvider;
 use App\Services\Integrations\Plugins\PluginDomain;
 use App\Services\Integrations\Plugins\PluginInstaller;
 use App\Services\Integrations\Plugins\PluginProviderRegistry;
@@ -333,6 +335,44 @@ class AiAssistantTest extends TestCase
             ->postJson('/api/v2/client/ai/messages', ['message' => '再来一次'])
             ->assertStatus(429)
             ->assertJsonPath('code', 42900);
+    }
+
+    /**
+     * 保留期清理必须由插件清单声明，而不是被核心 `routes/console.php` schedule。
+     *
+     * 插件规范第 7 节：插件的周期能力只能通过 `info.extra.scheduled_tasks` 接入平台调度。
+     * 核心去 schedule 一个插件命令是同一条边界上的变通——插件停用/卸载后那条 Schedule
+     * 还在，每天必然「命令不存在」。清单声明则相反：只有已启用的插件会被
+     * PluginScheduledTaskProvider 扫到，插件一停，任务随之消失，核心无需额外判断。
+     */
+    public function test_retention_cleanup_is_declared_by_the_manifest_and_disappears_with_the_plugin(): void
+    {
+        $provider = $this->app->make(PluginScheduledTaskProvider::class);
+        $keysOf = static fn (): array => array_map(
+            static fn (ScheduledTask $task): string => $task->key(),
+            $provider->tasks(),
+        );
+
+        $this->assertContains('ai-prune-conversations', $keysOf());
+
+        $plugin = IntegrationPlugin::query()
+            ->where('domain', PluginDomain::ADDONS)
+            ->where('slug', 'ai_assistant')
+            ->firstOrFail();
+        $originalStatus = (int) $plugin->status;
+
+        try {
+            $plugin->status = IntegrationPlugin::STATUS_DISABLED;
+            $plugin->save();
+
+            $this->assertNotContains('ai-prune-conversations', $keysOf());
+        } finally {
+            $plugin->status = $originalStatus;
+            $plugin->save();
+        }
+
+        // 运维入口仍在（--dry-run 只统计），生产执行者是上面那个心跳任务
+        $this->artisan('ai:prune-conversations', ['--dry-run' => true])->assertSuccessful();
     }
 
     public function test_admin_settings_never_returns_raw_api_key(): void

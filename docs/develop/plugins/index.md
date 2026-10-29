@@ -40,7 +40,38 @@ backend/plugins/{domain-directory}/{slug}/
 1. 递归加载 `lib/`、`logic/`、`controller/` 下 PHP 文件。
 2. 如果存在 `vendor/autoload.php`，加载插件依赖。
 3. 加载插件根目录 PHP 文件，跳过 `config.php`。
-4. 兼容加载 `src/`，用于旧结构过渡。
+4. 递归加载 `src/`：大插件按 PSR-4 组织代码的首选位置（`AiAssistant`、`zjmf_bridge` 都用它）。
+
+### 大插件必须自注册 PSR-4
+
+上面前三步是「按目录顺序 `require` 每个文件」。插件只有几个类时没问题；一旦有几十个类、
+且其中存在被多处 `extends`/`implements` 的接口（`AiTool`、`AiProviderInterface` 这类），
+`require` 顺序一旦让子类先于父类/接口出现，PHP 在**声明阶段**就直接 fatal
+（`Interface "..." not found`），而且报错位置和真实原因（顺序）看起来毫无关系。
+
+`AiAssistant` 的做法是加一个 `logic/autoload.php`，只给本插件命名空间注册
+`spl_autoload_register`，让父类与接口按需加载：
+
+```php
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'TuraIDC\\Plugins\\Addons\\AiAssistant\\';
+    if (! str_starts_with($class, $prefix)) {
+        return;
+    }
+    $relativePath = str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
+    foreach (['/src/', '/logic/'] as $segment) {
+        $path = dirname(__DIR__).$segment.$relativePath;
+        if (is_file($path)) {
+            require_once $path;
+
+            return;
+        }
+    }
+});
+```
+
+只注册自身前缀、不接管其它命名空间、不主动加载业务类——它只是让 `require` 顺序不再是正确性
+前提。`logic/` 按字母序先于 `src/` 被加载，所以这个文件本身一定先于任何业务类生效。
 
 ## 3. config.php 规范
 
@@ -331,6 +362,13 @@ return [
 ## 7. 定时任务与调度 Hooks
 
 插件需要定时能力时只能通过插件清单接入平台调度，不要在插件里注册 Laravel `Schedule`、系统级 Cron、全局中间件或系统级 API 路由。生产环境仍只保留宝塔每分钟执行一次 `php artisan schedule:run`；`backend/routes/console.php` 每分钟驱动心跳，具体业务任务仍由 15 分钟槽位去重，并由 `HeartbeatTaskRegistry` 和插件 provider 发现。
+
+**反向同样成立：核心不得 `Schedule::command()` 插件命令。** 这不是「插件不该注册调度」的另一面，
+而是同一条边界上的另一个漏洞——核心一旦 schedule 了插件命令，插件停用/卸载后那条 Schedule
+还在，每天必然产出「命令不存在」的失败记录，而且核心被迫知道「这个功能装没装」。走清单声明
+就没有这个问题：只有已启用的插件才会被 `PluginScheduledTaskProvider` 扫到，插件不在，任务
+自然消失，核心一行都不用改。`AiAssistant` 的会话清理原先正是反例（核心
+`routes/console.php` 里 `Schedule::command('ai:prune-conversations')`），现已改为清单声明。
 
 插件有两种接入方式：
 
@@ -645,6 +683,7 @@ php artisan schedule:list
 | 上游开通/控制 | `backend/plugins/servers/kanghostx`               | 康乐虚拟主机插件                 |
 | 上游开通/控制 | `backend/plugins/servers/rainyun_rcs`             | 雨云 RCS 与附加资源账单         |
 | 上游开通/控制 | `backend/plugins/servers/demo_servers`            | 模拟上游插件                     |
+| 功能扩展      | `backend/plugins/addons/ai_assistant`             | 站内 AI 助手：对话、工具调用、导购与管理端治理   |
 | 功能扩展      | `backend/plugins/addons/demo_style`               | Addon、调度任务和 hook 示例插件  |
 | 功能扩展      | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge 兼容接口插件         |
 
@@ -660,6 +699,7 @@ php artisan schedule:list
 
 - [插件包规范（独立仓库分发与插件市场）](package-spec.md)
 - [支付宝当面付插件 demo](demo-ali-pay.md)
+- [AI 助手插件（对话、工具调用、导购与治理）](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
 - [康乐虚拟主机插件](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/kanghostx/README.md)
 - [TuraIDC 开放接口上游驱动插件](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/tura_open_api/README.md)
 
@@ -686,6 +726,21 @@ php artisan test tests/Unit/ScheduleHookServiceTest.php tests/Feature/PluginSimu
 ```bash
 cd backend
 php artisan test tests/Feature/MultiSmtpRoundRobinPluginTest.php
+```
+
+改过脚手架模板（`backend/stubs/plugin/*.stub`，与独立模板仓库同源）：
+
+```bash
+cd backend
+php vendor/bin/phpunit tests/Feature/PluginMakeCommandTest.php
+```
+
+插件自己的用例跟着插件目录走，`phpunit.xml.dist` 的 `Plugins` 套件会扫 `plugins` 下所有
+`*Test.php`：
+
+```bash
+cd backend
+php vendor/bin/phpunit plugins/addons/ai_assistant/tests
 ```
 
 涉及管理端页面：

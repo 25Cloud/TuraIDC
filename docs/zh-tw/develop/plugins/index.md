@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: 6fe02ad608a8c8215148ead2a5f400719ab10b673c6e4eec7e9b401dd0d84e6d
+sourceHash: 04ce3a49a438d7cd0d82b60faa48ba2d608d65d6fba3f36053c2272707ddac10
 generated: zh-tw
 ---
 
@@ -47,7 +47,38 @@ backend/plugins/{domain-directory}/{slug}/
 1. 遞迴載入 `lib/`、`logic/`、`controller/` 下 PHP 檔案。
 2. 如果存在 `vendor/autoload.php`，載入外掛依賴。
 3. 載入外掛根目錄 PHP 檔案，跳過 `config.php`。
-4. 相容載入 `src/`，用於舊結構過渡。
+4. 遞迴載入 `src/`：大外掛按 PSR-4 組織程式碼的首選位置（`AiAssistant`、`zjmf_bridge` 都用它）。
+
+### 大外掛必須自註冊 PSR-4
+
+上面前三步是「按目錄順序 `require` 每個檔案」。外掛只有幾個類時沒問題；一旦有幾十個類、
+且其中存在被多處 `extends`/`implements` 的介面（`AiTool`、`AiProviderInterface` 這類），
+`require` 順序一旦讓子類先於父類/接口出現，PHP 在**宣告階段**就直接 fatal
+（`Interface "..." not found`），而且報錯位置和真實原因（順序）看起來毫無關係。
+
+`AiAssistant` 的做法是加一個 `logic/autoload.php`，只給本外掛名稱空間註冊
+`spl_autoload_register`，讓父類與介面按需載入：
+
+```php
+spl_autoload_register(static function (string $class): void {
+    $prefix = 'TuraIDC\\Plugins\\Addons\\AiAssistant\\';
+    if (! str_starts_with($class, $prefix)) {
+        return;
+    }
+    $relativePath = str_replace('\\', '/', substr($class, strlen($prefix))).'.php';
+    foreach (['/src/', '/logic/'] as $segment) {
+        $path = dirname(__DIR__).$segment.$relativePath;
+        if (is_file($path)) {
+            require_once $path;
+
+            return;
+        }
+    }
+});
+```
+
+只註冊自身字首、不接管其它名稱空間、不主動載入業務類——它只是讓 `require` 順序不再是正確性
+前提。`logic/` 按字母序先於 `src/` 被載入，所以這個檔案本身一定先於任何業務類生效。
 
 ## 3. config.php 規範
 
@@ -339,6 +370,13 @@ return [
 
 外掛需要定時能力時只能通過外掛清單接入平臺排程，不要在外掛裡註冊 Laravel `Schedule`、系統級 Cron、全域性中介軟體或系統級 API 路由。生產環境仍只保留寶塔每分鐘執行一次 `php artisan schedule:run`；`backend/routes/console.php` 每分鐘驅動心跳，具體業務任務仍由 15 分鐘槽位去重，並由 `HeartbeatTaskRegistry` 和外掛 provider 發現。
 
+**反向同樣成立：核心不得 `Schedule::command()` 外掛命令。** 這不是「外掛不該註冊排程」的另一面，
+而是同一條邊界上的另一個漏洞——核心一旦 schedule 了外掛命令，外掛停用/解除安裝後那條 Schedule
+還在，每天必然產出「命令不存在」的失敗記錄，而且核心被迫知道「這個功能裝沒裝」。走清單宣告
+就沒有這個問題：只有已啟用的外掛才會被 `PluginScheduledTaskProvider` 掃到，外掛不在，任務
+自然消失，核心一行都不用改。`AiAssistant` 的會話清理原先正是反例（核心
+`routes/console.php` 裡 `Schedule::command('ai:prune-conversations')`），現已改為清單宣告。
+
 外掛有兩種接入方式：
 
 | 方式             | 清單欄位                     | 適用場景                                               | 執行入口                                              |
@@ -578,6 +616,9 @@ php artisan schedule:list
 ## 9. 安全邊界
 
 - 外掛不能自行註冊管理端選單、許可權、遷移和任意路由。
+- **反過來，核心必須為「外掛提供能力、頁面託管在核心」的入口收口**。因為上一條，這類頁面只能寫在核心裡，於是核心掌握了入口卻不掌握能力：外掛停用或解除安裝後，外掛 Provider 註冊的介面整體消失，而核心那邊選單還在、排程還在。
+  統一口徑是 `App\Support\OptionalFeature`（判定「已安裝且已啟用」）：管理端登入與取使用者資訊的介面下發 `features`，前端側欄分組與路由 `meta.requiresFeature` 按它隱藏，`routes/console.php` 裡引用外掛命令的 Schedule 按它決定是否登記。
+  新增一個這樣的能力只需兩處改動：`OptionalFeature::map()` 加一行、前端選單分組/路由加 `requiresFeature`。**不要再讓核心無條件引用外掛的東西**——側欄留死入口、每天一條「命令不存在」的失敗記錄都是這麼來的。
 - 支付回撥、訂單履約、賬務入賬、服務開通仍由平臺服務層控制。
 - 第三方呼叫必須封裝在外掛服務或平臺 driver 中，不放 Controller。
 - 回撥類可放 `controller/`，但平臺路由必須統一做簽名、冪等、日誌和審計。
@@ -649,6 +690,7 @@ php artisan schedule:list
 | 上游開通/控制 | `backend/plugins/servers/kanghostx`               | 康樂虛擬主機外掛                 |
 | 上游開通/控制 | `backend/plugins/servers/rainyun_rcs`             | 雨雲 RCS 與附加資源賬單         |
 | 上游開通/控制 | `backend/plugins/servers/demo_servers`            | 模擬上游外掛                     |
+| 功能擴充套件      | `backend/plugins/addons/ai_assistant`             | 站內 AI 助手：對話、工具呼叫、導購與管理端治理   |
 | 功能擴充套件      | `backend/plugins/addons/demo_style`               | Addon、排程任務和 hook 示例外掛  |
 | 功能擴充套件      | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge 相容介面外掛         |
 
@@ -664,6 +706,7 @@ php artisan schedule:list
 
 - [外掛包規範（獨立倉庫分發與外掛市場）](package-spec.md)
 - [支付寶當面付外掛 demo](demo-ali-pay.md)
+- [AI 助手外掛（對話、工具呼叫、導購與治理）](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
 - [康樂虛擬主機外掛](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/kanghostx/README.md)
 - [TuraIDC 開放介面上游驅動外掛](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/servers/tura_open_api/README.md)
 
@@ -690,6 +733,21 @@ php artisan test tests/Unit/ScheduleHookServiceTest.php tests/Feature/PluginSimu
 ```bash
 cd backend
 php artisan test tests/Feature/MultiSmtpRoundRobinPluginTest.php
+```
+
+改過腳手架模板（`backend/stubs/plugin/*.stub`，與獨立模板倉庫同源）：
+
+```bash
+cd backend
+php vendor/bin/phpunit tests/Feature/PluginMakeCommandTest.php
+```
+
+外掛自己的用例跟著外掛目錄走，`phpunit.xml.dist` 的 `Plugins` 套件會掃 `plugins` 下所有
+`*Test.php`：
+
+```bash
+cd backend
+php vendor/bin/phpunit plugins/addons/ai_assistant/tests
 ```
 
 涉及管理端頁面：

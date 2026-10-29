@@ -31,9 +31,21 @@
   路由、以及核心 `routes/console.php` 里那条 `ai:prune-conversations` 调度都无条件存在——
   点进去是一串报错，每天 04:40 还稳定产生一条「命令不存在」的失败记录。现新增
   `App\Support\OptionalFeature`（口径：已安装且已启用），管理端登录/取用户信息接口下发
-  `features`，前端侧栏分组与路由 `meta.requiresFeature` 按它隐藏并拦下直接访问，
-  插件命令的调度也按它登记。插件规范文档（`docs/develop/plugins/index.md` 第 9 节）
-  补上「核心必须为插件提供的入口收口」这一条
+  `features`，前端侧栏分组与路由 `meta.requiresFeature` 按它隐藏并拦下直接访问；
+  那条调度则改为**插件清单声明**（`info.extra.scheduled_tasks` → 心跳 15 分钟槽位），
+  核心 `routes/console.php` 里不再出现本插件任何命令。插件规范文档（`docs/develop/plugins/index.md`
+  第 7/9 节）补上「核心不得 schedule 插件命令」与「核心必须为插件提供的入口收口」两条
+- **AI 助手插件按插件规范补齐**：会话清理从核心调度改为清单声明的
+  `Automation/AiPruneConversationsTask`（逻辑抽到 `Services/AiConversationPruner`，与运维命令
+  `ai:prune-conversations` 共用一份）；插件开发指南补记「大插件用 `src/` + `logic/autoload.php`
+  自注册 PSR-4」的正式做法（核心加载器按目录顺序 `require`，子类先于接口加载会 fatal）；
+  插件清单补齐 `extra.scheduled_tasks`；`ai_assistant` 补进指南第 11 节插件包清单与第 12 节
+  说明文档索引
+- **脚手架模板（`plugin:make` / 独立模板仓库同源）补上踩过的坑**：生成的 README 现在自带
+  「配置在清单里由管理端渲染」「周期任务走 `extra.scheduled_tasks`」「不要做的事（不注册系统级
+  路由/调度/中间件、不建表带迁移、不让核心无条件引用插件）」三块约定，并新增
+  `PluginMakeCommandTest` 锁死模板契约（文件齐全 / 清单可 require / `--task` 真写进清单 /
+  README 不留占位符）——此前模板没有任何回归，改一处两边就开始漂
 - **站点商品查询补选描述列**：`ProductSiteService` 的分组商品与选购页商品详情两处显式
   `select` 漏选 `products.description`（此前 `ProductGroupV2QueryService::paginateSiteProducts`
   与 `ProductV2QueryService::siteProductListColumns` 已修过同一处），描述服务会静默退回

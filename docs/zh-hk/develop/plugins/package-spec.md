@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: 91594c221cedd64cc2acdb157a1a3142807e34248c0d82dd5919ecac51f86f03
+sourceHash: dcd124dd8b3511781a65ef4366afb088d49efadfefa874cb93f9b48db6b9f630
 generated: zh-hk
 ---
 
@@ -67,6 +67,8 @@ my-sms-plugin/
 ├── MySmsPlugin.php
 ├── lib/                 # 业务逻辑（运行时自动加载）
 ├── logic/               # 较重业务逻辑（可选）
+├── logic/autoload.php   # 类多时的 PSR-4 自注册（可选，见下）
+├── src/                 # 大插件的 PSR-4 代码根（可选）
 ├── src/Providers/       # ServiceProvider（可选）
 ├── tests/               # 插件自测（可选，建议）
 ├── README.md            # 插件说明、配置、动作表、许可
@@ -81,6 +83,13 @@ my-sms-plugin/
 - **不提交** `vendor/` 與運行時產物；自帶依賴（如 SDK）隨包分發時提供 `composer.json` 或鎖文件。
 - **版本號**遵循語義化版本 `MAJOR.MINOR.PATCH`，manifest `info.version` 與 Git tag 保持一致。
 - **許可**：插件獨立授權。隨主倉分發的內置插件遵循主倉協議；獨立倉庫插件可自選許可，但不得使用主倉代碼的派生實現而不履行主倉協議義務（見第 7 節）。
+- **類多就走 PSR-4**：核心 `PluginFileLoader` 是按目錄順序 `require` 的，幾十個類、且有被多處
+  `extends`/`implements` 的接口時，子類先於父類被加載會直接 fatal。此時把類放進 `src/` 並加
+  `logic/autoload.php` 只為本插件命名空間註冊 `spl_autoload_register`（完整寫法見
+  [開發指南](index.md) 第 2 節，`ai_assistant` 是現成例子）。
+- **週期能力只能走清單**：`info.extra.scheduled_tasks` / `schedule_hooks`，不要在插件裡註冊
+  Laravel `Schedule`；同樣**不要指望主倉 `routes/console.php` 去 schedule 你這個插件的命令**——
+  插件卸載後那條 Schedule 會留下每天一次「命令不存在」的失敗記錄。
 
 ## 4. 插件包格式
 
@@ -173,6 +182,13 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 - `php artisan plugin:make` 生成的就是「可發佈為獨立倉庫」的最小骨架：開發完成後刪除 `--provider`/`--task` 之外的空殼，補齊業務邏輯即可推送。
 - **獨立模板倉庫**：<https://github.com/25Cloud/turaidc-plugin-template>（已啟用 Template 屬性）。開發者點 **Use this template** 一鍵複製，再執行 `php scripts/rename.php <slug> [<显示名>]` 全局替換（類名/命名空間/動作），含 CI（pint / php -l / manifest 校驗）與 MIT 許可模板。
 - 模板與 `plugin:make` 二選一即可，產物契約完全一致：模板用 addons/my_plugin 作佔位，命令按實際 domain/slug 直接生成。
+- **模板本身有迴歸**：`backend/stubs/plugin/*.stub` 是主倉這一側的模板產物，
+  `tests/Feature/PluginMakeCommandTest.php` 會生成一份骨架並校驗「文件齊全 / 清單能被 require /
+  `--task` 真的寫進 `extra.scheduled_tasks` / README 不留 `{{...}}` 佔位符」。改模板必須讓這條
+  用例保持綠，獨立模板倉庫同步時以它的產物為對照。
+- 模板生成的 `README.md` 自帶三塊約定：配置在清單裡（管理端按 schema 渲染表單，不用自己寫頁面）、
+  週期任務走 `extra.scheduled_tasks`、以及「不要做的事」（不註冊系統級路由/調度/中間件、
+  不建錶帶遷移、不讓核心無條件引用插件）。新增段落時別把它們刪掉——它們正是踩過的坑。
 
 ## 7. 協議與安全邊界
 
@@ -187,6 +203,12 @@ cd backend
 php artisan plugin:make sms demo_check --force
 php -l plugins/sms/demo_check/DemoCheckPlugin.php
 php vendor/bin/pint --test plugins/sms/demo_check
+
+# 模板契约（改过 stubs/plugin/*.stub 必跑）
+php vendor/bin/phpunit tests/Feature/PluginMakeCommandTest.php
+
+# 插件自己的用例
+php vendor/bin/phpunit plugins/addons/ai_assistant/tests
 
 # 插件市场
 php artisan plugin:market:list --force

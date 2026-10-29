@@ -60,6 +60,8 @@ my-sms-plugin/
 ├── MySmsPlugin.php
 ├── lib/                 # 业务逻辑（运行时自动加载）
 ├── logic/               # 较重业务逻辑（可选）
+├── logic/autoload.php   # 类多时的 PSR-4 自注册（可选，见下）
+├── src/                 # 大插件的 PSR-4 代码根（可选）
 ├── src/Providers/       # ServiceProvider（可选）
 ├── tests/               # 插件自测（可选，建议）
 ├── README.md            # 插件说明、配置、动作表、许可
@@ -74,6 +76,13 @@ my-sms-plugin/
 - **不提交** `vendor/` 与运行时产物；自带依赖（如 SDK）随包分发时提供 `composer.json` 或锁文件。
 - **版本号**遵循语义化版本 `MAJOR.MINOR.PATCH`，manifest `info.version` 与 Git tag 保持一致。
 - **许可**：插件独立授权。随主仓分发的内置插件遵循主仓协议；独立仓库插件可自选许可，但不得使用主仓代码的派生实现而不履行主仓协议义务（见第 7 节）。
+- **类多就走 PSR-4**：核心 `PluginFileLoader` 是按目录顺序 `require` 的，几十个类、且有被多处
+  `extends`/`implements` 的接口时，子类先于父类被加载会直接 fatal。此时把类放进 `src/` 并加
+  `logic/autoload.php` 只为本插件命名空间注册 `spl_autoload_register`（完整写法见
+  [开发指南](index.md) 第 2 节，`ai_assistant` 是现成例子）。
+- **周期能力只能走清单**：`info.extra.scheduled_tasks` / `schedule_hooks`，不要在插件里注册
+  Laravel `Schedule`；同样**不要指望主仓 `routes/console.php` 去 schedule 你这个插件的命令**——
+  插件卸载后那条 Schedule 会留下每天一次「命令不存在」的失败记录。
 
 ## 4. 插件包格式
 
@@ -166,6 +175,13 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 - `php artisan plugin:make` 生成的就是「可发布为独立仓库」的最小骨架：开发完成后删除 `--provider`/`--task` 之外的空壳，补齐业务逻辑即可推送。
 - **独立模板仓库**：<https://github.com/25Cloud/turaidc-plugin-template>（已启用 Template 属性）。开发者点 **Use this template** 一键复制，再执行 `php scripts/rename.php <slug> [<显示名>]` 全局替换（类名/命名空间/动作），含 CI（pint / php -l / manifest 校验）与 MIT 许可模板。
 - 模板与 `plugin:make` 二选一即可，产物契约完全一致：模板用 addons/my_plugin 作占位，命令按实际 domain/slug 直接生成。
+- **模板本身有回归**：`backend/stubs/plugin/*.stub` 是主仓这一侧的模板产物，
+  `tests/Feature/PluginMakeCommandTest.php` 会生成一份骨架并校验「文件齐全 / 清单能被 require /
+  `--task` 真的写进 `extra.scheduled_tasks` / README 不留 `{{...}}` 占位符」。改模板必须让这条
+  用例保持绿，独立模板仓库同步时以它的产物为对照。
+- 模板生成的 `README.md` 自带三块约定：配置在清单里（管理端按 schema 渲染表单，不用自己写页面）、
+  周期任务走 `extra.scheduled_tasks`、以及「不要做的事」（不注册系统级路由/调度/中间件、
+  不建表带迁移、不让核心无条件引用插件）。新增段落时别把它们删掉——它们正是踩过的坑。
 
 ## 7. 协议与安全边界
 
@@ -180,6 +196,12 @@ cd backend
 php artisan plugin:make sms demo_check --force
 php -l plugins/sms/demo_check/DemoCheckPlugin.php
 php vendor/bin/pint --test plugins/sms/demo_check
+
+# 模板契约（改过 stubs/plugin/*.stub 必跑）
+php vendor/bin/phpunit tests/Feature/PluginMakeCommandTest.php
+
+# 插件自己的用例
+php vendor/bin/phpunit plugins/addons/ai_assistant/tests
 
 # 插件市场
 php artisan plugin:market:list --force

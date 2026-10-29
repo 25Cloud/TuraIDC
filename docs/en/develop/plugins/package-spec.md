@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: 91594c221cedd64cc2acdb157a1a3142807e34248c0d82dd5919ecac51f86f03
+sourceHash: dcd124dd8b3511781a65ef4366afb088d49efadfefa874cb93f9b48db6b9f630
 translatedAt: 2026-10-26
 ---
 
@@ -66,6 +66,8 @@ my-sms-plugin/
 ├── MySmsPlugin.php
 ├── lib/                 # 业务逻辑（运行时自动加载）
 ├── logic/               # 较重业务逻辑（可选）
+├── logic/autoload.php   # 类多时的 PSR-4 自注册（可选，见下）
+├── src/                 # 大插件的 PSR-4 代码根（可选）
 ├── src/Providers/       # ServiceProvider（可选）
 ├── tests/               # 插件自测（可选，建议）
 ├── README.md            # 插件说明、配置、动作表、许可
@@ -80,6 +82,8 @@ Conventions:
 - **Do not commit** `vendor/` or runtime artifacts; when shipping bundled dependencies (such as an SDK) with the package, provide `composer.json` or a lock file.
 - **Version numbers** follow semantic versioning `MAJOR.MINOR.PATCH`, and the manifest `info.version` stays consistent with the Git tag.
 - **License**: plugins are licensed independently. Built-in plugins distributed with the main repository follow the main repository license; standalone repositories may choose their own license, but an implementation derived from main-repository code must still fulfil the main repository's license obligations (see Section 7).
+- **Go PSR-4 once classes pile up**: core's `PluginFileLoader` `require`s files in directory order, so with dozens of classes and interfaces `extends`/`implements`-ed in many places, a child loaded before its parent fails outright. Put the classes in `src/` and add a `logic/autoload.php` that registers `spl_autoload_register` for your namespace only (full example in the [development guide](index.md) Section 2; `ai_assistant` is a working reference).
+- **Periodic capability only through the manifest**: `info.extra.scheduled_tasks` / `schedule_hooks`, never a Laravel `Schedule` inside the plugin. Equally, **do not expect the main repository's `routes/console.php` to schedule your plugin command** — that `Schedule` entry outlives plugin removal and leaves one "command does not exist" failure per day.
 
 ## 4. Plugin Package Format
 
@@ -172,6 +176,14 @@ Both the index and the code download URLs accept an acceleration mirror prefix, 
 - What `php artisan plugin:make` generates is precisely the minimal skeleton that "can be published as a standalone repository": once development is done, remove the empty stubs other than the `--provider`/`--task` ones, fill in the business logic, and push.
 - **Standalone template repository**: <https://github.com/25Cloud/turaidc-plugin-template> (the Template flag is enabled). Developers click **Use this template** to copy it in one step, then run `php scripts/rename.php <slug> [<显示名>]` to replace names globally (class name/namespace/action); it includes CI (pint / php -l / manifest validation) and an MIT license template.
 - The template and `plugin:make` are interchangeable, and the resulting contract is identical: the template uses addons/my_plugin as a placeholder, while the command generates directly from the actual domain/slug.
+- **The template itself has regression coverage**: `backend/stubs/plugin/*.stub` is the main repository's side of the template, and
+  `tests/Feature/PluginMakeCommandTest.php` generates a skeleton and asserts "all files present / the manifest can be required /
+  `--task` really lands in `extra.scheduled_tasks` / the README has no `{{...}}` placeholders left". Any template change must keep
+  that test green, and a standalone template repository syncs against its output.
+- The `README.md` the template generates carries three standing conventions: configuration belongs in the manifest (the admin
+  renders a form from the schema, so you do not write a page yourself), periodic tasks go through `extra.scheduled_tasks`, and
+  "things not to do" (no system-level routes/schedules/middleware, no tables or migrations, no letting core reference plugin
+  artefacts unconditionally). Do not drop those paragraphs when adding sections — they are exactly the pitfalls already hit.
 
 ## 7. License and Security Boundaries
 
@@ -186,6 +198,12 @@ cd backend
 php artisan plugin:make sms demo_check --force
 php -l plugins/sms/demo_check/DemoCheckPlugin.php
 php vendor/bin/pint --test plugins/sms/demo_check
+
+# 模板契约（改过 stubs/plugin/*.stub 必跑）
+php vendor/bin/phpunit tests/Feature/PluginMakeCommandTest.php
+
+# 插件自己的用例
+php vendor/bin/phpunit plugins/addons/ai_assistant/tests
 
 # 插件市场
 php artisan plugin:market:list --force
