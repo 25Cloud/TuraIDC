@@ -22,11 +22,15 @@ return [
         'raw_mirror' => env('PLUGIN_MARKET_RAW_MIRROR', 'https://ghfast.top/'),
 
         // 插件代码 archive 下载模板。{repo} 替换为 owner/repo；{ref} 替换为
-        // sha（若条目提供）或 refs/tags/{tag}。
+        // sha（若条目提供）、refs/tags/{tag}，或 monorepo 条目的 refs/heads/{ref}。
         'archive_zip_url' => env('PLUGIN_MARKET_ARCHIVE_ZIP_URL', 'https://github.com/{repo}/archive/{ref}.zip'),
 
         // 代码下载加速镜像前缀（拼在 archive_zip_url 前）。
         'download_mirror' => env('PLUGIN_MARKET_DOWNLOAD_MIRROR', 'https://ghfast.top/'),
+
+        // monorepo 条目（repo + path + ref）下载的是整仓快照，比独立仓库大一到两个数量级，
+        // 用单独的超时上限；实际取 max(timeout, 本值)。
+        'monorepo_timeout' => (int) env('PLUGIN_MARKET_MONOREPO_TIMEOUT', 120),
 
         // 插件包临时工作目录（storage/app/private/ 下）。
         'work_dir' => env('PLUGIN_MARKET_WORK_DIR', 'plugin-market'),

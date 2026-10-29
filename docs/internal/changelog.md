@@ -35,6 +35,17 @@
   那条调度则改为**插件清单声明**（`info.extra.scheduled_tasks` → 心跳 15 分钟槽位），
   核心 `routes/console.php` 里不再出现本插件任何命令。插件规范文档（`docs/develop/plugins/index.md`
   第 7/9 节）补上「核心不得 schedule 插件命令」与「核心必须为插件提供的入口收口」两条
+- **插件市场支持 monorepo 条目**：索引规范一直写着「插件随主仓发布就用 `repo` + `path` + `ref`」，
+  但安装器 `PluginMarketService::downloadArchive()` 只读 `repo` / `tag` / `sha`，`path` / `ref`
+  在代码里从未被引用——这类条目执行 `plugin:market:install` 会直接报「缺少 tag/sha」。
+  现补齐：`path` / `ref` 进入条目归一化；`{ref}` 按 `sha` → `refs/tags/{tag}` → `refs/heads/{ref}`
+  解析，三者皆无时报可读错误；带 `path` 时按声明子目录**精确落位**（monorepo 存档里每个插件
+  的 `config.php` 深度相同，原先「取深度最小」会挑到另一个插件）；`path` 逐段校验并拒绝 `..`
+  与绝对路径；monorepo 整仓下载单独的超时上限（`PLUGIN_MARKET_MONOREPO_TIMEOUT`，默认 120 秒）。
+  另有 `PluginMarketMonorepoEntryTest` 锁住这四条
+- **插件市场索引的 `ai_assistant` 条目改为可安装形态**：原条目是 monorepo 形态且落在上面那个
+  缺口上。现改为指向独立发行镜像仓 + `tag v1.1.0` + `sha` 审核锁定，`version` 同步到 1.1.0；
+  索引 README 补齐「两种条目形态各自的要求」
 - **AI 助手插件按插件规范补齐**：会话清理从核心调度改为清单声明的
   `Automation/AiPruneConversationsTask`（逻辑抽到 `Services/AiConversationPruner`，与运维命令
   `ai:prune-conversations` 共用一份）；插件开发指南补记「大插件用 `src/` + `logic/autoload.php`

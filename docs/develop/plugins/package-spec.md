@@ -170,6 +170,25 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 
 索引与代码下载地址均可加加速镜像前缀，见 `config/plugins.php` 的 `plugins.market`（`PLUGIN_MARKET_RAW_MIRROR` / `PLUGIN_MARKET_DOWNLOAD_MIRROR`，默认 `https://ghfast.top/`，留空则直连）。
 
+### 5.5 monorepo 条目（插件随主仓一起发布）
+
+条目可以指向一个**仓库内的子目录**，而不是独立仓库：
+
+```json
+{ "repo": "25Cloud/TuraIDC", "path": "backend/plugins/addons/ai_assistant", "ref": "main", "version": "1.1.0" }
+```
+
+规则：
+
+- **`path` 必填且会被校验**：逐段只允许 `[A-Za-z0-9._-]`，拒绝 `..`、空段与绝对路径。索引是远端数据，绝不能让它把安装流程带出解压目录。
+- **定位靠 `path`，不靠猜**：monorepo 存档里每个插件都有自己的 `config.php`、而且深度完全相同，按「深度最小」挑会随手拿到**另一个插件**。带 `path` 时安装器直接落到 `{解压根}/{仓库快照目录}/{path}`，不存在就报错，绝不退化成猜。
+- **`{ref}` 解析优先级**：`sha` → `refs/tags/{tag}` → `refs/heads/{ref}`（条目里写全 `refs/...` 则原样使用）。三者都没有时报「插件条目缺少 tag/sha/ref」。
+- **`sha` 可与 `path` 叠加**，这是最稳的形态：既能精确取子目录，又保留「审核锁定 + 顶层目录名强校验」的防篡改能力。只写 `ref: main` 等于跟随分支漂移，不建议用于已上架条目。
+- **下载体量差一到两个数量级**：monorepo 下载的是整仓快照（几十 MB），独立仓库通常几百 KB。超时取 `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`，后者默认 120 秒。
+- **随主仓内置发布的插件优先提供独立发行仓**：条目指向发行仓的 `tag` + `sha`，下载量小、锁定强、不依赖主仓分支状态。官方 AI 助手就是这么做的（主仓 `backend/plugins/addons/ai_assistant` 是唯一真源，发行镜像仓 [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) 逐字节同步并按版本打 tag）。monorepo 形态留给「不想额外开仓」的场景。
+
+回归：`tests/Feature/PluginMarketMonorepoEntryTest.php` 锁住「path/ref 不被 normalize 丢掉、`{ref}` 优先级、按 path 精确落位而不是挑到别的插件、越界 path 被拒」。
+
 ## 6. 脚手架与模板的关联
 
 - `php artisan plugin:make` 生成的就是「可发布为独立仓库」的最小骨架：开发完成后删除 `--provider`/`--task` 之外的空壳，补齐业务逻辑即可推送。

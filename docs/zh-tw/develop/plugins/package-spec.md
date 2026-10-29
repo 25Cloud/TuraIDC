@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: dcd124dd8b3511781a65ef4366afb088d49efadfefa874cb93f9b48db6b9f630
+sourceHash: 5db66af4846a3a268e38e5eb8aeb90d82ba6269637058972301e5fbf0466d429
 generated: zh-tw
 ---
 
@@ -176,6 +176,25 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 ### 5.4 國內訪問
 
 索引與程式碼下載地址均可加加速映象字首，見 `config/plugins.php` 的 `plugins.market`（`PLUGIN_MARKET_RAW_MIRROR` / `PLUGIN_MARKET_DOWNLOAD_MIRROR`，預設 `https://ghfast.top/`，留空則直連）。
+
+### 5.5 monorepo 條目（外掛隨主倉一起釋出）
+
+條目可以指向一個**倉庫內的子目錄**，而不是獨立倉庫：
+
+```json
+{ "repo": "25Cloud/TuraIDC", "path": "backend/plugins/addons/ai_assistant", "ref": "main", "version": "1.1.0" }
+```
+
+規則：
+
+- **`path` 必填且會被校驗**：逐段只允許 `[A-Za-z0-9._-]`，拒絕 `..`、空段與絕對路徑。索引是遠端資料，絕不能讓它把安裝流程帶出解壓目錄。
+- **定位靠 `path`，不靠猜**：monorepo 存檔裡每個外掛都有自己的 `config.php`、而且深度完全相同，按「深度最小」挑會隨手拿到**另一個外掛**。帶 `path` 時安裝器直接落到 `{解压根}/{仓库快照目录}/{path}`，不存在就報錯，絕不退化成猜。
+- **`{ref}` 解析優先順序**：`sha` → `refs/tags/{tag}` → `refs/heads/{ref}`（條目裡寫全 `refs/...` 則原樣使用）。三者都沒有時報「外掛條目缺少 tag/sha/ref」。
+- **`sha` 可與 `path` 疊加**，這是最穩的形態：既能精確取子目錄，又保留「稽核鎖定 + 頂層目錄名強校驗」的防篡改能力。只寫 `ref: main` 等於跟隨分支漂移，不建議用於已上架條目。
+- **下載體量差一到兩個數量級**：monorepo 下載的是整倉快照（幾十 MB），獨立倉庫通常幾百 KB。超時取 `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`，後者預設 120 秒。
+- **隨主倉內建釋出的外掛優先提供獨立發行倉**：條目指向發行倉的 `tag` + `sha`，下載量小、鎖定強、不依賴主倉分支狀態。官方 AI 助手就是這麼做的（主倉 `backend/plugins/addons/ai_assistant` 是唯一真源，發行映象倉 [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) 逐位元組同步並按版本打 tag）。monorepo 形態留給「不想額外開倉」的場景。
+
+迴歸：`tests/Feature/PluginMarketMonorepoEntryTest.php` 鎖住「path/ref 不被 normalize 丟掉、`{ref}` 優先順序、按 path 精確落位而不是挑到別的外掛、越界 path 被拒」。
 
 ## 6. 腳手架與模板的關聯
 

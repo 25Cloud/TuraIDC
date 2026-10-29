@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: dcd124dd8b3511781a65ef4366afb088d49efadfefa874cb93f9b48db6b9f630
+sourceHash: 5db66af4846a3a268e38e5eb8aeb90d82ba6269637058972301e5fbf0466d429
 translatedAt: 2026-10-26
 ---
 
@@ -170,6 +170,25 @@ With `--zip`, the slug is read from the manifest inside the package and compared
 ### 5.4 Access from Mainland China
 
 Both the index and the code download URLs accept an acceleration mirror prefix, see `plugins.market` in `config/plugins.php` (`PLUGIN_MARKET_RAW_MIRROR` / `PLUGIN_MARKET_DOWNLOAD_MIRROR`, default `https://ghfast.top/`; leave empty for a direct connection).
+
+### 5.5 monorepo entries (plugin shipped inside the main repository)
+
+An entry may point at a **subdirectory of a repository** instead of a standalone repository:
+
+```json
+{ "repo": "25Cloud/TuraIDC", "path": "backend/plugins/addons/ai_assistant", "ref": "main", "version": "1.1.0" }
+```
+
+Rules:
+
+- **`path` is required and validated**: each segment may only contain `[A-Za-z0-9._-]`; `..`, empty segments and absolute paths are rejected. The index is remote data, so it must never be able to walk the install flow out of the extraction directory.
+- **Location comes from `path`, never from guessing**: in a monorepo archive every plugin has its own `config.php` and they all sit at the *same depth*, so picking "the shallowest one" can hand you **a different plugin**. With `path` the installer goes straight to `{extract root}/{repo snapshot dir}/{path}` and fails if it is missing — it never degrades into guessing.
+- **`{ref}` resolution order**: `sha` → `refs/tags/{tag}` → `refs/heads/{ref}` (a full `refs/...` value is used verbatim). With none of them present it reports "missing tag/sha/ref".
+- **`sha` may be combined with `path`**, and that is the strongest form: it selects the exact subdirectory *and* keeps the anti-tampering guarantees (audit pinning plus the top-level directory name check). `ref: main` alone follows a moving branch and is not recommended for an already-listed entry.
+- **Download size differs by one to two orders of magnitude**: a monorepo entry downloads the whole repository snapshot (tens of MB), a standalone repository is usually a few hundred KB. The timeout is `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`, the latter defaulting to 120 seconds.
+- **A plugin shipped inside the main repository should still provide a standalone release repository**: point the entry at that repository's `tag` + `sha` — smaller download, stronger pinning, and no dependency on the main repository's branch state. The official AI assistant does exactly this (the main repository's `backend/plugins/addons/ai_assistant` is the single source of truth, while the release mirror [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) mirrors it byte for byte and tags each version). The monorepo form is there for "I don't want to run a second repository".
+
+Regression: `tests/Feature/PluginMarketMonorepoEntryTest.php` locks down "path/ref survive normalisation, `{ref}` priority, exact placement by path instead of picking another plugin, and out-of-tree paths being rejected".
 
 ## 6. Relationship Between Scaffolding and the Template
 

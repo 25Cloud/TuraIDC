@@ -119,7 +119,7 @@ class PluginMarketService
                 $this->assertArchiveTopMatches($extractDir, (string) $entry['repo'], (string) $entry['sha'], $slug);
             }
 
-            $pluginRoot = $this->locatePluginRoot($extractDir);
+            $pluginRoot = $this->locatePluginRoot($extractDir, (string) (($entry['path'] ?? '') ?: ''));
             $manifest = $this->readManifest($pluginRoot, $slug);
             $destDir = $this->pluginDestination($manifest['domain'], $slug);
 
@@ -145,23 +145,26 @@ class PluginMarketService
     }
 
     /**
+     * 下载插件代码 archive。
+     *
+     * 两种条目形态（见索引仓库 README）：
+     * - **独立仓库**：`repo` + `tag`（或 `sha`），archive 顶层就是插件目录；
+     * - **monorepo**：`repo` + `path` + `ref`（可与 `sha` 叠加做审核锁定），
+     *   archive 顶层是仓库快照，插件在同名的 `path` 子目录里。
+     *
+     * 下载内容体量按形态差很多：独立仓库通常几百 KB，monorepo 是整仓快照
+     * （几十 MB），所以两者用不同的超时配置，避免 monorepo 条目在默认 30s 上超时。
+     *
      * @param  array<string, mixed>  $entry
      */
     private function downloadArchive(array $entry, string $slug, string $workDir): string
     {
         $repo = trim((string) ($entry['repo'] ?? ''));
-        $tag = trim((string) ($entry['tag'] ?? ''));
-        $sha = trim((string) ($entry['sha'] ?? ''));
-
         if ($repo === '' || ! str_contains($repo, '/')) {
             throw new BusinessException("插件条目缺少合法的 repo：{$slug}", 42200);
         }
-        if ($tag === '' && $sha === '') {
-            throw new BusinessException("插件条目缺少 tag/sha：{$slug}", 42200);
-        }
 
-        // sha 优先：审核锁定到具体 commit；否则锁定到 tag。
-        $ref = $sha !== '' ? $sha : 'refs/tags/'.$tag;
+        $ref = $this->archiveRef($entry, $slug);
         $url = str_replace(
             ['{repo}', '{ref}'],
             [$repo, $ref],
@@ -169,13 +172,54 @@ class PluginMarketService
         );
         $mirror = (string) config('plugins.market.download_mirror', '');
 
-        $response = Http::timeout($this->timeout())->get($mirror.$url);
+        $timeout = $this->isMonorepoEntry($entry)
+            ? max($this->timeout(), (int) config('plugins.market.monorepo_timeout', 120))
+            : $this->timeout();
+
+        $response = Http::timeout($timeout)->get($mirror.$url);
         $response->throw();
 
-        $zipPath = $workDir.DIRECTORY_SEPARATOR.$slug.'-'.($sha !== '' ? $sha : $tag).'.zip';
+        $zipPath = $workDir.DIRECTORY_SEPARATOR.$slug.'-'.preg_replace('/[^A-Za-z0-9._-]/', '-', $ref).'.zip';
         file_put_contents($zipPath, $response->body());
 
         return $zipPath;
+    }
+
+    /**
+     * 解析 archive 的 {ref} 段：sha 优先（审核锁定），其次 tag，最后 monorepo 的 ref。
+     *
+     * @param  array<string, mixed>  $entry
+     */
+    private function archiveRef(array $entry, string $slug): string
+    {
+        $sha = trim((string) ($entry['sha'] ?? ''));
+        if ($sha !== '') {
+            return $sha;
+        }
+
+        $tag = trim((string) ($entry['tag'] ?? ''));
+        if ($tag !== '') {
+            return 'refs/tags/'.$tag;
+        }
+
+        $ref = trim((string) ($entry['ref'] ?? ''));
+        if ($ref !== '') {
+            // 允许条目直接写 refs/heads/x 或 refs/tags/x，裸分支名按分支处理
+            return str_starts_with($ref, 'refs/') ? $ref : 'refs/heads/'.$ref;
+        }
+
+        throw new BusinessException(
+            "插件条目缺少 tag/sha/ref：{$slug}（独立仓库填 tag 或 sha；monorepo 填 path + ref）",
+            42200
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $entry
+     */
+    private function isMonorepoEntry(array $entry): bool
+    {
+        return trim((string) ($entry['path'] ?? '')) !== '';
     }
 
     private function copyLocalZip(string $zipPath, string $slug, string $workDir): string
@@ -246,8 +290,20 @@ class PluginMarketService
         throw new BusinessException("插件包与审核锁定的 commit（{$sha}）不一致，已拒绝安装：{$slug}", 42200);
     }
 
-    private function locatePluginRoot(string $extractDir): string
+    /**
+     * 定位插件根目录（含 `config.php` 的那一层）。
+     *
+     * - 独立仓库形态：archive 顶层就是插件目录，取「深度最小的 config.php 所在目录」；
+     * - monorepo 形态：archive 是整仓快照，里面每个插件都有自己的 config.php 且**深度相同**，
+     *   靠深度排序会随机挑中另一个插件。所以这种情况必须按条目声明的 `path` 精确落位。
+     */
+    private function locatePluginRoot(string $extractDir, string $path = ''): string
     {
+        $path = trim($path);
+        if ($path !== '') {
+            return $this->locateMonorepoPluginRoot($extractDir, $path);
+        }
+
         $candidates = [];
         $iterator = new RecursiveIteratorIterator(
             new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS),
@@ -270,6 +326,55 @@ class PluginMarketService
         usort($candidates, fn (string $a, string $b): int => substr_count($a, DIRECTORY_SEPARATOR) <=> substr_count($b, DIRECTORY_SEPARATOR));
 
         return $candidates[0];
+    }
+
+    /**
+     * monorepo 形态：`{解压根}/{仓库快照目录}/{条目 path}`。
+     */
+    private function locateMonorepoPluginRoot(string $extractDir, string $path): string
+    {
+        $normalized = $this->normalizeEntryPath($path);
+
+        $top = null;
+        foreach (new RecursiveDirectoryIterator($extractDir, RecursiveDirectoryIterator::SKIP_DOTS) as $item) {
+            /** @var SplFileInfo $item */
+            if ($item->isDir()) {
+                $top = $item->getPathname();
+
+                break;
+            }
+        }
+
+        if ($top === null) {
+            throw new BusinessException('插件包内没有仓库快照目录，无法按条目 path 定位插件', 42200);
+        }
+
+        $candidate = $top.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $normalized);
+        if (! is_file($candidate.DIRECTORY_SEPARATOR.'config.php')) {
+            throw new BusinessException("插件包内不存在条目声明的 path：{$path}", 42200);
+        }
+
+        return $candidate;
+    }
+
+    /**
+     * 校验索引条目里的 `path`：索引是远端数据，绝不能让它把安装流程带出解压目录。
+     */
+    private function normalizeEntryPath(string $path): string
+    {
+        $normalized = trim(str_replace('\\', '/', trim($path)), '/');
+        if ($normalized === '') {
+            throw new BusinessException('插件条目 path 为空', 42200);
+        }
+
+        foreach (explode('/', $normalized) as $segment) {
+            if ($segment === '' || $segment === '.' || $segment === '..'
+                || preg_match('/^[A-Za-z0-9._-]+$/', $segment) !== 1) {
+                throw new BusinessException("插件条目 path 非法：{$path}", 42200);
+            }
+        }
+
+        return $normalized;
     }
 
     /**
@@ -346,6 +451,9 @@ class PluginMarketService
                 'repo' => (string) ($entry['repo'] ?? ''),
                 'tag' => (string) ($entry['tag'] ?? ''),
                 'sha' => (string) ($entry['sha'] ?? ''),
+                // monorepo 形态：插件在仓库内的子目录 + 所在分支/tag
+                'path' => trim((string) ($entry['path'] ?? '')),
+                'ref' => trim((string) ($entry['ref'] ?? '')),
                 'released_at' => (string) ($entry['released_at'] ?? ''),
                 'license' => (string) ($entry['license'] ?? ''),
                 'homepage' => (string) ($entry['homepage'] ?? ''),
