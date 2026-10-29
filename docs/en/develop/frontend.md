@@ -3,7 +3,7 @@ status: current
 updated: 2026-07-02
 owner: frontend
 source: develop/frontend.md
-sourceHash: 4cf822eee5a439df549f27682d11685d30a44452f039c1915255f0d364add059
+sourceHash: 2b3064c3af1da2812df4e4f011513fae579e260923f888a8c8cfe65863dc79b7
 translatedAt: 2026-10-26
 ---
 

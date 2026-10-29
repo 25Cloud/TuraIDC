@@ -1,6 +1,6 @@
 ---
 source: develop/backend-structure.md
-sourceHash: 6ab362a484c0c922a100c0afd10890e6c7313a0e320da3c65f1429908c40eb05
+sourceHash: b94ba66805e4837560cc32413785fc76b20eab7aeb84a6b1664e79aab2173423
 translatedAt: 2026-10-26
 ---
 
@@ -251,7 +251,7 @@ If a class serves only one single business domain, put it back into that busines
 | ----------------------------------- | ------------------------------------------------------ |
 | Admin-side controller               | `app/Http/Controllers/Admin/`                          |
 | User-side controller                | `app/Http/Controllers/Client/`                         |
-| Public site controller              | `app/Http/Controllers/`                                |
+| Public site controller              | `app/Http/Controllers/Site/V2/`                        |
 | Admin-side request validation       | `app/Http/Requests/Admin/<业务域>/`                    |
 | User-side request validation        | `app/Http/Requests/Client/<业务域>/`                   |
 | Business resource class             | `app/Http/Resources/<业务域>/`, or split by side first |
@@ -278,7 +278,7 @@ Based on the current state of the repository, prioritize keeping the following a
 
 - New business services go into subdirectories first and are no longer flat by default
 - New request objects must be split by side
-- New public site controllers may only go at the top level of `Controllers/`
+- New public site controllers may only go in `Controllers/Site/V2/`
 - New explanatory documents do not go in the `backend/` root directory
 
 ### 11.2 Things Not Done for Now

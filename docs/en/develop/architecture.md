@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/architecture.md
-sourceHash: 3fec19539f44c9ba8385420bcc0b164a9fb01fa1b3058990e74e4f95b6c69fa4
+sourceHash: 965039831acfd7259096942bba5e8222dbec842228c65395a536ef6b89f2d703
 translatedAt: 2026-10-26
 ---
 

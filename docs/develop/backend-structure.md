@@ -245,7 +245,7 @@
 | --------------- | ------------------------------------------- |
 | 管理端控制器    | `app/Http/Controllers/Admin/`               |
 | 用户端控制器    | `app/Http/Controllers/Client/`              |
-| 公开站点控制器  | `app/Http/Controllers/`                     |
+| 公开站点控制器  | `app/Http/Controllers/Site/V2/`             |
 | 管理端请求校验  | `app/Http/Requests/Admin/<业务域>/`         |
 | 用户端请求校验  | `app/Http/Requests/Client/<业务域>/`        |
 | 业务资源类      | `app/Http/Resources/<业务域>/` 或先按端区分 |
@@ -272,7 +272,7 @@
 
 - 新增业务服务优先进入子目录，不再默认平铺
 - 新增请求对象必须按端区分
-- 新增公开站点控制器只允许放 `Controllers/` 顶层
+- 新增公开站点控制器只允许放 `Controllers/Site/V2/`
 - 新增文档型说明不放 `backend/` 根目录
 
 ### 11.2 暂不做的事

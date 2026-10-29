@@ -1,6 +1,6 @@
 ---
 source: develop/backend-structure.md
-sourceHash: 915c6d1592589d88f73c2812c46c3dd8dcd48e55a595c1a39901744201ec6880
+sourceHash: b94ba66805e4837560cc32413785fc76b20eab7aeb84a6b1664e79aab2173423
 generated: zh-hk
 ---
 
@@ -252,7 +252,7 @@ generated: zh-hk
 | --------------- | ------------------------------------------- |
 | 管理端控制器    | `app/Http/Controllers/Admin/`               |
 | 用戶端控制器    | `app/Http/Controllers/Client/`              |
-| 公開站點控制器  | `app/Http/Controllers/`                     |
+| 公開站點控制器  | `app/Http/Controllers/Site/V2/`             |
 | 管理端請求校驗  | `app/Http/Requests/Admin/<业务域>/`         |
 | 用戶端請求校驗  | `app/Http/Requests/Client/<业务域>/`        |
 | 業務資源類      | `app/Http/Resources/<业务域>/` 或先按端區分 |
@@ -279,7 +279,7 @@ generated: zh-hk
 
 - 新增業務服務優先進入子目錄，不再默認平鋪
 - 新增請求對象必須按端區分
-- 新增公開站點控制器只允許放 `Controllers/` 頂層
+- 新增公開站點控制器只允許放 `Controllers/Site/V2/`
 - 新增文檔型説明不放 `backend/` 根目錄
 
 ### 11.2 暫不做的事
