@@ -6,10 +6,11 @@ namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Catalog;
 
 use App\Exceptions\BusinessException;
 use App\Models\Product;
+use App\Services\ProductCatalog\ProductV2QueryService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\DescribesProductForSale;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\ProductCatalog\ProductV2QueryService;
 
 /**
  * 商品详情：配置项结构与可选周期。
@@ -19,6 +20,7 @@ use App\Services\ProductCatalog\ProductV2QueryService;
  */
 final class GetProductDetailTool extends AiTool
 {
+    use DescribesProductForSale;
     use FormatsToolResults;
 
     public function __construct(private readonly ProductV2QueryService $products) {}
@@ -30,7 +32,7 @@ final class GetProductDetailTool extends AiTool
 
     public function description(): string
     {
-        return '查看某个商品的配置项、可选计费周期与购买前置条件（实名/手机号）。不含配置项加价，价格必须另调 quote_price。';
+        return '查看某个商品的完整叫法（区域 · 机房/线路 · 规格）、分组路径、官网配置页链接、配置项、可选计费周期与购买前置条件（实名/手机号）。不含配置项加价，价格必须另调 quote_price。';
     }
 
     public function parameters(): array
@@ -77,19 +79,19 @@ final class GetProductDetailTool extends AiTool
         }
 
         $purchaseRequires = is_array($product->purchase_requires) ? $product->purchase_requires : [];
+        $presentation = $this->describeProductForSale($product);
 
         return [
             'summary' => sprintf(
-                '商品「%s」共 %d 个配置项，可选周期：%s',
-                (string) $product->name,
+                '商品「%s」（%s）共 %d 个配置项，可选周期：%s，官网配置页 %s',
+                (string) $presentation['title'],
+                (string) $presentation['group_path'],
                 count($options),
                 $cycles === [] ? '以实时报价为准' : implode('、', $cycles),
+                (string) $presentation['product_url'],
             ),
             'data' => [
-                'product_id' => (int) $product->id,
-                'name' => (string) $product->name,
-                'product_type' => (string) ($product->product_type ?? ''),
-                'stock' => (int) ($product->stock ?? -1),
+                ...$presentation,
                 'pricing_cycles' => $cycles,
                 'config_options' => $options,
                 'config_options_truncated' => count($rawOptions) > 20,
@@ -97,7 +99,7 @@ final class GetProductDetailTool extends AiTool
                     'require_verification' => (bool) ($purchaseRequires['require_verification'] ?? false),
                     'require_phone' => (bool) ($purchaseRequires['require_phone'] ?? false),
                 ],
-                'note' => '配置项加价与最终金额请调用 quote_price',
+                'note' => '配置项加价与最终金额请调用 quote_price；把 product_url 一并给用户，用户需要自己去页面上改配置下单',
             ],
         ];
     }

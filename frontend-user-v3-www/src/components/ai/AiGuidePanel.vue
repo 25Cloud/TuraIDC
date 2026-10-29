@@ -81,6 +81,7 @@
         :loading="loading"
         :confirm-handler="chat.confirmAction"
         :reject-handler="chat.rejectAction"
+        :suggest-handler="handleSuggest"
       />
 
       <footer class="ai-panel__composer">
@@ -333,6 +334,16 @@ async function handleSend() {
 
   draft.value = "";
   await props.chat.send(text);
+}
+
+/** 空态快捷问题：填进输入框再走同一条发送路径，不另开一条发送分支 */
+async function handleSuggest(text) {
+  if (!canSend.value) {
+    return;
+  }
+
+  draft.value = String(text ?? "");
+  await handleSend();
 }
 
 function handleStop() {

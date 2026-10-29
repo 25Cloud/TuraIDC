@@ -14,6 +14,22 @@
       <AiRobotAvatar :size="56" class="ai-messages__empty-icon" />
       <p class="ai-messages__empty-title">{{ $t("ai.empty.title") }}</p>
       <p class="ai-messages__empty-desc">{{ $t("ai.empty.description") }}</p>
+      <!--
+        快捷问题：把「不知道能问什么」这道门槛直接拿掉。
+        每条都是一句完整的提问（含用途/预算/地区），点一下等于用户自己打完再发送，
+        导购第一次回复就能直接给候选，而不是先反问一轮。
+      -->
+      <div v-if="suggestHandler && suggests.length" class="ai-messages__suggests">
+        <button
+          v-for="(suggest, index) in suggests"
+          :key="`suggest-${index}`"
+          type="button"
+          class="ai-messages__suggest"
+          @click="suggestHandler(suggest)"
+        >
+          {{ suggest }}
+        </button>
+      </div>
     </div>
 
     <article
@@ -95,15 +111,19 @@
           </p>
 
           <!--
-            正文：流式期间按纯文本渲染（增量已在共享层按 16ms 合并，仍不必每帧重排 markdown），
-            结束后再切 markdown-it 结果；两者都做了换行与断行保护。
+            正文：流式过程中就按 markdown 渲染，不再先显示纯文本、等 done 才切解析。
+            表格/列表/代码块在生成途中即可成形，用户能边看边判断，不必等整段说完。
+            增量已在共享层按 16ms 合并，配合 renderMarkdown 的结果缓存（同一段内容只解析一次），
+            每帧成本就是一次 Map 命中加一次 v-html 替换。
           -->
           <div v-if="message.content && !message.error" class="ai-msg__content">
-            <!-- 单行书写：pre-wrap 下模板换行会变成真实空格，正文开头会莫名缩进 -->
-            <p v-if="message.streaming" class="ai-msg__plain">{{ message.content }}<span class="ai-msg__caret" aria-hidden="true" /></p>
             <!-- markdown-it 已关闭原始 HTML（html: false），产物是转义后的安全结构 -->
             <!-- eslint-disable-next-line vue/no-v-html -->
-            <div v-else class="ai-msg__markdown" v-html="renderMarkdown(message.content)"></div>
+            <div
+              class="ai-msg__markdown"
+              :class="{ 'ai-msg__markdown--live': message.streaming }"
+              v-html="renderMarkdown(message.content)"
+            ></div>
           </div>
 
           <AiGuideConfirmCard
@@ -122,7 +142,7 @@
 <script setup>
 import { ArrowDown } from "@element-plus/icons-vue";
 import MarkdownIt from "markdown-it";
-import { nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 
 import { t } from "@/locales";
 
@@ -147,7 +167,18 @@ const props = defineProps({
     type: Function,
     required: true,
   },
+  /** 空态快捷问题被点击时调用；未传则不展示快捷问题 */
+  suggestHandler: {
+    type: Function,
+    default: null,
+  },
 });
+
+// 空态快捷问题：三句完整的导购提问，覆盖「按预算选」「按地区选」「已有实例续费」
+const SUGGEST_KEYS = ["ai.empty.suggest1", "ai.empty.suggest2", "ai.empty.suggest3"];
+const suggests = computed(() =>
+  SUGGEST_KEYS.map((key) => t(key)).filter((text) => text && !text.startsWith("ai.")),
+);
 
 // html: false —— 模型输出里的原始 HTML 一律当文本，杜绝 v-html 变成注入入口
 const markdown = new MarkdownIt({ html: false, breaks: true, linkify: true });
@@ -159,8 +190,34 @@ markdown.renderer.rules.link_open = (tokens, index, options, _env, self) => {
   return self.renderToken(tokens, index, options);
 };
 
+/**
+ * markdown 解析结果缓存（键就是原始内容）。
+ *
+ * 流式期间每条消息的内容都在变，模板会为**全部**消息重跑 renderMarkdown：
+ * 没有缓存时，一问一答累积到十几条，每 16ms 都要把所有历史消息重新解析一遍。
+ * 有了缓存，未变化的消息只是一次 Map 命中。上限 80 条，超出后按插入顺序淘汰最旧的
+ * （Map 保持插入顺序，流式每帧都会新增键，不设上限会把内存吃掉）。
+ */
+const MARKDOWN_CACHE_LIMIT = 80;
+const markdownCache = new Map();
+
 function renderMarkdown(content) {
-  return markdown.render(String(content || ""));
+  const source = String(content || "");
+  const cached = markdownCache.get(source);
+  if (cached !== undefined) {
+    return cached;
+  }
+
+  const html = markdown.render(source);
+  if (markdownCache.size >= MARKDOWN_CACHE_LIMIT) {
+    const oldest = markdownCache.keys().next();
+    if (!oldest.done) {
+      markdownCache.delete(oldest.value);
+    }
+  }
+  markdownCache.set(source, html);
+
+  return html;
 }
 
 const TOOL_STATUS_KEYS = {
@@ -294,6 +351,35 @@ watch(
   font-size: 13px;
   line-height: 1.7;
   color: var(--td-text-color-secondary, var(--el-text-color-regular));
+}
+
+/* 空态快捷问题：竖排整宽按钮，手机上也好点；不做成横向滚动的胶囊 */
+.ai-messages__suggests {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 20rem;
+  margin-top: 8px;
+}
+
+.ai-messages__suggest {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--td-text-color-primary, var(--el-text-color-primary));
+  text-align: left;
+  cursor: pointer;
+  background: var(--td-bg-color-container, var(--el-bg-color));
+  border: 1px solid var(--td-component-border, var(--el-border-color-light));
+  border-radius: 8px;
+  transition: border-color 0.15s ease, color 0.15s ease;
+
+  &:hover {
+    color: var(--td-brand-color, var(--el-color-primary));
+    border-color: var(--td-brand-color, var(--el-color-primary));
+  }
 }
 
 /* ===== 消息骨架 ===== */
@@ -565,12 +651,13 @@ watch(
   overflow-wrap: anywhere;
 }
 
-.ai-msg__plain {
-  margin: 0;
-  white-space: pre-wrap;
-}
-
-.ai-msg__caret {
+/*
+ * 流式光标：挂在正文最后一个块元素的行内伪元素上。
+ * 不用真实 DOM 元素 —— 流式期间正文已经是 markdown（可能是 table/ul/pre），
+ * 追加一个块级兄弟会在表格下面另起一行，视觉上像多出一个空段落。
+ */
+.ai-msg__markdown--live :deep(> *:last-child)::after {
+  content: "";
   display: inline-block;
   width: 2px;
   height: 1em;

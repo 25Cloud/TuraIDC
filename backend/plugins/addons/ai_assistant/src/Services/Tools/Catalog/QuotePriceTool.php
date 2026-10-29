@@ -6,11 +6,12 @@ namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Catalog;
 
 use App\Exceptions\BusinessException;
 use App\Models\Product;
-use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
-use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
-use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
 use App\Services\ProductCatalog\ProductV2QueryService;
 use App\Services\Site\SiteProductQuoteService;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\DescribesProductForSale;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
 
 /**
  * 实时报价：唯一的合法价格来源。
@@ -20,6 +21,7 @@ use App\Services\Site\SiteProductQuoteService;
  */
 final class QuotePriceTool extends AiTool
 {
+    use DescribesProductForSale;
     use FormatsToolResults;
 
     public function __construct(
@@ -93,17 +95,19 @@ final class QuotePriceTool extends AiTool
 
         $total = (string) ($quote['total_amount'] ?? '0.00');
         $original = (string) ($quote['original_total_amount'] ?? $total);
+        $presentation = $this->describeProductForSale($product);
 
         return [
             'summary' => sprintf(
-                '报价：%s / %s，原价 %s，应付 %s',
-                (string) $product->name,
+                '报价：%s（%s）/ %s，原价 %s，应付 %s',
+                (string) $presentation['title'],
+                (string) $presentation['group_path'],
                 (string) $arguments['billing_cycle'],
                 $original,
                 $total,
             ),
             'data' => [
-                'product_id' => (int) $product->id,
+                ...$presentation,
                 'billing_cycle' => (string) $arguments['billing_cycle'],
                 'quantity' => (int) $validated['quantity'],
                 'original_total_amount' => $original,
@@ -117,7 +121,7 @@ final class QuotePriceTool extends AiTool
                     'discount_amount' => (string) ($quote['coupon']['discount_amount'] ?? '0.00'),
                 ] : null,
                 'quote_expires_at' => (string) ($quote['quote_expires_at'] ?? ''),
-                'note' => '下单时必须带同一份报价凭证与相同的配置，改配置需要重新报价',
+                'note' => '下单时必须带同一份报价凭证与相同的配置，改配置需要重新报价；报金额时把 title 与 product_url 一起给用户，不要只报一个数字',
             ],
         ];
     }

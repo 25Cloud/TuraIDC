@@ -171,8 +171,22 @@ test.describe("AI 浮窗", () => {
       .evaluate((el) => getComputedStyle(el).listStyleType);
     expect(listStyle).toBe("disc");
 
-    // 落定后不应该还留着流式光标
-    await expect(page.locator(".ai-msg__caret")).toHaveCount(0);
+    // 落定后不应该还留着流式光标：光标由 --live 类驱动（挂在最后一个块元素的行内伪元素上），
+    // 流式期间正文就已经是解析好的 markdown，不再有「纯文本 → done 后才解析」这一跳
+    await expect(markdown).not.toHaveClass(/ai-msg__markdown--live/);
+  });
+
+  test("空态给三个快捷问题，点一下就等于自己提问", async ({ page }) => {
+    await openPanel(page);
+
+    const chips = page.locator(".ai-messages__suggest");
+    await expect(chips).toHaveCount(3);
+
+    // 快捷问题是完整提问，点一下直接走同一条发送路径，不再让用户面对空输入框
+    await chips.first().click();
+    await expect(page.locator(".ai-msg--user")).toContainText("月预算 50 元");
+    await expect(page.locator(".ai-msg__markdown")).toBeVisible();
+    await expect(chips).toHaveCount(0);
   });
 
   test("首个增量到达前显示三点「思考中」占位", async ({ page }) => {

@@ -1142,7 +1142,10 @@
     },
     "empty": {
       "title": "How can I help?",
-      "description": "Tell me your use case, region and budget, and I will pick a configuration that fits."
+      "description": "Tell me your use case, region and budget, and I will pick a configuration that fits.",
+      "suggest1": "A small site with about ten concurrent visitors, around $7/month — which plan?",
+      "suggest2": "Do you have servers on Hong Kong or US routes? I would like to see the cheaper ones.",
+      "suggest3": "One of my servers expires soon — how much is renewal, and can I switch to annual?"
     },
     "panel": {
       "title": "AI Guide",

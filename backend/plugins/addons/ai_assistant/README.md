@@ -76,7 +76,35 @@ backend/plugins/addons/ai_assistant/
 - `ai.status`：是否已配置、协议、模型、是否有密钥、三端开关、额度与权限档位、工具数量。
 - `ai.tools`：按 `payload.permission_mode` 返回当前档位可用工具（名称 / 风险 / 说明）。
 
-## 4. 数据表：在核心，不在插件
+## 4. 商品类工具的返回口径（导购）
+
+AI 被当成真人售前用，不是规格表朗读器。三个商品类工具
+（`search_products` / `get_product_detail` / `quote_price`）共用
+`src/Services/Tools/Concerns/DescribesProductForSale.php` 输出同一份「可售卖信息」：
+
+| 字段 | 说明 |
+| --- | --- |
+| `title` | 给用户看的完整叫法：`区域 · 机房/线路 · 规格`（如 `华中 · 湖北襄阳 电信 · 2核2G20Mbps`） |
+| `region` / `site` / `spec` | 二级分组名 / 三级分组名 / 规格摘要，模型据此回答「哪个区」 |
+| `group_path` | 一级 / 二级 / 三级分组全路径 |
+| `product_url` | 官网配置/购买页 `/products/{一级slug}/{二级id}/{三级id}/{商品id}` |
+| `group_url` | 该三级分组目录页（用户想看同类时给这个） |
+| `link` | 现成的 `[title](product_url)`，模型照抄不会写错地址 |
+
+为什么必须这么返回：`products.custom_display_name` 只存规范规格摘要（`2核2G20Mbps`），
+区域与机房信息全在分组名里。只把 `name` 交给模型，模型只能说「2核2G20M」，用户根本
+不知道是哪台机器；不给链接，用户看完还得自己翻目录找回去。
+
+地址口径必须与官网保持一致（`frontend-user-v3-www/src/utils/productRoute.js`）。
+缺一级 slug（老数据）时退回官网仍兼容的 `/products/{商品id}`，不拼会 404 的地址；
+`FRONTEND_URL` 未配置或格式非法时退回相对路径（`PublicUrl` 会抛 `LogicException`，
+但站点地址没配不该让「查商品」整体失败）。
+
+`search_products` 的 `keyword` 同时匹配**商品规格**与**分组名**——「有没有香港的」
+这类问句里没有一个字出现在商品名上，只扫商品名会永远搜不到；命中分组名时改用
+分组 id 过滤重新查一次（最多展开 3 个分组）。
+
+## 5. 数据表：在核心，不在插件
 
 四张表由**核心迁移**创建，插件只读写、不建表、不改表：
 
@@ -94,7 +122,7 @@ backend/plugins/addons/ai_assistant/
 清理策略走命令 `ai:prune-conversations`（`--dry-run` 只统计不删除），
 由核心 `routes/console.php` 每天 04:40 调度；命令实现随插件一起搬走，命令名不变。
 
-## 5. 安装、启用与升级
+## 6. 安装、启用与升级
 
 **新装 / 老实例升级**：核心迁移 `2026_10_27_000001_register_ai_assistant_plugin`
 会在 `php artisan migrate` 时自动完成内置登记：`install()` 写/更新 `integration_plugins`
@@ -123,7 +151,7 @@ backend/plugins/addons/ai_assistant/
 
 缺表只告警不抛异常：插件安装不该因为核心迁移没跑而整体失败，补跑 `migrate` 后重新启用即可。
 
-## 6. 边界（改动前先看）
+## 7. 边界（改动前先看）
 
 - 不注册全局中间件、不注册调度任务、不改核心路由文件；路由只挂在自己的 `ai/` 前缀下。
 - 不把 API Key 写进 `config.php` 或插件配置明文；密钥只在 `settings` 组 `ai`（加密列）。
