@@ -37,7 +37,10 @@ router.beforeEach(async (to, from, next) => {
       if (!permissionStore.routesBuilt || !userStore.userInfo?.name) {
         await userStore.getUserInfo();
 
-        const routeList = await permissionStore.buildAsyncRoutes(userStore.userInfo?.permissions || []);
+        const routeList = await permissionStore.buildAsyncRoutes(
+          userStore.userInfo?.permissions || [],
+          userStore.userInfo?.features || {},
+        );
         routeList.forEach((item) => {
           router.addRoute(item as RouteRecordRaw);
         });
@@ -52,6 +55,16 @@ router.beforeEach(async (to, from, next) => {
             redirect.startsWith('/') && !redirect.startsWith('//') ? redirect : resolveAdminHomePath([]);
           next(to.path === safeRedirect ? { ...to, replace: true } : { path: safeRedirect, query: to.query });
         }
+        return;
+      }
+
+      // 可选功能校验：页面托管在核心、能力来自插件（如 AI 助手）。
+      // 插件被停用或卸载后接口整体 404，直接输地址进来只会看到一片报错，退回首页并说明原因。
+      const requiredFeature = to.meta?.requiresFeature as string | undefined;
+      if (requiredFeature && userStore.userInfo?.features?.[requiredFeature] !== true) {
+        MessagePlugin.warning(t('permission.featureUnavailable'));
+        next({ path: resolveAdminHomePath(userStore.userInfo?.permissions || []), replace: true });
+        NProgress.done();
         return;
       }
 

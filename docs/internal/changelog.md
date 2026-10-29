@@ -26,6 +26,14 @@
   无条件回写，任何不携带该字段的保存（前端详情接口失败后表单里是空串、脚本按最小字段集
   改商品）都会把描述写成空串，前台随即退回 `remark` 里的旧上游描述。现在只有提交里真的
   带了 `description` 才动这一列
+- **停用/卸载插件后侧栏与调度仍留着死入口**：AI 助手的接口由 `addons/ai_assistant` 插件的
+  Provider 注册，插件一停用这些接口就整体 404，但管理端侧栏的「AI 助手」分组、`/admin/ai/*`
+  路由、以及核心 `routes/console.php` 里那条 `ai:prune-conversations` 调度都无条件存在——
+  点进去是一串报错，每天 04:40 还稳定产生一条「命令不存在」的失败记录。现新增
+  `App\Support\OptionalFeature`（口径：已安装且已启用），管理端登录/取用户信息接口下发
+  `features`，前端侧栏分组与路由 `meta.requiresFeature` 按它隐藏并拦下直接访问，
+  插件命令的调度也按它登记。插件规范文档（`docs/develop/plugins/index.md` 第 9 节）
+  补上「核心必须为插件提供的入口收口」这一条
 - **站点商品查询补选描述列**：`ProductSiteService` 的分组商品与选购页商品详情两处显式
   `select` 漏选 `products.description`（此前 `ProductGroupV2QueryService::paginateSiteProducts`
   与 `ProductV2QueryService::siteProductListColumns` 已修过同一处），描述服务会静默退回

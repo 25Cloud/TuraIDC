@@ -34,6 +34,13 @@ interface MenuGroupConfig {
   title: LocalizedTitle;
   icon?: ReturnType<typeof shallowRef>;
   orderNo?: number;
+  /**
+   * 该分组由插件提供能力时才显示（键名与后端 App\Support\OptionalFeature 一致）。
+   *
+   * 插件规范不允许插件自己注册菜单，所以这类页面必须托管在核心；核心于是要负责
+   * 「插件不在就别显示入口」——否则停用/卸载插件后侧栏留着一个点进去全是 404 的菜单。
+   */
+  requiresFeature?: string;
   children: MenuNodeConfig[];
 }
 
@@ -240,10 +247,13 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
   {
     // AI 助手单独成组：设置与审计分别是 ai.manage / ai.view 两个权限码，
     // 只有没有任一权限的角色看不到这个分组（菜单项由 canAccessMenuRoute 过滤）。
+    // 另加 requiresFeature：AI 的接口由 addons/ai_assistant 插件的 Provider 注册，
+    // 插件未启用/已卸载时这些接口整体 404，菜单必须一起消失。
     path: '/admin/menu/ai-assistant',
     title: { zh_CN: 'AI 助手', en_US: 'AI Assistant' },
     icon: shallowRef(RobotIcon),
     orderNo: 75,
+    requiresFeature: 'ai_assistant',
     children: ['/admin/ai/settings', '/admin/ai/conversations'],
   },
   {
@@ -289,24 +299,25 @@ export const usePermissionStore = defineStore('permission', {
     routesBuilt: false,
   }),
   actions: {
-    async initRoutes(permissions: string[] = []) {
+    async initRoutes(permissions: string[] = [], features: Record<string, boolean> = {}) {
       const accessedRouters = this.asyncRoutes;
 
       // 菜单展示业务分组；真实路由仍使用 homepageRouterList 注册，不改变历史路径。
       this.routers = buildGroupedMenuRouters(
         cloneDeep([...homepageRouterList, ...accessedRouters] as RouteRecordRaw[]),
         permissions,
+        features,
       );
       // 在菜单只展示动态路由和首页
       // this.routers = [...homepageRouterList, ...accessedRouters];
       // 在菜单只展示动态路由
       // this.routers = [...accessedRouters];
     },
-    async buildAsyncRoutes(permissions: string[] = []) {
+    async buildAsyncRoutes(permissions: string[] = [], features: Record<string, boolean> = {}) {
       try {
         this.asyncRoutes = [];
         this.routesBuilt = true;
-        await this.initRoutes(permissions);
+        await this.initRoutes(permissions, features);
         return this.asyncRoutes;
       } catch (error) {
         throw new Error("Can't build routes", { cause: error });
@@ -329,15 +340,19 @@ export function getPermissionStore() {
   return usePermissionStore(store);
 }
 
-function buildGroupedMenuRouters(routes: RouteRecordRaw[], permissions: string[]) {
+function buildGroupedMenuRouters(
+  routes: RouteRecordRaw[],
+  permissions: string[],
+  features: Record<string, boolean>,
+) {
   return routes.flatMap((route) => {
     if (route.path !== '/admin') return route;
 
     const children = Array.isArray(route.children) ? route.children : [];
     const routeMap = buildAdminRouteMap(children);
-    return ADMIN_MENU_GROUPS.map((group, index) => buildMenuGroup(group, routeMap, permissions, index)).filter(
-      (group): group is RouteRecordRaw => Boolean(group?.children?.length),
-    );
+    return ADMIN_MENU_GROUPS.map((group, index) =>
+      buildMenuGroup(group, routeMap, permissions, index, features),
+    ).filter((group): group is RouteRecordRaw => Boolean(group?.children?.length));
   });
 }
 
@@ -359,9 +374,15 @@ function buildMenuGroup(
   routeMap: Map<string, RouteRecordRaw>,
   permissions: string[],
   siblingIndex: number,
+  features: Record<string, boolean>,
 ): RouteRecordRaw | null {
+  // 分组级功能开关：插件没装/没启用时整组不出现，避免留下点进去 404 的死入口
+  if (group.requiresFeature && features[group.requiresFeature] !== true) {
+    return null;
+  }
+
   const groupChildren = group.children
-    .map((child, index) => buildMenuNode(child, routeMap, permissions, index))
+    .map((child, index) => buildMenuNode(child, routeMap, permissions, index, features))
     .filter((item): item is RouteRecordRaw => Boolean(item));
   const redirect = findFirstMenuLeafPath(groupChildren);
 
@@ -386,11 +407,12 @@ function buildMenuNode(
   routeMap: Map<string, RouteRecordRaw>,
   permissions: string[],
   siblingIndex: number,
+  features: Record<string, boolean>,
 ): RouteRecordRaw | null {
   const config = normalizeMenuNode(node);
 
   if (isMenuGroupConfig(config)) {
-    return buildMenuGroup(config, routeMap, permissions, siblingIndex);
+    return buildMenuGroup(config, routeMap, permissions, siblingIndex, features);
   }
 
   const route = routeMap.get(config.path);

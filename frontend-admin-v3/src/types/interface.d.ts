@@ -27,6 +27,11 @@ export interface UserInfo {
   email?: string;
   role?: string;
   permissions?: string[];
+  /**
+   * 由插件提供、但页面托管在核心的可选功能是否可用（后端 App\Support\OptionalFeature）。
+   * 侧栏分组与路由 meta.requiresFeature 都按它判定；缺省视为全部不可用。
+   */
+  features?: Record<string, boolean>;
 }
 
 export interface NotificationItem {

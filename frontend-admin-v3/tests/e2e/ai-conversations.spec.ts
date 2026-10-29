@@ -85,7 +85,11 @@ async function mockAdminApi(page: Page) {
       });
 
     if (pathname.endsWith('/auth/info')) {
-      return reply({ admin: { id: 1, username: 'conv-check', nickname: 'conv-check', permissions: ['*'] } });
+      return reply({
+        admin: { id: 1, username: 'conv-check', nickname: 'conv-check', permissions: ['*'] },
+        // AI 页面依赖 addons/ai_assistant 插件：插件未启用时守卫会把 /admin/ai/* 退回首页
+        features: { ai_assistant: true },
+      });
     }
 
     if (pathname.endsWith('/ai/conversations/1')) {

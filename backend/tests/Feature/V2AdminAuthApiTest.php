@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Models\AdminUser;
+use App\Models\IntegrationPlugin;
 use App\Models\Role;
+use App\Services\Integrations\Plugins\PluginDomain;
 use App\Support\AdminPermissions;
+use App\Support\OptionalFeature;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -37,8 +40,10 @@ class V2AdminAuthApiTest extends TestCase
             ->assertJsonPath('data.admin.permissions.0', AdminPermissions::ALL)
             ->assertJsonStructure(['code', 'message', 'data', 'timestamp']);
 
-        $this->assertSame(['token', 'admin'], array_keys($response->json('data')));
+        $this->assertSame(['token', 'admin', 'features'], array_keys($response->json('data')));
         $this->assertSame($this->adminProfileWhitelist(), array_keys($response->json('data.admin')));
+        // 可选功能开关随登录一起下发，前端据此决定侧栏分组是否出现
+        $this->assertArrayHasKey(OptionalFeature::AI_ASSISTANT, $response->json('data.features'));
         $this->assertNoSensitiveKeys($response->json());
         $this->assertLessThan(100 * 1024, strlen((string) $response->getContent()));
     }
@@ -59,10 +64,56 @@ class V2AdminAuthApiTest extends TestCase
             ->assertJsonPath('data.admin.id', $admin->id)
             ->assertJsonPath('data.admin.permissions.0', AdminPermissions::ORDER_LIST);
 
-        $this->assertSame(['admin'], array_keys($response->json('data')));
+        $this->assertSame(['admin', 'features'], array_keys($response->json('data')));
         $this->assertSame($this->adminProfileWhitelist(), array_keys($response->json('data.admin')));
         $this->assertNoSensitiveKeys($response->json());
         $this->assertLessThan(100 * 1024, strlen((string) $response->getContent()));
+    }
+
+    /**
+     * 可选功能开关必须跟着插件状态走。
+     *
+     * 「AI 助手」的管理端页面托管在核心（插件不能注册菜单与路由），能力来自
+     * addons/ai_assistant 插件：插件停用/卸载后 /api/v2/admin/ai/* 会 404。
+     * 前端靠这份开关隐藏侧栏分组，所以这里把它钉在插件状态上——不是写死的 true。
+     */
+    public function test_optional_feature_follows_the_plugin_status(): void
+    {
+        $admin = $this->createAdmin([AdminPermissions::ORDER_LIST]);
+        Sanctum::actingAs($admin);
+
+        $plugin = IntegrationPlugin::query()
+            ->where('domain', PluginDomain::ADDONS)
+            ->where('slug', 'ai_assistant')
+            ->first();
+
+        if (! $plugin instanceof IntegrationPlugin) {
+            // 干净测试库上没有这条登记：这时开关必须是 false，前端据此不显示入口
+            $this->getJson('/api/v2/admin/auth/info')
+                ->assertOk()
+                ->assertJsonPath('data.features.'.OptionalFeature::AI_ASSISTANT, false);
+
+            return;
+        }
+
+        $originalStatus = (int) $plugin->status;
+
+        try {
+            $plugin->status = IntegrationPlugin::STATUS_DISABLED;
+            $plugin->save();
+            $this->getJson('/api/v2/admin/auth/info')
+                ->assertOk()
+                ->assertJsonPath('data.features.'.OptionalFeature::AI_ASSISTANT, false);
+
+            $plugin->status = IntegrationPlugin::STATUS_ENABLED;
+            $plugin->save();
+            $this->getJson('/api/v2/admin/auth/info')
+                ->assertOk()
+                ->assertJsonPath('data.features.'.OptionalFeature::AI_ASSISTANT, true);
+        } finally {
+            $plugin->status = $originalStatus;
+            $plugin->save();
+        }
     }
 
     public function test_admin_auth_profile_and_password_actions_reject_legacy_pagination(): void

@@ -31,6 +31,7 @@ export const useUserStore = defineStore('user', {
       const res = (await adminAuthApi.login(payload)) as {
         token: string;
         admin?: Partial<UserInfo> & { permissions?: string[] };
+        features?: Record<string, boolean>;
       };
       setAdminToken(res.token);
       this.token = res.token;
@@ -40,6 +41,7 @@ export const useUserStore = defineStore('user', {
         name: admin.nickname || admin.username || admin.email || t('common.administrator'),
         roles: role ? [role] : [],
         permissions: admin.permissions || [],
+        features: res.features || {},
         ...admin,
       };
     },
@@ -56,6 +58,7 @@ export const useUserStore = defineStore('user', {
       this.token = token;
       const res = (await adminAuthApi.info()) as {
         admin?: Partial<UserInfo> & { permissions?: string[] };
+        features?: Record<string, boolean>;
       };
       const admin = res.admin || {};
       const role = typeof admin.role === 'string' && admin.role ? admin.role : '';
@@ -63,6 +66,7 @@ export const useUserStore = defineStore('user', {
         name: admin.nickname || admin.username || admin.email || t('common.administrator'),
         roles: role ? [role] : [],
         permissions: admin.permissions || [],
+        features: res.features || {},
         ...admin,
       };
       // 与 Cookie 中的最新 token 保持一致，避免 localStorage 残留旧值

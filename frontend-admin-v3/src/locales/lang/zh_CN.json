@@ -5037,7 +5037,8 @@
     }
   },
   "permission": {
-    "noAccess": "您没有访问该页面的权限"
+    "noAccess": "您没有访问该页面的权限",
+    "featureUnavailable": "该功能所需插件未安装或已停用"
   },
   "ai": {
     "launcher": {

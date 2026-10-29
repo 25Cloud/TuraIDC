@@ -14,6 +14,7 @@ use App\Services\Admin\Rbac\AdminStaffService;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\CaptchaPolicyService;
 use App\Services\Auth\GeeTestService;
+use App\Support\OptionalFeature;
 use App\Support\TextSanitizer;
 use Illuminate\Http\Request;
 
@@ -41,7 +42,12 @@ class AuthController extends Controller
             (string) $request->ip(),
         );
 
-        return $this->success(AdminAuthSessionResource::make($result)->resolve(), '登录成功');
+        // features：由插件提供、但页面托管在核心的可选功能是否可用。
+        // 前端据此决定侧栏要不要出现对应分组（见 App\Support\OptionalFeature）。
+        return $this->success([
+            ...AdminAuthSessionResource::make($result)->resolve(),
+            'features' => OptionalFeature::map(),
+        ], '登录成功');
     }
 
     /**
@@ -76,6 +82,7 @@ class AuthController extends Controller
 
         return $this->success([
             'admin' => AdminAuthProfileResource::make($admin)->resolve(),
+            'features' => OptionalFeature::map(),
         ]);
     }
 

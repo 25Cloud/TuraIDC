@@ -154,6 +154,12 @@ AI 被当成真人售前用，不是规格表朗读器。三个商品类工具
 ## 7. 边界（改动前先看）
 
 - 不注册全局中间件、不注册调度任务、不改核心路由文件；路由只挂在自己的 `ai/` 前缀下。
+- **入口收口在核心，用 `App\Support\OptionalFeature` 判定**：管理端页面托管在核心
+  （插件不能注册菜单），核心通过 `OptionalFeature::map()` 得到 `ai_assistant` 开关，
+  由管理端登录接口下发 `features`，前端侧栏分组与 `/admin/ai/*` 路由的 `meta.requiresFeature`
+  据此隐藏；`routes/console.php` 里的 `ai:prune-conversations` 调度也按同一个开关登记。
+  停用或卸载后应当看到的现象是：侧栏没有「AI 助手」、`/admin/ai/*` 直接访问被退回首页、
+  调度里没有这条任务——**不是一个点进去全是 404 的菜单**。
 - 不把 API Key 写进 `config.php` 或插件配置明文；密钥只在 `settings` 组 `ai`（加密列）。
 - 不搬表、不改表名、不删列。
 - 不新增第二套 AI 配置真源（新增配置项请加在 `settings` 组 `ai` + 管理端设置页）。

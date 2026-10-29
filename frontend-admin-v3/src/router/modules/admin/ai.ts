@@ -1,5 +1,13 @@
 import type { RouteRecordRaw } from 'vue-router';
 
+/**
+ * AI 助手管理端页面。
+ *
+ * 页面托管在核心（插件规范不允许插件注册管理端菜单与路由），能力来自
+ * `addons/ai_assistant` 插件：插件未启用或已卸载时 `/api/v2/admin/ai/*` 整体 404。
+ * 因此两个路由都带 `requiresFeature`——侧栏分组隐藏（permission store），
+ * 直接输地址也会被守卫退回首页并提示，而不是渲染一个全是报错的页面。
+ */
 export const aiRoutes: RouteRecordRaw[] = [
   {
     path: 'ai/settings',
@@ -12,6 +20,7 @@ export const aiRoutes: RouteRecordRaw[] = [
         en_US: 'AI Settings',
       },
       permission: 'ai.manage',
+      requiresFeature: 'ai_assistant',
     },
   },
   {
@@ -25,6 +34,7 @@ export const aiRoutes: RouteRecordRaw[] = [
         en_US: 'AI Conversations',
       },
       permission: 'ai.view',
+      requiresFeature: 'ai_assistant',
     },
   },
 ];

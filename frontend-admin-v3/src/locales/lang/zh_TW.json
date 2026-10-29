@@ -5037,7 +5037,8 @@
     }
   },
   "permission": {
-    "noAccess": "您沒有訪問該頁面的許可權"
+    "noAccess": "您沒有訪問該頁面的許可權",
+    "featureUnavailable": "該功能所需外掛未安裝或已停用"
   },
   "ai": {
     "launcher": {
