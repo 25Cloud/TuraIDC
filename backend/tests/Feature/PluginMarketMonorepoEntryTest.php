@@ -137,6 +137,35 @@ class PluginMarketMonorepoEntryTest extends TestCase
         $this->locate(app(PluginMarketService::class), $this->tmp, 'backend/plugins/addons/ai_assistant');
     }
 
+    /**
+     * 只写 `ref` 不写 `path` 必须直接拒绝。
+     *
+     * 这种半填条目下载到的是整仓快照，而定位会退回「最浅 config.php」去猜，
+     * 结果可能装成仓库里的另一个插件——比报错严重得多。
+     */
+    public function test_ref_without_path_is_rejected_before_downloading(): void
+    {
+        Http::fake();
+
+        $download = (new ReflectionClass(PluginMarketService::class))->getMethod('downloadArchive');
+        $download->setAccessible(true);
+
+        $thrown = null;
+        try {
+            $download->invoke(app(PluginMarketService::class), [
+                'repo' => '25Cloud/TuraIDC',
+                'ref' => 'main',
+            ], 'ai_assistant', $this->tmp);
+        } catch (BusinessException $exception) {
+            $thrown = $exception;
+        }
+
+        $this->assertInstanceOf(BusinessException::class, $thrown);
+        $this->assertStringContainsString('ref 必须与 path 一起使用', (string) $thrown?->getMessage());
+        // 拒绝发生在发请求之前——不能先下一份整仓快照再报错
+        Http::assertNothingSent();
+    }
+
     public function test_independent_repo_entry_still_resolves_without_path(): void
     {
         $top = $this->tmp.DIRECTORY_SEPARATOR.'turaidc-plugin-ai-assistant-abc123';

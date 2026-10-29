@@ -164,6 +164,13 @@ class PluginMarketService
             throw new BusinessException("插件条目缺少合法的 repo：{$slug}", 42200);
         }
 
+        // ref 的语义是「monorepo 的分支」，必须和 path 一起用：只写 ref 不写 path，
+        // 下载到的是整仓快照，而 locatePluginRoot 会退回「最浅 config.php」去猜，
+        // 结果可能装成仓库里的另一个插件。宁可直接拒绝。
+        if (trim((string) ($entry['ref'] ?? '')) !== '' && trim((string) ($entry['path'] ?? '')) === '') {
+            throw new BusinessException("插件条目 ref 必须与 path 一起使用：{$slug}", 42200);
+        }
+
         $ref = $this->archiveRef($entry, $slug);
         $url = str_replace(
             ['{repo}', '{ref}'],

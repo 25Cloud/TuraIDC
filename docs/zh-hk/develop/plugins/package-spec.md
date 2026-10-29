@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: 5db66af4846a3a268e38e5eb8aeb90d82ba6269637058972301e5fbf0466d429
+sourceHash: a50fced116f788251cf3d2a056f1693ce319961be556793089b682c38e4d04d8
 generated: zh-hk
 ---
 
@@ -190,6 +190,7 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 - **`path` 必填且會被校驗**：逐段只允許 `[A-Za-z0-9._-]`，拒絕 `..`、空段與絕對路徑。索引是遠端數據，絕不能讓它把安裝流程帶出解壓目錄。
 - **定位靠 `path`，不靠猜**：monorepo 存檔裡每個插件都有自己的 `config.php`、而且深度完全相同，按「深度最小」挑會隨手拿到**另一個插件**。帶 `path` 時安裝器直接落到 `{解压根}/{仓库快照目录}/{path}`，不存在就報錯，絕不退化成猜。
 - **`{ref}` 解析優先級**：`sha` → `refs/tags/{tag}` → `refs/heads/{ref}`（條目裡寫全 `refs/...` 則原樣使用）。三者都沒有時報「插件條目缺少 tag/sha/ref」。
+- **只寫 `ref` 不寫 `path` 會被直接拒絕**（「ref 必須與 path 一起使用」），而且是在發請求之前拒。否則下載到整倉快照後會退回「最淺 config.php」去猜，可能裝成倉庫裡的另一個插件——比裝不上嚴重得多。
 - **`sha` 可與 `path` 疊加**，這是最穩的形態：既能精確取子目錄，又保留「審核鎖定 + 頂層目錄名強校驗」的防篡改能力。只寫 `ref: main` 等於跟隨分支漂移，不建議用於已上架條目。
 - **下載體量差一到兩個數量級**：monorepo 下載的是整倉快照（幾十 MB），獨立倉庫通常幾百 KB。超時取 `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`，後者默認 120 秒。
 - **隨主倉內置發佈的插件優先提供獨立發行倉**：條目指向發行倉的 `tag` + `sha`，下載量小、鎖定強、不依賴主倉分支狀態。官方 AI 助手就是這麼做的（主倉 `backend/plugins/addons/ai_assistant` 是唯一真源，發行鏡像倉 [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) 逐字節同步並按版本打 tag）。monorepo 形態留給「不想額外開倉」的場景。
