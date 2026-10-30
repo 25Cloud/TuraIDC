@@ -3,7 +3,7 @@ import { ArrowRightIcon, LogoGithubIcon } from "tdesign-icons-vue-next";
 
 import { LINKS } from "../data/site";
 import { useSite } from "../i18n/context";
-import ConsolePreview from "./ConsolePreview.vue";
+import SystemShot from "./SystemShot.vue";
 
 const { messages } = useSite();
 const hero = messages.hero;
@@ -76,7 +76,7 @@ const TITLE_PARTS = [
         </dl>
       </div>
 
-      <ConsolePreview class="hero-preview" />
+      <SystemShot class="hero-preview" />
     </div>
   </section>
 </template>
@@ -269,7 +269,8 @@ h1 {
   }
 
   .hero-preview {
-    max-width: 560px;
+    max-width: 680px;
+    margin: 0 auto;
   }
 }
 

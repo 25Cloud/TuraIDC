@@ -67,6 +67,14 @@ export const FLOW_ICONS = [
 export const DEPLOY_ICONS = ["terminal", "control", "server"] as const;
 
 /**
+ * 系统实拍图，由 `scripts/capture-shots.mjs` 用无头 Chrome 打开二五云线上站点截取。
+ * 换版式后重跑脚本，不要手工改图。
+ */
+export const SHOTS = {
+  catalog: "/shots/catalog.webp",
+} as const;
+
+/**
  * 合作伙伴素材，顺序与 i18n 的 partners.items 一致。
  * 取自仓库 README 的 Trusted Partners，按 2 倍显示高度导出。
  */

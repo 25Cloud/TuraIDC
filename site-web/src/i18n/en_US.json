@@ -61,53 +61,11 @@
       }
     ]
   },
-  "console": {
-    "title": "TuraIDC · Admin",
-    "menu": [
-      "Overview",
-      "Catalog",
-      "Orders",
-      "Instances",
-      "Finance",
-      "Tickets"
-    ],
-    "stats": [
-      {
-        "label": "Revenue MTD",
-        "value": "¥ 86,420.00",
-        "delta": "+12.4%"
-      },
-      {
-        "label": "Open orders",
-        "value": "12",
-        "delta": "3 pending"
-      },
-      {
-        "label": "Live instances",
-        "value": "318",
-        "delta": "+26 this month"
-      }
-    ],
-    "chart": "Revenue, last 7 days",
-    "chip": "Mock",
-    "rows": [
-      {
-        "id": "#S-10231",
-        "name": "Plan A · monthly",
-        "status": "Active"
-      },
-      {
-        "id": "#S-10232",
-        "name": "Plan B · yearly",
-        "status": "Provisioning"
-      },
-      {
-        "id": "#S-10233",
-        "name": "Plan A · quarterly",
-        "status": "Renew soon"
-      }
-    ],
-    "caption": "Illustrative UI. Values are placeholders, not real data."
+  "shot": {
+    "url": "idc.25y.cn/products",
+    "live": "Live",
+    "alt": "Product catalogue on the live ErWu Cloud site: category tree on the left, product cards with stock and price on the right",
+    "caption": "Screenshot from the live ErWu Cloud deployment: product catalogue"
   },
   "features": {
     "kicker": "Capabilities",
@@ -378,6 +336,22 @@
       "desc": "A production storefront running TuraIDC: catalog, checkout, payment and the client console, all live.",
       "cta": "Open the demo"
     }
+  },
+  "live": {
+    "kicker": "Project activity",
+    "title": "Every release is traceable",
+    "lead": "Version tags, release dates, stars and license are read from the GitHub repository at build time and refreshed on every deploy.",
+    "latest": "Latest",
+    "releasedOn": "Released",
+    "allReleases": "All releases",
+    "stats": {
+      "stars": "Stars",
+      "forks": "Forks",
+      "issues": "Open issues",
+      "license": "License",
+      "pushed": "Last commit"
+    },
+    "source": "Source"
   },
   "footer": {
     "tagline": "An open-source business and billing platform for IDC and cloud providers: self-hosted, auditable, extensible.",

@@ -1,4 +1,4 @@
-﻿---
+---
 status: 进行中
 updated: 2026-10-24
 owner: frontend
@@ -34,7 +34,7 @@ pnpm run docs:check
 
 ### Task 2：首页内容与动效
 
-- [x] 九段结构：Hero、合作伙伴、能力矩阵、业务闭环、安全对比、部署、迁移、定价、FAQ、页脚
+- [x] 十段结构：Hero、合作伙伴、项目动态、能力矩阵、业务闭环、安全对比、部署、迁移、定价、FAQ、页脚
 - [x] 文案按模块收进 `src/i18n/*.json`，FAQ 与 JSON-LD 同源
 - [x] 首屏 CSS 关键帧；滚动进场只作用于视口外元素；`prefers-reduced-motion` 全静态
 - [x] 响应式：1440 / 1080 / 900 / 560 四个断点，无横向溢出
@@ -45,7 +45,16 @@ pnpm run docs:check
 - [x] `AGENTS.md` 项目地图、按任务阅读、验证矩阵补 `site-web/`
 - [x] 维护文档 `docs/internal/governance/site-web-maintenance.md`
 
-### Task 4：EdgeOne Pages 上线（待执行）
+### Task 4：真实界面与项目动态（2026-10-30）
+
+- [x] `scripts/capture-shots.mjs`：无头 Chrome 打开二五云线上站点，截 `public/shots/catalog.webp`（1280×800 视口、2 倍图、压到 1600 宽 WebP）
+- [x] Hero 右侧换成实拍图，删掉手写的 `ConsolePreview.vue` 与四语言 `console` 文案
+- [x] `scripts/fetch-github.mjs` + `src/data/github.json`：构建前抓 release / Star / Fork / issue / 许可 / 最近提交，失败沿用快照
+- [x] 「项目动态」区块：最新版本、发布日期、五项仓库徽章、近五版记录、仓库链接
+- [x] 产物自检补实拍素材、版本号与仓库数字、图片宽高三类断言（89 项）
+- [x] 1440 / 834 / 390 三档 + 明暗两种主题截图复核，无横向溢出
+
+### Task 5：EdgeOne Pages 上线（待执行）
 
 - [ ] 新建 Pages 项目，仓库 `25Cloud/TuraIDC`，根目录 `site-web/`，先不绑域名
 - [ ] 验证 `edgeone.json` 归属：构建日志里应出现 `npm ci` 与 `astro build`，不应出现 `check_docs.mjs`
@@ -63,8 +72,9 @@ pnpm run docs:check
 - [x] 四语言静态页（`/`、`/zh-tw/`、`/zh-hk/`、`/en/`）+ 头部语言切换 + hreflang
 - [x] 明 / 暗 / 跟随系统三态主题，首帧内联脚本防闪白
 - [x] 合作伙伴 Logo 墙（README 的 Trusted Partners 五家）
-- [x] 产物自检 79 项全过（4 语言正文、SEO、hreflang、JSON-LD、sitemap、零外部脚本、伙伴素材）
-- [x] 桌面 1440 / 移动 390、明暗两种主题截图复核：无横向溢出、无控制台报错
+- [x] 产物自检 89 项全过（4 语言正文、SEO、hreflang、JSON-LD、sitemap、零外部脚本、伙伴与实拍素材、GitHub 数据）
+- [x] 桌面 1440 / 平板 834 / 移动 390、明暗两种主题截图复核：无横向溢出、无控制台报错
+- [x] 项目动态区块接入构建期 GitHub 数据，实拍图替换手写示意图
 - [ ] EdgeOne 项目创建与根目录归属验证
 - [ ] 域名绑定、301 规则与搜索引擎提交
 - [ ] 文档站内链入口
@@ -82,3 +92,6 @@ pnpm run docs:check
 - 2026-10-24：主题做成三态（明 / 暗 / 跟随系统），默认跟随系统。深色只做浅色 token 的镜像，不引入第二套品牌色；配色全部收进 `tokens.css`，组件禁止写死颜色。
 - 2026-10-24：合作伙伴墙只放 README 里的五家，素材本地化（仙林云原来是外链他站 CDN），顺序在 README、语言包、`PARTNER_LOGOS` 三处保持一致。
 - 2026-10-24：伙伴墙不再宣称「正在使用 TuraIDC」。这几家是生态伙伴，真正跑着系统的只有二五云；改为「合作伙伴」标题 + 墙下方独立的「在线演示」条，指向 `idc.25y.cn`，Hero 也加一个入口。
+- 2026-10-30：Hero 的界面示意换成真实截图。原 `ConsolePreview` 是按管理端骨架手写的占位 UI，图注写着「数值为占位」，与真实系统对不上。现改为 Playwright + 本机 Chrome 打开二五云线上站点截商品选购页，脚本入库、产物入库，构建不依赖网络。
+- 2026-10-30：首页不放控制台 / 管理端截图。这两个页面要登录，生产站没有可公开的演示账号；与其再画一张「像控制台」的图，不如只放能公开截到的真实页面，图注写明来源。
+- 2026-10-30：项目动态的数据在构建时抓取，不在浏览器里请求 GitHub。零客户端 JS 是这页的立身之本，客户端拉 API 还要把访客 IP 交给第三方并被 60 次/小时限流；`prebuild` 抓一次写进 `github.json`，抓不到就沿用上一次快照，营销页不因 GitHub 抖动发布失败。

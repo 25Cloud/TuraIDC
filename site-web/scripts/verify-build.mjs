@@ -80,9 +80,39 @@ const expectText = [
   "从智简魔方财务迁入",
   "这套系统免费吗",
   "AGPL-3.0-or-later",
+  "项目动态",
 ];
 for (const snippet of expectText) {
   check(`正文包含「${snippet}」`, visibleText.includes(snippet));
+}
+
+// 项目动态的数字来自 src/data/github.json：换了 release 却没重新抓数据，这里会先炸
+const github = JSON.parse(
+  readFileSync(resolve(root, "src/data/github.json"), "utf8"),
+);
+const latestTag = github.releases[0]?.tag ?? "";
+check("项目动态展示最新版本号", visibleText.includes(latestTag), latestTag);
+check(
+  "项目动态展示 Star 数",
+  visibleText.includes(String(github.repo.stars)),
+  String(github.repo.stars),
+);
+check(
+  "项目动态展示许可证",
+  visibleText.includes(github.repo.license),
+  github.repo.license,
+);
+
+// 实拍图必须带宽高，否则首屏图片加载时整块布局会跳
+for (const name of ["catalog"]) {
+  const tag =
+    indexHtml.match(new RegExp(`<img[^>]*${name}\\.webp[^>]*>`))?.[0] ?? "";
+  check(`实拍图 ${name} 有 alt`, /alt="[^"]+"/.test(tag));
+  check(
+    `实拍图 ${name} 声明宽高`,
+    /width="1600"/.test(tag) && /height="1000"/.test(tag),
+    tag.slice(0, 80),
+  );
 }
 
 check("演示站链接指向二五云", indexHtml.includes("https://idc.25y.cn/"));
@@ -243,6 +273,7 @@ const requiredAssets = [
   "favicon.png",
   "apple-touch-icon.png",
   "turaidc-logo.webp",
+  "shots/catalog.webp",
   "partners/7inet.svg",
   "partners/starvm.webp",
   "partners/25yun.webp",

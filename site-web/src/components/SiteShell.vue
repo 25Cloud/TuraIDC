@@ -6,6 +6,7 @@ import FaqSection from "./FaqSection.vue";
 import FlowSection from "./FlowSection.vue";
 import HeroSection from "./HeroSection.vue";
 import HighlightsSection from "./HighlightsSection.vue";
+import LiveSection from "./LiveSection.vue";
 import MigrateSection from "./MigrateSection.vue";
 import PartnersSection from "./PartnersSection.vue";
 import PricingSection from "./PricingSection.vue";
@@ -32,6 +33,7 @@ provideSiteContext({ messages, locale: entry, locales: LOCALES });
     <main id="main">
       <HeroSection />
       <PartnersSection />
+      <LiveSection />
       <HighlightsSection />
       <FlowSection />
       <SecuritySection />

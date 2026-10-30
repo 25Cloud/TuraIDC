@@ -7,9 +7,12 @@
   "description": "TuraIDC 项目官网首页（单页营销站），Astro 静态构建，零客户端运行时。",
   "scripts": {
     "dev": "astro dev",
+    "prebuild": "node scripts/fetch-github.mjs",
     "build": "astro build",
     "preview": "astro preview",
-    "verify": "node scripts/verify-build.mjs"
+    "verify": "node scripts/verify-build.mjs",
+    "shots": "node scripts/capture-shots.mjs",
+    "sync:data": "node scripts/fetch-github.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",

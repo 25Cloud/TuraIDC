@@ -78,6 +78,7 @@
 - **商品描述自动同步（定时）**：新增 `products.description_sync_enabled` 开关与 `description_synced_at` 列；开启后由新增的心跳任务「商品描述同步」按 `automation.product_description_sync_schedule_mode` / `_time` 的节拍刷新（节拍在管理端「系统设置 → 自动化」里配置，沿用既有 `AutomationScheduleExpression` 词表）；未开启的商品不会被定时任务触碰，人工填写的描述也不会被静默覆盖
 - **商品配置页可直接操作描述**：管理端商品编辑页的描述分区新增「自动同步」开关与「从上游同步」按钮，开关改动即保存到商品级开关，从上游同步后会重新拉一次只读描述把自动生成结果与来源一起刷新；全局节拍放在「系统设置 → 自动化 → 商品描述同步」，与既有服务生命周期 / 账单维护的节拍同构
 - **项目官网首页（site-web）**：新增独立营销站 `site-web/`（Astro 静态构建、零客户端 JS），四语言（简中 / 繁中 / 繁港 / 英文）预渲染页与 hreflang，明 / 暗 / 跟随系统三态主题，合作伙伴 Logo 墙与在线演示入口（二五云）；部署在 EdgeOne Pages 独立项目，域名为 `www.turaidc.com`。README 的 Trusted Partners 同步新增山水画路
+- **官网首页换成真实系统截图 + 项目动态**：Hero 右侧手写的界面示意图（图注自认「数值为占位」）换成二五云线上站点的商品选购页实拍，截图由 `site-web/scripts/capture-shots.mjs` 用无头 Chrome 打开线上站点截取，产物 `public/shots/catalog.webp` 入库，构建不依赖浏览器与网络；新增「项目动态」区块，展示最新 release 版本号与发布日期、Star / Fork / 未关闭 issue / 许可 / 最近提交五项徽章与近五版记录，数据由 `scripts/fetch-github.mjs` 挂在 `prebuild` 上抓取并写进 `src/data/github.json`，抓不到就沿用上一次快照
 - **描述来源口径收敛**：上游描述归一此前在导入路径与 remark 兜底各有一份实现，现抽到 `ProductDescriptionService::normalizeUpstreamHtml()` 统一供给，两条路径对同一段上游 HTML 产出同一结果
 - **AI 助手改成会卖东西的导购**：① 商品类工具（`search_products` / `get_product_detail` /
   `quote_price`）现在统一输出「区域 · 机房/线路 · 规格」的完整叫法、分组全路径与官网链接——
