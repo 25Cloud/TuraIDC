@@ -69,6 +69,23 @@ class ServiceDetailRemoteFetchScopeTest extends TestCase
         $this->assertFalse($this->invokeNatFetch($service, 'default'));
     }
 
+    /**
+     * 运营在后台把「控制台面板」选成端口映射，等于声明这台机器走 NAT 转发。
+     *
+     * 实例 3965（NAT 游戏云，product_type=game_cloud）的分组名里没有「云电脑」关键词，
+     * 只看商品类型永远判不成 nat，NAT 远程地址就一直抓不到、详情页「远程地址」是 --。
+     * 前端 isNatConsole() 按 console_template=port_mapping 判定，后端必须同口径。
+     */
+    public function test_port_mapping_template_keeps_nat_fetch(): void
+    {
+        $service = $this->serviceWithProduct(Product::CONSOLE_TEMPLATE_PORT_MAPPING);
+
+        $this->assertTrue(
+            $this->invokeNatFetch($service, 'default'),
+            '端口映射控制台必须抓上游 NAT 远程地址'
+        );
+    }
+
     public function test_background_sync_dispatch_is_public(): void
     {
         $method = new ReflectionMethod(ServiceDetailService::class, 'dispatchBackgroundSync');

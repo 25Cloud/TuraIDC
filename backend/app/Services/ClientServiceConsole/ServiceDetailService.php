@@ -629,10 +629,24 @@ class ServiceDetailService
 
     /**
      * 只有 NAT 控制台的实例才需要上游 NAT 远程地址。
+     *
+     * 判定的第一口径是商品类型/分组关键词（云电脑、云桌面这类），第二口径是运营在后台
+     * 「控制台面板」里显式选的 port_mapping——那是明确声明「这台机器走端口映射」，
+     * 上游的转发地址只出现在 servicedetail?action=nat 这一页，官方 API 的
+     * dedicatedip / assignedips 对 NAT 机器永远是空的。
+     *
+     * 前端 isNatConsole() 一直按 console_template=port_mapping 判定并显示「远程地址」，
+     * 后端此前只认第一口径，两边口径不一致的直接后果就是：NAT 游戏云（product_type=game_cloud、
+     * 分组名里没有「云电脑」关键词）永远不抓这一页，「远程地址」长期显示 --（实例 3965 / 上游主机 9132）。
      */
     private function shouldFetchNatRemote(Service $service): bool
     {
-        return $this->resolverService->resolveConsoleMode($service) === 'nat';
+        if ($this->resolverService->resolveConsoleMode($service) === 'nat') {
+            return true;
+        }
+
+        return strtolower(trim((string) ($service->product?->console_template ?? '')))
+            === Product::CONSOLE_TEMPLATE_PORT_MAPPING;
     }
 
     /**

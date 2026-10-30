@@ -6,6 +6,13 @@
 
 ### 修复
 
+- **实例详情「远程地址」长期是 `--`**：前端 `isNatConsole()` 按 `console_template=port_mapping`
+  判定「这是 NAT 控制台」并显示「远程地址」，后端 `shouldFetchNatRemote()` 却只认商品类型与
+  关键词（云电脑 / 云桌面 / cloud pc……），于是被运营标成「端口映射控制台」的 NAT 游戏云
+  （`product_type=game_cloud`，分组名里没有这些关键词）永远不去抓 `servicedetail?action=nat`——
+  而上游官方 API 的 `dedicatedip` / `assignedips` 对 NAT 机器本来就是空，两处一叠加就是
+  「远程地址」长期 `--`。现后端补上 `console_template=port_mapping` 这一口径，实例 3965
+  （上游主机 9132）实测可取到 `43.249.194.227:10015`
 - **商品「控制台面板」保存成功、刷新又变回通用计算**：详情接口把模板放在
   `configuration.console_template` 下，管理端 `normalizeV2ProductDetail()` 只平铺了
   `config_options`，漏掉这个键——编辑页永远读到 `undefined` 并被归一成 `compute`。
