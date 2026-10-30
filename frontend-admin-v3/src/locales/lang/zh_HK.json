@@ -2395,6 +2395,7 @@
       "consolePortMapping": "端口映射型",
       "consoleType": "控制台類型",
       "consoleTypeTip": "端口映射型適用於端口轉發類業務；CDN 型與虛擬主機型屬面板型（無雲主機語義）；通用計算型為默認控制台。",
+      "consoleTypeRequired": "請先選擇要設置的控制台類型",
       "consoleVirtualHost": "虛擬主機型",
       "cpuModel": "CPU 型號",
       "cpuModelPlaceholder": "留空則清除 CPU 型號",

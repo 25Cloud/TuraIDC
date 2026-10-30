@@ -2395,6 +2395,7 @@
       "consolePortMapping": "Port mapping",
       "consoleType": "Console type",
       "consoleTypeTip": "Port mapping suits port-forwarding workloads; CDN and virtual host are panel types without cloud-server semantics; general compute is the default console.",
+      "consoleTypeRequired": "Select a console type first",
       "consoleVirtualHost": "Virtual host",
       "cpuModel": "CPU model",
       "cpuModelPlaceholder": "Leave empty to clear the CPU model",

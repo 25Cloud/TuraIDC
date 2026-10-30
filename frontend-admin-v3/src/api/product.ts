@@ -45,6 +45,15 @@ export interface ProductRecord {
   service_type_code?: string | null;
   product_type?: string;
   product_type_label?: string;
+  /**
+   * 用户控制台模板：compute / port_mapping / cdn / virtualhost。
+   *
+   * 详情接口把它放在 configuration.console_template，本该由 normalizeV2ProductDetail()
+   * 平铺到这一层。此前漏了这一步，编辑页永远读到 undefined 并归一成 compute——
+   * 现象是「切成端口映射、保存成功、刷新又是通用计算」，而且下一次保存任何字段
+   * 都会把库里正确的 port_mapping 覆盖回 compute。
+   */
+  console_template?: string;
   status?: number | string;
   status_label?: string;
   is_deleted?: boolean;
@@ -352,6 +361,9 @@ function normalizeV2ProductDetail(response: V2ProductDetailResponse): ProductRec
     primary_price: primaryPricePayload,
     primary_cycle: primaryPricePayload.cycle,
     setup_fee: String(pricing.setup_fee || '0.00'),
+    // 控制台模板的真源是 configuration.console_template（AdminProductDetailResource），
+    // 详情顶层没有这个键。缺了这行，编辑页回填恒为 compute。
+    console_template: String(configuration.console_template || 'compute'),
     config_options: Array.isArray(configuration.config_options) ? configuration.config_options : [],
     product_options: Array.isArray(configuration.config_options) ? configuration.config_options : [],
     purchase_requires: {

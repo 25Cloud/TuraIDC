@@ -1795,7 +1795,10 @@ const productBatchDialogTitle = ref('');
 const productBatchSubmitting = ref(false);
 const productBatchTargetProductIds = ref<number[]>([]);
 const productBatchTargetGroup = ref<{ id: number; level: number; name: string } | null>(null);
-const consoleTemplateValue = ref('compute');
+// 批量弹窗里的控制台类型默认不预选：列表接口不下发 console_template，预填不了现有值。
+// 若像以前那样默认选中 compute，管理员只想看一眼弹窗、直接点「确定」，
+// 就会把选中商品里已经设成 port_mapping / cdn / virtualhost 的一起重置回通用计算。
+const consoleTemplateValue = ref('');
 const discountGroupValue = ref<number | string>('');
 const discountGroupOptions = ref<ProductDiscountGroupRecord[]>([]);
 const discountGroupLoading = ref(false);
@@ -3362,7 +3365,8 @@ function openProductBatchDialog(
     ? { id: productGroupEffectiveId(group), level: productGroupLevel(group), name: categoryDisplayName(group) }
     : null;
   if (kind === 'console-template') {
-    consoleTemplateValue.value = 'compute';
+    // 不预选任何一项，必须由管理员显式点选才提交（见 submitProductBatch）
+    consoleTemplateValue.value = '';
   } else if (kind === 'discount-group') {
     discountGroupValue.value = '';
     void loadDiscountGroups();
@@ -3422,6 +3426,13 @@ async function loadDiscountGroups() {
 async function submitProductBatch() {
   const payload: Record<string, unknown> = { product_ids: productBatchTargetProductIds.value };
   if (productBatchDialogKind.value === 'console-template') {
+    // 没选就不发这个字段：后端 buildProductBatchUpdatePayload() 只在字段存在时才写库，
+    // 「打开弹窗、什么都没改、点确定」因此不会碰任何商品的控制台类型。
+    if (!consoleTemplateValue.value) {
+      MessagePlugin.warning(t('products.catalog.consoleTypeRequired'));
+
+      return;
+    }
     payload.console_template = consoleTemplateValue.value;
   } else if (productBatchDialogKind.value === 'discount-group') {
     payload.product_discount_group_id =
