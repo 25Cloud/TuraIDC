@@ -5,6 +5,9 @@ import type {
   ApiKeyRecord,
   ApiKeyStorePayload,
   ApiKeyUsageLogRecord,
+  AutoRefundApplication,
+  AutoRefundBootstrapPayload,
+  AutoRefundCandidatesPayload,
   BalanceLog,
   ClientFinanceListParams,
   ConsoleConnectionInfo,
@@ -192,6 +195,26 @@ function v2InvoiceDetail(id: number | string) {
   return getEnvelope<V2InvoiceDetailPayload>(`/v2/client/invoices/${id}`).then((response) =>
     dataEnvelope(response, normalizeV2InvoiceDetail(response.data)),
   );
+}
+
+/**
+ * 上游不可用时 `/v2/client/auto-refund/candidates` 不报错，改为带 `upstream_error` 返回本地候选；
+ * 候选集合本身可能是 `{ list }` 也可能是裸数组，两种都归一成同一形状。
+ */
+function normalizeAutoRefundCandidates(payload: unknown): AutoRefundCandidatesPayload {
+  if (Array.isArray(payload)) {
+    return { list: payload as NonNullable<AutoRefundCandidatesPayload['list']>, upstream_error: '' };
+  }
+
+  const record = toRecord(payload);
+  const source = Array.isArray(record.list) ? record.list : record.items;
+  const list = Array.isArray(source) ? (source as NonNullable<AutoRefundCandidatesPayload['list']>) : [];
+
+  return {
+    ...record,
+    list,
+    upstream_error: typeof record.upstream_error === 'string' ? record.upstream_error.trim() : '',
+  };
 }
 
 function v2FinanceLedger(params?: QueryParams) {
@@ -462,6 +485,23 @@ const clientApi = {
   updateUpstreamApiPolicy: (data: UpstreamApiPolicyPayload) =>
     putEnvelope<UpstreamApiStatus>('/v2/client/upstream-api/policy', data),
   upstreamApiUsageLogs: () => getEnvelope<{ list: ApiKeyUsageLogRecord[] }>('/v2/client/upstream-api/usage-logs'),
+
+  // 自助退款（插件 addons/auto_refund）。插件停用后这些路径整体 404，
+  // 控制台入口先由 userInfo.features.auto_refund 收口，页面内再看 /bootstrap 的开关。
+  // bootstrap 不请求上游，插件没配置时也应当正常返回 enabled/configured 两个布尔，
+  // 因此这里走 silentError：由页面展示「暂未开放」，不弹全局错误。
+  autoRefundBootstrap: () =>
+    getEnvelope<AutoRefundBootstrapPayload>('/v2/client/auto-refund/bootstrap', { silentError: true }),
+  autoRefundCandidates: () =>
+    getEnvelope<AutoRefundCandidatesPayload>('/v2/client/auto-refund/candidates').then((response) =>
+      dataEnvelope(response, normalizeAutoRefundCandidates(response.data)),
+    ),
+  autoRefundApplications: (params?: QueryParams) =>
+    getEnvelope<PagedList<AutoRefundApplication>>('/v2/client/auto-refund/applications', { params }),
+  submitAutoRefundApplication: (data: Record<string, unknown>) =>
+    postEnvelope<AutoRefundApplication>('/v2/client/auto-refund/applications', data),
+  cancelAutoRefundApplication: (id: number | string) =>
+    postEnvelope<AutoRefundApplication>(`/v2/client/auto-refund/applications/${id}/cancel`),
 };
 
 export default clientApi;

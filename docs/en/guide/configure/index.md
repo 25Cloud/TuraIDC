@@ -1,6 +1,6 @@
 ---
 source: guide/configure/index.md
-sourceHash: 699c1b9b53281560881fa6d327be8929a120da95a2b79a0964ebc9cc0d6338a1
+sourceHash: 1ee737aa061c48429c27695472fa3d606cb5d04584dd4271c21b0abe97ab1814
 translatedAt: 2026-10-26
 ---
 
@@ -36,3 +36,4 @@ This page covers the configuration work between a finished deployment and sellin
 - [Deployment and Installation](../deploy/index.md): start here if the deployment is not finished yet.
 - [Daily Operations](../operate/index.md): once configuration is done, move on to the day-to-day work on products, orders, and finances.
 - [Rainyun RCS plugin](rainyun-rcs.md): installation prerequisites, provider pricing, direct-connect console, and integration boundaries.
+- [Self-service refunds](auto-refund.md): console self-service refunds, upstream API integration, ledger settlement, and voiding.

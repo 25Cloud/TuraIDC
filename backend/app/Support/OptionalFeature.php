@@ -25,6 +25,9 @@ final class OptionalFeature
     /** AI 助手（插件 addons/ai_assistant） */
     public const AI_ASSISTANT = 'ai_assistant';
 
+    /** 自助退款（插件 addons/auto_refund） */
+    public const AUTO_REFUND = 'auto_refund';
+
     /**
      * 全部可选功能及其可用性。
      *
@@ -37,6 +40,7 @@ final class OptionalFeature
     {
         return [
             self::AI_ASSISTANT => self::pluginEnabled(PluginDomain::ADDONS, 'ai_assistant'),
+            self::AUTO_REFUND => self::pluginEnabled(PluginDomain::ADDONS, 'auto_refund'),
         ];
     }
 

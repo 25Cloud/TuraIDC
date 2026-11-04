@@ -32,6 +32,7 @@ import { useNoticeReadStatus } from '@/domains/content/useNoticeReadStatus';
 import type { LocalizedTitle } from '@/locales';
 import { useLocale } from '@/locales/useLocale';
 import { getActive } from '@/router';
+import { useUserStore } from '@/store';
 import type { MenuRoute } from '@/types/interface';
 
 type ListItemType = MenuRoute;
@@ -51,6 +52,18 @@ const active = computed(() => getActive());
 
 const { locale } = useLocale();
 
+const userStore = useUserStore();
+
+/**
+ * 可选功能门：插件停用后接口整体 404，侧栏不能继续挂着死入口。
+ * 判定口径与 permission.ts、后端 App\Support\OptionalFeature 一致：缺键按不可用。
+ */
+function isFeatureAvailable(route: MenuRoute) {
+  const requiredFeature = route.meta?.requiresFeature;
+  if (typeof requiredFeature !== 'string' || !requiredFeature) return true;
+  return userStore.features[requiredFeature] === true;
+}
+
 const list = computed(() => {
   return getMenuList(props.navData);
 });
@@ -67,7 +80,7 @@ const shouldShowIcon = (item: ListItemType) => {
 
 const renderMenuTitle = (title?: LocalizedTitle) => {
   if (!title) return '';
-  return (title[locale.value as keyof LocalizedTitle] || title.zh_CN) || '';
+  return title[locale.value as keyof LocalizedTitle] || title.zh_CN || '';
 };
 
 function getMenuList(list: MenuRoute[], basePath?: string): MenuRoute[] {
@@ -96,7 +109,7 @@ function getMenuList(list: MenuRoute[], basePath?: string): MenuRoute[] {
         redirect: item.redirect,
       } as MenuRoute;
     })
-    .filter((item) => item.meta && item.meta.hidden !== true);
+    .filter((item) => item.meta && item.meta.hidden !== true && isFeatureAvailable(item));
 }
 
 const getHref = (item: MenuRoute) => {

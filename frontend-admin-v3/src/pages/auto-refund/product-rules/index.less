@@ -1,0 +1,152 @@
+/* 退款商品策略页：筛选 → 工具条 → 表格/卡片 → 分页，与退款台账同一版式 */
+.auto-refund-product-rules-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.product-rules-filter {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 180px;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.product-rules-filter > * {
+  min-width: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.product-rule-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--td-font-size-size-2, 13px);
+}
+
+/* 商品名点得进策略抽屉：沿用财务各页的「下划线式链接」外观 */
+.product-rule-link {
+  display: flex;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.product-rule-link strong {
+  overflow: hidden;
+  color: var(--td-brand-color);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-rule-time {
+  font-size: var(--td-font-size-size-2, 13px);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.product-rule-mobile-list {
+  min-height: 120px;
+}
+
+.product-rule-mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ===== 策略抽屉 ===== */
+
+.product-rule-target {
+  margin: 0 0 16px;
+  padding: 8px 10px;
+  border-radius: var(--td-radius-medium, 6px);
+  background: var(--td-bg-color-secondarycontainer);
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-2, 13px);
+  line-height: 1.6;
+}
+
+/* 单选组纵向排：每个取值旁边跟一句说明，横排会把说明挤到看不见 */
+.product-rule-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.product-rule-option {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+
+.product-rule-option__hint {
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-size-1, 12px);
+  line-height: 1.5;
+}
+
+.product-rule-window {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.product-rule-window__unit {
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-2, 13px);
+}
+
+@media (width <= 1024px) {
+  .product-rules-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width <= 768px) {
+  .product-rules-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "keyword keyword"
+      "status status";
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .product-rules-filter :where(.t-input, .t-select) {
+    width: 100%;
+    height: 38px;
+  }
+
+  .product-rules-filter .filter-keyword {
+    grid-area: keyword;
+  }
+
+  .product-rules-filter .filter-status {
+    grid-area: status;
+  }
+
+  .pagination-row {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .pagination-row .t-pagination {
+    min-width: max-content;
+  }
+}

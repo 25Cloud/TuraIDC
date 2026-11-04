@@ -1,6 +1,6 @@
 ---
 source: guide/configure/index.md
-sourceHash: 699c1b9b53281560881fa6d327be8929a120da95a2b79a0964ebc9cc0d6338a1
+sourceHash: 1ee737aa061c48429c27695472fa3d606cb5d04584dd4271c21b0abe97ab1814
 generated: zh-hk
 ---
 
@@ -37,3 +37,4 @@ generated: zh-hk
 - [部署安裝](../deploy/index.md)：還沒完成部署先看這裡。
 - [日常運營](../operate/index.md)：配置完成後進入商品、訂單與財務的日常操作。
 - [雨雲 RCS 插件](rainyun-rcs.md)：安裝前提、供應商價格、直連控制台與聯調邊界。
+- [自助退款](auto-refund.md)：控制台自助退款、上游接口對接、台賬結算與作廢口徑。

@@ -1,4 +1,5 @@
 import { agentDiscountApi } from './agentDiscount';
+import { autoRefundApi } from './autoRefund';
 import { contentApi, mediaApi, siteHeroApi } from './content';
 import { couponCampaignsApi, couponsApi } from './coupon';
 import { dashboardApi } from './dashboard';
@@ -32,6 +33,9 @@ export const adminApi = {
 
   // Finance Menu
   financeMenu: financeMenuApi,
+
+  // Auto Refund（插件 addons/auto_refund，插件未启用时接口整体 404）
+  autoRefund: autoRefundApi,
 
   // Settings
   settings: settingsApi,

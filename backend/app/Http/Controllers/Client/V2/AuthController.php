@@ -29,6 +29,7 @@ use App\Services\Auth\VerificationCodeService;
 use App\Services\System\NotificationService;
 use App\Services\System\SmsService;
 use App\Support\AccountIdentifier;
+use App\Support\OptionalFeature;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Laravel\Sanctum\PersonalAccessToken;
@@ -331,6 +332,9 @@ class AuthController extends Controller
                 'account' => $user->alipay_account,
                 'is_bound' => $this->hasBoundAlipayAccount($user),
             ],
+            // 可选功能可用性（插件提供能力、页面托管在核心）：控制台据此隐藏侧栏入口
+            // 与路由（见 App\Support\OptionalFeature 与 site 侧 requiresFeature）。
+            'features' => OptionalFeature::map(),
             'last_login_at' => $user->last_login_at?->format('Y-m-d H:i:s'),
             'last_login_ip' => (string) ($user->last_login_ip ?? ''),
             'verified_at' => $user->verified_at?->format('Y-m-d H:i:s'),

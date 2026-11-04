@@ -1,0 +1,186 @@
+/* 自助退款台账页：筛选 → 工具条 → 表格/卡片 → 分页，与其它财务列表页同一版式 */
+.auto-refund-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auto-refund-filter {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) repeat(3, 148px) 150px 150px;
+  gap: 12px;
+  align-items: stretch;
+  margin-bottom: 16px;
+}
+
+.auto-refund-filter > * {
+  min-width: 0;
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+/* 工具条左侧放上游自检/对账，右侧留给统一的展示方式开关 */
+.auto-refund-toolbar {
+  display: flex;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.auto-refund-upstream-alert {
+  margin-bottom: 12px;
+}
+
+.auto-refund-stack {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.auto-refund-stack strong {
+  overflow: hidden;
+  color: var(--td-text-color-primary);
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.auto-refund-stack span {
+  overflow: hidden;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-1, 12px);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 单号/邮箱这类内容点得进去看详情，样式沿用财务各页的「下划线式链接」 */
+.auto-refund-link {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.auto-refund-link:disabled {
+  color: inherit;
+  cursor: default;
+}
+
+.auto-refund-link:not(:disabled) strong {
+  color: var(--td-brand-color);
+}
+
+.auto-refund-mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: var(--td-font-size-size-1, 12px);
+}
+
+/* 时间列用等宽数字并小一号：19 位时间戳在 160px 列里不换行 */
+.auto-refund-time {
+  font-size: var(--td-font-size-size-2, 13px);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.auto-refund-mobile-list {
+  min-height: 120px;
+}
+
+.auto-refund-mobile-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pagination-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.auto-refund-dialog-hint {
+  margin: 12px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--td-radius-medium, 6px);
+  background: var(--td-warning-color-light);
+  color: var(--td-text-color-primary);
+  font-size: var(--td-font-size-size-2, 13px);
+  line-height: 1.6;
+}
+
+.auto-refund-dialog-target {
+  margin: 8px 0 0;
+  color: var(--td-text-color-secondary);
+  font-size: var(--td-font-size-size-2, 13px);
+  line-height: 1.6;
+}
+
+@media (width <= 1024px) {
+  .auto-refund-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (width <= 768px) {
+  .auto-refund-filter {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-areas:
+      "keyword keyword"
+      "status refundtype"
+      "channel channel"
+      "start end";
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .auto-refund-filter :where(.t-input, .t-select, .t-date-picker) {
+    width: 100%;
+    height: 38px;
+  }
+
+  .auto-refund-filter .filter-keyword {
+    grid-area: keyword;
+  }
+
+  .auto-refund-filter .filter-status {
+    grid-area: status;
+  }
+
+  .auto-refund-filter .filter-refund-type {
+    grid-area: refundtype;
+  }
+
+  .auto-refund-filter .filter-channel {
+    grid-area: channel;
+  }
+
+  .auto-refund-filter .filter-start {
+    grid-area: start;
+  }
+
+  .auto-refund-filter .filter-end {
+    grid-area: end;
+  }
+
+  .auto-refund-toolbar {
+    flex: 1 1 auto;
+    flex-wrap: wrap;
+  }
+
+  .pagination-row {
+    justify-content: flex-start;
+    overflow-x: auto;
+  }
+
+  .pagination-row .t-pagination {
+    min-width: max-content;
+  }
+}

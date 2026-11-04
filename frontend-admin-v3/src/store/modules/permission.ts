@@ -146,6 +146,24 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
           { path: '/admin/finance/recharges', title: { zh_CN: '充值记录', en_US: 'Recharges' } },
         ],
       },
+      {
+        // 自助退款台账：能力来自 addons/auto_refund 插件，页面托管在核心。
+        // 整组带 requiresFeature——插件未启用/已卸载时这组消失（嵌套分组同样走
+        // buildMenuGroup 的功能开关判定），财务分组下的其它子分组不受影响。
+        path: '/admin/menu/finance/auto-refund',
+        title: { zh_CN: '自助退款', en_US: 'Auto Refund' },
+        requiresFeature: 'auto_refund',
+        children: [
+          {
+            path: '/admin/auto-refund/applications',
+            title: { zh_CN: '退款申请', en_US: 'Refund Applications' },
+          },
+          {
+            path: '/admin/auto-refund/product-rules',
+            title: { zh_CN: '退款商品策略', en_US: 'Product Refund Rules' },
+          },
+        ],
+      },
     ],
   },
   {
@@ -340,11 +358,7 @@ export function getPermissionStore() {
   return usePermissionStore(store);
 }
 
-function buildGroupedMenuRouters(
-  routes: RouteRecordRaw[],
-  permissions: string[],
-  features: Record<string, boolean>,
-) {
+function buildGroupedMenuRouters(routes: RouteRecordRaw[], permissions: string[], features: Record<string, boolean>) {
   return routes.flatMap((route) => {
     if (route.path !== '/admin') return route;
 

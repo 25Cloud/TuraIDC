@@ -11,6 +11,20 @@ const initUserInfo: ClientUserInfo = {
   roles: ['client'],
 };
 
+/**
+ * 可选功能可用性归一化：后端下发的是 PHP bool，只认 true。
+ * 缺键、非对象、历史持久化数据里的旧结构一律当不可用，与 App\Support\OptionalFeature 口径一致。
+ */
+function normalizeFeatures(raw: unknown): Record<string, boolean> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+
+  const features: Record<string, boolean> = {};
+  Object.entries(raw as Record<string, unknown>).forEach(([key, value]) => {
+    features[key] = value === true;
+  });
+  return features;
+}
+
 function normalizeUserInfo(raw: Record<string, unknown> = {}): ClientUserInfo {
   const nickname = String(raw.nickname || raw.name || raw.email || '').trim();
   return {
@@ -18,6 +32,7 @@ function normalizeUserInfo(raw: Record<string, unknown> = {}): ClientUserInfo {
     name: nickname || '用户',
     nickname,
     roles: ['client'],
+    features: normalizeFeatures(raw.features),
   };
 }
 
@@ -30,6 +45,11 @@ export const useUserStore = defineStore('user', {
   getters: {
     roles: (state) => state.userInfo?.roles || ['client'],
     info: (state) => state.userInfo,
+    /**
+     * 可选功能可用性（插件提供能力、页面托管在核心）。
+     * 侧栏与路由 meta.requiresFeature 都按它判定；后端缺键一律视为不可用。
+     */
+    features: (state): Record<string, boolean> => normalizeFeatures(state.userInfo?.features),
   },
   actions: {
     syncTokenFromSession() {

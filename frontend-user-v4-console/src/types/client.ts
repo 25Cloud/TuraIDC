@@ -88,6 +88,11 @@ export interface ClientUserInfo {
   qq?: string;
   avatar?: string;
   roles?: string[];
+  /**
+   * 可选功能可用性（后端 App\Support\OptionalFeature::map() 下发）。
+   * 键名是插件 slug，例如 `ai_assistant`、`auto_refund`；缺键一律按不可用处理。
+   */
+  features?: Record<string, boolean>;
   [key: string]: unknown;
 }
 
@@ -1529,5 +1534,135 @@ export interface UpstreamApiCredential {
 export interface UpstreamApiPolicyPayload {
   ip_allowlist?: string[];
   expires_at?: string | null;
+  [key: string]: unknown;
+}
+
+/**
+ * 自助退款（插件 addons/auto_refund）在控制台侧的契约。
+ * 唯一真源：docs/internal/execution-plans/active/auto-refund-plugin-2026-11-01.md
+ *
+ * 计算口径：真正退多少钱由上游按其退款规则算，本地只给预估金额，
+ * 因此 `estimated_amount` 一律标注「以上游核算为准」。
+ */
+
+/**
+ * 退款策略的**默认值 + 说明**。
+ *
+ * 第二阶段起真正生效的是每个商品自己的策略（`/candidates` 每项自带
+ * `refund_type` / `refund_rule` / `requirement`），这里只保留一段通用说明与站点级的
+ * 最低可退金额；`mode` / `days` 这类字段即使后端仍下发，页面也不当全局规则用。
+ */
+export interface AutoRefundPolicyPayload {
+  mode?: string;
+  mode_label?: string;
+  days?: number | string;
+  window_days?: number | string;
+  min_amount?: number | string;
+  require_first_only?: boolean | number | string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+/** `GET /v2/client/auto-refund/bootstrap`：开关与规则文案，不请求上游 */
+export interface AutoRefundBootstrapPayload {
+  enabled?: boolean | number;
+  configured?: boolean | number;
+  /** 插件启用 + 上游已配置 + 台账表已就绪，三者同时成立才可自助申请 */
+  open?: boolean | number;
+  table_ready?: boolean | number;
+  /** 站长在插件配置里写的控制台说明 */
+  console_notice?: string;
+  notice?: string;
+  request_timeout?: number;
+  policy?: AutoRefundPolicyPayload | string | null;
+  policy_text?: string;
+  [key: string]: unknown;
+}
+
+/** 退款申请（台账行），状态见执行计划的状态机 */
+export interface AutoRefundApplication {
+  id: number;
+  application_no?: string;
+  service_id?: number;
+  service_name?: string;
+  product_name?: string;
+  order_id?: number;
+  invoice_id?: number;
+  reason?: string;
+  /** 提交时的本地预估，不是最终退款金额 */
+  estimated_amount?: string | number;
+  /** 实际结算金额，未结算时为 null */
+  settled_amount?: string | number | null;
+  /** pending_review / cancelled / settled / rejected / failed / uncertain / closed */
+  status?: string;
+  status_label?: string;
+  /** 提交时的商品退款类型快照：manual / auto / api_ticket / bridge，决定提交成功后的话术与列表展示 */
+  refund_type?: string;
+  refund_type_label?: string;
+  /** 实际走的通道，只有三个值：bridge 上游接口 / api_ticket 上游工单 / local 仅本站 */
+  channel?: string;
+  channel_label?: string;
+  /** api_ticket 通道落在本站的工单 id，可跳到工单详情 */
+  ticket_id?: number | string | null;
+  /** 上游工单号；zjfm 协议拿不到，允许为空 */
+  upstream_ticket_id?: string | number | null;
+  /** 提交时的商品策略快照，用于事后解释「当时为什么能退」 */
+  policy_snapshot?: Record<string, unknown> | string | null;
+  /**
+   * 后端判定「本申请是否允许用户自行取消」：只有走上游接口、上游存在可撤销记录的才算。
+   * 缺省时前端回落到「状态为待审核」这一条，避免旧快照直接崩。
+   */
+  cancellable?: boolean;
+  upstream_code?: number | null;
+  upstream_msg?: string | null;
+  trace_id?: string | null;
+  submitted_at?: string;
+  cancelled_at?: string | null;
+  settled_at?: string | null;
+  created_at?: string;
+  [key: string]: unknown;
+}
+
+/** `GET /v2/client/auto-refund/candidates` 的单项 */
+export interface AutoRefundCandidate {
+  service_id: number;
+  service_name?: string;
+  product_name?: string;
+  domain?: string;
+  dedicatedip?: string;
+  assignedips?: string;
+  regdate?: string;
+  nextduedate?: string;
+  estimated_amount?: string | number;
+  estimate_hint?: string;
+  refundable?: boolean;
+  /** 该商品的退款类型：manual / auto / api_ticket / bridge */
+  refund_type?: string;
+  refund_type_label?: string;
+  /** 该商品的退款规则：duration / month / full */
+  refund_rule?: string;
+  refund_rule_label?: string;
+  /** 该商品的退款要求：product_first / category_first / within_hours */
+  requirement?: string;
+  requirement_label?: string;
+  /** 仅 requirement=within_hours 生效的小时窗口 */
+  window_hours?: number | string | null;
+  /** false = 该商品没配退款策略，整行不可申请（blocked_reasons 会带 rule_missing） */
+  policy_configured?: boolean | number;
+  /**
+   * 枚举码，前端本地化：upstream_missing / no_paid_invoice / window_expired / first_only_used /
+   * pending_application / amount_too_low / upstream_unavailable /
+   * rule_missing / renewed / upgraded / free_order / service_status / expired / unpaid
+   */
+  blocked_reasons?: string[];
+  /** 已有申请时回填，前端据此显示当前状态而不是「申请退款」 */
+  application?: AutoRefundApplication | null;
+  [key: string]: unknown;
+}
+
+/** `/candidates` 上游不可用时不报错，改为带 `upstream_error` 返回本地候选 */
+export interface AutoRefundCandidatesPayload {
+  list?: AutoRefundCandidate[];
+  upstream_error?: string | null;
   [key: string]: unknown;
 }

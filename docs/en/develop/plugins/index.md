@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: cd79ce7345f6ac3912250cf3bc7806c9bfac1c49383da40193348400b55da9c1
+sourceHash: 3a4c48ec7b22441dbe3294f1a4545f894609bf5e814ff51bd6e7caeb9f7e6f7b
 translatedAt: 2026-10-26
 ---
 
@@ -648,37 +648,38 @@ The platform side is responsible for:
 
 The following plugins are placed directly under `backend/plugins/{能力域}/` and are scanned by the admin side like ordinary plugins. `demo_*` is for development research and is not recommended for production; before enabling a real plugin, config, testing, and callback boundary confirmation must be completed.
 
-| Capability domain             | Plugin directory                                  | Description                                                     |
-| ----------------------------- | ------------------------------------------------- | --------------------------------------------------------------- |
-| Payment channel               | `backend/plugins/gateways/ali_pay`                | Real Alipay face-to-face payment plugin                         |
-| Payment channel               | `backend/plugins/gateways/demo_pay`               | Simulated payment gateway                                       |
-| Payment channel               | `backend/plugins/gateways/epay`                   | EPay plugin                                                     |
-| Real-name verification        | `backend/plugins/certification/stay33`            | Stay33 real-name verification plugin                            |
-| Real-name verification        | `backend/plugins/certification/baidu_face`        | Baidu face real-name verification plugin                        |
-| Real-name verification        | `backend/plugins/certification/smapi`             | Aggregated real-name verification plugin (Xiaomu Real-name API) |
-| Real-name verification        | `backend/plugins/certification/leaf_face`         | leaf real-name verification plugin                              |
-| Real-name verification        | `backend/plugins/certification/alipay_certify`    | Alipay identity verification plugin                             |
-| Real-name verification        | `backend/plugins/certification/demo_verification` | Simulated real-name verification plugin                         |
-| Human verification            | `backend/plugins/captcha/geetest`                 | GeeTest CAPTCHA plugin                                          |
-| Human verification            | `backend/plugins/captcha/vaptcha`                 | Vaptcha CAPTCHA plugin                                          |
-| Human verification            | `backend/plugins/captcha/turnstile`               | Cloudflare Turnstile CAPTCHA plugin                             |
-| Human verification            | `backend/plugins/captcha/corptcha`                | Corptcha human verification plugin                              |
-| Human verification            | `backend/plugins/captcha/cap`                     | Cap human verification plugin                                   |
-| Email delivery                | `backend/plugins/mail/multi_smtp_round_robin`     | Multi SMTP round-robin email plugin                             |
-| Email delivery                | `backend/plugins/mail/smtp`                       | Single SMTP email plugin                                        |
-| Email delivery                | `backend/plugins/mail/demo_mail`                  | Simulated email plugin                                          |
-| SMS delivery                  | `backend/plugins/sms/aliyun_sms`                  | Alibaba Cloud SMS service plugin                                |
-| SMS delivery                  | `backend/plugins/sms/aliyun`                      | Alibaba Cloud phone number verification plugin                  |
-| SMS delivery                  | `backend/plugins/sms/stay33`                      | Stay33 SMS plugin                                               |
-| SMS delivery                  | `backend/plugins/sms/demo_sms`                    | Simulated SMS plugin                                            |
-| Upstream provisioning/control | `backend/plugins/servers/zjmf_finance`            | ZJMF Finance upstream plugin                                    |
-| Upstream provisioning/control | `backend/plugins/servers/tura_open_api`           | TuraIDC open API upstream driver plugin                         |
-| Upstream provisioning/control | `backend/plugins/servers/kanghostx`               | KangLe virtual host plugin                                      |
-| Upstream provisioning/control | `backend/plugins/servers/rainyun_rcs`             | Rainyun RCS and add-on resource billing                         |
-| Upstream provisioning/control | `backend/plugins/servers/demo_servers`            | Simulated upstream plugin                                       |
-| Feature extension             | `backend/plugins/addons/ai_assistant`             | In-site AI assistant: chat, tool calls, shopping guide and admin governance |
-| Feature extension             | `backend/plugins/addons/demo_style`               | Addon, scheduled task, and hook example plugin                  |
-| Feature extension             | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge compatibility interface plugin                      |
+| Capability domain             | Plugin directory                                  | Description                                                                                                |
+| ----------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Payment channel               | `backend/plugins/gateways/ali_pay`                | Real Alipay face-to-face payment plugin                                                                    |
+| Payment channel               | `backend/plugins/gateways/demo_pay`               | Simulated payment gateway                                                                                  |
+| Payment channel               | `backend/plugins/gateways/epay`                   | EPay plugin                                                                                                |
+| Real-name verification        | `backend/plugins/certification/stay33`            | Stay33 real-name verification plugin                                                                       |
+| Real-name verification        | `backend/plugins/certification/baidu_face`        | Baidu face real-name verification plugin                                                                   |
+| Real-name verification        | `backend/plugins/certification/smapi`             | Aggregated real-name verification plugin (Xiaomu Real-name API)                                            |
+| Real-name verification        | `backend/plugins/certification/leaf_face`         | leaf real-name verification plugin                                                                         |
+| Real-name verification        | `backend/plugins/certification/alipay_certify`    | Alipay identity verification plugin                                                                        |
+| Real-name verification        | `backend/plugins/certification/demo_verification` | Simulated real-name verification plugin                                                                    |
+| Human verification            | `backend/plugins/captcha/geetest`                 | GeeTest CAPTCHA plugin                                                                                     |
+| Human verification            | `backend/plugins/captcha/vaptcha`                 | Vaptcha CAPTCHA plugin                                                                                     |
+| Human verification            | `backend/plugins/captcha/turnstile`               | Cloudflare Turnstile CAPTCHA plugin                                                                        |
+| Human verification            | `backend/plugins/captcha/corptcha`                | Corptcha human verification plugin                                                                         |
+| Human verification            | `backend/plugins/captcha/cap`                     | Cap human verification plugin                                                                              |
+| Email delivery                | `backend/plugins/mail/multi_smtp_round_robin`     | Multi SMTP round-robin email plugin                                                                        |
+| Email delivery                | `backend/plugins/mail/smtp`                       | Single SMTP email plugin                                                                                   |
+| Email delivery                | `backend/plugins/mail/demo_mail`                  | Simulated email plugin                                                                                     |
+| SMS delivery                  | `backend/plugins/sms/aliyun_sms`                  | Alibaba Cloud SMS service plugin                                                                           |
+| SMS delivery                  | `backend/plugins/sms/aliyun`                      | Alibaba Cloud phone number verification plugin                                                             |
+| SMS delivery                  | `backend/plugins/sms/stay33`                      | Stay33 SMS plugin                                                                                          |
+| SMS delivery                  | `backend/plugins/sms/demo_sms`                    | Simulated SMS plugin                                                                                       |
+| Upstream provisioning/control | `backend/plugins/servers/zjmf_finance`            | ZJMF Finance upstream plugin                                                                               |
+| Upstream provisioning/control | `backend/plugins/servers/tura_open_api`           | TuraIDC open API upstream driver plugin                                                                    |
+| Upstream provisioning/control | `backend/plugins/servers/kanghostx`               | KangLe virtual host plugin                                                                                 |
+| Upstream provisioning/control | `backend/plugins/servers/rainyun_rcs`             | Rainyun RCS and add-on resource billing                                                                    |
+| Upstream provisioning/control | `backend/plugins/servers/demo_servers`            | Simulated upstream plugin                                                                                  |
+| Feature extension             | `backend/plugins/addons/ai_assistant`             | In-site AI assistant: chat, tool calls, shopping guide and admin governance                                |
+| Feature extension             | `backend/plugins/addons/auto_refund`              | Self-service refunds: console applications, upstream AutoRefund integration, ledger settlement and voiding |
+| Feature extension             | `backend/plugins/addons/demo_style`               | Addon, scheduled task, and hook example plugin                                                             |
+| Feature extension             | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge compatibility interface plugin                                                                 |
 
 Every demo package contains:
 
@@ -691,6 +692,7 @@ Every demo package contains:
 ## 12. Current Plugin Documentation
 
 - [Plugin package specification (standalone repository distribution and plugin marketplace)](package-spec.md)
+- [Self-service refund plugin (console applications and upstream AutoRefund integration)](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/auto_refund/README.md)
 - [Alipay face-to-face payment plugin demo](demo-ali-pay.md)
 - [AI assistant plugin (chat, tool calls, shopping guide and governance)](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
 - [AI assistant plugin release mirror](https://github.com/25Cloud/turaidc-plugin-ai-assistant): a read-only mirror of the built-in plugin (tags align with the manifest `info.version`) so other sites can install it via `plugin:market:install` or a local zip. **The main repository is still the single source of truth** — do not open PRs against the mirror; see its `MIRROR.md` for the sync procedure.

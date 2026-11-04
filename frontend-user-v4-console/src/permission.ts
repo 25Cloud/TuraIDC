@@ -5,6 +5,7 @@ import { MessagePlugin } from 'tdesign-vue-next';
 
 import { getClientToken } from '@/app/runtime/session';
 import { useSiteBrandingStore } from '@/app/stores/siteBranding';
+import { t } from '@/locales';
 import router from '@/router';
 import { getPermissionStore, useUserStore } from '@/store';
 
@@ -91,6 +92,15 @@ router.beforeEach(async (to, _from, next) => {
       }
       fetchingUser = false;
     }
+  }
+
+  // 可选功能校验：页面托管在核心、能力来自插件（见 backend App\Support\OptionalFeature）。
+  // 插件停用或卸载后对应接口整体 404，直接输地址进来只会看到一片报错，退回控制台首页并说明原因。
+  const requiredFeature = to.meta.requiresFeature;
+  if (requiredFeature && useUserStore().features[requiredFeature] !== true) {
+    MessagePlugin.warning(t('common.featureUnavailable'));
+    next({ path: '/client/dashboard', replace: true });
+    return;
   }
 
   next();

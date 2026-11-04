@@ -284,6 +284,58 @@ class TicketDeliveryService
         DeliverTicketToUpstreamJob::dispatch((int) $ticket->id)->afterCommit();
     }
 
+    /**
+     * 自助退款插件（addons/auto_refund）「向上游开工单」通道专用入口。
+     *
+     * 与 {@see queueTicket()} 的区别只有一条：这条路径不依赖 `ticket_delivery_rules`
+     * 匹配，供应商 / 上游部门 / 上游实例由调用方（插件按商品退款策略）直接给出——
+     * 退款工单是「一笔已知上游机器的既成事实」，让它去撞规则匹配只会在规则没配时静默不发。
+     *
+     * 行为：先把绑定落成 `pending`（已投递过的不重复发），写一条 `ticket.create` 日志，
+     * 再投递既有的 `DeliverTicketToUpstreamJob`；投递本身、回调注册、失败重试全部复用既有链路。
+     */
+    public function queueRefundTicket(Ticket $ticket, int $supplierId, string $departmentId, string $upstreamServiceId): void
+    {
+        $binding = TicketUpstreamBinding::query()->firstOrCreate(
+            ['ticket_id' => $ticket->id],
+            [
+                'provider_key' => ProviderKey::ZJMF_FINANCE_API,
+                'supplier_id' => $supplierId,
+                'upstream_department_id' => $departmentId,
+                'upstream_service_id' => $upstreamServiceId,
+                'status' => 'pending',
+            ]
+        );
+
+        if ($binding->upstream_ticket_id !== null || in_array($binding->status, ['sending', 'delivered'], true)) {
+            $this->recordLog($ticket, [
+                'binding_id' => $binding->id,
+                'operation' => 'ticket.create',
+                'event' => 'skipped',
+                'status' => (string) $binding->status,
+                'reason_code' => 'already_delivered',
+                'provider_key' => $binding->provider_key,
+                'supplier_id' => $binding->supplier_id,
+                'message' => '工单已经完成上游投递，无需重复提交',
+            ]);
+
+            return;
+        }
+
+        $binding->update(['status' => 'pending', 'last_error' => null]);
+        $this->recordLog($ticket, [
+            'binding_id' => $binding->id,
+            'operation' => 'ticket.create',
+            'event' => 'queued',
+            'status' => 'pending',
+            'provider_key' => $binding->provider_key,
+            'supplier_id' => $binding->supplier_id,
+            'message' => '退款工单已进入上游投递队列',
+        ]);
+
+        DeliverTicketToUpstreamJob::dispatch((int) $ticket->id)->afterCommit();
+    }
+
     public function queueClientReply(TicketReply $reply): void
     {
         $ticket = $reply->relationLoaded('ticket') ? $reply->ticket : $reply->load('ticket')->ticket;

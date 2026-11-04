@@ -8,6 +8,7 @@ import {
   HelpCircleIcon,
   LockOnIcon,
   NotificationIcon,
+  RollbackIcon,
   ServerIcon,
   ServiceIcon,
   UserCircleIcon,
@@ -151,6 +152,21 @@ export default [
               icon: icon(FileIcon),
               requireAuth: true,
               orderNo: 20,
+            },
+          },
+          {
+            // 退款中心由插件 addons/auto_refund 提供能力，页面托管在核心：
+            // 插件停用/未安装时 features.auto_refund 为 false，侧栏与直达都收口（见 permission.ts）。
+            // 插件装且启用但上游没配置时入口保留，页内展示「暂未开放」。
+            path: '/client/refunds',
+            name: 'ClientRefunds',
+            component: () => import('@/pages/client/refunds/index.vue'),
+            meta: {
+              title: title('退款中心', 'Refunds', '退款中心'),
+              icon: icon(RollbackIcon),
+              requireAuth: true,
+              requiresFeature: 'auto_refund',
+              orderNo: 30,
             },
           },
         ],

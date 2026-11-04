@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: cd79ce7345f6ac3912250cf3bc7806c9bfac1c49383da40193348400b55da9c1
+sourceHash: 3a4c48ec7b22441dbe3294f1a4545f894609bf5e814ff51bd6e7caeb9f7e6f7b
 generated: zh-hk
 ---
 
@@ -662,37 +662,38 @@ php artisan schedule:list
 
 以下插件直接放在 `backend/plugins/{能力域}/`，會像普通插件一樣被後台掃描到。`demo_*` 用於開發研究，不建議在生產環境啟用；真實插件啟用前必須完成配置、測試和回調邊界確認。
 
-| 能力域        | 插件目錄                                          | 説明                             |
-| ------------- | ------------------------------------------------- | -------------------------------- |
-| 支付渠道      | `backend/plugins/gateways/ali_pay`                | 支付寶當面付真實支付插件         |
-| 支付渠道      | `backend/plugins/gateways/demo_pay`               | 模擬支付網關                     |
-| 支付渠道      | `backend/plugins/gateways/epay`                   | 易支付插件                       |
-| 實名認證      | `backend/plugins/certification/stay33`            | Stay33 實名認證插件              |
-| 實名認證      | `backend/plugins/certification/baidu_face`        | 百度人臉實名認證插件             |
-| 實名認證      | `backend/plugins/certification/smapi`             | 聚合實名認證插件（小沐實名 API） |
-| 實名認證      | `backend/plugins/certification/leaf_face`         | leaf 實名認證插件                |
-| 實名認證      | `backend/plugins/certification/alipay_certify`    | 支付寶身份認證插件               |
-| 實名認證      | `backend/plugins/certification/demo_verification` | 模擬實名插件                     |
-| 人機驗證      | `backend/plugins/captcha/geetest`                 | GeeTest 驗證碼插件               |
-| 人機驗證      | `backend/plugins/captcha/vaptcha`                 | Vaptcha 驗證碼插件               |
-| 人機驗證      | `backend/plugins/captcha/turnstile`               | Cloudflare Turnstile 驗證碼插件  |
-| 人機驗證      | `backend/plugins/captcha/corptcha`                | Corptcha 人機驗證插件            |
-| 人機驗證      | `backend/plugins/captcha/cap`                     | Cap 人機驗證插件                 |
-| 郵件發送      | `backend/plugins/mail/multi_smtp_round_robin`     | 多 SMTP 輪詢郵件插件             |
-| 郵件發送      | `backend/plugins/mail/smtp`                       | 單 SMTP 郵件插件                 |
-| 郵件發送      | `backend/plugins/mail/demo_mail`                  | 模擬郵件插件                     |
-| 短信發送      | `backend/plugins/sms/aliyun_sms`                  | 阿里雲短信服務插件               |
-| 短信發送      | `backend/plugins/sms/aliyun`                      | 阿里雲號碼認證插件               |
-| 短信發送      | `backend/plugins/sms/stay33`                      | Stay33 短信插件                  |
-| 短信發送      | `backend/plugins/sms/demo_sms`                    | 模擬短信插件                     |
-| 上游開通/控制 | `backend/plugins/servers/zjmf_finance`            | ZJMF 財務上游插件                |
-| 上游開通/控制 | `backend/plugins/servers/tura_open_api`           | TuraIDC 開放接口上游驅動插件     |
-| 上游開通/控制 | `backend/plugins/servers/kanghostx`               | 康樂虛擬主機插件                 |
-| 上游開通/控制 | `backend/plugins/servers/rainyun_rcs`             | 雨雲 RCS 與附加資源賬單         |
-| 上游開通/控制 | `backend/plugins/servers/demo_servers`            | 模擬上游插件                     |
-| 功能擴展      | `backend/plugins/addons/ai_assistant`             | 站內 AI 助手：對話、工具調用、導購與管理端治理   |
-| 功能擴展      | `backend/plugins/addons/demo_style`               | Addon、調度任務和 hook 示例插件  |
-| 功能擴展      | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge 兼容接口插件         |
+| 能力域        | 插件目錄                                          | 説明                                                       |
+| ------------- | ------------------------------------------------- | ---------------------------------------------------------- |
+| 支付渠道      | `backend/plugins/gateways/ali_pay`                | 支付寶當面付真實支付插件                                   |
+| 支付渠道      | `backend/plugins/gateways/demo_pay`               | 模擬支付網關                                               |
+| 支付渠道      | `backend/plugins/gateways/epay`                   | 易支付插件                                                 |
+| 實名認證      | `backend/plugins/certification/stay33`            | Stay33 實名認證插件                                        |
+| 實名認證      | `backend/plugins/certification/baidu_face`        | 百度人臉實名認證插件                                       |
+| 實名認證      | `backend/plugins/certification/smapi`             | 聚合實名認證插件（小沐實名 API）                           |
+| 實名認證      | `backend/plugins/certification/leaf_face`         | leaf 實名認證插件                                          |
+| 實名認證      | `backend/plugins/certification/alipay_certify`    | 支付寶身份認證插件                                         |
+| 實名認證      | `backend/plugins/certification/demo_verification` | 模擬實名插件                                               |
+| 人機驗證      | `backend/plugins/captcha/geetest`                 | GeeTest 驗證碼插件                                         |
+| 人機驗證      | `backend/plugins/captcha/vaptcha`                 | Vaptcha 驗證碼插件                                         |
+| 人機驗證      | `backend/plugins/captcha/turnstile`               | Cloudflare Turnstile 驗證碼插件                            |
+| 人機驗證      | `backend/plugins/captcha/corptcha`                | Corptcha 人機驗證插件                                      |
+| 人機驗證      | `backend/plugins/captcha/cap`                     | Cap 人機驗證插件                                           |
+| 郵件發送      | `backend/plugins/mail/multi_smtp_round_robin`     | 多 SMTP 輪詢郵件插件                                       |
+| 郵件發送      | `backend/plugins/mail/smtp`                       | 單 SMTP 郵件插件                                           |
+| 郵件發送      | `backend/plugins/mail/demo_mail`                  | 模擬郵件插件                                               |
+| 短信發送      | `backend/plugins/sms/aliyun_sms`                  | 阿里雲短信服務插件                                         |
+| 短信發送      | `backend/plugins/sms/aliyun`                      | 阿里雲號碼認證插件                                         |
+| 短信發送      | `backend/plugins/sms/stay33`                      | Stay33 短信插件                                            |
+| 短信發送      | `backend/plugins/sms/demo_sms`                    | 模擬短信插件                                               |
+| 上游開通/控制 | `backend/plugins/servers/zjmf_finance`            | ZJMF 財務上游插件                                          |
+| 上游開通/控制 | `backend/plugins/servers/tura_open_api`           | TuraIDC 開放接口上游驅動插件                               |
+| 上游開通/控制 | `backend/plugins/servers/kanghostx`               | 康樂虛擬主機插件                                           |
+| 上游開通/控制 | `backend/plugins/servers/rainyun_rcs`             | 雨雲 RCS 與附加資源賬單                                    |
+| 上游開通/控制 | `backend/plugins/servers/demo_servers`            | 模擬上游插件                                               |
+| 功能擴展      | `backend/plugins/addons/ai_assistant`             | 站內 AI 助手：對話、工具調用、導購與管理端治理             |
+| 功能擴展      | `backend/plugins/addons/auto_refund`              | 自助退款：控制台申請、上游 AutoRefund 串聯、台賬結算與作廢 |
+| 功能擴展      | `backend/plugins/addons/demo_style`               | Addon、調度任務和 hook 示例插件                            |
+| 功能擴展      | `backend/plugins/addons/zjmf_bridge`              | ZJMF Bridge 兼容接口插件                                   |
 
 每個 demo 包都包含：
 
@@ -705,6 +706,7 @@ php artisan schedule:list
 ## 12. 當前插件説明文檔
 
 - [插件包規範（獨立倉庫分發與插件市場）](package-spec.md)
+- [自助退款插件（控制台自助申請與上游 AutoRefund 對接）](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/auto_refund/README.md)
 - [支付寶當面付插件 demo](demo-ali-pay.md)
 - [AI 助手插件（對話、工具調用、導購與治理）](https://github.com/25Cloud/TuraIDC/blob/main/backend/plugins/addons/ai_assistant/README.md)
 - [AI 助手插件發行鏡像](https://github.com/25Cloud/turaidc-plugin-ai-assistant)：內置插件的只讀鏡像（tag 與 manifest `info.version` 對齊），供其它站點用 `plugin:market:install` 或本地 zip 安裝。**唯一真源仍在主倉**，不要在鏡像倉提 PR；同步方式見該倉 `MIRROR.md`

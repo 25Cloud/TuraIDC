@@ -124,6 +124,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "guide/configure/auto-refund.md",
+      "status": "current",
+      "summary": "自助退款：上游 AutoRefund 接口对接、控制台申请、台账结算与作废口径。",
+      "review_by": "2027-02-01"
+    },
+    {
       "path": "guide/configure/mail-and-sms.md",
       "status": "current",
       "summary": "邮件与短信通道配置、通知模板与发送验证。",
@@ -374,6 +380,12 @@
       "status": "active",
       "summary": "AI 助手与 AI 导购实施计划：P0 网关骨架、P1 只读对话、P2 确认协议与控制台独立页、P3 流式与官网浮窗、P4 管理端治理。",
       "review_by": "2026-11-25"
+    },
+    {
+      "path": "internal/execution-plans/active/auto-refund-plugin-2026-11-01.md",
+      "status": "active",
+      "summary": "自助退款插件：控制台自助申请、上游 query/submit/cancel 串联、本地台账与管理端结算，兼容智简魔方财务 AutoRefund 接口契约。",
+      "review_by": "2026-12-01"
     },
     {
       "path": "internal/execution-plans/active/backend-expert-review-remediation-2026-08-13.md",

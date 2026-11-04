@@ -14,8 +14,8 @@
 | ---------------------------------------------------------------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------- |
 | [代理折扣实施计划](active/2026-08-20-agent-discount.md)                                                                | active | 代理折扣体系落地：AgentDiscountService 与三张配置表、新购续费计价与三端展示。                      |
 | [管理端与用户端体验整改](active/admin-console-and-user-experience-batch-2026-10-15.md)                                 | active | 补齐管理端可点击链接、登录验证码首屏、实例台预加载与遮罩、实例详情信息架构、上游跳转与语言自适应。 |
-| [管理端设置信息架构与字段排版整改](active/admin-settings-ux-audit-2026-10-26.md)                                      | active | 设置页分组重组、死 tab 清理、命名自解释、字段「标签/说明/控件」三行排版与保存位置统一。            |
-| [AI 助手与 AI 导购](active/ai-assistant-2026-10-26.md)                                                                 | active | 模型接入与工具调用、写操作确认协议、全局浮窗与控制台独立页。                                      |
+| [管理端设置信息架构与字段排版整改](active/admin-settings-ux-audit-2026-10-26.md)                                       | active | 设置页分组重组、死 tab 清理、命名自解释、字段「标签/说明/控件」三行排版与保存位置统一。            |
+| [AI 助手与 AI 导购](active/ai-assistant-2026-10-26.md)                                                                 | active | 模型接入与工具调用、写操作确认协议、全局浮窗与控制台独立页。                                       |
 | [后端专家团审查修复计划](active/backend-expert-review-remediation-2026-08-13.md)                                       | active | 6 功能域 × 5 视角专家团审查结论的分批修复计划，P0 资金与账号安全优先。                             |
 | [绑定表写入放大治理](active/binding-table-write-amplification-2026-09-16.md)                                           | active | 绑定表与快照表的无变化重写治理：改为变更感知写入，收敛生产 binlog 写入放大。                       |
 | [工单上游 CodeRabbit 安全修复](active/coderabbit-security-remediation-ticket-upstream-2026-08-21.md)                   | active | 按 PR #20 CodeRabbit 审查修复工单上游传递安全与一致性问题，含上游 zjmfv376 配套改动。              |
@@ -32,6 +32,7 @@
 | [工单预回复](active/ticket-pre-reply-2026-08-23.md)                                                                    | active | 用户建单后以配置管理员名义自动回复，管理端预回复设置页与独立权限。                                 |
 | [工单上游传递日志与自动转发排查](active/ticket-upstream-delivery-logs-and-auto-delivery-troubleshooting-2026-08-20.md) | active | 工单上游转发事件日志、管理端状态展示与自动转发未触发原因排查。                                     |
 | [魔方财务对接链路打通](active/zjmf-upstream-integration-2026-09-15.md)                                                 | active | 上游 API 自助凭据入口、provision/default 全 func 分发、ZJMF 协议固定 200 兜底与剩余缺口。          |
+| [自助退款插件](active/auto-refund-plugin-2026-11-01.md)                                                                | active | `addons/auto_refund`：控制台自助申请、上游 query/submit/cancel 串联、本地台账与管理端结算。        |
 
 ## 已完成（completed/）
 
@@ -48,7 +49,7 @@
 | [官网 SEO 可抓取性修复](completed/seo-crawlability-fix-2026-10-22.md)                                  | completed | 官网 SEO 链路修复：nginx 补齐 SEO 转发、源码部署前端壳走 file://、商品详情页纳入 sitemap。 |
 | [TuraIDC 开放接口上游驱动插件](completed/tura-open-api-driver-2026-09-12.md)                           | completed | tura_open_api 插件打通纯自有协议无限级转售链：目录/开通/续费/状态同步/余额。               |
 | [上游绑定切换提速与状态同步降级](completed/upstream-binding-switch-and-sync-degradation-2026-10-21.md) | completed | 切换上游绑定改为本地写立即返回、回源提速、电源状态失败降级为仅同步实例详情。               |
-| [上游开通去重与管理端一键开通](completed/upstream-provision-dedup-2026-10-27.md) | completed | 上游开通失败不再自动重试、按主机名回查复用，管理端一键开通取代手填上游实例 ID。 |
+| [上游开通去重与管理端一键开通](completed/upstream-provision-dedup-2026-10-27.md)                       | completed | 上游开通失败不再自动重试、按主机名回查复用，管理端一键开通取代手填上游实例 ID。            |
 | [上下游对接链路加固](completed/upstream-openapi-hardening-2026-09-12.md)                               | completed | 开放 API 写端点与审计加固、能力契约分层、开通失败退款标记、幂等 DB 兜底。                  |
 | [VNC 与业务调度隔离方案](completed/vnc-and-business-scheduling-isolation-2026-08-04.md)                | completed | VNC Relay、业务队列与定时队列隔离实施计划。                                                |
 | [ZJMF 统一迁移方案](completed/zjmf-unified-migration.md)                                               | completed | ZJMF 实时绑定已切换、实例控制已验证，旧插件已卸载且历史已保留。                            |
