@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import { ICONS } from "../icons";
-import { LINKS } from "../data/site";
+import { LINKS, LIVE_BADGES } from "../data/site";
 import github from "../data/github.json";
 import { useSite } from "../i18n/context";
 
 /**
- * 项目动态：版本号与仓库数据。
+ * 项目动态：最新版本那一行 + 实时徽章墙 + 历史版本。
  *
- * 数据来自 `src/data/github.json`，由 `scripts/fetch-github.mjs` 在构建前抓取，
- * 抓不到就沿用仓库里的快照。页面本身仍然零客户端 JS，不在访客浏览器里请求 GitHub。
+ * 版本号与发布日期来自 `src/data/github.json`（构建前由 `scripts/fetch-github.mjs`
+ * 抓一次，抓不到就沿用仓库里的快照）；Star / Fork / Issue / 最近提交这些会变的数字
+ * 改成 shields.io 的徽章图片——访客打开页面即由对方现算，本站依然零客户端 JS。
  */
 const { messages } = useSite();
 const live = messages.live;
@@ -18,13 +18,10 @@ const [latest, ...history] = github.releases;
 /** GitHub 给的是 ISO 时间，页面上只要日期；四语言统一 YYYY-MM-DD，不引入本地化歧义 */
 const day = (iso: string) => iso.slice(0, 10);
 
-const BADGES = [
-  { key: "stars", icon: ICONS.star, value: String(github.repo.stars) },
-  { key: "forks", icon: ICONS.fork, value: String(github.repo.forks) },
-  { key: "issues", icon: ICONS.issue, value: String(github.repo.openIssues) },
-  { key: "license", icon: ICONS.license, value: github.repo.license },
-  { key: "pushed", icon: ICONS.time, value: day(github.repo.pushedAt) },
-] as const;
+/** 徽章分两行：仓库状态一行、技术栈一行，避免末尾挂一枚孤零零的徽章 */
+const BADGE_GROUPS = ["repo", "stack"] as const;
+const badgesOf = (group: (typeof BADGE_GROUPS)[number]) =>
+  LIVE_BADGES.filter((badge) => badge.group === group);
 </script>
 
 <template>
@@ -58,15 +55,30 @@ const BADGES = [
           >
         </div>
 
-        <ul class="badges">
-          <li v-for="badge in BADGES" :key="badge.key" class="badge">
-            <strong class="value">{{ badge.value }}</strong>
-            <span class="label">
-              <component :is="badge.icon" size="14px" aria-hidden="true" />
-              {{ live.stats[badge.key] }}
-            </span>
-          </li>
-        </ul>
+        <div class="badge-block">
+          <span class="badge-title">{{ live.badgesTitle }}</span>
+          <ul v-for="group in BADGE_GROUPS" :key="group" class="badge-wall">
+            <li v-for="badge in badgesOf(group)" :key="badge.key">
+              <a
+                :href="badge.href"
+                target="_blank"
+                rel="noopener noreferrer"
+                :aria-label="badge.label"
+              >
+                <img
+                  :src="badge.src"
+                  :alt="badge.label"
+                  :width="badge.width"
+                  :height="badge.height"
+                  loading="lazy"
+                  decoding="async"
+                  referrerpolicy="no-referrer"
+                />
+              </a>
+            </li>
+          </ul>
+          <p class="badge-note">{{ live.badgesNote }}</p>
+        </div>
       </div>
 
       <ol class="history" data-reveal>
@@ -137,37 +149,68 @@ const BADGES = [
   margin-left: auto;
 }
 
-.badges {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 12px;
-  margin: 0;
-  padding: 22px 0 0;
+.badge-block {
+  padding-top: 20px;
   border-top: 1px solid var(--line);
+}
+
+.badge-title {
+  display: block;
+  margin-bottom: 12px;
+  color: var(--text-3);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/*
+ * 徽章墙：flex 换行而不是固定列数——徽章宽度由 shields 的数值长度决定，
+ * 写死列数迟早会在某一屏挤爆。窄屏自然落到每行两三个，容器不会被撑破。
+ */
+.badge-wall {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 12px;
+  margin: 0;
+  padding: 0;
   list-style: none;
 }
 
-.badge {
+/* 第二行（技术栈）与第一行之间留出半格的呼吸 */
+.badge-wall + .badge-wall {
+  margin-top: 10px;
+}
+
+.badge-wall li {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  min-width: 0;
+  max-width: 100%;
 }
 
-.badge .value {
-  color: var(--text);
-  font-size: 19px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-}
-
-.badge .label {
+.badge-wall a {
   display: inline-flex;
-  align-items: center;
-  gap: 5px;
+  max-width: 100%;
+  border-radius: 4px;
+}
+
+.badge-wall a:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 3px;
+}
+
+/* 高度锁 20px、宽度自适应：数字变长时徽章等比变宽，不会被属性里的占位宽度拉扯变形 */
+.badge-wall img {
+  height: 20px;
+  width: auto;
+  max-width: 100%;
+}
+
+.badge-note {
+  margin-top: 14px;
   color: var(--text-3);
-  font-size: 12px;
-  line-height: 1.4;
+  font-size: 12.5px;
+  line-height: 1.7;
 }
 
 .history {
@@ -226,18 +269,6 @@ const BADGES = [
 @media (max-width: 900px) {
   .release .btn {
     margin-left: 0;
-  }
-}
-
-/* 手机窄屏：5 项排成 3 + 2 两行，比 2 列的三行更紧凑 */
-@media (max-width: 720px) {
-  .badges {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px 12px;
-  }
-
-  .badge .value {
-    font-size: 16px;
   }
 }
 

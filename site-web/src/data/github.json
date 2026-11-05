@@ -1,13 +1,18 @@
 {
   "repo": {
-    "stars": 97,
-    "forks": 12,
+    "stars": 218,
+    "forks": 15,
     "openIssues": 1,
     "license": "AGPL-3.0",
-    "pushedAt": "2026-10-30T08:30:43Z",
+    "pushedAt": "2026-11-04T13:59:18Z",
     "url": "https://github.com/25Cloud/TuraIDC"
   },
   "releases": [
+    {
+      "tag": "v0.4.4",
+      "publishedAt": "2026-11-01T09:55:22Z",
+      "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.4"
+    },
     {
       "tag": "v0.4.3",
       "publishedAt": "2026-10-22T01:04:45Z",
@@ -27,11 +32,38 @@
       "tag": "v0.4.0",
       "publishedAt": "2026-10-13T04:41:11Z",
       "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.0"
+    }
+  ],
+  "languages": [
+    {
+      "name": "PHP",
+      "bytes": 12294895,
+      "percent": 63
     },
     {
-      "tag": "v0.3.6",
-      "publishedAt": "2026-09-19T10:07:21Z",
-      "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.3.6"
+      "name": "Vue",
+      "bytes": 3316197,
+      "percent": 17
+    },
+    {
+      "name": "TypeScript",
+      "bytes": 1990033,
+      "percent": 10.2
+    },
+    {
+      "name": "JavaScript",
+      "bytes": 900871,
+      "percent": 4.6
+    },
+    {
+      "name": "Python",
+      "bytes": 378212,
+      "percent": 1.9
+    },
+    {
+      "name": "Other",
+      "bytes": 645900,
+      "percent": 3.3
     }
   ]
 }

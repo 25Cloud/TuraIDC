@@ -86,22 +86,177 @@ for (const snippet of expectText) {
   check(`正文包含「${snippet}」`, visibleText.includes(snippet));
 }
 
-// 项目动态的数字来自 src/data/github.json：换了 release 却没重新抓数据，这里会先炸
+// 项目动态：版本行仍是构建期快照（来自 src/data/github.json），数字改成 shields.io 实时徽章。
+// 换了 release 却没重新抓数据，这里会先炸。
 const github = JSON.parse(
   readFileSync(resolve(root, "src/data/github.json"), "utf8"),
 );
 const latestTag = github.releases[0]?.tag ?? "";
 check("项目动态展示最新版本号", visibleText.includes(latestTag), latestTag);
 check(
-  "项目动态展示 Star 数",
-  visibleText.includes(String(github.repo.stars)),
-  String(github.repo.stars),
-);
-check(
-  "项目动态展示许可证",
-  visibleText.includes(github.repo.license),
+  "正文出现许可证标识",
+  visibleText.includes("AGPL-3.0"),
   github.repo.license,
 );
+// 旧版把 Star / Fork / issue / 最近提交渲染成数字格子，现在这些数字只在徽章图片里
+const oldCells = ["未关闭 issue", "最近提交"].filter((label) =>
+  visibleText.includes(label),
+);
+check(
+  "项目动态不再渲染快照数字格子",
+  oldCells.length === 0,
+  oldCells.join("、"),
+);
+
+// 属性里的 & 会被转义成 &amp;，比对前先还原一遍，否则 URL 永远匹配不上
+const html = indexHtml.replace(/&amp;/g, "&");
+const imgTags = html.match(/<img\b[^>]*>/g) ?? [];
+
+/**
+ * 徽章墙的 10 枚徽章：地址写死在这里，改了 src/data/site.ts 就得同步改这里。
+ *
+ * 刻意不含 CI 徽章：`.github/workflows/ci.yml` 最后一次运行是 2026-08-24 且结论为失败，
+ * 之后没有新运行，首页挂上去就是一枚长期红色的 failing，属于数据事实而非站点故障。
+ * CI 恢复绿之后再加回来（同时改这里与 src/data/site.ts 的 LIVE_BADGES）。
+ */
+const SHIELD_BADGES = [
+  [
+    "Release",
+    "https://img.shields.io/github/v/release/25Cloud/TuraIDC?style=flat-square&label=Release",
+  ],
+  [
+    "Stars",
+    "https://img.shields.io/github/stars/25Cloud/TuraIDC?style=flat-square&label=Stars",
+  ],
+  [
+    "Forks",
+    "https://img.shields.io/github/forks/25Cloud/TuraIDC?style=flat-square&label=Forks",
+  ],
+  [
+    "Contributors",
+    "https://img.shields.io/github/contributors/25Cloud/TuraIDC?style=flat-square&label=Contributors",
+  ],
+  [
+    "Issues",
+    "https://img.shields.io/github/issues/25Cloud/TuraIDC?style=flat-square&label=Issues",
+  ],
+  [
+    "Last Commit",
+    "https://img.shields.io/github/last-commit/25Cloud/TuraIDC?style=flat-square&label=Last%20Commit",
+  ],
+  [
+    "License",
+    "https://img.shields.io/badge/license-AGPL--3.0--or--later-blue?style=flat-square",
+  ],
+  [
+    "PHP",
+    "https://img.shields.io/badge/PHP-%3E%3D8.3-777BB4?style=flat-square",
+  ],
+  [
+    "Laravel",
+    "https://img.shields.io/badge/Laravel-12-FF2D20?style=flat-square",
+  ],
+  ["Vue", "https://img.shields.io/badge/Vue-3-4FC08D?style=flat-square"],
+];
+
+for (const [name, url] of SHIELD_BADGES) {
+  const tag = imgTags.find((item) => item.includes(url)) ?? "";
+  check(`实时徽章 ${name} 在页面里`, Boolean(tag), url);
+  check(
+    `实时徽章 ${name} 带尺寸与降级属性`,
+    /width="\d+"/.test(tag) &&
+      /height="\d+"/.test(tag) &&
+      /loading="lazy"/.test(tag) &&
+      /decoding="async"/.test(tag) &&
+      /referrerpolicy="no-referrer"/.test(tag),
+    tag.slice(0, 120),
+  );
+}
+
+const shieldCount = imgTags.filter(
+  (item) => item.includes("img.shields.io") || item.includes("/badge.svg"),
+).length;
+check("徽章墙共 10 枚实时徽章", shieldCount === 10, `${shieldCount} 枚`);
+
+// 社区板块：三张第三方图片 + 语言占比 + 交流群
+const communityHtml =
+  indexHtml.match(/<section id="community"[\s\S]*?<\/section>/)?.[0] ?? "";
+const community = communityHtml.replace(/&amp;/g, "&");
+check("社区板块已渲染", communityHtml.length > 0);
+
+const STAR_HISTORY_LIGHT =
+  "https://api.star-history.com/chart?repos=25Cloud/TuraIDC&type=date&legend=top-left&sealed_token=";
+const STAR_HISTORY_DARK =
+  "https://api.star-history.com/chart?repos=25Cloud/TuraIDC&type=date&theme=dark&legend=top-left&sealed_token=";
+check("社区板块含 star-history 浅色图", community.includes(STAR_HISTORY_LIGHT));
+check("社区板块含 star-history 深色图", community.includes(STAR_HISTORY_DARK));
+check(
+  "star-history 用 prefers-color-scheme 切换深浅",
+  /<source[^>]*media="\(prefers-color-scheme: dark\)"/.test(community),
+);
+check(
+  "star-history 外链到 star-history.com",
+  community.includes(
+    "https://www.star-history.com/?repos=25Cloud%2FTuraIDC&type=date&legend=top-left",
+  ),
+);
+check(
+  "社区板块含 contrib.rocks 头像墙",
+  community.includes("https://contrib.rocks/image?repo=25Cloud/TuraIDC"),
+);
+check(
+  "贡献者头像墙链接到贡献者列表",
+  community.includes("https://github.com/25Cloud/TuraIDC/graphs/contributors"),
+);
+
+const languageSlices = (community.match(/class="slice"/g) ?? []).length;
+check(
+  "语言占比条至少渲染 3 种语言",
+  languageSlices >= 3,
+  `${languageSlices} 段`,
+);
+const languageRows = (community.match(/class="lang-percent"/g) ?? []).length;
+check("语言列表至少渲染 3 行占比", languageRows >= 3, `${languageRows} 行`);
+check(
+  "语言占比条带颜色",
+  /class="slice"[^>]*style="[^"]*background:/.test(community),
+);
+
+check("社区板块展示 QQ 群号", visibleText.includes("1105174267"));
+check(
+  "社区板块给出加群链接",
+  community.includes("https://qm.qq.com/q/Doa31p5M30"),
+);
+check(
+  "二维码用站内图片",
+  /<img[^>]*src="\/images\/qq-group\.jpg"/.test(community) &&
+    !community.includes("raw.githubusercontent.com"),
+);
+
+// 社区板块同样零客户端 JS：图片就是图片，没有脚本、没有内联事件
+check(
+  "社区板块不含脚本与内联事件",
+  !/<script/i.test(communityHtml) &&
+    !/<iframe/i.test(communityHtml) &&
+    !/\son[a-z]+=/i.test(communityHtml),
+);
+
+for (const [label, needle] of [
+  ["star-history", "api.star-history.com/chart"],
+  ["contrib.rocks", "contrib.rocks/image"],
+  ["QQ 群二维码", "images/qq-group.jpg"],
+]) {
+  const tag = imgTags.find((item) => item.includes(needle)) ?? "";
+  check(
+    `社区图片 ${label} 带尺寸与降级属性`,
+    /width="\d+"/.test(tag) &&
+      /height="\d+"/.test(tag) &&
+      /loading="lazy"/.test(tag) &&
+      /decoding="async"/.test(tag) &&
+      /referrerpolicy="no-referrer"/.test(tag),
+    tag.slice(0, 120),
+  );
+}
 
 // 实拍图必须带宽高，否则首屏图片加载时整块布局会跳
 for (const name of ["catalog"]) {
@@ -274,6 +429,7 @@ const requiredAssets = [
   "apple-touch-icon.png",
   "turaidc-logo.webp",
   "shots/catalog.webp",
+  "images/qq-group.jpg",
   "partners/7inet.svg",
   "partners/starvm.webp",
   "partners/25yun.webp",

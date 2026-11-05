@@ -340,18 +340,30 @@
   "live": {
     "kicker": "Project activity",
     "title": "Every release is traceable",
-    "lead": "Version tags, release dates, stars and license are read from the GitHub repository at build time and refreshed on every deploy.",
+    "lead": "Version tags and release dates come from the repository snapshot taken at build time; the badges below are drawn live by shields.io, so a reload shows current numbers.",
     "latest": "Latest",
     "releasedOn": "Released",
     "allReleases": "All releases",
-    "stats": {
-      "stars": "Stars",
-      "forks": "Forks",
-      "issues": "Open issues",
-      "license": "License",
-      "pushed": "Last commit"
-    },
+    "badgesTitle": "Live badges",
+    "badgesNote": "Badges are computed by shields.io and GitHub on each request (a few minutes of caching each). Click one to open the matching GitHub page; if the image host is unreachable, only the empty slot stays.",
     "source": "Source"
+  },
+  "community": {
+    "kicker": "Community",
+    "title": "Visible growth, reachable people",
+    "lead": "Popularity, contributors, language mix and the chat group all live here; the charts are drawn by third parties on every visit, and none of their scripts are loaded.",
+    "heatTitle": "Popularity",
+    "heatCaption": "Star history is drawn by star-history.com — click through for the interactive chart. The dark and light versions follow the system colour scheme, not the on-site theme switch.",
+    "contributorsTitle": "Contributors",
+    "contributorsCaption": "The avatar wall comes from contrib.rocks; click it for the full contributor list.",
+    "languagesTitle": "Languages",
+    "languagesCaption": "Share of code bytes per language in the repository: the top five by size, the rest merged into one slice. Taken from the build-time snapshot.",
+    "groupTitle": "Developer chat",
+    "groupLead": "Install problems, upstream integration, plugin ideas — ask in the QQ group. Read the docs first.",
+    "groupNumber": "QQ group",
+    "groupJoin": "Join the group",
+    "groupScan": "Scan to join (mobile QQ)",
+    "other": "Other"
   },
   "footer": {
     "tagline": "An open-source business and billing platform for IDC and cloud providers: self-hosted, auditable, extensible.",

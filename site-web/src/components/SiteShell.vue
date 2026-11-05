@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { LOCALES, getLocale } from "../i18n";
 import { provideSiteContext } from "../i18n/context";
+import CommunitySection from "./CommunitySection.vue";
 import DeploySection from "./DeploySection.vue";
 import FaqSection from "./FaqSection.vue";
 import FlowSection from "./FlowSection.vue";
@@ -34,6 +35,7 @@ provideSiteContext({ messages, locale: entry, locales: LOCALES });
       <HeroSection />
       <PartnersSection />
       <LiveSection />
+      <CommunitySection />
       <HighlightsSection />
       <FlowSection />
       <SecuritySection />

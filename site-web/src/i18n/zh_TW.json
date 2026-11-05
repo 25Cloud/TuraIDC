@@ -340,18 +340,30 @@
   "live": {
     "kicker": "項目動態",
     "title": "每個版本都能追到具體改動",
-    "lead": "版本號、發佈日期、Star 與許可信息在構建時取自 GitHub 倉庫，隨每次部署刷新。",
+    "lead": "版本號與發佈日期取自構建時的倉庫快照；下面那排徽章由 shields.io 實時渲染，刷新頁面就是當前數字。",
     "latest": "最新版本",
     "releasedOn": "發佈於",
     "allReleases": "全部發佈記錄",
-    "stats": {
-      "stars": "Star",
-      "forks": "Fork",
-      "issues": "未關閉 issue",
-      "license": "許可證",
-      "pushed": "最近提交"
-    },
+    "badgesTitle": "實時徽章",
+    "badgesNote": "徽章圖片由 shields.io 與 GitHub 現算（各自緩存幾分鐘），點任意一枚跳到對應 GitHub 頁面；圖片拉不到時只留空位，不影響正文。",
     "source": "數據來源"
+  },
+  "community": {
+    "kicker": "社區",
+    "title": "看得見的增長，找得到的同路人",
+    "lead": "項目熱度、貢獻者、語言構成與交流群都放在這一塊；圖表由第三方按訪問實時出圖，本站不加載它們的腳本。",
+    "heatTitle": "項目熱度",
+    "heatCaption": "Star 走勢由 star-history.com 出圖，點開可看交互版。深淺兩版跟隨系統配色，不跟隨站內主題開關。",
+    "contributorsTitle": "貢獻者",
+    "contributorsCaption": "頭像牆來自 contrib.rocks，點進去看完整貢獻者列表。",
+    "languagesTitle": "語言構成",
+    "languagesCaption": "按倉庫各語言代碼字節佔比計算：取前五，其餘合併成一項。數據取自構建時的倉庫快照。",
+    "groupTitle": "開發交流",
+    "groupLead": "裝不上、接不通上游、想寫插件，都可以進群問；提問前先翻一遍文檔。",
+    "groupNumber": "QQ 群號",
+    "groupJoin": "一鍵加群",
+    "groupScan": "掃碼進群（手機 QQ 掃一掃）",
+    "other": "其他"
   },
   "footer": {
     "tagline": "面向 IDC 與雲服務商的開源業務財務系統：可自託管、可審計、可二次開發。",
