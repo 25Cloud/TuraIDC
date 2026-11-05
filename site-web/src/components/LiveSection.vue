@@ -77,7 +77,6 @@ const badgesOf = (group: (typeof BADGE_GROUPS)[number]) =>
               </a>
             </li>
           </ul>
-          <p class="badge-note">{{ live.badgesNote }}</p>
         </div>
       </div>
 
@@ -89,13 +88,6 @@ const badgesOf = (group: (typeof BADGE_GROUPS)[number]) =>
           </a>
         </li>
       </ol>
-
-      <p class="source">
-        {{ live.source }}
-        <a :href="github.repo.url" target="_blank" rel="noopener noreferrer"
-          >25Cloud/TuraIDC</a
-        >
-      </p>
     </div>
   </section>
 </template>
@@ -206,13 +198,6 @@ const badgesOf = (group: (typeof BADGE_GROUPS)[number]) =>
   max-width: 100%;
 }
 
-.badge-note {
-  margin-top: 14px;
-  color: var(--text-3);
-  font-size: 12.5px;
-  line-height: 1.7;
-}
-
 .history {
   display: flex;
   flex-wrap: wrap;
@@ -248,22 +233,6 @@ const badgesOf = (group: (typeof BADGE_GROUPS)[number]) =>
 .history .day {
   color: var(--text-3);
   font-variant-numeric: tabular-nums;
-}
-
-.source {
-  margin-top: 16px;
-  color: var(--text-3);
-  font-size: 12.5px;
-}
-
-.source a {
-  color: var(--text-2);
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.source a:hover {
-  color: var(--brand);
 }
 
 @media (max-width: 900px) {

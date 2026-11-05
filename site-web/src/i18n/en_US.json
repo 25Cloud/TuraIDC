@@ -271,7 +271,7 @@
         "currency": "¥"
       }
     ],
-    "note": "Pricing and licensing mirror the repository README and LICENSE-COMMERCIAL.md; the files in the repository are authoritative."
+    "note": "Licensing terms follow LICENSE-COMMERCIAL.md in the repository."
   },
   "faq": {
     "kicker": "FAQ",
@@ -340,24 +340,22 @@
   "live": {
     "kicker": "Project activity",
     "title": "Every release is traceable",
-    "lead": "Version tags and release dates come from the repository snapshot taken at build time; the badges below are drawn live by shields.io, so a reload shows current numbers.",
+    "lead": "Every release ships with its full change list — open a version to see exactly what changed.",
     "latest": "Latest",
     "releasedOn": "Released",
     "allReleases": "All releases",
-    "badgesTitle": "Live badges",
-    "badgesNote": "Badges are computed by shields.io and GitHub on each request (a few minutes of caching each). Click one to open the matching GitHub page; if the image host is unreachable, only the empty slot stays.",
-    "source": "Source"
+    "badgesTitle": "Project at a glance"
   },
   "community": {
     "kicker": "Community",
-    "title": "Visible growth, reachable people",
-    "lead": "Popularity, contributors, language mix and the chat group all live here; the charts are drawn by third parties on every visit, and none of their scripts are loaded.",
+    "title": "Community and contributors",
+    "lead": "How the project is doing in the open: interest, contributors, code composition, and where to ask for help.",
     "heatTitle": "Popularity",
-    "heatCaption": "Star history is drawn by star-history.com — click through for the interactive chart. The dark and light versions follow the system colour scheme, not the on-site theme switch.",
+    "heatCaption": "Star growth over time; open it for the interactive view.",
     "contributorsTitle": "Contributors",
-    "contributorsCaption": "The avatar wall comes from contrib.rocks; click it for the full contributor list.",
+    "contributorsCaption": "Everyone who has committed code.",
     "languagesTitle": "Languages",
-    "languagesCaption": "Share of code bytes per language in the repository: the top five by size, the rest merged into one slice. Taken from the build-time snapshot.",
+    "languagesCaption": "Code composition by byte share, top five.",
     "groupTitle": "Developer chat",
     "groupLead": "Install problems, upstream integration, plugin ideas — ask in the QQ group. Read the docs first.",
     "groupNumber": "QQ group",

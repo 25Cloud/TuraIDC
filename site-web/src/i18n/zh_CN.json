@@ -271,7 +271,7 @@
         "currency": "¥"
       }
     ],
-    "note": "定价与许可口径来自仓库 README 与 LICENSE-COMMERCIAL.md，最终以仓库内许可文件为准。"
+    "note": "许可条款以仓库内 LICENSE-COMMERCIAL.md 为准。"
   },
   "faq": {
     "kicker": "常见问题",
@@ -340,24 +340,22 @@
   "live": {
     "kicker": "项目动态",
     "title": "每个版本都能追到具体改动",
-    "lead": "版本号与发布日期取自构建时的仓库快照；下面那排徽章由 shields.io 实时渲染，刷新页面就是当前数字。",
+    "lead": "每次发布都带完整变更记录，版本号点进去就是那次改了什么。",
     "latest": "最新版本",
     "releasedOn": "发布于",
     "allReleases": "全部发布记录",
-    "badgesTitle": "实时徽章",
-    "badgesNote": "徽章图片由 shields.io 与 GitHub 现算（各自缓存几分钟），点任意一枚跳到对应 GitHub 页面；图片拉不到时只留空位，不影响正文。",
-    "source": "数据来源"
+    "badgesTitle": "项目概况"
   },
   "community": {
     "kicker": "社区",
-    "title": "看得见的增长，找得到的同路人",
-    "lead": "项目热度、贡献者、语言构成与交流群都放在这一块；图表由第三方按访问实时出图，本站不加载它们的脚本。",
+    "title": "社区与贡献者",
+    "lead": "项目的关注度、贡献者、代码构成，以及遇到问题去哪里问。",
     "heatTitle": "项目热度",
-    "heatCaption": "Star 走势由 star-history.com 出图，点开可看交互版。深浅两版跟随系统配色，不跟随站内主题开关。",
+    "heatCaption": "Star 增长走势，点开可看交互版本。",
     "contributorsTitle": "贡献者",
-    "contributorsCaption": "头像墙来自 contrib.rocks，点进去看完整贡献者列表。",
+    "contributorsCaption": "提交过代码的人都在这里。",
     "languagesTitle": "语言构成",
-    "languagesCaption": "按仓库各语言代码字节占比计算：取前五，其余合并成一项。数据取自构建时的仓库快照。",
+    "languagesCaption": "代码构成，按各语言字节占比取前五。",
     "groupTitle": "开发交流",
     "groupLead": "装不上、接不通上游、想写插件，都可以进群问；提问前先翻一遍文档。",
     "groupNumber": "QQ 群号",

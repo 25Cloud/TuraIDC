@@ -108,6 +108,26 @@ check(
   oldCells.join("、"),
 );
 
+// 文案不许泄漏「这个页面是怎么做的」：访客只关心项目本身。
+// 这类句子（构建期快照、shields.io 缓存几分钟、本站不加载第三方脚本）是内部实现说明，
+// 出现在官网正文里既无信息量又像凑字数，历史上真被写进去过一次。
+const implementationLeaks = [
+  "shields.io",
+  "构建时",
+  "构建期",
+  "缓存几分钟",
+  "不加载",
+  "现算",
+  "出图",
+  "contrib.rocks",
+  "star-history.com",
+].filter((phrase) => visibleText.includes(phrase));
+check(
+  "正文不出现实现细节文案",
+  implementationLeaks.length === 0,
+  implementationLeaks.join("、"),
+);
+
 // 属性里的 & 会被转义成 &amp;，比对前先还原一遍，否则 URL 永远匹配不上
 const html = indexHtml.replace(/&amp;/g, "&");
 const imgTags = html.match(/<img\b[^>]*>/g) ?? [];
