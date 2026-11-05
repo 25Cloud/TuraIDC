@@ -4,6 +4,7 @@ import { computed, onMounted, reactive, ref } from 'vue';
 
 import { clientAuthApi } from '@/api/auth';
 import clientApi from '@/api/client';
+import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import type {
   ClientAlipayAccount,
@@ -15,7 +16,6 @@ import type {
 } from '@/types/client';
 import { getErrorMessage } from '@/utils/error';
 import { copyText } from '@/utils/format';
-import { t } from '@/locales';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
 
@@ -98,12 +98,25 @@ export function useReferral() {
     return code && typeof window !== 'undefined' ? `${window.location.origin}/client/register?ref=${code}` : '--';
   });
   const summaryCards = computed(() => [
-    { key: 'available', label: t('client.referral.availableBalance'), value: `￥${availableAmountText.value}`, primary: true },
+    {
+      key: 'available',
+      label: t('client.referral.availableBalance'),
+      value: `￥${availableAmountText.value}`,
+      primary: true,
+    },
     { key: 'frozen', label: t('client.referral.statusFrozen'), value: `￥${frozenAmountText.value}` },
     { key: 'total', label: t('client.referral.totalReward'), value: `￥${totalRewardText.value}` },
     { key: 'withdrawn', label: t('client.referral.withdrawn'), value: `￥${withdrawnAmountText.value}` },
-    { key: 'direct', label: t('client.referral.directCount'), value: `${Number(overview.direct_referral_count || 0)} 人` },
-    { key: 'orders', label: t('client.referral.rewardedOrders'), value: `${Number(overview.rewarded_orders_count || 0)} 单` },
+    {
+      key: 'direct',
+      label: t('client.referral.directCount'),
+      value: `${Number(overview.direct_referral_count || 0)} 人`,
+    },
+    {
+      key: 'orders',
+      label: t('client.referral.rewardedOrders'),
+      value: `${Number(overview.rewarded_orders_count || 0)} 单`,
+    },
   ]);
 
   async function loadAlipayAccount() {

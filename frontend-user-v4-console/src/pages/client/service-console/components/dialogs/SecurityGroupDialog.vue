@@ -1,9 +1,18 @@
 <template>
-  <t-dialog v-model:visible="groupVisible" :header="$t('serviceConsole.securityGroup.title')" width="min(30rem, calc(100vw - 2rem))" destroy-on-close>
+  <t-dialog
+    v-model:visible="groupVisible"
+    :header="$t('serviceConsole.securityGroup.title')"
+    width="min(30rem, calc(100vw - 2rem))"
+    destroy-on-close
+  >
     <div class="dialog-form">
       <label>
         <span>{{ $t('serviceConsole.securityGroup.name') }}</span>
-        <t-input v-model="groupForm.name" :maxlength="64" :placeholder="$t('serviceConsole.securityGroup.namePlaceholder')" />
+        <t-input
+          v-model="groupForm.name"
+          :maxlength="64"
+          :placeholder="$t('serviceConsole.securityGroup.namePlaceholder')"
+        />
       </label>
       <label>
         <span>{{ $t('serviceConsole.securityGroup.description') }}</span>
@@ -16,8 +25,12 @@
       </label>
     </div>
     <template #footer>
-      <t-button variant="outline" @click="groupVisible = false">{{ $t('serviceConsole.securityGroup.cancel') }}</t-button>
-      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityGroup">{{ $t('serviceConsole.securityGroup.create') }}</t-button>
+      <t-button variant="outline" @click="groupVisible = false">{{
+        $t('serviceConsole.securityGroup.cancel')
+      }}</t-button>
+      <t-button theme="primary" :loading="securityState.submitting" @click="submitSecurityGroup">{{
+        $t('serviceConsole.securityGroup.create')
+      }}</t-button>
     </template>
   </t-dialog>
 </template>

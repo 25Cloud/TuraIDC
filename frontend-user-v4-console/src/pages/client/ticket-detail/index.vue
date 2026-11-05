@@ -38,8 +38,12 @@
                   （{{ detail.service?.display_name || detail.service?.product_name }}）
                 </template>
               </t-descriptions-item>
-              <t-descriptions-item :label="$t('client.ticketDetail.createdAt')">{{ formatTicketTime(detail.created_at) }}</t-descriptions-item>
-              <t-descriptions-item :label="$t('client.ticketDetail.updatedAt')">{{ formatTicketTime(detail.updated_at) }}</t-descriptions-item>
+              <t-descriptions-item :label="$t('client.ticketDetail.createdAt')">{{
+                formatTicketTime(detail.created_at)
+              }}</t-descriptions-item>
+              <t-descriptions-item :label="$t('client.ticketDetail.updatedAt')">{{
+                formatTicketTime(detail.updated_at)
+              }}</t-descriptions-item>
               <t-descriptions-item v-if="detail.close_reason_label" :label="$t('client.ticketDetail.closeReason')">
                 {{ detail.close_reason_label }}
               </t-descriptions-item>
@@ -57,9 +61,15 @@
                 <t-descriptions-item :label="$t('client.ticketDetail.category')">{{
                   resolveDepartmentLabel(detail.department)
                 }}</t-descriptions-item>
-                <t-descriptions-item :label="$t('client.ticketDetail.priority')">{{ resolvePriorityLabel(detail.priority) }}</t-descriptions-item>
-                <t-descriptions-item :label="$t('client.ticketDetail.status')">{{ resolveTicketStatusLabel(detail.status) }}</t-descriptions-item>
-                <t-descriptions-item :label="$t('client.ticketDetail.assignee')">{{ assigneeName }}</t-descriptions-item>
+                <t-descriptions-item :label="$t('client.ticketDetail.priority')">{{
+                  resolvePriorityLabel(detail.priority)
+                }}</t-descriptions-item>
+                <t-descriptions-item :label="$t('client.ticketDetail.status')">{{
+                  resolveTicketStatusLabel(detail.status)
+                }}</t-descriptions-item>
+                <t-descriptions-item :label="$t('client.ticketDetail.assignee')">{{
+                  assigneeName
+                }}</t-descriptions-item>
                 <t-descriptions-item :label="$t('client.ticketDetail.relatedService')">
                   <template v-if="detail.service?.id || detail.service_id">
                     {{ detail.service?.id || detail.service_id }}
@@ -108,9 +118,13 @@
                   :class="reply.is_staff ? 'message-item--staff' : 'message-item--user'"
                 >
                   <div class="message-meta">
-                    <span>{{ reply.sender_name || (reply.is_staff ? $t('client.ticketDetail.supportAgent') : $t('client.ticketDetail.me')) }}</span>
+                    <span>{{
+                      reply.sender_name ||
+                      (reply.is_staff ? $t('client.ticketDetail.supportAgent') : $t('client.ticketDetail.me'))
+                    }}</span>
                     <t-tag size="small" :theme="reply.is_staff ? 'primary' : 'success'" variant="light">
-                      {{ reply.is_staff ? $t('client.ticketDetail.adminRole') : $t('client.ticketDetail.userRole') }} #{{ reply.user_id }}
+                      {{ reply.is_staff ? $t('client.ticketDetail.adminRole') : $t('client.ticketDetail.userRole') }}
+                      #{{ reply.user_id }}
                     </t-tag>
                     <span>{{ formatTicketTime(reply.created_at) }}</span>
                   </div>
@@ -118,7 +132,9 @@
                     <p v-if="reply.recalled" class="message-recalled">{{ $t('client.ticketDetail.recalled') }}</p>
                     <template v-else>
                       <blockquote v-if="reply.quote">
-                        {{ reply.quote.sender_name }}：{{ reply.quote.recalled ? $t('client.ticketDetail.recalled') : reply.quote.content }}
+                        {{ reply.quote.sender_name }}：{{
+                          reply.quote.recalled ? $t('client.ticketDetail.recalled') : reply.quote.content
+                        }}
                       </blockquote>
                       <p>{{ reply.content || $t('client.ticketDetail.noContent') }}</p>
                       <div v-if="parseAttachments(reply).length" class="message-attachments">

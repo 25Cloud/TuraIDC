@@ -39,6 +39,7 @@ function serviceDetail(): Record<string, unknown> {
 }
 
 /**
+ * @param page       Playwright 页面对象
  * @param preloadAll 缺省传 undefined，模拟后端不下发该字段（缺省按开启处理）。
  */
 async function mockConsoleApi(page: Page, preloadAll?: boolean) {
@@ -121,15 +122,11 @@ test('切换 tab 不重建 iframe 实例', async ({ page }) => {
   await page.goto(`/client/services/${SERVICE_ID}`, { waitUntil: 'domcontentloaded' });
 
   await expect(areaFrames(page)).toHaveCount(2);
-  const before = await areaFrames(page).evaluateAll((nodes) =>
-    nodes.map((node) => (node as HTMLIFrameElement).src),
-  );
+  const before = await areaFrames(page).evaluateAll((nodes) => nodes.map((node) => (node as HTMLIFrameElement).src));
 
   await sidebarItem(page, '管理面板').click();
   await expect(areaFrames(page), '切 tab 后实例数量不变').toHaveCount(2);
 
-  const after = await areaFrames(page).evaluateAll((nodes) =>
-    nodes.map((node) => (node as HTMLIFrameElement).src),
-  );
+  const after = await areaFrames(page).evaluateAll((nodes) => nodes.map((node) => (node as HTMLIFrameElement).src));
   expect(after, '切 tab 后各实例的 src 不应变化，否则等于重新回源上游').toEqual(before);
 });

@@ -12,12 +12,20 @@
             <span>{{ $t('serviceConsole.traffic.currentUsage') }}</span>
             <strong
               >{{ trafficData?.traffic?.usage_label || detail.traffic?.usage_label || '0G' }} /
-              {{ trafficData?.traffic?.limit_label || detail.traffic?.limit_label || $t('serviceConsole.traffic.unlimited') }}</strong
+              {{
+                trafficData?.traffic?.limit_label ||
+                detail.traffic?.limit_label ||
+                $t('serviceConsole.traffic.unlimited')
+              }}</strong
             >
           </div>
           <div>
             <span>{{ $t('serviceConsole.traffic.remainingUsage') }}</span>
-            <strong>{{ trafficData?.traffic?.remaining_label || detail.traffic?.remaining_label || $t('serviceConsole.traffic.unlimited') }}</strong>
+            <strong>{{
+              trafficData?.traffic?.remaining_label ||
+              detail.traffic?.remaining_label ||
+              $t('serviceConsole.traffic.unlimited')
+            }}</strong>
           </div>
         </div>
         <t-radio-group
@@ -37,11 +45,18 @@
           </t-radio-button>
         </t-radio-group>
         <div class="traffic-total-line">
-          <span>{{ selectedTrafficPackage?.target_label || selectedTrafficPackage?.label || $t('serviceConsole.traffic.selectedTier') }}</span>
+          <span>{{
+            selectedTrafficPackage?.target_label ||
+            selectedTrafficPackage?.label ||
+            $t('serviceConsole.traffic.selectedTier')
+          }}</span>
           <strong>{{ trafficQuoting ? $t('serviceConsole.traffic.quoting') : `¥${trafficPayableAmount}` }}</strong>
         </div>
       </template>
-      <t-empty v-else-if="!trafficLoading" :description="trafficData?.message || $t('serviceConsole.traffic.noPackages')" />
+      <t-empty
+        v-else-if="!trafficLoading"
+        :description="trafficData?.message || $t('serviceConsole.traffic.noPackages')"
+      />
     </loading-state>
     <template #footer>
       <t-button variant="outline" @click="trafficVisible = false">{{ $t('serviceConsole.traffic.cancel') }}</t-button>

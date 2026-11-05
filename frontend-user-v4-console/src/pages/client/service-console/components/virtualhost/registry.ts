@@ -1,10 +1,11 @@
 import { BillIcon, DashboardIcon, ServerIcon } from 'tdesign-icons-vue-next';
 import type { Component } from 'vue';
 
+import { t } from '@/locales';
+
 import AreaTab from '../tabs/AreaTab.vue';
 import FinanceTab from '../tabs/FinanceTab.vue';
 import VirtualHostOverviewTab from './tabs/VirtualHostOverviewTab.vue';
-import { t } from '@/locales';
 
 export interface VirtualHostConsoleNavItem {
   key: string;
@@ -50,7 +51,5 @@ export function resolveVirtualHostNavItems(
 
 /** 未注册的自定义区域 key 走 iframe 隔离渲染 */
 export function resolveVirtualHostTabComponent(tabKey: string): Component {
-  return virtualHostBuiltinTabKeys.has(tabKey)
-    ? virtualHostTabComponents[tabKey]
-    : AreaTab;
+  return virtualHostBuiltinTabKeys.has(tabKey) ? virtualHostTabComponents[tabKey] : AreaTab;
 }

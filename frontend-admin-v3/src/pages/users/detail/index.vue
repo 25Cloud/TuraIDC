@@ -778,9 +778,7 @@
     >
       <div class="upstream-provision">
         <p class="upstream-provision__hint">{{ $t('users.detail.upstreamProvisionHint') }}</p>
-        <t-checkbox v-model="upstreamProvisionForm.force">{{
-          $t('users.detail.upstreamProvisionForce')
-        }}</t-checkbox>
+        <t-checkbox v-model="upstreamProvisionForm.force">{{ $t('users.detail.upstreamProvisionForce') }}</t-checkbox>
         <t-input
           v-model="upstreamProvisionForm.remark"
           :placeholder="$t('users.detail.upstreamProvisionRemark')"

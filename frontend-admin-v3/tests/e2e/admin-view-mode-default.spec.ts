@@ -75,9 +75,7 @@ test('默认设为列表时，工单页即使有历史卡片偏好也按列表�
   await expect(page.locator('.ticket-card')).toHaveCount(0);
 
   // 遗留键应被清掉，避免下次打开又被带偏
-  const legacyValue = await page.evaluate(() =>
-    window.localStorage.getItem('turaidc:admin-view-mode:admin-tickets'),
-  );
+  const legacyValue = await page.evaluate(() => window.localStorage.getItem('turaidc:admin-view-mode:admin-tickets'));
   expect(legacyValue).toBeNull();
 });
 
@@ -112,8 +110,6 @@ test('在设置面板切换默认值后，当前列表页立即跟随', async ({
   // 无需刷新：默认值变化后已打开的列表页立即切到卡片
   await expect(page.locator('.ticket-card').first()).toBeVisible();
 
-  const storedDefault = await page.evaluate(() =>
-    window.localStorage.getItem('turaidc:admin-view-mode-default'),
-  );
+  const storedDefault = await page.evaluate(() => window.localStorage.getItem('turaidc:admin-view-mode-default'));
   expect(storedDefault).toBe('card');
 });

@@ -61,6 +61,9 @@ export default antfu(
         /* Disallow person rules */
         'antfu/top-level-function': 'off',
         'antfu/if-newline': 'off',
+        /* 本仓的格式化真源是 prettier；这条 antfu 换行规则会和 prettier 互相改写
+         * （ESLint 报 Circular fixes detected，永远收敛不了），关掉它。 */
+        'antfu/consistent-list-newline': 'off',
         'e18e/prefer-static-regex': 'off',
         'n/prefer-global/process': 'off',
 

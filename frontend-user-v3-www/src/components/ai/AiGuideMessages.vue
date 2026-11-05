@@ -19,7 +19,10 @@
         每条都是一句完整的提问（含用途/预算/地区），点一下等于用户自己打完再发送，
         导购第一次回复就能直接给候选，而不是先反问一轮。
       -->
-      <div v-if="suggestHandler && suggests.length" class="ai-messages__suggests">
+      <div
+        v-if="suggestHandler && suggests.length"
+        class="ai-messages__suggests"
+      >
         <button
           v-for="(suggest, index) in suggests"
           :key="`suggest-${index}`"
@@ -39,11 +42,15 @@
       :class="`ai-msg--${message.role}`"
     >
       <!-- 用户消息：右侧气泡，保留用户自己敲的换行 -->
-      <p v-if="message.role === 'user'" class="ai-msg__user">{{ message.content }}</p>
+      <p v-if="message.role === 'user'" class="ai-msg__user">
+        {{ message.content }}
+      </p>
 
       <!-- 系统消息（执行结果 / 待确认动作）：居中细条 + 确认卡 -->
       <template v-else-if="message.role === 'system'">
-        <p v-if="message.content" class="ai-msg__system">{{ message.content }}</p>
+        <p v-if="message.content" class="ai-msg__system">
+          {{ message.content }}
+        </p>
         <AiGuideConfirmCard
           v-for="action in message.pending_actions || []"
           :key="`${message.id}-action-${action.id}`"
@@ -71,12 +78,17 @@
             >
               <code class="ai-msg__tool-name">{{ run.name }}</code>
               <span class="ai-msg__tool-sep" aria-hidden="true">·</span>
-              <span class="ai-msg__tool-status">{{ toolStatusLabel(run.status) }}</span>
+              <span class="ai-msg__tool-status">{{
+                toolStatusLabel(run.status)
+              }}</span>
             </span>
           </div>
 
           <!-- 首个增量到达前：三点呼吸占位，避免面板看起来「死住」 -->
-          <div v-if="message.started === false && !message.error" class="ai-thinking">
+          <div
+            v-if="message.started === false && !message.error"
+            class="ai-thinking"
+          >
             <span class="ai-thinking__dot" />
             <span class="ai-thinking__dot" />
             <span class="ai-thinking__dot" />
@@ -95,15 +107,28 @@
               :aria-expanded="isReasoningOpen(message) ? 'true' : 'false'"
               @click="toggleReasoning(message.id)"
             >
-              <el-icon class="ai-reason__chevron" :class="{ 'ai-reason__chevron--open': isReasoningOpen(message) }">
+              <el-icon
+                class="ai-reason__chevron"
+                :class="{
+                  'ai-reason__chevron--open': isReasoningOpen(message),
+                }"
+              >
                 <ArrowDown />
               </el-icon>
               <span class="ai-reason__title">
-                {{ message.streaming ? $t("ai.thinking") : $t("ai.reasoning.done") }}
+                {{
+                  message.streaming
+                    ? $t("ai.thinking")
+                    : $t("ai.reasoning.done")
+                }}
               </span>
-              <span class="ai-reason__meta">{{ reasoningChars(message.reasoning) }}</span>
+              <span class="ai-reason__meta">{{
+                reasoningChars(message.reasoning)
+              }}</span>
             </button>
-            <div v-show="isReasoningOpen(message)" class="ai-reason__body">{{ message.reasoning }}</div>
+            <div v-show="isReasoningOpen(message)" class="ai-reason__body">
+              {{ message.reasoning }}
+            </div>
           </section>
 
           <p v-if="message.error" class="ai-msg__error">
@@ -118,12 +143,13 @@
           -->
           <div v-if="message.content && !message.error" class="ai-msg__content">
             <!-- markdown-it 已关闭原始 HTML（html: false），产物是转义后的安全结构 -->
-            <!-- eslint-disable-next-line vue/no-v-html -->
+            <!-- eslint-disable vue/no-v-html -- markdown-it 已关闭原始 HTML，产物是转义后的安全结构 -->
             <div
               class="ai-msg__markdown"
               :class="{ 'ai-msg__markdown--live': message.streaming }"
               v-html="renderMarkdown(message.content)"
             ></div>
+            <!-- eslint-enable vue/no-v-html -->
           </div>
 
           <AiGuideConfirmCard
@@ -175,9 +201,15 @@ const props = defineProps({
 });
 
 // 空态快捷问题：三句完整的导购提问，覆盖「按预算选」「按地区选」「已有实例续费」
-const SUGGEST_KEYS = ["ai.empty.suggest1", "ai.empty.suggest2", "ai.empty.suggest3"];
+const SUGGEST_KEYS = [
+  "ai.empty.suggest1",
+  "ai.empty.suggest2",
+  "ai.empty.suggest3",
+];
 const suggests = computed(() =>
-  SUGGEST_KEYS.map((key) => t(key)).filter((text) => text && !text.startsWith("ai.")),
+  SUGGEST_KEYS.map((key) => t(key)).filter(
+    (text) => text && !text.startsWith("ai."),
+  ),
 );
 
 // html: false —— 模型输出里的原始 HTML 一律当文本，杜绝 v-html 变成注入入口
@@ -243,12 +275,16 @@ function isReasoningOpen(message) {
 }
 
 function toggleReasoning(id) {
-  openReasoning.value = { ...openReasoning.value, [id]: !openReasoning.value[id] };
+  openReasoning.value = {
+    ...openReasoning.value,
+    [id]: !openReasoning.value[id],
+  };
 }
 
 function reasoningChars(text) {
   const length = (text || "").length;
-  const count = length >= 1000 ? `${(length / 1000).toFixed(1)}k` : String(length);
+  const count =
+    length >= 1000 ? `${(length / 1000).toFixed(1)}k` : String(length);
 
   return t("ai.reasoning.chars", { count });
 }
@@ -374,7 +410,9 @@ watch(
   background: var(--td-bg-color-container, var(--el-bg-color));
   border: 1px solid var(--td-component-border, var(--el-border-color-light));
   border-radius: 8px;
-  transition: border-color 0.15s ease, color 0.15s ease;
+  transition:
+    border-color 0.15s ease,
+    color 0.15s ease;
 
   &:hover {
     color: var(--td-brand-color, var(--el-color-primary));

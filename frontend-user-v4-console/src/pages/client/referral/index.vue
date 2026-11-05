@@ -15,7 +15,9 @@
       <t-card class="referral-card" :bordered="false">
         <template #title>{{ $t('client.referral.linkTitle') }}</template>
         <template #actions>
-          <t-tag variant="light">{{ levelName }} - {{ $t('client.referral.commissionRate') }} {{ rewardRateText }}</t-tag>
+          <t-tag variant="light"
+            >{{ levelName }} - {{ $t('client.referral.commissionRate') }} {{ rewardRateText }}</t-tag
+          >
         </template>
         <div class="referral-link-row">
           <t-input :value="referralLink" readonly>
@@ -24,11 +26,13 @@
           <t-button @click="copyReferralLink">{{ $t('client.referral.copyLink') }}</t-button>
         </div>
         <p>
-          {{ $t('client.referral.description', {
-            rate: rewardRateText,
-            days: freezeDaysText,
-            min: withdrawMinAmountText,
-          }) }}
+          {{
+            $t('client.referral.description', {
+              rate: rewardRateText,
+              days: freezeDaysText,
+              min: withdrawMinAmountText,
+            })
+          }}
         </p>
       </t-card>
 
@@ -51,7 +55,9 @@
             <t-input v-model="withdrawForm.amount" :placeholder="$t('client.referral.withdrawAmountPlaceholder')" />
           </t-form-item>
           <t-form-item>
-            <t-button theme="primary" :loading="withdrawSubmitting" @click="submitWithdrawal">{{ $t('client.referral.submitWithdraw') }}</t-button>
+            <t-button theme="primary" :loading="withdrawSubmitting" @click="submitWithdrawal">{{
+              $t('client.referral.submitWithdraw')
+            }}</t-button>
           </t-form-item>
         </t-form>
       </t-card>
@@ -88,7 +94,9 @@
           </t-tab-panel>
           <t-tab-panel value="withdrawals" :label="$t('client.referral.withdrawalsTab')">
             <t-table row-key="id" :data="withdrawals" :columns="withdrawColumns" :pagination="null">
-              <template #method="{ row }">{{ row.method === 'balance' ? $t('client.referral.toBalance') : $t('client.referral.alipay') }}</template>
+              <template #method="{ row }">{{
+                row.method === 'balance' ? $t('client.referral.toBalance') : $t('client.referral.alipay')
+              }}</template>
               <template #amount="{ row }">¥{{ money(row.amount) }}</template>
               <template #account="{ row }">{{ row.account_name || '--' }} {{ row.account_no || '' }}</template>
               <template #status="{ row }">
@@ -122,14 +130,20 @@
           ><t-input v-model="bindForm.account" :placeholder="$t('client.referral.alipayPhonePlaceholder')"
         /></t-form-item>
         <t-form-item :label="$t('client.referral.smsCode')"
-          ><t-input v-model="bindForm.code" :placeholder="$t('client.referral.smsCodePlaceholder')" /></t-form-item>
+          ><t-input v-model="bindForm.code" :placeholder="$t('client.referral.smsCodePlaceholder')"
+        /></t-form-item>
         <t-form-item :label="$t('client.referral.loginPassword')"
-          ><t-input v-model="bindForm.password" type="password" :placeholder="$t('client.referral.loginPasswordPlaceholder')"
+          ><t-input
+            v-model="bindForm.password"
+            type="password"
+            :placeholder="$t('client.referral.loginPasswordPlaceholder')"
         /></t-form-item>
       </t-form>
       <template #footer>
         <t-button variant="outline" @click="bindDialogVisible = false">{{ $t('client.referral.cancel') }}</t-button>
-        <t-button theme="primary" :loading="bindSubmitting" @click="submitBindAlipay">{{ $t('client.referral.saveBind') }}</t-button>
+        <t-button theme="primary" :loading="bindSubmitting" @click="submitBindAlipay">{{
+          $t('client.referral.saveBind')
+        }}</t-button>
       </template>
     </t-dialog>
   </section>
@@ -138,8 +152,8 @@
 import { LinkIcon } from 'tdesign-icons-vue-next';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
 
-import { t } from '@/locales';
 import { accountEventLabel, money, rewardStatus, useReferral, withdrawStatus } from '@/domains/marketing/useReferral';
+import { t } from '@/locales';
 
 const {
   loading,

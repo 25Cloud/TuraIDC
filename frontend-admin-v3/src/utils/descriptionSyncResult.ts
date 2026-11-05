@@ -48,9 +48,7 @@ export interface DescriptionSyncNotice {
  * - 一条都没拉到且是拉取失败 → 错误，带原因；
  * - 全部跳过 → 警告，带第一条跳过原因。
  */
-export function describeDescriptionSyncResult(
-  result: DescriptionSyncResult | null | undefined,
-): DescriptionSyncNotice {
+export function describeDescriptionSyncResult(result: DescriptionSyncResult | null | undefined): DescriptionSyncNotice {
   const summary = result?.summary ?? {};
   const synced = Number(summary.synced ?? 0);
   const changed = Number(summary.changed ?? 0);
@@ -63,9 +61,7 @@ export function describeDescriptionSyncResult(
       return {
         tone: 'success',
         message:
-          changed === 1
-            ? t('products.description.syncDone')
-            : t('products.description.syncAllDone', { changed }),
+          changed === 1 ? t('products.description.syncDone') : t('products.description.syncAllDone', { changed }),
       };
     }
 

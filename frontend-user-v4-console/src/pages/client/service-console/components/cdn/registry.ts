@@ -34,10 +34,7 @@ const cdnTabComponents: Record<string, Component> = {
 const cdnBuiltinTabKeys = new Set(Object.keys(cdnTabComponents));
 
 /** 组装侧边栏：自定义区域（面板信息等）插在 overview 之后 */
-export function resolveCdnNavItems(
-  tabKeys: string[],
-  areaLabels: Record<string, string> = {},
-): CdnConsoleNavItem[] {
+export function resolveCdnNavItems(tabKeys: string[], areaLabels: Record<string, string> = {}): CdnConsoleNavItem[] {
   return tabKeys.map((key) => ({
     key,
     label: areaLabels[key] || cdnTabMeta[key]?.label || key,

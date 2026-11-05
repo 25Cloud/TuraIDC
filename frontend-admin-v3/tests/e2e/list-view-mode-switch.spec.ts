@@ -198,7 +198,7 @@ test.describe('后台列表页视图切换', () => {
       return { display: computed.display, gap: computed.gap };
     });
     expect(style.display).toBe('grid');
-    expect(parseFloat(style.gap)).toBeGreaterThanOrEqual(12);
+    expect(Number.parseFloat(style.gap)).toBeGreaterThanOrEqual(12);
 
     await page.screenshot({
       path: `${process.env.TEMP || '.'}\\turaidc-admin-orders-card-${testInfo.project.name}.png`,

@@ -1,10 +1,6 @@
 <template>
   <div class="result-500">
-    <t-result
-      theme="error"
-      :title="$t('result.serverError.title')"
-      :description="$t('result.serverError.description')"
-    >
+    <t-result theme="error" :title="$t('result.serverError.title')" :description="$t('result.serverError.description')">
       <template #extra>
         <t-space size="small">
           <t-button theme="primary" @click="goHome">{{ $t('result.serverError.backHome') }}</t-button>

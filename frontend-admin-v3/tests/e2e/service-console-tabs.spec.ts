@@ -159,13 +159,7 @@ test('动态自定义区域：页签显示区域中文名而非「选项卡N」'
   //
   // 面板型的判定走 isPanelConsole()，它先看 console_template 再看
   // machine_category.key——本 mock 是靠 machine_category.key='web_hosting' 命中的。
-  expect(labels).toEqual([
-    t.overviewTab,
-    '基本信息',
-    '网络信息',
-    t.productConfigTab,
-    t.financeLogs,
-  ]);
+  expect(labels).toEqual([t.overviewTab, '基本信息', '网络信息', t.productConfigTab, t.financeLogs]);
   expect(labels.join('')).not.toContain('选项卡');
 });
 

@@ -3899,9 +3899,7 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     // 预回复接口可能带 ?_t= 这类时间戳，按 pathname 判等，别用 url().endsWith
     const isPreReplyApi = (url: string) => new URL(url).pathname.endsWith('/api/v2/admin/ticket-pre-reply-settings');
 
-    const saveRequest = page.waitForRequest(
-      (request) => isPreReplyApi(request.url()) && request.method() === 'POST',
-    );
+    const saveRequest = page.waitForRequest((request) => isPreReplyApi(request.url()) && request.method() === 'POST');
     // 保存成功后页面会 loadConfig 重新拉取，等待其落地再进入后续开关操作。
     const saveReload = page.waitForResponse(
       (response) => isPreReplyApi(response.url()) && response.request().method() === 'GET',

@@ -1,10 +1,10 @@
 <template>
   <t-dialog
-      v-model:visible="renewVisible"
-      :header="$t('serviceConsole.renewDialog.title')"
-      width="min(34rem, calc(100vw - 2rem))"
-      destroy-on-close
-    >
+    v-model:visible="renewVisible"
+    :header="$t('serviceConsole.renewDialog.title')"
+    width="min(34rem, calc(100vw - 2rem))"
+    destroy-on-close
+  >
     <loading-state :loading="renewLoading" :text="$t('serviceConsole.renewDialog.loading')" compact>
       <template v-if="renewData">
         <t-radio-group v-model="renewForm.billing_cycle" class="renew-cycle-group" @change="handleRenewCycleChange">
@@ -33,7 +33,9 @@
           </t-select>
         </div>
         <div v-if="renewHasAgentDiscount" class="renew-agent-discount">
-          <span class="renew-original-amount">{{ $t('serviceConsole.renewDialog.originalPrice') }} ¥{{ renewOriginalAmount }}</span>
+          <span class="renew-original-amount"
+            >{{ $t('serviceConsole.renewDialog.originalPrice') }} ¥{{ renewOriginalAmount }}</span
+          >
           <span class="renew-agent-label"
             >{{ $t('serviceConsole.renewDialog.agentDiscount') }}（{{ renewAgentGroupName }}）{{
               renewAgentDiscountRate / 10
@@ -49,9 +51,9 @@
     </loading-state>
     <template #footer>
       <t-button variant="outline" @click="renewVisible = false">{{ $t('serviceConsole.renewDialog.cancel') }}</t-button>
-      <t-button theme="primary" :loading="renewSubmitting" :disabled="!renewForm.billing_cycle" @click="submitRenew"
-        >{{ $t('serviceConsole.renewDialog.createInvoice') }}</t-button
-      >
+      <t-button theme="primary" :loading="renewSubmitting" :disabled="!renewForm.billing_cycle" @click="submitRenew">{{
+        $t('serviceConsole.renewDialog.createInvoice')
+      }}</t-button>
     </template>
   </t-dialog>
 </template>

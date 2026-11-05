@@ -1,6 +1,11 @@
 name: CI
 
+# 之前只有 workflow_dispatch：CI 实际上从未在推送或 PR 上跑过，
+# 代码库里因此累积了 170 多处风格问题，徽章长期停在 2026-08-24 那次失败上。
 on:
+  push:
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
 concurrency:

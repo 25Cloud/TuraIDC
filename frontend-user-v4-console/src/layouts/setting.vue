@@ -28,11 +28,7 @@
           variant="default-filled"
           @change="(val: unknown) => changeLocale(String(val))"
         >
-          <t-radio-button
-            v-for="item in languageList"
-            :key="String(item.value)"
-            :value="String(item.value)"
-          >
+          <t-radio-button v-for="item in languageList" :key="String(item.value)" :value="String(item.value)">
             {{ item.content }}
           </t-radio-button>
         </t-radio-group>

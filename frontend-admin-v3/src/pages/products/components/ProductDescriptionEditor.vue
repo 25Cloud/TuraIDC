@@ -137,7 +137,7 @@ interface EditorRow {
  * 遇到这类内容直接进高级模式，让商家看到并编辑真实源码，而不是面对一个
  * 「看起来被清空了」的结构化表格。
  */
-const STRUCTURED_UNSUPPORTED_TAGS = /<(img|b|strong|em|i|u|a|span|div|table|thead|tbody|tr|td|th|h[1-6])\b/i;
+const STRUCTURED_UNSUPPORTED_TAGS = /<(?:img|[biua]|strong|em|span|div|table|thead|tbody|tr|td|th|h[1-6])\b/i;
 
 function preferredMode(html: string): 'structured' | 'advanced' {
   return STRUCTURED_UNSUPPORTED_TAGS.test(String(html ?? '')) ? 'advanced' : 'structured';

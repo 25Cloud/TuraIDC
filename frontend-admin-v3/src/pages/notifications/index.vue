@@ -37,7 +37,9 @@
                 </t-tag>
               </t-space>
             </template>
-            <template #preview="{ row }"><span class="clamp-cell">{{ row.preview }}</span></template>
+            <template #preview="{ row }"
+              ><span class="clamp-cell">{{ row.preview }}</span></template
+            >
             <template #subject="{ row }">
               <span class="clamp-cell">{{ row.channel === 'email' ? fieldValue(row.subject) : row.preview }}</span>
             </template>
@@ -135,7 +137,9 @@
                 <div v-if="row.channel === 'email'">
                   <dt>{{ $t('notifications.audience') }}</dt>
                   <dd>
-                    {{ row.audience === 'admin' ? $t('notifications.adminAudience') : $t('notifications.userAudience') }}
+                    {{
+                      row.audience === 'admin' ? $t('notifications.adminAudience') : $t('notifications.userAudience')
+                    }}
                   </dd>
                 </div>
               </dl>

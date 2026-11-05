@@ -116,7 +116,8 @@ export function createAiClient(options: AiClientOptions): AiClient {
         ...init,
         headers: buildHeaders(init?.body !== undefined, 'application/json'),
       });
-    } catch (error) {
+    } catch {
+      // 底层 fetch 失败（断网、DNS、CORS）时只有一句人话提示，不把原始异常甩给用户
       throw new AiApiError(0, '网络连接失败，请检查网络后重试');
     }
 

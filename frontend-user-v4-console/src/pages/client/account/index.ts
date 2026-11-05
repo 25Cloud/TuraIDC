@@ -1,3 +1,4 @@
+export { default as ApiKeysPage } from '@/pages/client/api-keys/index.vue';
 /**
  * 「账户设置」各页面统一入口。
  *
@@ -11,4 +12,3 @@
  */
 export { default as ProfilePage } from '@/pages/client/profile/index.vue';
 export { default as VerificationPage } from '@/pages/client/verification/index.vue';
-export { default as ApiKeysPage } from '@/pages/client/api-keys/index.vue';

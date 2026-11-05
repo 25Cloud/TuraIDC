@@ -359,7 +359,7 @@ export function useAiChat(client: AiClient, options: UseAiChatOptions) {
         flushNow();
         patchMessage(assistant.id, { streaming: false });
       }
-    } catch (err) {
+    } catch {
       // 流式不可用（网关缓冲、超时、内容类型不对）时回退一次性响应，避免用户看到空白气泡
       try {
         flushNow();

@@ -2,7 +2,9 @@
   <t-alert v-if="isExpiringSoon" theme="warning" class="console-alert">
     {{ $t('serviceConsole.alerts.expiringSoon', { time: detail.expires_at }) }}
     <template #operation>
-      <t-button variant="text" theme="primary" @click="openRenewDialog">{{ $t('serviceConsole.alerts.renewNow') }}</t-button>
+      <t-button variant="text" theme="primary" @click="openRenewDialog">{{
+        $t('serviceConsole.alerts.renewNow')
+      }}</t-button>
     </template>
   </t-alert>
 

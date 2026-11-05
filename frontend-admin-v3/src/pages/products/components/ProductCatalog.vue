@@ -1539,9 +1539,9 @@ import AdminViewModeSwitch from '@/components/admin-view-mode-switch/index.vue';
 import { useAdminViewMode } from '@/composables/useAdminViewMode';
 import { AdminPermissions, hasPermissionInList } from '@/constants/permissions';
 import { t } from '@/locales';
-import { describeDescriptionSyncResult } from '@/utils/descriptionSyncResult';
-import type { DescriptionSyncResult } from '@/utils/descriptionSyncResult';
 import { useUserStore } from '@/store';
+import type { DescriptionSyncResult } from '@/utils/descriptionSyncResult';
+import { describeDescriptionSyncResult } from '@/utils/descriptionSyncResult';
 import { goProductEdit, isEntityId } from '@/utils/route/adminEntityLink';
 
 import {

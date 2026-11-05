@@ -46,9 +46,14 @@ async function seedAdminSession(page: Page) {
   });
 }
 
-type SaveCapture = { body: Record<string, unknown> | null; failNextSave: boolean };
+interface SaveCapture {
+  body: Record<string, unknown> | null;
+  failNextSave: boolean;
+}
 
 /**
+ * @param page    Playwright 页面对象
+ * @param list    列表接口要返回的数据
  * @param capture 保存请求的捕获器；把 failNextSave 置 true 可让下一次保存返回 500，
  *                用于验证失败时开关会弹回。
  */
@@ -94,12 +99,8 @@ test('预热开关按设置返回的 1/0 渲染实际状态', async ({ page }) =
 
   await page.goto('/admin/integration-plugins/upstream', { waitUntil: 'domcontentloaded' });
 
-  await expect(panelSwitch(page, '面板区域首屏预热'), 'preload=1 必须显示为开启').toHaveClass(
-    /t-is-checked/,
-  );
-  await expect(panelSwitch(page, '上游面板同源检测'), 'origin_check=0 必须显示为关闭').not.toHaveClass(
-    /t-is-checked/,
-  );
+  await expect(panelSwitch(page, '面板区域首屏预热'), 'preload=1 必须显示为开启').toHaveClass(/t-is-checked/);
+  await expect(panelSwitch(page, '上游面板同源检测'), 'origin_check=0 必须显示为关闭').not.toHaveClass(/t-is-checked/);
 });
 
 test('设置项缺失时按开启渲染', async ({ page }) => {

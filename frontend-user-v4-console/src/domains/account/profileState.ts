@@ -1,7 +1,6 @@
 import { reactive, ref } from 'vue';
 
 import { t } from '@/locales';
-
 import type { ClientAgentGroup, ClientNotificationPreferences } from '@/types/client';
 
 export type NotificationKey = keyof ClientNotificationPreferences;
@@ -69,7 +68,12 @@ export const notificationList = reactive<NotificationItem[]>([
     desc: t('account.securityNotify.emailChanged'),
     enabled: false,
   },
-  { key: 'marketing_alert', name: t('profile.notifications.marketingAlert'), desc: t('account.notifySubscriptions.desc'), enabled: false },
+  {
+    key: 'marketing_alert',
+    name: t('profile.notifications.marketingAlert'),
+    desc: t('account.notifySubscriptions.desc'),
+    enabled: false,
+  },
 ]);
 
 /** 是否已经拉取过数据：只首次进入时请求接口，之后路由来回切换直接复用 */

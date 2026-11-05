@@ -495,8 +495,8 @@ import { productApi } from '@/api/product';
 import type { SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
 import { t } from '@/locales';
-import { describeDescriptionSyncResult } from '@/utils/descriptionSyncResult';
 import type { DescriptionSyncResult } from '@/utils/descriptionSyncResult';
+import { describeDescriptionSyncResult } from '@/utils/descriptionSyncResult';
 
 import ProductDescriptionEditor from './components/ProductDescriptionEditor.vue';
 import {

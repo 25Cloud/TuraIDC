@@ -2,22 +2,28 @@
   <section class="order-detail-page">
     <!-- 面包屑导航 -->
     <t-breadcrumb class="order-breadcrumb">
-      <t-breadcrumb-item @click="router.push('/client/dashboard')">{{ $t('client.orderDetail.financeCenter') }}</t-breadcrumb-item>
-      <t-breadcrumb-item @click="router.push('/client/orders')">{{ $t('client.orderDetail.orderRecords') }}</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/dashboard')">{{
+        $t('client.orderDetail.financeCenter')
+      }}</t-breadcrumb-item>
+      <t-breadcrumb-item @click="router.push('/client/orders')">{{
+        $t('client.orderDetail.orderRecords')
+      }}</t-breadcrumb-item>
       <t-breadcrumb-item>{{ $t('client.orderDetail.orderDetail') }}</t-breadcrumb-item>
     </t-breadcrumb>
 
     <!-- 操作栏 -->
     <div class="detail-toolbar">
-      <t-button variant="outline" @click="router.push('/client/orders')">{{ $t('client.orderDetail.backToList') }}</t-button>
+      <t-button variant="outline" @click="router.push('/client/orders')">{{
+        $t('client.orderDetail.backToList')
+      }}</t-button>
       <div class="detail-toolbar__actions">
         <t-button variant="outline" :loading="loading" @click="loadDetail(orderId)">
           <template #icon><refresh-icon /></template>
           {{ $t('client.orderDetail.refresh') }}
         </t-button>
         <t-button v-if="canPayDetail" theme="primary" @click="goPayDetail">{{
-            $t('client.orderDetail.goPay')
-          }}</t-button>
+          $t('client.orderDetail.goPay')
+        }}</t-button>
         <t-button
           v-if="detail && Number(detail.status) === 0"
           theme="danger"

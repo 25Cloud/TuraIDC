@@ -279,7 +279,11 @@ export const userApi = {
       .then(normalizeV2ServicePayload),
   // 一键上游开通：不填上游实例 ID，后端按商品绑定跑完加购→结算→余额支付
   // 会把上游的加购/结算/支付串起来，耗时远高于普通请求，因此沿用上游同步的超时
-  provisionUpstreamService: (id: number | string, serviceId: number | string, data: { force?: boolean; remark?: string }) =>
+  provisionUpstreamService: (
+    id: number | string,
+    serviceId: number | string,
+    data: { force?: boolean; remark?: string },
+  ) =>
     request
       .post<UserServiceV2DetailPayload>({
         url: `/v2/admin/users/${id}/services/${serviceId}/upstream-provision`,
