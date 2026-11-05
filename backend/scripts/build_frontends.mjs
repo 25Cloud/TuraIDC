@@ -221,17 +221,30 @@ if (options.dryRun) {
   process.exit(0);
 }
 
+/**
+ * 单个前端构建，失败重试一次。
+ *
+ * Vite 8 把 less/sass 编译放到 worker 线程，用同步端口取结果：主线程只轮询
+ * 10 次就判定失败（`Failed to receive message from sync port after 10 attempts`）。
+ * 在只有 2 核的 CI runner 上，worker 偶尔还没被调度到就超时了，属基础设施抖动，
+ * 与代码无关（同一提交本地稳定通过、重跑即过）。这里对每个应用重试一次，
+ * 并把第一次的失败原因打出来，避免把真实编译错误也当成抖动掩盖掉。
+ */
 for (const [name, application] of selectedApplications) {
   const appBase = baseByApplication[name];
+  const buildEnvironment = {
+    ...baseBuildEnvironment,
+    VITE_BASE_URL: appBase,
+    [application.assetVariable]: appBase,
+  };
+
   console.log(`构建 ${name} (${application.workspace})，base=${appBase} ...`);
-  await runNpm(
-    ['--filter', application.workspace, 'run', 'build'],
-    {
-      ...baseBuildEnvironment,
-      VITE_BASE_URL: appBase,
-      [application.assetVariable]: appBase,
-    },
-  );
+  try {
+    await runNpm(['--filter', application.workspace, 'run', 'build'], buildEnvironment);
+  } catch (error) {
+    console.warn(`构建 ${name} 首次失败，重试一次：${error instanceof Error ? error.message : error}`);
+    await runNpm(['--filter', application.workspace, 'run', 'build'], buildEnvironment);
+  }
 }
 
 console.log('三个前端保持独立 dist，未写入 backend/public。');

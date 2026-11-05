@@ -112,9 +112,8 @@ trait HandlesProductCatalogHelpers
             $normalized[(string) $cycle] = number_format($value, 2, '.', '');
         }
 
-        $monthly = isset($normalized['monthly']) && is_numeric($normalized['monthly'])
-            ? (float) $normalized['monthly']
-            : null;
+        // 值一律由 number_format() 产生，本身就是数字字符串，不需要再 is_numeric 一次
+        $monthly = isset($normalized['monthly']) ? (float) $normalized['monthly'] : null;
 
         if ($monthly !== null && $monthly > 0) {
             foreach (BillingCycle::RENEWABLE_MONTHS as $cycle => $months) {
