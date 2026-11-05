@@ -12,6 +12,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
 use App\Models\Supplier;
+use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\ProductCatalogService;
 use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
@@ -66,6 +67,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     /** 站点分组接口异常时的空结果缓存时长（秒），避免反复重试整轮遍历 */
     private const SITE_GROUP_FAILURE_CACHE_TTL = 60;
+
     /** 上游实时报价缓存：价格分钟级不变，缓冲前台频繁的价格预览请求 */
     private const QUOTE_CACHE_TTL = 60;
 
@@ -82,7 +84,6 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      */
     public const OPTION_MODE_TEXT = 'text';
 
-    
     /** 开通轮询：上游账单映射 + 服务开通，单轮预算约 150s，超出交给队列重试 */
     private const PROVISION_POLL_ATTEMPTS = 50;
 
@@ -146,7 +147,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     public function __construct(
         private readonly ?TuraOpenApiClient $client = null,
-        private ?\App\Services\Integrations\Plugins\PluginBindingResolver $bindingResolver = null,
+        private ?PluginBindingResolver $bindingResolver = null,
     ) {}
 
     public function key(): string
@@ -682,7 +683,7 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      *
      * @param  array<int, array<string, mixed>>  $products
      * @param  array<int, string>  $cycles
-     * @return array<int, array<string, string>>  productId => cycle => amount
+     * @return array<int, array<string, string>> productId => cycle => amount
      */
     private function fetchQuotesForProducts(Supplier $supplier, array $products, array $cycles): array
     {
@@ -1175,7 +1176,6 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      * 而上游 sub 只有自增 id。缺了这层映射，后台选配表格显示的就是 sub id
      * 而不是提交给上游的参数，本地一编辑还会把 id 当参数写回 parameter。
      *
-     * @param  mixed  $subOptions
      * @return array<int, array<string, mixed>>
      */
     private function normalizeSiteConfigSubOptions(mixed $subOptions, string $parameter = ''): array
@@ -1878,9 +1878,9 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         return $upstreamProductId;
     }
 
-    private function bindingResolver(): \App\Services\Integrations\Plugins\PluginBindingResolver
+    private function bindingResolver(): PluginBindingResolver
     {
-        return $this->bindingResolver ??= app(\App\Services\Integrations\Plugins\PluginBindingResolver::class);
+        return $this->bindingResolver ??= app(PluginBindingResolver::class);
     }
 
     /**
@@ -2163,22 +2163,22 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
      * config_amount / items / total_amount 等，调用方按需取用（报价逻辑只覆盖 config 加价）。
      *
      * @param  array<string, mixed>  $config
-     * @return array<string, mixed>  上游解包后的 data；失败返回空数组
+     * @return array<string, mixed> 上游解包后的 data；失败返回空数组
      */
     public function quoteUpstreamProduct(Supplier $supplier, int $upstreamProductId, array $config, string $billingCycle, int $quantity): array
     {
         $quantity = max((int) $quantity, 1);
-        $configBody = $config === [] ? new \stdClass() : $config;
+        $configBody = $config === [] ? new \stdClass : $config;
         $cacheKey = 'tura_open_api:quote:'
-            . $this->supplierFingerprint($supplier) . ':'
-            . $upstreamProductId . ':' . $billingCycle . ':' . $quantity . ':'
-            . md5(json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
+            .$this->supplierFingerprint($supplier).':'
+            .$upstreamProductId.':'.$billingCycle.':'.$quantity.':'
+            .md5(json_encode($config, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE));
 
         return Cache::remember($cacheKey, self::QUOTE_CACHE_TTL, function () use ($supplier, $upstreamProductId, $configBody, $billingCycle, $quantity): array {
             try {
                 $data = $this->client()->postPublic(
                     $supplier,
-                    '/api/v2/site/products/' . $upstreamProductId . '/quote',
+                    '/api/v2/site/products/'.$upstreamProductId.'/quote',
                     [
                         'config' => $configBody,
                         'billing_cycle' => $billingCycle,

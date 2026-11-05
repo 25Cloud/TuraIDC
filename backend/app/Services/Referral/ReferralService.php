@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Referral;
 
-use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Exceptions\BusinessException;
@@ -26,6 +25,7 @@ use App\Services\System\OperationLogService;
 use App\Services\User\AccountService;
 use App\Support\AdminPrivacy;
 use App\Support\PublicUrl;
+use App\Support\SqlLike;
 use App\Support\TextSanitizer;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

@@ -20,7 +20,7 @@ interface ProvidesOrderProvisioning extends ProvidesProvisioning
 {
     /**
      * @param  ?Service  $existingService  幂等回查用的本地既有实例，驱动必须先核对上游
-     *                                   是否已存在对应主机，避免重复开通
+     *                                     是否已存在对应主机，避免重复开通
      * @return array{upstream_invoice_id?: int, upstream_host_id?: int|string, upstream_host_ids?: array<int, int|string>, host_detail?: array<string, mixed>, requested_host?: string}
      */
     public function provisionOrder(Order $order, Supplier $supplier, ?Service $existingService = null): array;

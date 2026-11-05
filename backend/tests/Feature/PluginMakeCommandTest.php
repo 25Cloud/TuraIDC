@@ -6,6 +6,7 @@ namespace Tests\Feature;
 
 use App\Console\Commands\PluginMakeCommand;
 use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 /**
@@ -113,7 +114,7 @@ class PluginMakeCommandTest extends TestCase
 
     public function test_the_command_is_registered(): void
     {
-        $this->assertArrayHasKey('plugin:make', \Illuminate\Support\Facades\Artisan::all());
-        $this->assertInstanceOf(PluginMakeCommand::class, \Illuminate\Support\Facades\Artisan::all()['plugin:make']);
+        $this->assertArrayHasKey('plugin:make', Artisan::all());
+        $this->assertInstanceOf(PluginMakeCommand::class, Artisan::all()['plugin:make']);
     }
 }

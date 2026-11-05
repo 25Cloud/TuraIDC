@@ -77,7 +77,7 @@ return new class extends Migration
                 'version' => (string) $plugin->version,
                 'status' => (int) $plugin->status,
             ]);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::error('[auto_refund] 内置插件登记失败，请在插件管理里手动安装', [
                 'message' => $exception->getMessage(),
                 'exception' => $exception::class,

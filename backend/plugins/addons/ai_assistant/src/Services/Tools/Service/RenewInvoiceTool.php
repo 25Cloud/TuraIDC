@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Service;
 
 use App\Models\Invoice;
+use App\Services\Provisioning\ServiceRenewService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\Provisioning\ServiceRenewService;
 
 /**
  * 创建续费账单（只建单，不自动扣款）。
@@ -76,7 +76,7 @@ final class RenewInvoiceTool extends AiTool
         );
 
         return [
-            'summary' => '已创建续费账单 ' . ($invoice instanceof Invoice ? (string) $invoice->invoice_no : '') . '，应付 ' . ($invoice instanceof Invoice ? (string) $invoice->amount : '0.00') . ' 元',
+            'summary' => '已创建续费账单 '.($invoice instanceof Invoice ? (string) $invoice->invoice_no : '').'，应付 '.($invoice instanceof Invoice ? (string) $invoice->amount : '0.00').' 元',
             'data' => [
                 'invoice_id' => $invoice instanceof Invoice ? (int) $invoice->id : 0,
                 'invoice_no' => $invoice instanceof Invoice ? (string) $invoice->invoice_no : '',

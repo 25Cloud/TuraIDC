@@ -477,7 +477,7 @@ class ProductSpecHighlightService
     }
 
     /**
- * 维度匹配取值的来源：名称优先，field 仅作兜底。
+     * 维度匹配取值的来源：名称优先，field 仅作兜底。
      *
      * 魔方允许 field 复用——虚拟主机与 CDN 的全部配置项 field 都是 cpu。
      * 先读 field 会把「绑定域名数」「WEB空间」「流量限制」统统算成 CPU 亮点，

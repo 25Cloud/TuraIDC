@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Ticket;
 
-use App\Support\SqlLike;
 use App\Constants\ServiceStatus;
 use App\Constants\UserNotificationType;
 use App\Exceptions\BusinessException;
@@ -24,6 +23,7 @@ use App\Support\AdminPrivacy;
 use App\Support\PublicUrl;
 use App\Support\SecureAsset;
 use App\Support\ServiceHostname;
+use App\Support\SqlLike;
 use App\Support\TextSanitizer;
 use App\Support\UploadedImage;
 use Illuminate\Http\UploadedFile;

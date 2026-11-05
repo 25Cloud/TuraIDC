@@ -8,13 +8,13 @@ use App\Constants\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
 use App\Models\Service;
-use App\Models\User;
 use App\Services\ClientServiceConsole\ServiceDetailService;
 use App\Services\ClientServiceConsole\ServicePowerService;
 use App\Services\Finance\PaymentService;
 use App\Services\Provisioning\ServiceRenewService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 class OpenServiceController extends Controller
 {
@@ -148,7 +148,7 @@ class OpenServiceController extends Controller
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $items
+     * @param  Collection<int, array<string, mixed>>  $items
      * @return array<string, mixed>
      */
     private function listPayload($items, int $total, int $page, int $pageSize): array

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog;
 
-use App\Support\SqlLike;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
@@ -22,6 +21,7 @@ use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
 use App\Support\ProductProvisionHostname;
+use App\Support\SqlLike;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;

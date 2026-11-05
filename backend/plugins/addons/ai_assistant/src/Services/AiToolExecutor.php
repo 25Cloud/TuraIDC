@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services;
 
 use App\Exceptions\BusinessException;
+use Illuminate\Support\Str;
+use Throwable;
+use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiToolInvocation;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiSchemaValidator;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
-use Illuminate\Support\Str;
-use Throwable;
 
 /**
  * 工具执行器：风险分级 + 确认协议的唯一实现。
@@ -42,7 +43,7 @@ final class AiToolExecutor
             return $this->outcome($toolName, 'read', 'failed', '该能力不存在或未授权，无法执行', null, 0);
         }
 
-        if ($context->permissionMode === \TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation::MODE_READ_ONLY && $tool->risk() !== AiTool::RISK_READ) {
+        if ($context->permissionMode === AiConversation::MODE_READ_ONLY && $tool->risk() !== AiTool::RISK_READ) {
             return $this->outcome(
                 $toolName,
                 $tool->risk(),
@@ -60,7 +61,7 @@ final class AiToolExecutor
         }
 
         $needsConfirm = $tool->risk() === AiTool::RISK_DANGEROUS
-            || ($tool->risk() === AiTool::RISK_WRITE && $context->permissionMode !== \TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation::MODE_AUTO_APPROVE);
+            || ($tool->risk() === AiTool::RISK_WRITE && $context->permissionMode !== AiConversation::MODE_AUTO_APPROVE);
 
         if ($needsConfirm) {
             $invocation = $this->createPending($context, $tool, $clean, $messageId);
@@ -70,7 +71,7 @@ final class AiToolExecutor
                 'tool' => $tool->name(),
                 'risk' => $tool->risk(),
                 'status' => 'pending',
-                'summary' => '等待用户确认：' . (string) ($presented['title'] ?? $tool->name()),
+                'summary' => '等待用户确认：'.(string) ($presented['title'] ?? $tool->name()),
                 'data' => [
                     'status' => 'awaiting_confirmation',
                     'action_id' => (int) $invocation->id,
@@ -104,9 +105,9 @@ final class AiToolExecutor
             $invocation->user,
             $invocation->conversation,
             (string) ($invocation->conversation?->channel ?? 'console'),
-            (string) ($invocation->conversation?->permission_mode ?? \TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation::MODE_CONFIRM),
-            'ai-confirm-' . $invocation->id,
-            'ai-inv-' . $invocation->id,
+            (string) ($invocation->conversation?->permission_mode ?? AiConversation::MODE_CONFIRM),
+            'ai-confirm-'.$invocation->id,
+            'ai-inv-'.$invocation->id,
         );
 
         try {
@@ -161,7 +162,7 @@ final class AiToolExecutor
             'risk' => $tool->risk(),
             'arguments' => $arguments,
             'status' => AiToolInvocation::STATUS_DONE,
-            'idempotency_key' => 'ai-inv-' . Str::uuid()->toString(),
+            'idempotency_key' => 'ai-inv-'.Str::uuid()->toString(),
         ]);
 
         $executed = $this->runAndRecord($context, $tool, $arguments, $invocation);
@@ -237,7 +238,7 @@ final class AiToolExecutor
             'risk' => $tool->risk(),
             'arguments' => $meta,
             'status' => AiToolInvocation::STATUS_PENDING,
-            'idempotency_key' => 'ai-inv-' . Str::uuid()->toString(),
+            'idempotency_key' => 'ai-inv-'.Str::uuid()->toString(),
         ]);
     }
 
@@ -293,14 +294,16 @@ final class AiToolExecutor
         $parts = [];
         foreach ($arguments as $key => $value) {
             if (in_array($key, ['password', 'password_confirmation'], true)) {
-                $parts[] = $key . '=******';
+                $parts[] = $key.'=******';
+
                 continue;
             }
             if (is_scalar($value) || $value === null) {
-                $parts[] = $key . '=' . (string) $value;
+                $parts[] = $key.'='.(string) $value;
+
                 continue;
             }
-            $parts[] = $key . '=' . (string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR);
+            $parts[] = $key.'='.(string) json_encode($value, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR);
         }
 
         return implode('，', $parts);

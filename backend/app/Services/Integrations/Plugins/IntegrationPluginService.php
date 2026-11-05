@@ -14,10 +14,10 @@ use App\Services\Sms\Data\SmsSendRequest;
 use App\Services\Sms\SmsDriverManager;
 use App\Services\System\NotificationService;
 use App\Services\System\SmsService;
+use App\Support\DatabaseSchema;
 use App\Support\PublicUrl;
 use App\Support\SmsTemplateCatalog;
 use Illuminate\Support\Facades\DB;
-use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 
 class IntegrationPluginService

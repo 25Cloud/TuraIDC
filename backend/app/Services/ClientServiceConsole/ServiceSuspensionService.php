@@ -6,9 +6,9 @@ namespace App\Services\ClientServiceConsole;
 
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Models\Service;
 use App\Models\User;
-use App\Jobs\PushServiceToZjmfDownstreamJob;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\System\OperationLogService;

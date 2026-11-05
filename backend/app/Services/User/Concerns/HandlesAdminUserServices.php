@@ -1135,7 +1135,6 @@ trait HandlesAdminUserServices
         return $amount > 0 ? $amount : null;
     }
 
-
     /**
      * 管理员一键上游开通：不填上游接口和实例 ID，直接按商品已配置的上游绑定跑完
      * 「加购 → 结算 → 供应商余额支付」，成功后再把上游实例 ID 回填到服务上。

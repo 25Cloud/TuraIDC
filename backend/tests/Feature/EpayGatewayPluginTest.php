@@ -25,8 +25,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
-use TuraIDC\Plugins\Gateways\Epay\Lib\EpayClient;
 use TuraIDC\Plugins\Gateways\Epay\EpayPlugin;
+use TuraIDC\Plugins\Gateways\Epay\Lib\EpayClient;
 
 class EpayGatewayPluginTest extends TestCase
 {

@@ -66,6 +66,7 @@ class UpdateAiSettingsRequest extends AdminFormRequest
                     $value = (string) ($value['value'] ?? '');
                 }
                 $normalized[$key] = (string) $value;
+
                 continue;
             }
 
@@ -77,6 +78,7 @@ class UpdateAiSettingsRequest extends AdminFormRequest
                 } else {
                     $normalized[$key] = $value;
                 }
+
                 continue;
             }
 
@@ -86,6 +88,7 @@ class UpdateAiSettingsRequest extends AdminFormRequest
                 } elseif (is_array($value)) {
                     $normalized[$key] = array_values(array_filter(array_map('strval', $value), static fn (string $item): bool => $item !== ''));
                 }
+
                 continue;
             }
 

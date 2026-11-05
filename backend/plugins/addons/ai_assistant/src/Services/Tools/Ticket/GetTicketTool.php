@@ -6,10 +6,10 @@ namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Ticket;
 
 use App\Exceptions\BusinessException;
 use App\Models\Ticket;
+use App\Services\Ticket\TicketService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\Ticket\TicketService;
 
 /**
  * 工单详情：只读，且必须是本人的工单。
@@ -50,7 +50,7 @@ final class GetTicketTool extends AiTool
         $detail = $this->tickets->v2Detail($ticket, false);
 
         return [
-            'summary' => '工单「' . (string) $ticket->subject . '」详情',
+            'summary' => '工单「'.(string) $ticket->subject.'」详情',
             'data' => [
                 'ticket_id' => (int) $ticket->id,
                 'subject' => (string) $ticket->subject,

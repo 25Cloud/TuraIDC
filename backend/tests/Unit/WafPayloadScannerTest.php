@@ -248,7 +248,7 @@ final class WafPayloadScannerTest extends TestCase
     {
         // 超过 max_depth 的嵌套无法被摊平检查，必须按固定规则拒绝——静默跳过
         // 深层内容等于把第 N 层变成免检区。且不能栈溢出。
-        $deep = "union select 1";
+        $deep = 'union select 1';
         for ($i = 0; $i < 50; $i++) {
             $deep = ['n' => $deep];
         }
@@ -265,7 +265,7 @@ final class WafPayloadScannerTest extends TestCase
         // 无效字节会让 u 修饰符的 preg_match 整体失败；若按未命中处理，攻击者
         // 塞一个 \xFF 就能让整条规则库失效。必须按固定规则拒绝。
         $hit = $this->scanner->inspect(
-            $this->request(query: ['padding' => "\xFF", 'keyword' => "plain text"])
+            $this->request(query: ['padding' => "\xFF", 'keyword' => 'plain text'])
         );
 
         self::assertNotNull($hit, '无效 UTF-8 输入被当作未命中放行');
@@ -368,7 +368,7 @@ final class WafPayloadScannerTest extends TestCase
     {
         // /*!5xxxx 是绕过 union 关键词匹配的经典 MySQL 混淆形态。
         $hit = $this->scanner->inspect(
-            $this->request(query: ['id' => "1/*!50740AND 1=1"])
+            $this->request(query: ['id' => '1/*!50740AND 1=1'])
         );
 
         self::assertNotNull($hit);

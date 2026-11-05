@@ -14,7 +14,6 @@ use App\Models\User;
 use App\Services\ClientServiceConsole\ServicePowerService;
 use App\Services\ClientServiceConsole\ServiceVncService;
 use App\Services\Provisioning\ProvisionService;
-use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -373,7 +372,7 @@ class UpstreamProvisionService
         $service->forceFill(['status' => ServiceStatus::CANCELLED])->save();
 
         // 删除必须回推：下游删单依赖该推送把本地 host 置 Deleted 并清空凭据
-        //（对齐魔方 Host::terminate 成功后的 pushHostInfo），否则下游残留 Active 记录。
+        // （对齐魔方 Host::terminate 成功后的 pushHostInfo），否则下游残留 Active 记录。
         PushServiceToZjmfDownstreamJob::dispatch(
             (int) $service->id,
             ZjmfDownstreamPushService::TYPE_TERMINATE

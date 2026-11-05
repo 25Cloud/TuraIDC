@@ -24,7 +24,6 @@ use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\System\SettingService;
 use App\Services\Upstream\ProviderKey;
-use Illuminate\Http\Request;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;

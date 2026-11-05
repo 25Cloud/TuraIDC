@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Drivers;
 
-use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use App\Exceptions\BusinessException;
+use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatResult;
@@ -143,7 +143,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
                 continue;
             }
             $calls[] = new AiToolCall(
-                $block['id'] !== '' ? $block['id'] : 'toolu_' . $index,
+                $block['id'] !== '' ? $block['id'] : 'toolu_'.$index,
                 $block['name'],
                 $block['arguments'] !== '' ? $block['arguments'] : '{}',
             );
@@ -165,6 +165,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
                 if ($message->content !== '') {
                     $system[] = $message->content;
                 }
+
                 continue;
             }
 
@@ -172,6 +173,7 @@ final class AnthropicMessagesDriver implements AiProviderInterface
             $lastIndex = array_key_last($messages);
             if ($lastIndex !== null && $messages[$lastIndex]['role'] === $role) {
                 $messages[$lastIndex]['content'] = array_merge($messages[$lastIndex]['content'], $blocks);
+
                 continue;
             }
             $messages[] = ['role' => $role, 'content' => $blocks];
@@ -251,10 +253,12 @@ final class AnthropicMessagesDriver implements AiProviderInterface
             $type = (string) ($block['type'] ?? '');
             if ($type === 'thinking') {
                 $reasoning .= (string) ($block['thinking'] ?? '');
+
                 continue;
             }
             if ($type === 'text') {
                 $text .= (string) ($block['text'] ?? '');
+
                 continue;
             }
             if ($type === 'tool_use') {
@@ -285,11 +289,11 @@ final class AnthropicMessagesDriver implements AiProviderInterface
     {
         $headers = [
             'Content-Type: application/json',
-            'anthropic-version: ' . self::API_VERSION,
-            'Accept: ' . ($stream ? 'text/event-stream' : 'application/json'),
+            'anthropic-version: '.self::API_VERSION,
+            'Accept: '.($stream ? 'text/event-stream' : 'application/json'),
         ];
         if ($this->apiKey !== '') {
-            $headers[] = 'x-api-key: ' . $this->apiKey;
+            $headers[] = 'x-api-key: '.$this->apiKey;
         }
 
         return $headers;

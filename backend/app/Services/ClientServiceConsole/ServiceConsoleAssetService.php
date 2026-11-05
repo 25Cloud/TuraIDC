@@ -56,8 +56,7 @@ final class ServiceConsoleAssetService
      * 取上游静态资源（带缓存）。
      *
      * @param  callable(string):string  $proxyUrlFactory  把「上游站点内的绝对路径」包装成本站可取到的地址。
-     *                                                   用于修 CSS 内部的相对引用，见 rewriteCssRelativeUrls()。
-     *
+     *                                                    用于修 CSS 内部的相对引用，见 rewriteCssRelativeUrls()。
      * @return array{body: string, content_type: string}
      */
     public function fetch(Supplier $supplier, string $rootUrl, string $path, callable $proxyUrlFactory): array

@@ -73,7 +73,7 @@ class ProductService
      */
     public function __construct(?UpstreamCatalogCache $catalogCache = null)
     {
-        $this->catalogCache = $catalogCache ?? new UpstreamCatalogCache();
+        $this->catalogCache = $catalogCache ?? new UpstreamCatalogCache;
     }
 
     /**

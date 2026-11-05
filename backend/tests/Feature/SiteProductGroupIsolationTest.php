@@ -10,6 +10,7 @@ use App\Models\Product;
 use App\Models\SecondProductGroup;
 use App\Models\Setting;
 use App\Models\ThirdProductGroup;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -151,7 +152,7 @@ class SiteProductGroupIsolationTest extends TestCase
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
+     * @return Collection<int, array<string, mixed>>
      */
     private function siteGroupPayloads(string $filterKey, string $filterValue)
     {

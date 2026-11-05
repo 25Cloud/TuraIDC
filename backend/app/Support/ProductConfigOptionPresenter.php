@@ -37,6 +37,7 @@ final class ProductConfigOptionPresenter
 
     /** 内存规格关键词。与官网前端 machineSpecResolver 的 MEMORY_KEYWORDS 同口径。 */
     public const MEMORY_KEYWORDS = ['memory', 'ram', '内存'];
+
     /** 区间型（滑块）配置项 option_type */
     public const RANGE_OPTION_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
 
@@ -63,7 +64,6 @@ final class ProductConfigOptionPresenter
     /**
      * 补齐整组配置项。
      *
-     * @param  mixed  $configOptions
      * @return array<int, array<string, mixed>>
      */
     public static function present(mixed $configOptions): array
@@ -113,6 +113,7 @@ final class ProductConfigOptionPresenter
 
             if ($field === '') {
                 $items[$index]['form_key'] = '';
+
                 continue;
             }
 
@@ -169,7 +170,7 @@ final class ProductConfigOptionPresenter
      * 本地配置项的 id 就是上游实例的配置项 id —— 同步时由上游响应原样落库。
      *
      * @param  array<string, mixed>  $submitted  以 form_key / field 为键的提交值
-     * @return array<int, mixed>  配置项 id => 子项 id 或数量
+     * @return array<int, mixed> 配置项 id => 子项 id 或数量
      */
     public static function submitConfigByOptionId(mixed $configOptions, array $submitted): array
     {
@@ -509,7 +510,6 @@ final class ProductConfigOptionPresenter
      * 里（12|CentOS,62|CentOS…）。若只给 id，本地一保存就会把 id 当参数
      * 写回 parameter，上游将无法识别。
      *
-     * @param  mixed  $subOptions
      * @return array<int, array<string, mixed>>
      */
     public static function presentSubOptions(mixed $subOptions, string $parameter = ''): array

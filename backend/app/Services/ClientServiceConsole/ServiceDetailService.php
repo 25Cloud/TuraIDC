@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\ClientServiceConsole;
 
-use App\Support\SqlLike;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
@@ -23,6 +22,7 @@ use App\Services\Upstream\ProviderResolver;
 use App\Services\Upstream\Support\WebSessionCookieParser;
 use App\Support\SensitiveDataSanitizer;
 use App\Support\ServiceHostname;
+use App\Support\SqlLike;
 use App\Support\TextSanitizer;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns;
 
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Collection;
+
 /**
  * 工具返回值整理：给模型的永远是短摘要 + 必要字段，绝不外泄完整敏感信息。
  */
@@ -24,7 +27,7 @@ trait FormatsToolResults
     {
         $value = trim((string) preg_replace('/\s+/u', ' ', (string) $text));
 
-        return mb_strlen($value) > $limit ? mb_substr($value, 0, $limit) . '…' : $value;
+        return mb_strlen($value) > $limit ? mb_substr($value, 0, $limit).'…' : $value;
     }
 
     /**
@@ -35,10 +38,10 @@ trait FormatsToolResults
      */
     protected function toList(mixed $payload): array
     {
-        if ($payload instanceof \Illuminate\Contracts\Pagination\LengthAwarePaginator) {
+        if ($payload instanceof LengthAwarePaginator) {
             return array_values($payload->items());
         }
-        if ($payload instanceof \Illuminate\Support\Collection) {
+        if ($payload instanceof Collection) {
             return $payload->values()->all();
         }
         if (is_array($payload)) {

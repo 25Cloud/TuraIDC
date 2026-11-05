@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Console;
 
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Schema;
+use Throwable;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiToolInvocation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiUsageDaily;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiConfig;
-use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\AiProviderManager;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatRequest;
-use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Schema;
-use Throwable;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
 
 /**
  * AI 网关自检：配置完整性 + 数据表 + 工具注册表，--remote 时再打一次真实网关。
@@ -34,17 +34,17 @@ final class AiDoctorCommand extends Command
         $failures = 0;
 
         $failures += $this->check('开关 enabled', $config->enabled() ? '已开启' : '未开启（入口不会显示）', false);
-        $failures += $this->check('协议 protocol', $config->protocol() . '（' . $config->protocolLabel() . '）', array_key_exists($config->protocol(), $config->protocols()));
+        $failures += $this->check('协议 protocol', $config->protocol().'（'.$config->protocolLabel().'）', array_key_exists($config->protocol(), $config->protocols()));
         $failures += $this->check('网关地址 base_url', $config->baseUrl() !== '' ? $config->baseUrl() : '未配置', $config->baseUrl() !== '');
         $failures += $this->check('API 密钥', $config->hasApiKey() ? '已配置（加密存储）' : '未配置', $config->hasApiKey());
         $failures += $this->check('模型 model', $config->model() !== '' ? $config->model() : '未配置', $config->model() !== '');
 
         foreach (['ai_conversations', 'ai_messages', 'ai_tool_invocations', 'ai_usage_daily'] as $table) {
-            $failures += $this->check('数据表 ' . $table, Schema::hasTable($table) ? '存在' : '缺失，请先执行 migrate', Schema::hasTable($table));
+            $failures += $this->check('数据表 '.$table, Schema::hasTable($table) ? '存在' : '缺失，请先执行 migrate', Schema::hasTable($table));
         }
 
         $tools = $registry->all();
-        $failures += $this->check('工具注册表', count($tools) . ' 个：' . implode('、', array_keys($tools)), count($tools) >= 10);
+        $failures += $this->check('工具注册表', count($tools).' 个：'.implode('、', array_keys($tools)), count($tools) >= 10);
 
         $failures += $this->check('每日额度', sprintf(
             '用户 %d 条 / %d token；全站 %d token / %d 分',
@@ -54,7 +54,7 @@ final class AiDoctorCommand extends Command
             $config->globalDailyCostCents(),
         ), true);
 
-        $failures += $this->check('权限档位', '默认 ' . $config->defaultPermissionMode() . '，上限 ' . $config->maxPermissionMode(), true);
+        $failures += $this->check('权限档位', '默认 '.$config->defaultPermissionMode().'，上限 '.$config->maxPermissionMode(), true);
 
         if ($this->option('remote')) {
             if (! $config->isConfigured()) {
@@ -83,7 +83,7 @@ final class AiDoctorCommand extends Command
                         $result->usage->completionTokens,
                     ));
                 } catch (Throwable $exception) {
-                    $this->error('远程连通失败：' . $exception->getMessage());
+                    $this->error('远程连通失败：'.$exception->getMessage());
                     $failures++;
                 }
             }
@@ -99,7 +99,7 @@ final class AiDoctorCommand extends Command
         ));
 
         if ($failures > 0) {
-            $this->error('自检发现 ' . $failures . ' 项问题');
+            $this->error('自检发现 '.$failures.' 项问题');
 
             return self::FAILURE;
         }
@@ -112,7 +112,7 @@ final class AiDoctorCommand extends Command
     private function check(string $label, string $value, bool $ok): int
     {
         $prefix = $ok ? '<info>✔</info>' : '<comment>!</comment>';
-        $this->line($prefix . ' ' . $label . '：' . $value);
+        $this->line($prefix.' '.$label.'：'.$value);
 
         return $ok ? 0 : 1;
     }

@@ -6,6 +6,7 @@ namespace App\Services\ZjmfUpstream;
 
 use App\Constants\InvoiceStatus;
 use App\Constants\InvoiceType;
+use App\Jobs\ProcessPaidOrderFulfillmentJob;
 use App\Models\Invoice;
 use App\Models\Order;
 use App\Models\Service;
@@ -227,7 +228,7 @@ class CreditService
         }
 
         try {
-            \App\Jobs\ProcessPaidOrderFulfillmentJob::dispatchSync($orderId);
+            ProcessPaidOrderFulfillmentJob::dispatchSync($orderId);
         } catch (\Throwable $exception) {
             Log::warning('[zjmf-upstream] 补偿履约失败', [
                 'invoice_id' => (int) $invoice->id,

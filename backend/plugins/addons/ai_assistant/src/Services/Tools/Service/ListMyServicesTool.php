@@ -6,10 +6,10 @@ namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Service;
 
 use App\Constants\ServiceStatus;
 use App\Models\Service;
+use App\Services\ClientServiceConsole\ServiceOverviewService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\ClientServiceConsole\ServiceOverviewService;
 
 /**
  * 我的实例列表：只读。返回归属当前用户的实例，不含他人数据。
@@ -74,6 +74,7 @@ final class ListMyServicesTool extends AiTool
                     'status_text' => (string) (ServiceStatus::$labels[$status] ?? '未知'),
                     'expires_at' => (string) ($row->expires_at?->format('Y-m-d H:i:s') ?? ''),
                 ];
+
                 continue;
             }
             if (is_array($row)) {
@@ -91,8 +92,8 @@ final class ListMyServicesTool extends AiTool
         return [
             'summary' => $items === []
                 ? '当前用户名下没有符合条件的实例'
-                : '共 ' . count($items) . ' 台实例：' . implode('、', array_map(
-                    static fn (array $item): string => $item['name'] . '（' . $item['status_text'] . '）',
+                : '共 '.count($items).' 台实例：'.implode('、', array_map(
+                    static fn (array $item): string => $item['name'].'（'.$item['status_text'].'）',
                     array_slice($items, 0, 5),
                 )),
             'data' => ['items' => $items, 'total' => count($items)],

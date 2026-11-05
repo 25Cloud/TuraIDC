@@ -17,11 +17,11 @@ use App\Services\Mail\Contracts\MailDriver;
 use App\Services\Sms\Contracts\SmsDriver;
 use App\Services\Upstream\Contracts\UpstreamDriver;
 use App\Services\Verification\Contracts\VerificationDriver;
+use App\Support\DatabaseSchema;
 use App\Support\SensitiveDataSanitizer;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use App\Support\DatabaseSchema;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 

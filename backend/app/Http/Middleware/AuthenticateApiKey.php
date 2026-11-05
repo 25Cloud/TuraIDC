@@ -29,9 +29,6 @@ class AuthenticateApiKey
 
     /**
      * 中间件参数为所需 scope，如 `api.key:services,write`；不传则仅认证不校验业务域。
-     *
-     * @param  string  $domain
-     * @param  string  $level
      */
     public function handle(Request $request, Closure $next, string $domain = '', string $level = 'read'): Response
     {

@@ -77,7 +77,7 @@ final class QuotePriceTool extends AiTool
 
         $quote = $this->quotes->quoteForUser($product, $validated, $context->user, [
             'user_id' => $context->userId(),
-            'request_id' => 'ai-quote-' . $context->conversation->id,
+            'request_id' => 'ai-quote-'.$context->conversation->id,
             'ip_address' => '',
         ]);
 

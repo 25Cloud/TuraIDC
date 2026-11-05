@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Constants\ServiceStatus;
-use App\Models\Setting;
+use App\Models\Product;
+use App\Models\Service;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -82,7 +84,7 @@ class ServiceSuspensionUpstreamTest extends TestCase
     /**
      * 构建挂接 demo_servers 假上游的完整服务栈（与 OpenApiWriteEndpointsTest 同构）。
      *
-     * @return array{user: User, supplier: \App\Models\Supplier, product: \App\Models\Product, service: \App\Models\Service}
+     * @return array{user: User, supplier: Supplier, product: Product, service: Service}
      */
     private function makeDemoServiceStack(): array
     {
@@ -100,7 +102,7 @@ class ServiceSuspensionUpstreamTest extends TestCase
             'status' => 1,
         ]);
 
-        $supplier = \App\Models\Supplier::query()->create([
+        $supplier = Supplier::query()->create([
             'name' => 'Suspend Demo Supplier '.$unique,
             'code' => $unique,
             'interface_type' => 'demo_servers',
@@ -111,7 +113,7 @@ class ServiceSuspensionUpstreamTest extends TestCase
             'sort_order' => 1,
         ]);
 
-        $product = \App\Models\Product::query()->create([
+        $product = Product::query()->create([
             'name' => 'Suspend Demo Product '.$unique,
             'product_type' => 'server',
             'pricing' => ['monthly' => '66.00'],
@@ -149,7 +151,7 @@ class ServiceSuspensionUpstreamTest extends TestCase
             'updated_at' => now(),
         ]);
 
-        $service = \App\Models\Service::query()->create([
+        $service = Service::query()->create([
             'user_id' => (int) $user->id,
             'product_id' => (int) $product->id,
             'name' => 'Suspend Demo Service '.$unique,

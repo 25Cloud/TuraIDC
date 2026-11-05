@@ -19,7 +19,6 @@ use App\Models\ZjmfUpstreamBinding;
 use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\Provisioning\ServiceRenewService;
-use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 

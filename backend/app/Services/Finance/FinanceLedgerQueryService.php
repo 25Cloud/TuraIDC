@@ -2,7 +2,6 @@
 
 namespace App\Services\Finance;
 
-use App\Support\SqlLike;
 use App\Constants\FinanceLedgerEventType;
 use App\Constants\InvoiceStatus;
 use App\Constants\InvoiceType;
@@ -21,6 +20,7 @@ use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Support\AdminPrivacy;
 use App\Support\ServiceHostname;
 use App\Support\SqlIdentifier;
+use App\Support\SqlLike;
 use App\Support\VersionedJson;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;

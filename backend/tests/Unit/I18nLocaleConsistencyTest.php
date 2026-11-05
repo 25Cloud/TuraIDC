@@ -132,6 +132,7 @@ class I18nLocaleConsistencyTest extends TestCase
                 $path = $prefix === '' ? (string) $key : $prefix.'.'.$key;
                 if (is_array($value)) {
                     $walk($value, $path);
+
                     continue;
                 }
                 $flat[$path] = (string) $value;
@@ -203,17 +204,17 @@ class I18nLocaleConsistencyTest extends TestCase
         $needles = array_values(array_unique(preg_split('//u', implode('', self::SIMPLIFIED_ONLY), -1, PREG_SPLIT_NO_EMPTY)));
 
         foreach (self::APPS as $app) {
-          foreach (['zh_TW', 'zh_HK'] as $variant) {
-            foreach ($this->loadLocale($app, $variant) as $key => $value) {
-                foreach ($needles as $char) {
-                    $this->assertStringNotContainsString(
-                        $char,
-                        $value,
-                        "{$app}/{$variant}.json 的 {$key} 仍含简体「{$char}」，请重跑 backend/scripts/i18n/build-zh-trad.mjs"
-                    );
+            foreach (['zh_TW', 'zh_HK'] as $variant) {
+                foreach ($this->loadLocale($app, $variant) as $key => $value) {
+                    foreach ($needles as $char) {
+                        $this->assertStringNotContainsString(
+                            $char,
+                            $value,
+                            "{$app}/{$variant}.json 的 {$key} 仍含简体「{$char}」，请重跑 backend/scripts/i18n/build-zh-trad.mjs"
+                        );
+                    }
                 }
             }
-          }
         }
     }
 
@@ -288,7 +289,8 @@ class I18nLocaleConsistencyTest extends TestCase
             }
         }
     }
-public function test_referenced_keys_exist_in_locales(): void
+
+    public function test_referenced_keys_exist_in_locales(): void
     {
         // 代码里 {{ $t('a.b') }} / t('a.b') 引用的 key 必须能在 zh_CN 找到。
         // 只比对三份词条彼此一致是不够的：三份同时缺同一个 key 时依然「一致」。
@@ -341,7 +343,9 @@ public function test_referenced_keys_exist_in_locales(): void
         }
 
         return $files;
-    }    /**
+    }
+
+    /**
      * 模板层硬编码中文的存量基线（app → 相对 src 的路径 → 处数）。
      *
      * 这是**债务棘轮**，不是豁免名单：

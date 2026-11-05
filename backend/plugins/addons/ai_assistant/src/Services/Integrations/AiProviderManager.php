@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations;
 
-use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use App\Exceptions\BusinessException;
+use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiConfig;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Drivers\AnthropicMessagesDriver;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Drivers\ChatCompletionsDriver;

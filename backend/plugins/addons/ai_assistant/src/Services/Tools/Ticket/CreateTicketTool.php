@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Ticket;
 
 use App\Models\Ticket;
+use App\Services\Ticket\TicketService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\Ticket\TicketService;
 
 /**
  * 代用户创建工单：AI 客服解决不了时把问题转人工。
@@ -51,7 +51,7 @@ final class CreateTicketTool extends AiTool
 
     public function title(array $arguments): string
     {
-        return '提交工单：' . (string) ($arguments['subject'] ?? '');
+        return '提交工单：'.(string) ($arguments['subject'] ?? '');
     }
 
     public function impact(array $arguments): string
@@ -74,7 +74,7 @@ final class CreateTicketTool extends AiTool
         $ticket = $this->tickets->create($context->userId(), $data);
 
         return [
-            'summary' => '已提交工单 ' . ($ticket instanceof Ticket ? ('#' . (int) $ticket->id) : ''),
+            'summary' => '已提交工单 '.($ticket instanceof Ticket ? ('#'.(int) $ticket->id) : ''),
             'data' => [
                 'ticket_id' => $ticket instanceof Ticket ? (int) $ticket->id : 0,
                 'subject' => $ticket instanceof Ticket ? (string) $ticket->subject : (string) $arguments['subject'],

@@ -44,7 +44,7 @@ final class TuraOpenApiClient
      *
      * @param  array<int|string, string>  $requests  alias => uri
      * @param  array<int|string, array<string, mixed>>  $queryByAlias
-     * @return array<int|string, array<string, mixed>>  alias => data（仅成功项）
+     * @return array<int|string, array<string, mixed>> alias => data（仅成功项）
      */
     public function getPublicMany(Supplier $supplier, array $requests, array $queryByAlias = []): array
     {
@@ -66,7 +66,7 @@ final class TuraOpenApiClient
                 }
             });
         } catch (\Throwable $exception) {
-            $this->logFailure($supplier, 'GET', 'pool(' . count($requests) . ')', $exception->getMessage());
+            $this->logFailure($supplier, 'GET', 'pool('.count($requests).')', $exception->getMessage());
 
             return [];
         }
@@ -212,7 +212,7 @@ final class TuraOpenApiClient
      *
      * @param  array<int|string, string>  $requests  alias => uri（query 通过 $queryByAlias 传入）
      * @param  array<int|string, array<string, mixed>>  $queryByAlias
-     * @return array<int|string, array<string, mixed>>  alias => data（仅成功项）
+     * @return array<int|string, array<string, mixed>> alias => data（仅成功项）
      */
     public function getMany(Supplier $supplier, array $requests, array $queryByAlias = []): array
     {
@@ -240,7 +240,7 @@ final class TuraOpenApiClient
                 }
             });
         } catch (\Throwable $exception) {
-            $this->logFailure($supplier, 'GET', 'pool(' . count($requests) . ')', $exception->getMessage());
+            $this->logFailure($supplier, 'GET', 'pool('.count($requests).')', $exception->getMessage());
 
             return [];
         }

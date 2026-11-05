@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use App\Services\ProductCatalog\ProductSpecSummaryBuilder;
+
 /**
  * 商品展示名（目录口径）：只保留规范规格摘要。
  *
@@ -16,7 +18,7 @@ namespace App\Support;
  *   2核2G30M
  *   2核2G20M
  *
- * 规格摘要由 {@see \App\Services\ProductCatalog\ProductSpecSummaryBuilder} 按
+ * 规格摘要由 {@see ProductSpecSummaryBuilder} 按
  * 结构化配置算出，格式统一。
  *
  * 没有规格摘要的商品（虚拟主机、CDN、挂机宝等）沿用原名：它们的原名本身就是
@@ -27,7 +29,7 @@ final class ProductCatalogName
     /**
      * @param  array<string, mixed>  $hierarchy  ProductGroupHierarchyFields::fromProduct() 的结果
      *                                           （分组路径不再进商品名，保留参数以复用调用方签名）
-     * @param  array<string, mixed>  $display    ProductDisplayNameResolver 的结果
+     * @param  array<string, mixed>  $display  ProductDisplayNameResolver 的结果
      */
     public static function compose(array $hierarchy, array $display): string
     {

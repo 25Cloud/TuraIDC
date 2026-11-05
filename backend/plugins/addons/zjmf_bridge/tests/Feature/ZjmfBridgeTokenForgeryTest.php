@@ -9,6 +9,7 @@ require_once __DIR__.'/../Support/InstallsZjmfBridgeAddon.php';
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\InstallsZjmfBridgeAddon;
 use Tests\TestCase;
 use TuraIDC\Plugins\Addons\ZjmfBridge\Services\ZjmfTokenService;
@@ -136,7 +137,7 @@ class ZjmfBridgeTokenForgeryTest extends TestCase
         yield 'alg 是对象' => [['k' => 'v']];
     }
 
-    #[\PHPUnit\Framework\Attributes\DataProvider('malformedAlgorithmProvider')]
+    #[DataProvider('malformedAlgorithmProvider')]
     public function test_non_string_algorithm_header_is_rejected_without_error(mixed $algorithm): void
     {
         $victim = $this->createClientUser();

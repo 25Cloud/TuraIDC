@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use App\Support\ApiResponseBuilder;
-use App\Support\Waf\PayloadScanner;
 use App\Support\Waf\KeySanitizer;
+use App\Support\Waf\PayloadScanner;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;

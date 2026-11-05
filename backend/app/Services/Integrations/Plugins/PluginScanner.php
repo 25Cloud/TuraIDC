@@ -5,11 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Integrations\Plugins;
 
 use App\Exceptions\BusinessException;
+use App\Support\DatabaseSchema;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Support\DatabaseSchema;
-use Illuminate\Support\Facades\Schema;
 
 class PluginScanner
 {

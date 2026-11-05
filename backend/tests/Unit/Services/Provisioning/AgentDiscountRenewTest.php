@@ -19,8 +19,8 @@ use App\Services\System\OperationLogService;
 use App\Services\System\SettingService;
 use App\Services\Upstream\ProviderRegistry;
 use App\Services\Upstream\ProviderResolver;
-use Tests\TestCase;
 use ReflectionMethod;
+use Tests\TestCase;
 
 class AgentDiscountRenewTest extends TestCase
 {

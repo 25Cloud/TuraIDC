@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\ProductCatalog;
 
-use App\Support\SqlLike;
 use App\Constants\ProductType;
 use App\Exceptions\BusinessException;
 use App\Models\FirstProductGroup;
@@ -12,6 +11,7 @@ use App\Models\Product;
 use App\Models\SecondProductGroup;
 use App\Models\ThirdProductGroup;
 use App\Support\SiteProductGroupQuery;
+use App\Support\SqlLike;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;

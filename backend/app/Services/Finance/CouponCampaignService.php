@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
-use App\Support\SqlLike;
 use App\Constants\BillingCycle;
 use App\Constants\CouponStatus;
 use App\Exceptions\BusinessException;
 use App\Models\AutomationLog;
 use App\Models\Coupon;
 use App\Models\CouponCampaign;
+use App\Support\SqlLike;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\LengthAwarePaginator as SimpleLengthAwarePaginator;

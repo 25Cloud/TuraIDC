@@ -805,15 +805,15 @@ class AuthService
         return $consoleUrl.'/client/login-as';
     }
 
-     /**
-      * 规范化对外暴露的应用地址。
-      *
-      * 允许带路径：多域名部署写 https://console.example.com，
-      * 单域名子路径部署写 https://example.com/console，两种都要能解析。
-      * 早前这里把「带路径」一律判为非法，于是单域名部署下
-      * CLIENT_CONSOLE_URL 被当成未配置，代登录链路直接报 500。
-      *
-      * 只拒绝真正无法定位应用的情形：非 http(s)、缺 host、带 user/pass/query/fragment。
+    /**
+     * 规范化对外暴露的应用地址。
+     *
+     * 允许带路径：多域名部署写 https://console.example.com，
+     * 单域名子路径部署写 https://example.com/console，两种都要能解析。
+     * 早前这里把「带路径」一律判为非法，于是单域名部署下
+     * CLIENT_CONSOLE_URL 被当成未配置，代登录链路直接报 500。
+     *
+     * 只拒绝真正无法定位应用的情形：非 http(s)、缺 host、带 user/pass/query/fragment。
      */
     private function normalizeConfiguredUrl(string $url): string
     {

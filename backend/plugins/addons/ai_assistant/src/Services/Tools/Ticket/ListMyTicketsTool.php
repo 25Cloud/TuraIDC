@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Ticket;
 
 use App\Models\Ticket;
+use App\Services\Ticket\TicketService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\Ticket\TicketService;
 
 /**
  * 我的工单列表：只读。
@@ -55,7 +55,7 @@ final class ListMyTicketsTool extends AiTool
         }
 
         return [
-            'summary' => $items === [] ? '当前没有工单' : '共有 ' . count($items) . ' 条工单',
+            'summary' => $items === [] ? '当前没有工单' : '共有 '.count($items).' 条工单',
             'data' => ['items' => $items, 'total' => count($items)],
         ];
     }

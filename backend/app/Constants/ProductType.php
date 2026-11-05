@@ -200,6 +200,7 @@ class ProductType
 
         return $label;
     }
+
     public static function businessIconOf(?string $value): string
     {
         $normalizedValue = self::normalizeBusinessValue($value);

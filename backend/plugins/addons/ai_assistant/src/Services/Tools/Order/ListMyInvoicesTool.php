@@ -6,10 +6,10 @@ namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Order;
 
 use App\Constants\InvoiceStatus;
 use App\Models\Invoice;
+use App\Services\Finance\InvoiceV2QueryService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\Finance\InvoiceV2QueryService;
 
 /**
  * 我的账单：只读查询，直接走查询服务的纯读方法。
@@ -77,6 +77,7 @@ final class ListMyInvoicesTool extends AiTool
                     'created_at' => (string) ($row->created_at?->format('Y-m-d H:i:s') ?? ''),
                     'due_date' => (string) ($row->due_date ?? ''),
                 ];
+
                 continue;
             }
             if (is_array($row)) {
@@ -96,7 +97,7 @@ final class ListMyInvoicesTool extends AiTool
         return [
             'summary' => $items === []
                 ? '当前没有符合条件的账单'
-                : '最近 ' . count($items) . ' 条账单，未付 ' . count(array_filter($items, static fn (array $item): bool => $item['status'] === InvoiceStatus::UNPAID)) . ' 条',
+                : '最近 '.count($items).' 条账单，未付 '.count(array_filter($items, static fn (array $item): bool => $item['status'] === InvoiceStatus::UNPAID)).' 条',
             'data' => ['items' => $items, 'total' => count($items)],
         ];
     }

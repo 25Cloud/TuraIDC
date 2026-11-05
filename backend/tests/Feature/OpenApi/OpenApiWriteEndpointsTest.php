@@ -6,9 +6,12 @@ namespace Tests\Feature\OpenApi;
 
 use App\Constants\InvoiceStatus;
 use App\Constants\ServiceStatus;
-use App\Models\ApiKeyUsageLog;
+use App\Models\ApiKey;
 use App\Models\Invoice;
+use App\Models\Product;
+use App\Models\Service;
 use App\Models\Setting;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Finance\CheckoutSecurityService;
 use App\Services\Finance\CheckoutService;
@@ -196,8 +199,8 @@ class OpenApiWriteEndpointsTest extends TestCase
      * 构建挂接 demo_servers 假上游的完整服务栈（用户/供应商/商品/实例/绑定）。
      * 传入 $base 时复用既有用户/供应商/商品，仅追加一个新服务实例。
      *
-     * @param  array{user: User, supplier: \App\Models\Supplier, product: \App\Models\Product, product_binding_id: int}|null  $base
-     * @return array{user: User, supplier: \App\Models\Supplier, product: \App\Models\Product, service: \App\Models\Service, product_binding_id: int}
+     * @param  array{user: User, supplier: Supplier, product: Product, product_binding_id: int}|null  $base
+     * @return array{user: User, supplier: Supplier, product: Product, service: Service, product_binding_id: int}
      */
     private function makeDemoServiceStack(?array $base = null): array
     {
@@ -224,7 +227,7 @@ class OpenApiWriteEndpointsTest extends TestCase
                 'status' => 1,
             ]);
 
-            $supplier = \App\Models\Supplier::query()->create([
+            $supplier = Supplier::query()->create([
                 'name' => 'Open API Demo Supplier '.$unique,
                 'code' => $unique,
                 'interface_type' => 'demo_servers',
@@ -235,7 +238,7 @@ class OpenApiWriteEndpointsTest extends TestCase
                 'sort_order' => 1,
             ]);
 
-            $product = \App\Models\Product::query()->create([
+            $product = Product::query()->create([
                 'name' => 'Open API Demo Product '.$unique,
                 'product_type' => 'server',
                 'pricing' => ['monthly' => '99.00'],
@@ -274,7 +277,7 @@ class OpenApiWriteEndpointsTest extends TestCase
             ]);
         }
 
-        $service = \App\Models\Service::query()->create([
+        $service = Service::query()->create([
             'user_id' => (int) $user->id,
             'product_id' => (int) $product->id,
             'name' => 'Open API Demo Service '.$unique,
@@ -313,7 +316,7 @@ class OpenApiWriteEndpointsTest extends TestCase
 
     /**
      * @param  array<string, string>  $scopes
-     * @return array{0: \App\Models\ApiKey, 1: string}
+     * @return array{0: ApiKey, 1: string}
      */
     private function createKey(User $user, array $scopes = [
         'products' => 'read', 'orders' => 'write', 'services' => 'write', 'finance' => 'read',

@@ -124,7 +124,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
 
         // SweetAlert2 v11 不收旧版 type: 参数，垫片把 type 映射成 icon
         $this->assertStringContainsString('window.Swal.fire = function', $out);
-        $this->assertStringContainsString("args[0].icon = args[0].type", $out);
+        $this->assertStringContainsString('args[0].icon = args[0].type', $out);
     }
 
     /**
@@ -474,7 +474,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             ->getMock();
         $detailService->method('resolveSupplierRootUrl')->willReturn('https://ww.stay33.cn');
 
-        $service = new ServiceConsoleAreaService($detailService, new ServiceConsoleAssetService());
+        $service = new ServiceConsoleAreaService($detailService, new ServiceConsoleAssetService);
         $supplier = (new ReflectionClass(Supplier::class))->newInstanceWithoutConstructor();
 
         $method = new ReflectionMethod(ServiceConsoleAreaService::class, 'rewriteModulePage');

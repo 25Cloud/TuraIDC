@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools;
 
-use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 use App\Models\User;
+use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 
 /**
  * 工具执行上下文：用户与权限一律来自认证与落库的会话，模型无权指定。
@@ -40,7 +40,7 @@ final class AiToolContext
     public function actionContext(string $suffix = ''): array
     {
         return [
-            'trace_id' => $this->traceId !== '' ? $this->traceId : 'ai:' . $this->conversation->id . $suffix,
+            'trace_id' => $this->traceId !== '' ? $this->traceId : 'ai:'.$this->conversation->id.$suffix,
             'source' => 'ai_assistant',
             'channel' => $this->channel,
             'conversation_id' => (int) $this->conversation->id,

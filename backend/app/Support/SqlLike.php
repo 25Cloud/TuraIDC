@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Support;
 
+use Tests\Feature\SqlLikeEscapeTest;
+
 /**
  * SQL LIKE 通配符转义。
  *
@@ -20,7 +22,7 @@ namespace App\Support;
  * 在 sql mode 里开启它，本类的转义会失效，SqlLikeEscapeTest 会当场红掉。
  * SQLite（仅出现在测试内存库）默认不把 `\` 当转义符，同样由该测试区分约束。
  *
- * @see \Tests\Feature\SqlLikeEscapeTest 转义行为在真实 MySQL 上的回归锚点
+ * @see SqlLikeEscapeTest 转义行为在真实 MySQL 上的回归锚点
  */
 final class SqlLike
 {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\ZjmfUpstream;
 
+use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\ClientServiceConsole\ServicePowerService;
@@ -118,7 +119,7 @@ class DcimService
             $service = Service::query()->with('product')->find($serviceId);
             $product = $service?->product;
             $osValue = '';
-            if ($product instanceof \App\Models\Product) {
+            if ($product instanceof Product) {
                 foreach ((array) ($product->config_options ?? []) as $item) {
                     $item = is_array($item) ? $item : [];
                     $isOs = (int) ($item['option_type'] ?? -1) === 5

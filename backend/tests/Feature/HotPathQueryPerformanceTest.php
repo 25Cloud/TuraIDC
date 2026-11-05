@@ -14,6 +14,7 @@ use App\Services\System\AdminLogService;
 use App\Support\DatabaseSchema;
 use App\Support\DeferredJoinPaginator;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Queue\Middleware\WithoutOverlapping;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -493,7 +494,7 @@ class HotPathQueryPerformanceTest extends TestCase
         $middleware = $job->middleware();
         $this->assertNotEmpty($middleware, '必须挂 WithoutOverlapping 中间件');
         $this->assertInstanceOf(
-            \Illuminate\Queue\Middleware\WithoutOverlapping::class,
+            WithoutOverlapping::class,
             $middleware[0],
         );
 

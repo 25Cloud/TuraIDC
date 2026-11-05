@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Drivers;
 
-use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use App\Exceptions\BusinessException;
+use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatResult;
@@ -225,7 +225,7 @@ final class ChatCompletionsDriver implements AiProviderInterface
                 continue;
             }
             $calls[] = new AiToolCall(
-                $item['id'] !== '' ? $item['id'] : 'call_' . $index,
+                $item['id'] !== '' ? $item['id'] : 'call_'.$index,
                 $item['name'],
                 $item['arguments'] !== '' ? $item['arguments'] : '{}',
             );
@@ -255,7 +255,7 @@ final class ChatCompletionsDriver implements AiProviderInterface
                 continue;
             }
             $calls[] = new AiToolCall(
-                (string) ($call['id'] ?? ('call_' . $index)),
+                (string) ($call['id'] ?? ('call_'.$index)),
                 (string) $function['name'],
                 is_string($function['arguments'] ?? null) ? $function['arguments'] : '{}',
             );

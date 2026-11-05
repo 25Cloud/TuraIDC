@@ -96,7 +96,7 @@ final class AiAssistantStatus
         return [
             'success' => true,
             'action' => 'ai.tools',
-            'message' => "当前档位可用工具 {$mode}：" . count($tools) . ' 个',
+            'message' => "当前档位可用工具 {$mode}：".count($tools).' 个',
             'data' => [
                 'permission_mode' => $mode,
                 'tools' => array_map(

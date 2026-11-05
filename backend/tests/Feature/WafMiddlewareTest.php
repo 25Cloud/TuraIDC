@@ -207,6 +207,7 @@ final class WafMiddlewareTest extends TestCase
         $response->assertStatus(400)->assertJsonPath('code', 40009);
         self::assertNull($captured, '超深嵌套请求穿透到了业务探针');
     }
+
     /**
      * 关键回归：键名净化绝不能改动**值**。
      *

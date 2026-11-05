@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services;
 
-use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use App\Exceptions\BusinessException;
+use App\Models\User;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiToolInvocation;
-use App\Models\User;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiToolCall;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiUsage;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 /**
  * 会话与消息持久化：归属校验、上下文装配、待确认动作读取都在这里。

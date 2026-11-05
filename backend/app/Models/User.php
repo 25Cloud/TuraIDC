@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
-use App\Support\SqlLike;
 use App\Casts\LegacyEncrypted;
 use App\Models\Concerns\ReleasesUniqueKeysOnDelete;
 use App\Services\User\AccountService;
+use App\Support\SqlLike;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

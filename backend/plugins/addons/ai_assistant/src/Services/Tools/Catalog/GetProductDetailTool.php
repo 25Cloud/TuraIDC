@@ -60,7 +60,7 @@ final class GetProductDetailTool extends AiTool
         $pricing = is_array($product->pricing) ? $product->pricing : [];
         foreach (['monthly', 'quarterly', 'semiannually', 'annually'] as $cycle) {
             if (isset($pricing[$cycle]) && is_numeric($pricing[$cycle])) {
-                $cycles[] = $cycle . '=' . number_format((float) $pricing[$cycle], 2, '.', '');
+                $cycles[] = $cycle.'='.number_format((float) $pricing[$cycle], 2, '.', '');
             }
         }
 

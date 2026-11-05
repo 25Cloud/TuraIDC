@@ -887,11 +887,11 @@ class ProductSyncService
      * @param  int  $batchSize  单轮最多同步多少个商品，<=0 表示全量
      * @param  int|null  $pacingMs  批间等待毫秒，null 取默认值；实时查询路径不走本方法，不受影响
      * @param  array<int, string>  $excludedProviderKeys  这些上游 provider 的商品不在本任务范围内。
-     *                                插件自己注册了定时任务同步同一批商品时（如 zjmf_finance 的
-     *                                sync-zjmf-finance-inventory-and-services），核心任务必须排除它，
-     *                                否则同一批 ZJMF 商品每 15 分钟被完整拉两遍，对上游请求量翻倍、
-     *                                放大被风控拦截的概率。语义与 ServiceStatusSyncService 的
-     *                                excludedProviderKeys 一致。
+     *                                                    插件自己注册了定时任务同步同一批商品时（如 zjmf_finance 的
+     *                                                    sync-zjmf-finance-inventory-and-services），核心任务必须排除它，
+     *                                                    否则同一批 ZJMF 商品每 15 分钟被完整拉两遍，对上游请求量翻倍、
+     *                                                    放大被风控拦截的概率。语义与 ServiceStatusSyncService 的
+     *                                                    excludedProviderKeys 一致。
      */
     public function syncUpstreamProductStocks(
         ?string $providerKey = null,

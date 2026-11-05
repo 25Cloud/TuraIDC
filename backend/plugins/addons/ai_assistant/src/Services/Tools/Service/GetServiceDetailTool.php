@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Service;
 
 use App\Constants\ServiceStatus;
+use App\Services\ClientServiceConsole\ServiceDetailService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\ClientServiceConsole\ServiceDetailService;
 
 /**
  * 实例详情：只读。归属校验由 ServiceDetailService::getDetailForUser 负责。
@@ -56,7 +56,7 @@ final class GetServiceDetailTool extends AiTool
         $statusText = (string) (ServiceStatus::$labels[$status] ?? '未知');
 
         return [
-            'summary' => sprintf('实例「%s」当前%s，到期时间 %s', $name !== '' ? $name : ('#' . $arguments['service_id']), $statusText, $expiresAt !== '' ? $expiresAt : '未知'),
+            'summary' => sprintf('实例「%s」当前%s，到期时间 %s', $name !== '' ? $name : ('#'.$arguments['service_id']), $statusText, $expiresAt !== '' ? $expiresAt : '未知'),
             'data' => [
                 'service_id' => (int) $arguments['service_id'],
                 'name' => $name,

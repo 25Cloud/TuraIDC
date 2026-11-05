@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Service;
 
+use App\Services\Provisioning\ServiceRenewService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\Provisioning\ServiceRenewService;
 
 /**
  * 续费报价：只读预览，不建单不扣款。续费金额一律以本工具结果为准。
@@ -61,7 +61,7 @@ final class GetRenewQuoteTool extends AiTool
         $amountText = is_numeric($amount) ? number_format((float) $amount, 2, '.', '') : '未知';
 
         return [
-            'summary' => '续费报价 ' . $amountText . ' 元（周期：' . (string) ($cycle ?? $this->pick($preview, 'billing_cycle', '当前周期')) . '）',
+            'summary' => '续费报价 '.$amountText.' 元（周期：'.(string) ($cycle ?? $this->pick($preview, 'billing_cycle', '当前周期')).'）',
             'data' => [
                 'service_id' => (int) $arguments['service_id'],
                 'billing_cycle' => (string) ($cycle ?? $this->pick($preview, 'billing_cycle', '')),

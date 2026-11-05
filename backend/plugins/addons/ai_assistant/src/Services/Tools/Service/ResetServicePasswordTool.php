@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Service;
 
 use App\Exceptions\BusinessException;
+use App\Services\ClientServiceConsole\ServicePowerService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\ClientServiceConsole\ServicePowerService;
 
 /**
  * 重置实例密码。密码只会写进系统，绝不回显到对话里。
@@ -49,7 +49,7 @@ final class ResetServicePasswordTool extends AiTool
 
     public function title(array $arguments): string
     {
-        return '重置实例密码（实例 #' . (string) ($arguments['service_id'] ?? '') . '）';
+        return '重置实例密码（实例 #'.(string) ($arguments['service_id'] ?? '').'）';
     }
 
     public function impact(array $arguments): string
@@ -72,7 +72,7 @@ final class ResetServicePasswordTool extends AiTool
         );
 
         return [
-            'summary' => '已提交密码重置（实例 #' . (int) $arguments['service_id'] . '），结果以控制台为准',
+            'summary' => '已提交密码重置（实例 #'.(int) $arguments['service_id'].'），结果以控制台为准',
             'data' => [
                 'service_id' => (int) $arguments['service_id'],
                 'password_changed' => true,

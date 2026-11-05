@@ -24,19 +24,19 @@ final class AiRedactor
         $text = (string) preg_replace_callback('/(?<!\d)(1[3-9]\d{9})(?!\d)/u', static function (array $matches): string {
             $phone = $matches[1];
 
-            return substr($phone, 0, 3) . '******' . substr($phone, -2);
+            return substr($phone, 0, 3).'******'.substr($phone, -2);
         }, $text);
 
         // 身份证：18 位（含 X 结尾），保留前 4 后 2
         $text = (string) preg_replace_callback('/(?<![\dA-Za-z])(\d{17}[\dXx])(?![\dA-Za-z])/u', static function (array $matches): string {
             $id = $matches[1];
 
-            return substr($id, 0, 4) . str_repeat('*', 12) . substr($id, -2);
+            return substr($id, 0, 4).str_repeat('*', 12).substr($id, -2);
         }, $text);
 
         // 邮箱：保留首字符与域名
         $text = (string) preg_replace_callback('/([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*@([A-Za-z0-9.-]+\.[A-Za-z]{2,})/u', static function (array $matches): string {
-            return $matches[1] . '***@' . $matches[2];
+            return $matches[1].'***@'.$matches[2];
         }, $text);
 
         return $text;
@@ -57,6 +57,7 @@ final class AiRedactor
         foreach ($payload as $key => $value) {
             if (is_string($value)) {
                 $payload[$key] = $this->redact($value);
+
                 continue;
             }
             if (is_array($value)) {

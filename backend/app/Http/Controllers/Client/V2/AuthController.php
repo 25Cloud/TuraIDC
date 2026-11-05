@@ -352,11 +352,11 @@ class AuthController extends Controller
     private function resolveQqAvatar(string $qq): string
     {
         $qq = trim($qq);
-        if ($qq === '' || !ctype_digit($qq)) {
+        if ($qq === '' || ! ctype_digit($qq)) {
             return '';
         }
 
-        return 'https://q1.qlogo.cn/g?b=qq&nk=' . $qq . '&s=100';
+        return 'https://q1.qlogo.cn/g?b=qq&nk='.$qq.'&s=100';
     }
 
     /**

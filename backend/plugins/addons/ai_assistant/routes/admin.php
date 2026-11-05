@@ -18,14 +18,14 @@ use TuraIDC\Plugins\Addons\AiAssistant\Http\Controllers\Admin\AiAdminController;
 |
 */
 
-Route::middleware(['permission:' . AdminPermissions::AI_VIEW])->group(function (): void {
+Route::middleware(['permission:'.AdminPermissions::AI_VIEW])->group(function (): void {
     Route::get('/ai/usage', [AiAdminController::class, 'usage']);
     Route::get('/ai/conversations', [AiAdminController::class, 'conversations']);
     Route::get('/ai/conversations/{conversation}', [AiAdminController::class, 'showConversation']);
     Route::get('/ai/settings', [AiAdminController::class, 'settings']);
 });
 
-Route::middleware(['permission:' . AdminPermissions::AI_MANAGE])->group(function (): void {
+Route::middleware(['permission:'.AdminPermissions::AI_MANAGE])->group(function (): void {
     Route::put('/ai/settings', [AiAdminController::class, 'updateSettings']);
     Route::post('/ai/settings/test', [AiAdminController::class, 'test']);
 });

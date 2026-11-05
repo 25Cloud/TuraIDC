@@ -96,7 +96,9 @@ final class PanelAccessExtractor
      * 云主机的 password 可能是 SSH 口令而非面板口令。
      */
     private const HOST_FIELD_FALLBACK_USERNAME = ['username', 'user', 'account'];
+
     private const HOST_FIELD_FALLBACK_PASSWORD = ['password', 'pass', 'pwd'];
+
     private const HOST_FIELD_FALLBACK_URL = ['url', 'link'];
 
     /**
@@ -442,6 +444,7 @@ final class PanelAccessExtractor
                 if ($name !== '' && $option !== '') {
                     $labels[$name] = $option;
                 }
+
                 continue;
             }
 
@@ -510,10 +513,10 @@ final class PanelAccessExtractor
         // 长标签优先：「面板地址」必须排在「面板」之前
         usort($alternatives, static fn (string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
 
-        $pattern = '/(' . implode('|', array_map(
+        $pattern = '/('.implode('|', array_map(
             static fn (string $label): string => preg_quote($label, '/'),
             $alternatives
-        )) . ')\s*[:：]\s*([^<\r\n]+)/u';
+        )).')\s*[:：]\s*([^<\r\n]+)/u';
 
         if (! preg_match_all($pattern, $html, $matches, PREG_SET_ORDER)) {
             return $labels;
@@ -537,7 +540,6 @@ final class PanelAccessExtractor
      * 解析脚本里拼接出的面板地址。
      *
      * @param  array<string, string>  $current  已解析到的字段，用于回填 username
-     * @return string
      */
     private static function resolveScriptPanelUrl(string $html, array $current): string
     {
@@ -593,8 +595,8 @@ final class PanelAccessExtractor
         $quoted = '([\'"])((?:\\\\.|(?!\1).)*)\1';
 
         // 优先取带 query 的地址（面板入口几乎必然带参数）
-        if (preg_match('/' . $quoted . '\s*\+\s*[A-Za-z_$][\w$.\[\]]*\s*\)/', $script, $m)
-            || preg_match('/=\s*' . $quoted . '\s*\+\s*[A-Za-z_$][\w$.\[\]]*\s*[;\r\n]/', $script, $m)
+        if (preg_match('/'.$quoted.'\s*\+\s*[A-Za-z_$][\w$.\[\]]*\s*\)/', $script, $m)
+            || preg_match('/=\s*'.$quoted.'\s*\+\s*[A-Za-z_$][\w$.\[\]]*\s*[;\r\n]/', $script, $m)
         ) {
             $candidate = self::normalizeText($m[2]);
             if (self::looksLikeUrl($candidate)) {
@@ -603,7 +605,7 @@ final class PanelAccessExtractor
         }
 
         // 退而求其次：脚本里任意一个 http(s) 字面量
-        if (preg_match('/' . $quoted . '/', $script, $m)) {
+        if (preg_match('/'.$quoted.'/', $script, $m)) {
             $candidate = self::normalizeText($m[2]);
             if (self::looksLikeUrl($candidate)) {
                 return $candidate;
@@ -776,6 +778,7 @@ final class PanelAccessExtractor
                         $current .= $script[$i + 1];
                         $i++;
                     }
+
                     continue;
                 }
 
@@ -789,12 +792,14 @@ final class PanelAccessExtractor
             if ($char === '"' || $char === "'") {
                 $quote = $char;
                 $current .= $char;
+
                 continue;
             }
 
             if ($char === ';' || $char === '{' || $char === '}') {
                 $statements[] = $current;
                 $current = '';
+
                 continue;
             }
 
@@ -868,11 +873,13 @@ final class PanelAccessExtractor
             $literal = self::matchStringLiteral($segment);
             if ($literal !== null) {
                 $result .= $literal;
+
                 continue;
             }
 
             if (preg_match('/^[A-Za-z_$][\w$]*$/', $segment)) {
                 $result .= $variables[$segment] ?? '';
+
                 continue;
             }
 
@@ -907,6 +914,7 @@ final class PanelAccessExtractor
 
             if ($char === '\\') {
                 $i++;
+
                 continue;
             }
 
@@ -980,6 +988,7 @@ final class PanelAccessExtractor
                         $current .= $expression[$i + 1];
                         $i++;
                     }
+
                     continue;
                 }
 
@@ -993,12 +1002,14 @@ final class PanelAccessExtractor
             if ($char === '"' || $char === "'") {
                 $quote = $char;
                 $current .= $char;
+
                 continue;
             }
 
             if ($char === '+') {
                 $segments[] = $current;
                 $current = '';
+
                 continue;
             }
 

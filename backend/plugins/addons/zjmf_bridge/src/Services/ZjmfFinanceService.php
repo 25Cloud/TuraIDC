@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\ZjmfBridge\Services;
 
-use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\PaymentGatewayCode;
 use App\Constants\PaymentStatus;
@@ -15,6 +14,7 @@ use App\Models\Payment;
 use App\Models\User;
 use App\Services\Finance\PaymentService;
 use App\Services\Integrations\Payments\PaymentGatewayManager;
+use App\Support\SqlLike;
 
 class ZjmfFinanceService
 {

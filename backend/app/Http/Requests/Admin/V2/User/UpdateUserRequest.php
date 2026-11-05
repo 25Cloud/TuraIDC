@@ -3,7 +3,6 @@
 namespace App\Http\Requests\Admin\V2\User;
 
 use App\Http\Requests\Admin\V2\Common\AdminFormRequest;
-use App\Models\User;
 use App\Support\AccountIdentifier;
 
 class UpdateUserRequest extends AdminFormRequest

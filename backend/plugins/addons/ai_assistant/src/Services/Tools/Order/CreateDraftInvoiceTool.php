@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Order;
 
 use App\Models\Invoice;
+use App\Services\Finance\CheckoutService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\Finance\CheckoutService;
 
 /**
  * 创建未支付账单（即下单，不扣款）。
@@ -76,7 +76,7 @@ final class CreateDraftInvoiceTool extends AiTool
                 'user_coupon_id' => (int) ($arguments['user_coupon_id'] ?? 0),
             ],
             [
-                'idempotency_key' => $context->idempotencyKey !== '' ? $context->idempotencyKey : ('ai-draft-' . $context->conversation->id),
+                'idempotency_key' => $context->idempotencyKey !== '' ? $context->idempotencyKey : ('ai-draft-'.$context->conversation->id),
                 'trace_id' => $context->traceId,
             ],
         );
@@ -84,7 +84,7 @@ final class CreateDraftInvoiceTool extends AiTool
         $amount = $invoice instanceof Invoice ? (string) $invoice->amount : '0.00';
 
         return [
-            'summary' => '已创建账单 ' . ($invoice instanceof Invoice ? (string) $invoice->invoice_no : '') . '，应付 ' . $amount . ' 元',
+            'summary' => '已创建账单 '.($invoice instanceof Invoice ? (string) $invoice->invoice_no : '').'，应付 '.$amount.' 元',
             'data' => [
                 'invoice_id' => $invoice instanceof Invoice ? (int) $invoice->id : 0,
                 'invoice_no' => $invoice instanceof Invoice ? (string) $invoice->invoice_no : '',

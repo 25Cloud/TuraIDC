@@ -87,7 +87,7 @@ final class PluginLifecycleRunner
      */
     public function resolve(PluginManifest $manifest): ?PluginLifecycleInterface
     {
-        $cacheKey = $manifest->domain . ':' . $manifest->slug;
+        $cacheKey = $manifest->domain.':'.$manifest->slug;
         if (array_key_exists($cacheKey, $this->instances)) {
             return $this->instances[$cacheKey];
         }

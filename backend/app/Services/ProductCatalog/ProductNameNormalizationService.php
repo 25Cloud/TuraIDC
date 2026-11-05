@@ -247,7 +247,7 @@ class ProductNameNormalizationService
         }
 
         $path = $directory.'/product-names-'.date('Ymd-His').'.sql';
-        $lines = ["-- 商品展示名规范化前的 custom_display_name（回滚用）"];
+        $lines = ['-- 商品展示名规范化前的 custom_display_name（回滚用）'];
 
         foreach ($changes as $change) {
             $lines[] = sprintf(

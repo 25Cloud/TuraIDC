@@ -20,6 +20,7 @@ use App\Support\SiteProductGroupQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Str;
 
 class ProductSiteService
 {
@@ -96,7 +97,7 @@ class ProductSiteService
                             // 前台地址用的类型段（可自定义）；未配置时按 code 生成
                             'slug' => $firstGroup instanceof FirstProductGroup && trim((string) $firstGroup->slug) !== ''
                                 ? (string) $firstGroup->slug
-                                : (\Illuminate\Support\Str::slug($value) ?: $value),
+                                : (Str::slug($value) ?: $value),
                             'label' => $label,
                             'product_type' => $businessProductType,
                             'product_type_label' => ProductType::businessLabelOf($businessProductType),
@@ -106,7 +107,7 @@ class ProductSiteService
                             'first_product_group_code' => $value,
                             'first_product_group_slug' => $firstGroup instanceof FirstProductGroup && trim((string) $firstGroup->slug) !== ''
                                 ? (string) $firstGroup->slug
-                                : (\Illuminate\Support\Str::slug($value) ?: $value),
+                                : (Str::slug($value) ?: $value),
                             'first_product_group_name' => $label,
                             // 一级分组图标：官网分类导航 / 卡片角标直接可用，图片为解析后的绝对地址
                             ...ProductGroupIcon::payload(

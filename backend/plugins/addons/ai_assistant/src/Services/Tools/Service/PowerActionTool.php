@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Service;
 
+use App\Services\ClientServiceConsole\ClientServiceConsoleService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\ClientServiceConsole\ClientServiceConsoleService;
 
 /**
  * 电源操作：开机 / 关机 / 重启 / 强制关机 / 强制重启。
@@ -63,7 +63,7 @@ final class PowerActionTool extends AiTool
 
     public function title(array $arguments): string
     {
-        return '实例' . (self::LABELS[(string) ($arguments['action'] ?? '')] ?? '电源操作') . '（实例 #' . (string) ($arguments['service_id'] ?? '') . '）';
+        return '实例'.(self::LABELS[(string) ($arguments['action'] ?? '')] ?? '电源操作').'（实例 #'.(string) ($arguments['service_id'] ?? '').'）';
     }
 
     public function impact(array $arguments): string
@@ -86,11 +86,11 @@ final class PowerActionTool extends AiTool
             $context->user,
             (int) $arguments['service_id'],
             $action,
-            $context->actionContext('.power.' . $action),
+            $context->actionContext('.power.'.$action),
         );
 
         return [
-            'summary' => '已同步执行「' . (self::LABELS[$action] ?? $action) . '」，实例状态以控制台为准（本动作非排队，已执行完成）',
+            'summary' => '已同步执行「'.(self::LABELS[$action] ?? $action).'」，实例状态以控制台为准（本动作非排队，已执行完成）',
             'data' => [
                 'service_id' => (int) $arguments['service_id'],
                 'action' => $action,

@@ -211,14 +211,14 @@ class AiAssistantTest extends TestCase
         $action = $response->json('data.pending_actions.0');
 
         $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/v2/client/ai/actions/' . $action['id'] . '/confirm', [
+            ->postJson('/api/v2/client/ai/actions/'.$action['id'].'/confirm', [
                 'confirm_token' => 'forged-token',
             ])
             ->assertStatus(403)
             ->assertJsonPath('code', 40300);
 
         $confirmed = $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/v2/client/ai/actions/' . $action['id'] . '/confirm', [
+            ->postJson('/api/v2/client/ai/actions/'.$action['id'].'/confirm', [
                 'confirm_token' => $action['confirm_token'],
             ])
             ->assertOk()
@@ -232,7 +232,7 @@ class AiAssistantTest extends TestCase
 
         // 重复确认必须被拒（已处理）
         $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/v2/client/ai/actions/' . $action['id'] . '/confirm', [
+            ->postJson('/api/v2/client/ai/actions/'.$action['id'].'/confirm', [
                 'confirm_token' => $action['confirm_token'],
             ])
             ->assertStatus(409);
@@ -253,7 +253,7 @@ class AiAssistantTest extends TestCase
         $actionId = $response->json('data.pending_actions.0.id');
 
         $this->actingAs($this->user, 'sanctum')
-            ->postJson('/api/v2/client/ai/actions/' . $actionId . '/reject')
+            ->postJson('/api/v2/client/ai/actions/'.$actionId.'/reject')
             ->assertOk()
             ->assertJsonPath('data.status', 'rejected');
 
@@ -275,7 +275,7 @@ class AiAssistantTest extends TestCase
         ]);
 
         $this->actingAs($this->user, 'sanctum')
-            ->getJson('/api/v2/client/ai/conversations/' . $conversation->id)
+            ->getJson('/api/v2/client/ai/conversations/'.$conversation->id)
             ->assertStatus(404)
             ->assertJsonPath('code', 40400);
     }
@@ -288,7 +288,7 @@ class AiAssistantTest extends TestCase
         $id = $created->json('data.id');
 
         $this->actingAs($this->user, 'sanctum')
-            ->patchJson('/api/v2/client/ai/conversations/' . $id, ['title' => '改名后'])
+            ->patchJson('/api/v2/client/ai/conversations/'.$id, ['title' => '改名后'])
             ->assertOk()
             ->assertJsonPath('data.title', '改名后');
 
@@ -299,7 +299,7 @@ class AiAssistantTest extends TestCase
         $this->assertSame(1, $list->json('data.total'));
 
         $this->actingAs($this->user, 'sanctum')
-            ->deleteJson('/api/v2/client/ai/conversations/' . $id)
+            ->deleteJson('/api/v2/client/ai/conversations/'.$id)
             ->assertOk();
 
         $this->assertSame(0, $this->actingAs($this->user, 'sanctum')
@@ -379,16 +379,16 @@ class AiAssistantTest extends TestCase
     {
         $suffix = bin2hex(random_bytes(4));
         $role = Role::query()->create([
-            'name' => 'ai-admin-' . $suffix,
+            'name' => 'ai-admin-'.$suffix,
             'label' => 'AI Admin',
             'permissions' => [AdminPermissions::AI_VIEW, AdminPermissions::AI_MANAGE],
         ]);
         $admin = AdminUser::query()->create([
-            'username' => 'ai-admin-' . $suffix,
+            'username' => 'ai-admin-'.$suffix,
             'password' => 'Temp@123456',
             'role_id' => (int) $role->id,
             'nickname' => 'AI Admin',
-            'email' => 'ai-admin-' . $suffix . '@example.com',
+            'email' => 'ai-admin-'.$suffix.'@example.com',
             'status' => 1,
         ]);
         Sanctum::actingAs($admin);

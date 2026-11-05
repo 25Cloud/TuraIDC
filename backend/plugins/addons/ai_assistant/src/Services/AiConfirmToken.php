@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services;
 
+use App\Exceptions\BusinessException;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiToolInvocation;
 
 /**
@@ -66,7 +67,7 @@ final class AiConfirmToken
     {
         $key = (string) config('app.key', '');
         if ($key === '') {
-            throw new \App\Exceptions\BusinessException('系统密钥未配置，无法签发确认令牌', 50000, 500);
+            throw new BusinessException('系统密钥未配置，无法签发确认令牌', 50000, 500);
         }
 
         return $key;

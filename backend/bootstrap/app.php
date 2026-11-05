@@ -2,10 +2,12 @@
 
 use App\Exceptions\BusinessException;
 use App\Http\Middleware\AppendSecurityHeaders;
+use App\Http\Middleware\AuthenticateApiKey;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureAdminAuthenticated;
 use App\Http\Middleware\EnsureClientAuthenticated;
 use App\Http\Middleware\EnsureEmailIsVerified;
+use App\Http\Middleware\EnsureZjmfUpstreamAuthenticated;
 use App\Http\Middleware\LogOperation;
 use App\Http\Middleware\NormalizeZjmfUpstreamPath;
 use App\Http\Middleware\RecordRequestTiming;
@@ -31,6 +33,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use Sentry\Laravel\Integration as SentryIntegration;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -130,8 +133,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => CheckPermission::class,
             'ensure.admin' => EnsureAdminAuthenticated::class,
             'ensure.client' => EnsureClientAuthenticated::class,
-            'api.key' => \App\Http\Middleware\AuthenticateApiKey::class,
-            'zjmf.upstream' => \App\Http\Middleware\EnsureZjmfUpstreamAuthenticated::class,
+            'api.key' => AuthenticateApiKey::class,
+            'zjmf.upstream' => EnsureZjmfUpstreamAuthenticated::class,
             'log.operation' => LogOperation::class,
             'verify.alipay.callback' => VerifyAlipayCallbackSignature::class,
             'verify.payment.callback' => VerifyPaymentCallbackSignature::class,
@@ -149,7 +152,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // 若这里返回 404/422/429/500，下游统一显示「请求失败,HTTP状态码:xxx」且不会重登，
         // 上游业务错误信息全部丢失。因此该前缀下所有异常都必须转成协议内响应。
         // 必须注册在通用 api/* 分支之前：异常回调按注册顺序匹配，先命中者生效。
-        $exceptions->render(function (\Throwable $exception, Request $request) {
+        $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/v2/zjmf/*')) {
                 return null;
             }
@@ -234,7 +237,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // errorMessage() 只信任含中文的消息，会把它掩码成「保存员工失败」这类通用
         // 文案——管理员既看不到原因，也拿不到排查线索。请求编号与响应头 X-Request-Id
         // 一致（由 LogOperation 中间件注入），可直接拿它去日志里定位。
-        $exceptions->render(function (\Throwable $exception, Request $request) {
+        $exceptions->render(function (Throwable $exception, Request $request) {
             if (! $request->is('api/*') || config('app.debug')) {
                 // 调试模式保留 Laravel 默认的完整堆栈，不做遮蔽
                 return null;
@@ -245,7 +248,7 @@ return Application::configure(basePath: dirname(__DIR__))
             // 这里必须放行，否则通用兜底会把这些具体提示覆盖掉。
             // Symfony 的 HTTP 异常同理：交回框架保持原有状态码，别把 403 变成 500。
             if ($exception instanceof BusinessException
-                || $exception instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface) {
+                || $exception instanceof HttpExceptionInterface) {
                 return null;
             }
 

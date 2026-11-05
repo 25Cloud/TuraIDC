@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\ServiceStatus;
+use App\Exceptions\BusinessException;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
@@ -16,6 +17,7 @@ use App\Services\Automation\ServiceStatusSyncService;
 use App\Services\Finance\CheckoutSecurityService;
 use App\Services\Finance\CheckoutService;
 use App\Services\Finance\PaymentService;
+use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Provisioning\ServiceRenewService;
 use App\Services\Upstream\Contracts\ProvidesSupplierBalance;
 use App\Services\Upstream\ProviderResolver;
@@ -214,7 +216,7 @@ class TuraOpenApiDriverTest extends TestCase
 
         $driver = new TuraOpenApi;
 
-        $this->expectException(\App\Exceptions\BusinessException::class);
+        $this->expectException(BusinessException::class);
         $this->expectExceptionMessage('API 密钥未配置');
 
         $driver->getBalance($this->withRuntimeCredentials($stack['supplier']));
@@ -270,7 +272,7 @@ class TuraOpenApiDriverTest extends TestCase
      */
     private function withRuntimeCredentials(Supplier $supplier): Supplier
     {
-        return app(\App\Services\Integrations\Plugins\PluginBindingResolver::class)
+        return app(PluginBindingResolver::class)
             ->supplierWithRuntimeCredentials($supplier);
     }
 

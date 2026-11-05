@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services;
 
-use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
-use TuraIDC\Plugins\Addons\AiAssistant\Models\AiMessage;
 use App\Models\Setting;
 use App\Models\User;
-use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
-use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
+use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
+use TuraIDC\Plugins\Addons\AiAssistant\Models\AiMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\AiProviderManager;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiUsage;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
 
 /**
  * 对话编排：模型 → 工具 → 模型，直到给出最终答复或达到轮次上限。
@@ -78,7 +78,7 @@ final class AiChatService
             $conversation,
             (string) $conversation->channel,
             (string) $conversation->permission_mode,
-            'ai-chat-' . $conversation->id,
+            'ai-chat-'.$conversation->id,
         );
 
         $maxRounds = $this->config->maxToolRounds();
@@ -182,7 +182,7 @@ final class AiChatService
         $limit = $this->config->maxToolResultChars();
 
         return mb_strlen($encoded) > $limit
-            ? mb_substr($encoded, 0, $limit) . '…（结果已截断）'
+            ? mb_substr($encoded, 0, $limit).'…（结果已截断）'
             : $encoded;
     }
 

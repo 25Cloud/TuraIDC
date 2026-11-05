@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\Finance;
 
-use App\Support\SqlLike;
 use App\Constants\InvoiceStatus;
 use App\Constants\OrderStatus;
 use App\Constants\OrderType;
@@ -18,6 +17,7 @@ use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductFullPathResolver;
 use App\Support\AdminPrivacy;
 use App\Support\SqlIdentifier;
+use App\Support\SqlLike;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;

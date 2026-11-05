@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use Illuminate\Foundation\Testing\DatabaseTransactions;
 use App\Models\AdminUser;
 use App\Models\Role;
 use App\Models\User;
 use App\Support\AdminPermissions;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Routing\Route;
 use Illuminate\Support\Str;
 use Tests\TestCase;

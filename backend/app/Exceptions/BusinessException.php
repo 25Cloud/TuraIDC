@@ -45,7 +45,7 @@ class BusinessException extends Exception
 
         // 必须显式带上 group 前缀：Laravel 会把不含点号的 key 当成 group 名
         // （去查 "消息文本"[null]），永远命中不了 messages.php 里的条目。
-        $key = 'messages.' . $message;
+        $key = 'messages.'.$message;
 
         // 取译文失败一律放行中文原文，绝不让"翻译"反过来搞挂业务异常的构造。
         // 两条真实路径：裸 PHPUnit 场景没有绑定 translator（容器里根本没这个服务），

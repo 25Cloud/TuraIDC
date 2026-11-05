@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\ProductDiscountGroup;
 use App\Models\User;
 use App\Support\Money;
+use Illuminate\Support\Collection;
 
 class AgentDiscountService
 {
@@ -167,9 +168,9 @@ class AgentDiscountService
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, mixed>
+     * @return Collection<int, mixed>
      */
-    private function resolveAgentDiscounts(?User $user, mixed $agentGroup): \Illuminate\Support\Collection
+    private function resolveAgentDiscounts(?User $user, mixed $agentGroup): Collection
     {
         $userId = $user && $user->getKey() ? (int) $user->getKey() : 0;
 

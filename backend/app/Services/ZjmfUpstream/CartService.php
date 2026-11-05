@@ -281,7 +281,8 @@ class CartService
         return $this->hostService ??= app(HostService::class);
     }
 
-    private function recordBinding(User $user, int $invoiceId, array $cartData, array $downstream): void    {
+    private function recordBinding(User $user, int $invoiceId, array $cartData, array $downstream): void
+    {
         $url = trim((string) ($downstream['downstream_url'] ?? ''));
         if ($url === '') {
             return;

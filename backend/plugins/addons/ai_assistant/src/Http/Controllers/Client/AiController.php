@@ -6,6 +6,11 @@ namespace TuraIDC\Plugins\Addons\AiAssistant\Http\Controllers\Client;
 
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use TuraIDC\Plugins\Addons\AiAssistant\Http\Requests\Client\ConfirmActionRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Http\Requests\Client\CreateConversationRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Http\Requests\Client\ListConversationsRequest;
@@ -14,18 +19,12 @@ use TuraIDC\Plugins\Addons\AiAssistant\Http\Requests\Client\UpdateConversationRe
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiToolInvocation;
-use App\Models\User;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiChatService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiConfig;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiConversationService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiQuotaService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiToolExecutor;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Log;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * 用户端 AI 助手接口：薄层，业务全在 Service。
@@ -211,8 +210,8 @@ class AiController extends Controller
             ignore_user_abort(false);
 
             $emit = static function (string $event, array $payload): void {
-                echo 'event: ' . $event . "\n";
-                echo 'data: ' . json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR) . "\n\n";
+                echo 'event: '.$event."\n";
+                echo 'data: '.json_encode($payload, JSON_UNESCAPED_UNICODE | JSON_PARTIAL_OUTPUT_ON_ERROR)."\n\n";
                 flush();
             };
 
@@ -283,7 +282,7 @@ class AiController extends Controller
             $this->conversations->appendMessage(
                 $invocation->conversation,
                 AiMessage::ROLE_SYSTEM,
-                '【操作结果】' . (string) $result['summary'],
+                '【操作结果】'.(string) $result['summary'],
             );
         }
 

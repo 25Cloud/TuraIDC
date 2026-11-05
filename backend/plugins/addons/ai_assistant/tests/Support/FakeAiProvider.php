@@ -68,7 +68,7 @@ final class FakeAiProvider implements AiProviderInterface
     {
         return $this->push(new AiChatResult(
             '',
-            [new AiToolCall($id ?? ('call_' . $name), $name, (string) json_encode($arguments, JSON_UNESCAPED_UNICODE))],
+            [new AiToolCall($id ?? ('call_'.$name), $name, (string) json_encode($arguments, JSON_UNESCAPED_UNICODE))],
             new AiUsage($promptTokens, $completionTokens),
             'tool_calls',
         ));

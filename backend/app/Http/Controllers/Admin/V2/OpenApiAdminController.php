@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Admin\V2;
 
-use App\Support\SqlLike;
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
 use App\Models\ApiKeyUsageLog;
+use App\Models\Setting;
 use App\Models\User;
 use App\Services\OpenApi\OpenApiConfig;
+use App\Support\SqlLike;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -50,7 +51,7 @@ class OpenApiAdminController extends Controller
         }
 
         if ($values !== []) {
-            \App\Models\Setting::setValues(OpenApiConfig::GROUP, $values);
+            Setting::setValues(OpenApiConfig::GROUP, $values);
         }
 
         return $this->success($this->config->toArray(), '开放接口配置已更新');

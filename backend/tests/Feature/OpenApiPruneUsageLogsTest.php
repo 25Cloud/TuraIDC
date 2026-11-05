@@ -7,7 +7,6 @@ namespace Tests\Feature;
 use App\Models\ApiKeyUsageLog;
 use App\Models\Setting;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
-use Illuminate\Support\Facades\Artisan;
 use Tests\TestCase;
 
 class OpenApiPruneUsageLogsTest extends TestCase

@@ -6,14 +6,21 @@ namespace Tests\Feature;
 
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
+use App\Models\Invoice;
+use App\Models\Order;
 use App\Models\Product;
 use App\Models\Service;
+use App\Models\Ticket;
 use App\Models\User;
+use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
+use App\Services\ClientServiceConsole\ServicePowerService;
+use App\Services\Provisioning\ProvisionService;
 use App\Services\ZjmfUpstream\DcimService;
+use App\Services\ZjmfUpstream\UpstreamProvisionService;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Hash;
@@ -216,9 +223,9 @@ class ZjmfUpstreamApiTest extends TestCase
         $jwt = $this->apiJwt($suffix);
         $service = $this->createCdnService($user, $suffix);
 
-        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power = $this->createMock(ServicePowerService::class);
         $power->method('powerActionForUser')->willReturn(['message' => '指令已发送']);
-        $this->swap(\App\Services\ClientServiceConsole\ServicePowerService::class, $power);
+        $this->swap(ServicePowerService::class, $power);
 
         foreach (['on', 'off', 'reboot', 'hard_off', 'hard_reboot'] as $func) {
             $this->postJson('/api/v2/zjmf/provision/default', [
@@ -238,14 +245,14 @@ class ZjmfUpstreamApiTest extends TestCase
         $jwt = $this->apiJwt($suffix);
         $service = $this->createCdnService($user, $suffix);
 
-        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power = $this->createMock(ServicePowerService::class);
         $power->method('getModuleStatusForUser')->willReturn([
             'status' => 'on',
             'description' => '开机',
             'is_finished' => true,
             'is_success' => true,
         ]);
-        $this->swap(\App\Services\ClientServiceConsole\ServicePowerService::class, $power);
+        $this->swap(ServicePowerService::class, $power);
 
         // 魔方读取 data.status + data.des（Host.php status 分支）
         $this->postJson('/api/v2/zjmf/provision/default', [
@@ -275,14 +282,14 @@ class ZjmfUpstreamApiTest extends TestCase
             ->assertJsonPath('status', 400);
 
         // 带 os：直接验证 service 层分发（HTTP 层依赖已由上一个请求覆盖）
-        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power = $this->createMock(ServicePowerService::class);
         $power->expects($this->once())
             ->method('reinstallForUser')
             ->with($this->anything(), (int) $service->id, ['os_id' => '12'])
             ->willReturn(['message' => '重装系统任务已提交']);
 
-        $serviceLayer = new \App\Services\ZjmfUpstream\UpstreamProvisionService(
-            $this->app->make(\App\Services\Provisioning\ProvisionService::class),
+        $serviceLayer = new UpstreamProvisionService(
+            $this->app->make(ProvisionService::class),
             $power,
         );
 
@@ -303,9 +310,9 @@ class ZjmfUpstreamApiTest extends TestCase
         $jwt = $this->apiJwt($suffix);
         $service = $this->createCdnService($user, $suffix);
 
-        $power = $this->createMock(\App\Services\ClientServiceConsole\ServicePowerService::class);
+        $power = $this->createMock(ServicePowerService::class);
         $power->method('rescueForUser')->willReturn(['message' => '救援模式指令已提交']);
-        $this->swap(\App\Services\ClientServiceConsole\ServicePowerService::class, $power);
+        $this->swap(ServicePowerService::class, $power);
 
         // 魔方客户端发 rescueSystem；参考服务端拼写为 rescue_system
         foreach (['rescueSystem', 'rescue_system'] as $func) {
@@ -632,14 +639,14 @@ class ZjmfUpstreamApiTest extends TestCase
         $invoiceId = (int) $response->json('data.invoiceid');
         $this->assertGreaterThan(0, $invoiceId);
 
-        $invoice = \App\Models\Invoice::query()->findOrFail($invoiceId);
+        $invoice = Invoice::query()->findOrFail($invoiceId);
 
         // 主机名归一化后（点转横杠）落进订单配置快照
         $snapshot = (array) $invoice->config_snapshot;
         $this->assertSame('downstream-chosen-'.$suffix, (string) ($snapshot['hostname'] ?? ''));
 
         // 配置项按 sub id 反查到字段名 cpu 并保留取值
-        $order = \App\Models\Order::query()->findOrFail((int) $invoice->order_id);
+        $order = Order::query()->findOrFail((int) $invoice->order_id);
         $orderSnapshot = (array) $order->config_snapshot;
         $this->assertSame('downstream-chosen-'.$suffix, (string) ($orderSnapshot['hostname'] ?? ''));
         $this->assertSame(2, (int) (($orderSnapshot['cpu'] ?? null) ?? 0), '下游选择的 CPU 配置应传导到订单');
@@ -911,7 +918,7 @@ class ZjmfUpstreamApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('status', 200);
 
-        $order = \App\Models\Order::query()->findOrFail((int) \App\Models\Invoice::query()->findOrFail((int) $response->json('data.invoiceid'))->order_id);
+        $order = Order::query()->findOrFail((int) Invoice::query()->findOrFail((int) $response->json('data.invoiceid'))->order_id);
         $snapshot = (array) $order->config_snapshot;
         $this->assertSame('200M', (string) ($snapshot['bandwidth'] ?? ''), '单选型 sub id 必须反查为子项真实值，不得落内部 id 901');
         $this->assertNotSame('901', (string) ($snapshot['bandwidth'] ?? ''));
@@ -944,7 +951,7 @@ class ZjmfUpstreamApiTest extends TestCase
         $tid = (int) $created->json('data.tid');
         $this->assertGreaterThan(0, $tid);
 
-        $ticket = \App\Models\Ticket::query()->findOrFail($tid);
+        $ticket = Ticket::query()->findOrFail($tid);
         $this->assertSame((int) $user->id, (int) $ticket->user_id);
         $this->assertSame((int) $service->id, (int) $ticket->service_id);
         $this->assertSame('下游工单 '.$suffix, (string) $ticket->subject);
@@ -1003,7 +1010,7 @@ class ZjmfUpstreamApiTest extends TestCase
         $service = $this->createCdnService($user, $suffix);
         $jwt = $this->apiJwt($suffix);
 
-        $areas = $this->createMock(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class);
+        $areas = $this->createMock(ServiceConsoleAreaService::class);
         $areas->method('passthroughModulePayload')->willReturn([
             'module_button' => ['control' => [['name' => 'restart', 'key' => 'reboot']], 'console' => []],
             'module_client_area' => [['key' => 'custom1', 'name' => '自定义面板']],
@@ -1012,7 +1019,7 @@ class ZjmfUpstreamApiTest extends TestCase
             'module_power_status' => true,
             'reinstall_random_port' => true,
         ]);
-        $this->swap(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class, $areas);
+        $this->swap(ServiceConsoleAreaService::class, $areas);
 
         $this->getJson('/api/v2/zjmf/host/header?host_id='.(int) $service->id, ['Authorization' => 'Bearer '.$jwt])
             ->assertOk()
@@ -1039,7 +1046,7 @@ class ZjmfUpstreamApiTest extends TestCase
         $jwt = $this->apiJwt($suffix);
 
         $capturedKey = '';
-        $areas = $this->createMock(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class);
+        $areas = $this->createMock(ServiceConsoleAreaService::class);
         $areas->method('proxyModulePage')->willReturnCallback(
             function (Service $argService, string $areaKey, string $apiUrl) use ($service, &$capturedKey): string {
                 $this->assertSame((int) $service->id, (int) $argService->id);
@@ -1048,7 +1055,7 @@ class ZjmfUpstreamApiTest extends TestCase
                 return '<div data-api-url="'.e($apiUrl).'">upstream panel</div>';
             },
         );
-        $this->swap(\App\Services\ClientServiceConsole\ServiceConsoleAreaService::class, $areas);
+        $this->swap(ServiceConsoleAreaService::class, $areas);
 
         $downstreamActionUrl = 'https://downstream.example.test/api/v2/zjmf/provision/custom/'.(int) $service->id;
         $this->postJson('/api/v2/zjmf/zjmf_api/provision/custom/content', [

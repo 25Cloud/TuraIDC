@@ -11,6 +11,8 @@ use App\Models\Supplier;
 use App\Models\SupplierPluginBinding;
 use App\Services\Upstream\ProviderRegistry;
 use App\Support\DatabaseSchema;
+use Illuminate\Contracts\Database\Query\Expression;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -750,15 +752,16 @@ class PluginBindingResolver
         }
     }
 
-    private function serviceBindingQuery(): \Illuminate\Database\Query\Builder
-    {        return DB::table('service_upstream_bindings as sub')
+    private function serviceBindingQuery(): Builder
+    {
+        return DB::table('service_upstream_bindings as sub')
             ->leftJoin('supplier_plugin_bindings as spb', 'spb.id', '=', 'sub.supplier_plugin_binding_id')
             ->leftJoin('product_upstream_bindings as pub', 'pub.id', '=', 'sub.product_upstream_binding_id')
             ->leftJoin('supplier_plugin_bindings as pub_spb', 'pub_spb.id', '=', 'pub.supplier_plugin_binding_id');
     }
 
     /**
-     * @return array<int, string|\Illuminate\Contracts\Database\Query\Expression>
+     * @return array<int, string|Expression>
      */
     private function serviceBindingColumns(bool $includeServiceId = false): array
     {

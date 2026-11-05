@@ -127,8 +127,7 @@ class ZjmfBridgeProductTest extends TestCase
             ->withHeaders($this->signedHeaders('GET', '/zjmf/v1/productsconfig', query: $query))
             ->get($this->url('/zjmf/v1/productsconfig', $query), ['Accept' => 'application/json']);
 
-        $response;
-        fwrite(STDERR, "BODY500:".$response->getContent()."\n");
+        fwrite(STDERR, 'BODY500:'.$response->getContent()."\n");
         $response
             ->assertOk()
             ->assertJsonPath('status', 200)

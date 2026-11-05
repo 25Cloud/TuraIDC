@@ -122,6 +122,7 @@ trait TalksToGateway
                     }
                     $eventName = 'message';
                     $dataLines = [];
+
                     continue;
                 }
                 if (str_starts_with($line, ':')) {
@@ -162,7 +163,7 @@ trait TalksToGateway
         }
         $detail = trim(preg_replace('/\s+/', ' ', $detail) ?? '');
         if (mb_strlen($detail) > 160) {
-            $detail = mb_substr($detail, 0, 160) . '…';
+            $detail = mb_substr($detail, 0, 160).'…';
         }
 
         if ($status === 401 || $status === 403) {
@@ -178,7 +179,7 @@ trait TalksToGateway
             return 'AI 网关暂时不可用，请稍后重试';
         }
 
-        return $detail !== '' ? 'AI 网关返回错误：' . $detail : 'AI 网关返回异常（HTTP ' . $status . '）';
+        return $detail !== '' ? 'AI 网关返回错误：'.$detail : 'AI 网关返回异常（HTTP '.$status.'）';
     }
 
     /**
@@ -191,7 +192,7 @@ trait TalksToGateway
             $base = substr($base, 0, -3);
         }
 
-        return $base . $path;
+        return $base.$path;
     }
 
     /**
@@ -201,7 +202,7 @@ trait TalksToGateway
     {
         $headers = ['Content-Type: application/json', 'Accept: application/json'];
         if ($apiKey !== null && $apiKey !== '') {
-            $headers[] = 'Authorization: Bearer ' . $apiKey;
+            $headers[] = 'Authorization: Bearer '.$apiKey;
         }
 
         return array_merge($headers, $extra);

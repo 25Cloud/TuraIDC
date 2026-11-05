@@ -12,6 +12,7 @@ use App\Support\ProductGroupHierarchyFields;
 use App\Support\ProductGroupIcon;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Str;
 
 class SiteProductGroupResource extends JsonResource
 {
@@ -42,7 +43,7 @@ class SiteProductGroupResource extends JsonResource
             // 前台地址用的类型段：/products/{slug}/...
             'first_product_group_slug' => trim((string) ($firstGroup?->slug ?? '')) !== ''
                 ? (string) $firstGroup->slug
-                : (\Illuminate\Support\Str::slug($firstGroupCode) ?: $firstGroupCode),
+                : (Str::slug($firstGroupCode) ?: $firstGroupCode),
             'first_product_group_name' => $firstGroup?->name,
             // 一级分组图标：image 模式为可访问绝对地址，icon_resolved 已按优先级解析
             ...ProductGroupIcon::payload($firstGroup, true),

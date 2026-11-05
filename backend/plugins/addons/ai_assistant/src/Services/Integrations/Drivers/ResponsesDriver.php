@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Drivers;
 
-use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use App\Exceptions\BusinessException;
+use TuraIDC\Plugins\Addons\AiAssistant\Contracts\AiProviderInterface;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatResult;
@@ -101,7 +101,7 @@ final class ResponsesDriver implements AiProviderInterface
                 if ($event === 'response.output_item.added') {
                     $item = $chunk['item'] ?? [];
                     if (is_array($item) && ($item['type'] ?? '') === 'function_call') {
-                        $itemId = (string) ($item['id'] ?? ('item-' . count($order)));
+                        $itemId = (string) ($item['id'] ?? ('item-'.count($order)));
                         $byItem[$itemId] = [
                             'id' => (string) ($item['call_id'] ?? $itemId),
                             'name' => (string) ($item['name'] ?? ''),
@@ -252,6 +252,7 @@ final class ResponsesDriver implements AiProviderInterface
                         $reasoning .= (string) ($summary['text'] ?? '');
                     }
                 }
+
                 continue;
             }
             if ($type === 'message') {
@@ -260,6 +261,7 @@ final class ResponsesDriver implements AiProviderInterface
                         $text .= (string) ($block['text'] ?? '');
                     }
                 }
+
                 continue;
             }
             if ($type === 'function_call') {

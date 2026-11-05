@@ -7,13 +7,14 @@ namespace App\Services\Order\Concerns;
 use App\Constants\BillingCycle;
 use App\Exceptions\BusinessException;
 use App\Models\Product;
-use App\Support\Money;
-use App\Support\ProductConfigOptionPresenter;
-use Illuminate\Support\Str;
 use App\Models\Supplier;
+use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Upstream\Contracts\ProvidesUpstreamQuoting;
 use App\Services\Upstream\ProviderResolver;
+use App\Support\Money;
+use App\Support\ProductConfigOptionPresenter;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 trait HandlesOrderCalculation
 {
@@ -407,7 +408,7 @@ trait HandlesOrderCalculation
         // 须经绑定解析器注入运行时凭证（base_url -> api_url），否则 quoteUpstreamProduct 读到空地址。
         // 解析过程涉及查库与解密，异常时降级到后台定价兜底，不让整个报价流程失败。
         try {
-            $supplier = app(\App\Services\Integrations\Plugins\PluginBindingResolver::class)
+            $supplier = app(PluginBindingResolver::class)
                 ->supplierWithRuntimeCredentials($rawSupplier);
         } catch (\Throwable $exception) {
             return $this->buildFallbackConfigQuote($product, $config, $billingCycle);

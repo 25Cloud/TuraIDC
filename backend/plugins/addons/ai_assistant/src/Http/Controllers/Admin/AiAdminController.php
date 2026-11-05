@@ -6,22 +6,23 @@ namespace TuraIDC\Plugins\Addons\AiAssistant\Http\Controllers\Admin;
 
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
+use App\Models\Setting;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use TuraIDC\Plugins\Addons\AiAssistant\Http\Requests\Admin\ListAiConversationsRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Http\Requests\Admin\UpdateAiSettingsRequest;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiToolInvocation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiUsageDaily;
-use App\Models\Setting;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiConfig;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\AiConversationService;
-use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\AiProviderManager;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatMessage;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiChatRequest;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Log;
+use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolRegistry;
 
 /**
  * 管理端 AI 治理：设置、连通性测试、用量、会话审计。
@@ -167,7 +168,7 @@ class AiAdminController extends Controller
                 stream: false,
             ));
         } catch (BusinessException $exception) {
-            throw new BusinessException('连通性测试失败：' . $exception->getMessage(), 42200, 422);
+            throw new BusinessException('连通性测试失败：'.$exception->getMessage(), 42200, 422);
         } catch (\Throwable $exception) {
             Log::warning('ai.settings_test_failed', ['error' => $exception->getMessage()]);
 
@@ -214,7 +215,7 @@ class AiAdminController extends Controller
             ->get()
             ->map(static fn ($row): array => [
                 'user_id' => (int) $row->user_id,
-                'email' => (string) (\App\Models\User::query()->whereKey((int) $row->user_id)->value('email') ?? ''),
+                'email' => (string) (User::query()->whereKey((int) $row->user_id)->value('email') ?? ''),
                 'messages' => (int) $row->messages,
                 'tokens' => (int) $row->tokens,
                 'cost_cents' => (int) $row->cost_cents,

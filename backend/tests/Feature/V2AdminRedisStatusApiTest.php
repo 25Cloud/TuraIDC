@@ -8,6 +8,8 @@ use App\Models\AdminUser;
 use App\Models\Role;
 use App\Services\System\RedisStatusService;
 use App\Support\AdminPermissions;
+use Illuminate\Redis\Connections\PhpRedisConnection;
+use Illuminate\Support\Facades\Redis;
 use Laravel\Sanctum\Sanctum;
 use Mockery\MockInterface;
 use Tests\TestCase;
@@ -126,7 +128,7 @@ class V2AdminRedisStatusApiTest extends TestCase
      */
     public function test_it_passes_info_section_as_array_so_phpredis_driver_returns_metrics(): void
     {
-        $connection = \Mockery::mock(\Illuminate\Redis\Connections\PhpRedisConnection::class);
+        $connection = \Mockery::mock(PhpRedisConnection::class);
         $connection->shouldReceive('command')->with('ping')->andReturn(true);
         $connection->shouldReceive('command')
             ->with('info', ['server'])
@@ -150,7 +152,7 @@ class V2AdminRedisStatusApiTest extends TestCase
                 'keyspace_misses' => '5',
             ]);
 
-        \Illuminate\Support\Facades\Redis::shouldReceive('connection')->andReturn($connection);
+        Redis::shouldReceive('connection')->andReturn($connection);
 
         $status = app(RedisStatusService::class)->status();
 

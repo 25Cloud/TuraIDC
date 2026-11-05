@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Service;
 
+use App\Services\ClientServiceConsole\ServicePowerService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\ClientServiceConsole\ServicePowerService;
 
 /**
  * 重装系统：不可逆。
@@ -51,7 +51,7 @@ final class ReinstallServiceTool extends AiTool
 
     public function title(array $arguments): string
     {
-        return '重装系统（实例 #' . (string) ($arguments['service_id'] ?? '') . '）';
+        return '重装系统（实例 #'.(string) ($arguments['service_id'] ?? '').'）';
     }
 
     public function impact(array $arguments): string
@@ -69,7 +69,7 @@ final class ReinstallServiceTool extends AiTool
         );
 
         return [
-            'summary' => '已提交重装（实例 #' . (int) $arguments['service_id'] . '），系统将以 ' . (string) $arguments['os_id'] . ' 重装',
+            'summary' => '已提交重装（实例 #'.(int) $arguments['service_id'].'），系统将以 '.(string) $arguments['os_id'].' 重装',
             'data' => [
                 'service_id' => (int) $arguments['service_id'],
                 'os_id' => (string) $arguments['os_id'],

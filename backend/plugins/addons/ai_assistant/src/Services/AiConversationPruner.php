@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services;
 
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiConversation;
 use TuraIDC\Plugins\Addons\AiAssistant\Models\AiMessage;
@@ -81,9 +83,9 @@ final class AiConversationPruner
      * `last_message_at` 为空的历史行按创建时间兜底：这些行从来没被写过时间戳，
      * 直接比较 `last_message_at < ?` 会把它们永远排除在清理之外。
      *
-     * @return \Illuminate\Database\Eloquent\Builder<AiConversation>
+     * @return Builder<AiConversation>
      */
-    private function staleQuery(\Illuminate\Support\Carbon $softCutoff): \Illuminate\Database\Eloquent\Builder
+    private function staleQuery(Carbon $softCutoff): Builder
     {
         return AiConversation::query()
             ->where('status', AiConversation::STATUS_ACTIVE)

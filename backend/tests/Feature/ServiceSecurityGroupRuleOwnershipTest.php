@@ -122,7 +122,8 @@ class ServiceSecurityGroupRuleOwnershipTest extends TestCase
     private function makeServiceWithUpstreamRules(int $groupId, array $ruleList): ServiceSecurityGroupService
     {
         $detailService = $this->createMock(ServiceDetailService::class);
-        $detailService->method('resolveRuntimeCapabilityForSupplier')->willReturn(new class($groupId, $ruleList) {
+        $detailService->method('resolveRuntimeCapabilityForSupplier')->willReturn(new class($groupId, $ruleList)
+        {
             public function __construct(
                 private readonly int $groupId,
                 private readonly array $ruleList,

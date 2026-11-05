@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\ZjmfUpstream;
 
+use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
 use App\Models\Service;
 use App\Models\ZjmfUpstreamBinding;
+use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -186,7 +188,7 @@ class ZjmfDownstreamPushService
         }
 
         try {
-            $decoded = json_decode((string) \Illuminate\Support\Facades\Crypt::decryptString($payload), true);
+            $decoded = json_decode((string) Crypt::decryptString($payload), true);
         } catch (\Throwable) {
             return [];
         }
@@ -197,11 +199,11 @@ class ZjmfDownstreamPushService
     private function domainStatus(int $status): string
     {
         return match ($status) {
-            \App\Constants\ServiceStatus::PENDING => 'Pending',
-            \App\Constants\ServiceStatus::ACTIVE => 'Active',
-            \App\Constants\ServiceStatus::SUSPENDED => 'Suspended',
-            \App\Constants\ServiceStatus::EXPIRED => 'Suspended',
-            \App\Constants\ServiceStatus::CANCELLED => 'Deleted',
+            ServiceStatus::PENDING => 'Pending',
+            ServiceStatus::ACTIVE => 'Active',
+            ServiceStatus::SUSPENDED => 'Suspended',
+            ServiceStatus::EXPIRED => 'Suspended',
+            ServiceStatus::CANCELLED => 'Deleted',
             default => 'Pending',
         };
     }

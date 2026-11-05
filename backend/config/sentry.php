@@ -1,5 +1,15 @@
 <?php
 
+use App\Exceptions\BusinessException;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Http\Exceptions\ThrottleRequestsException;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+
 /**
  * Sentry Laravel SDK configuration file.
  *
@@ -59,15 +69,15 @@ return [
     // BusinessException::report() 虽然已经返回 false，但那条路径挡不住 SDK 的传输层，
     // 必须在配置层忽略。
     'ignore_exceptions' => [
-        App\Exceptions\BusinessException::class,
-        Illuminate\Validation\ValidationException::class,
-        Illuminate\Auth\AuthenticationException::class,
-        Illuminate\Auth\Access\AuthorizationException::class,
-        Illuminate\Database\Eloquent\ModelNotFoundException::class,
-        Illuminate\Http\Exceptions\ThrottleRequestsException::class,
-        Symfony\Component\HttpKernel\Exception\NotFoundHttpException::class,
-        Symfony\Component\HttpKernel\Exception\MethodNotAllowedHttpException::class,
-        Symfony\Component\HttpKernel\Exception\HttpException::class,
+        BusinessException::class,
+        ValidationException::class,
+        AuthenticationException::class,
+        AuthorizationException::class,
+        ModelNotFoundException::class,
+        ThrottleRequestsException::class,
+        NotFoundHttpException::class,
+        MethodNotAllowedHttpException::class,
+        HttpException::class,
     ],
 
     // 监控上报不能拖垮业务响应：默认 2 秒超时让每个真异常多等 2 秒。

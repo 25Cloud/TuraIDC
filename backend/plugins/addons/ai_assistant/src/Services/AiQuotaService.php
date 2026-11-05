@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services;
 
 use App\Exceptions\BusinessException;
-use TuraIDC\Plugins\Addons\AiAssistant\Models\AiUsageDaily;
 use App\Models\User;
+use TuraIDC\Plugins\Addons\AiAssistant\Models\AiUsageDaily;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Integrations\Data\AiUsage;
 
 /**

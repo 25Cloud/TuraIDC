@@ -6,8 +6,8 @@ use App\Constants\ServiceStatus;
 use App\Constants\UserNotificationType;
 use App\Models\AutomationLog;
 use App\Models\Service;
-use App\Services\Notification\UserNotificationService;
 use App\Services\ClientServiceConsole\ServiceSuspensionService;
+use App\Services\Notification\UserNotificationService;
 use App\Services\System\NotificationService;
 use App\Services\System\SettingService;
 use Carbon\Carbon;
@@ -253,6 +253,7 @@ class ServiceLifecycleAutomationService
                     'service_id' => $dueService->id,
                     'service_name' => $dueService->name,
                 ]);
+
                 continue;
             }
 
@@ -295,6 +296,7 @@ class ServiceLifecycleAutomationService
                     'service_id' => $dueService->id,
                     'service_name' => $dueService->name,
                 ]);
+
                 continue;
             }
 

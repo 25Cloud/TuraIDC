@@ -495,11 +495,13 @@ class ServiceConsoleAreaService
             // NAT 转发模块由内置「端口转发」tab 承载，不重复渲染为自定义区域。
             if ($this->matchesNatModule($function, $name, $type)) {
                 $natSupported = true;
+
                 continue;
             }
 
             if ($function === 'charts') {
                 $monitorSupported = true;
+
                 continue;
             }
 
@@ -616,7 +618,8 @@ class ServiceConsoleAreaService
     }
 
     private function matchesNatModule(string $function, string $name, string $type): bool
-    {        $text = $this->normalizeKeywordText(implode(' ', array_filter([$function, $name])));
+    {
+        $text = $this->normalizeKeywordText(implode(' ', array_filter([$function, $name])));
 
         if ($text === '') {
             return false;

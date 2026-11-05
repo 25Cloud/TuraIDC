@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Finance;
 
+use App\Services\User\AccountService;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiTool;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\AiToolContext;
 use TuraIDC\Plugins\Addons\AiAssistant\Services\Tools\Concerns\FormatsToolResults;
-use App\Services\User\AccountService;
 
 /**
  * 余额查询：只读，走 AccountService 的读取方法。
@@ -47,7 +47,7 @@ final class GetBalanceTool extends AiTool
         $credit = method_exists($context->user, 'credit_limit') ? $context->user->credit_limit() : 0;
 
         return [
-            'summary' => '当前余额 ' . number_format($balance, 2, '.', '') . ' 元',
+            'summary' => '当前余额 '.number_format($balance, 2, '.', '').' 元',
             'data' => [
                 'balance' => number_format($balance, 2, '.', ''),
                 'balance_cents' => $this->toCents($balance),

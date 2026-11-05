@@ -24,7 +24,7 @@ class AiAssistantServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->mergeConfigFrom(dirname(__DIR__, 2) . '/config/ai.php', 'ai_gateway');
+        $this->mergeConfigFrom(dirname(__DIR__, 2).'/config/ai.php', 'ai_gateway');
     }
 
     public function boot(): void
@@ -45,11 +45,11 @@ class AiAssistantServiceProvider extends ServiceProvider
         // 客户端：登录用户 + 用户态校验，与拆分前 v2-client.php 里的组完全一致
         Route::middleware(['api', 'auth:sanctum', 'ensure.client'])
             ->prefix('api/v2/client')
-            ->group(dirname(__DIR__, 2) . '/routes/client.php');
+            ->group(dirname(__DIR__, 2).'/routes/client.php');
 
         // 管理端：登录管理员 + 管理端校验，权限分组写在 routes/admin.php 内
         Route::middleware(['api', 'auth:sanctum', 'ensure.admin'])
             ->prefix('api/v2/admin')
-            ->group(dirname(__DIR__, 2) . '/routes/admin.php');
+            ->group(dirname(__DIR__, 2).'/routes/admin.php');
     }
 }

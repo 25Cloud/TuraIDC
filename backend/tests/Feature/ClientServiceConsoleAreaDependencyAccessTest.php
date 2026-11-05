@@ -127,7 +127,7 @@ class ClientServiceConsoleAreaDependencyAccessTest extends TestCase
         $detailService->method('findUserService')->willReturn($this->makeService());
         $detailService->method('canManageService')->willReturn($canManage);
 
-        return new ServiceConsoleAreaService($detailService, new ServiceConsoleAssetService());
+        return new ServiceConsoleAreaService($detailService, new ServiceConsoleAssetService);
     }
 
     /**
