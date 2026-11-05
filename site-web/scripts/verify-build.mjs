@@ -133,11 +133,11 @@ const html = indexHtml.replace(/&amp;/g, "&");
 const imgTags = html.match(/<img\b[^>]*>/g) ?? [];
 
 /**
- * 徽章墙的 10 枚徽章：地址写死在这里，改了 src/data/site.ts 就得同步改这里。
+ * 徽章墙的 11 枚徽章：地址写死在这里，改了 src/data/site.ts 就得同步改这里。
  *
- * 刻意不含 CI 徽章：`.github/workflows/ci.yml` 最后一次运行是 2026-08-24 且结论为失败，
- * 之后没有新运行，首页挂上去就是一枚长期红色的 failing，属于数据事实而非站点故障。
- * CI 恢复绿之后再加回来（同时改这里与 src/data/site.ts 的 LIVE_BADGES）。
+ * 含 CI 徽章：`.github/workflows/ci.yml` 已在 push/PR 上触发且当前为绿；
+ * 历史上它只有手动触发、长期停红，那时首页刻意不挂。若再次长期红，
+ * 按 site-web-maintenance.md §7.3 撤下并同步这里。
  */
 const SHIELD_BADGES = [
   [
@@ -169,6 +169,10 @@ const SHIELD_BADGES = [
     "https://img.shields.io/badge/license-AGPL--3.0--or--later-blue?style=flat-square",
   ],
   [
+    "CI",
+    "https://github.com/25Cloud/TuraIDC/actions/workflows/ci.yml/badge.svg",
+  ],
+  [
     "PHP",
     "https://img.shields.io/badge/PHP-%3E%3D8.3-777BB4?style=flat-square",
   ],
@@ -196,7 +200,7 @@ for (const [name, url] of SHIELD_BADGES) {
 const shieldCount = imgTags.filter(
   (item) => item.includes("img.shields.io") || item.includes("/badge.svg"),
 ).length;
-check("徽章墙共 10 枚实时徽章", shieldCount === 10, `${shieldCount} 枚`);
+check("徽章墙共 11 枚实时徽章", shieldCount === 11, `${shieldCount} 枚`);
 
 // 社区板块：三张第三方图片 + 语言占比 + 交流群
 const communityHtml =

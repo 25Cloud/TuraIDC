@@ -166,6 +166,15 @@ export const LIVE_BADGES = [
     height: 20,
   },
   {
+    key: "ci",
+    group: "repo",
+    label: "CI",
+    src: `${REPO_URL}/actions/workflows/ci.yml/badge.svg`,
+    href: `${REPO_URL}/actions/workflows/ci.yml`,
+    width: 86,
+    height: 20,
+  },
+  {
     key: "php",
     group: "stack",
     label: "PHP",

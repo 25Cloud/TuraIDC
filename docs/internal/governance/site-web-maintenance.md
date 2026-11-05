@@ -69,6 +69,21 @@ EdgeOne 的文档说 `edgeone.json` 放在"项目根目录"。仓库根也存在
 - FAQ 数据同时喂给页面和 `FAQPage` 结构化数据，改一处即可，不要在两处各写一份。
 - 事实口径以仓库根 `README.md` 与 `docs/` 为准。改能力清单、价格、许可描述时，**先改 README，再同步 `zh_CN.json`**；反过来不行。
 - 组件一律不加 `client:*` 指令。加了就相当于给这页装上 Vue 运行时，首屏立刻多出 70 KB 以上的 JS。
+
+### 4.1 文案只写给访客，不写「这页是怎么做的」
+
+首页是给潜在用户看的：他们要判断「这套系统能不能干我的活」，不关心版本号是构建时抓的还是实时渲染的。所以下面这类句子一律不写，写不出用户价值就整条删掉：
+
+| 不写（实现细节）                                                         | 为什么                               |
+| ------------------------------------------------------------------------ | ------------------------------------ |
+| 「版本号取自构建时的仓库快照」「徽章由 shields.io 实时渲染，缓存几分钟」 | 说的是我们怎么取数，不是产品能力     |
+| 「本站不加载它们的脚本」                                                 | 只有我们自己才关心，访客读到只会疑惑 |
+| 「图表由第三方按访问实时出图」                                           | 同上；图片能显示就行                 |
+
+改法：换成访客能用的信息（「每次发布都带完整变更记录，版本号点进去就是那次改了什么」），或者直接删掉那一行。`npm run verify` 有一条断言（正文不出现 `shields.io`／`构建时`／`出图`／`不加载` 等词）专门盯这类回归——它是在真被写进页面一次之后加的，不要为了让构建过而把它删掉。
+
+同一个道理适用于所有分区副标题与图注：**先问「用户看这句能得到什么」，答不上来就别写**。
+
 - 图标只用 `tdesign-icons-vue-next`，需要新图标时在 `site-web/src/icons.ts` 里加语义 key，不在组件里直接引图标组件。
 
 ## 5. 多语言
@@ -118,13 +133,13 @@ npm run shots
 
 首页「还在维护」这件事分两种实现，别混：
 
-| 数据                                                                   | 来源                                                     | 何时刷新                             |
-| ---------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------ |
-| 10 枚徽章（版本/Star/Fork/贡献者/issue/最近提交/许可/PHP/Laravel/Vue） | shields.io 出图（`src/data/site.ts` 的 `LIVE_BADGES`）   | 访客每次打开页面，shields 缓存几分钟 |
-| 项目热度曲线                                                           | star-history.com 出图（含 README 自带的 `sealed_token`） | 访客每次打开页面                     |
-| 贡献者头像墙                                                           | contrib.rocks 出图                                       | 访客每次打开页面                     |
-| 最新版本 tag + 发布日期 + 历史版本                                     | `src/data/github.json` 构建期快照                        | 每次构建（`prebuild`）               |
-| 语言构成（前 5 + Other）                                               | `src/data/github.json` 构建期快照                        | 每次构建（`prebuild`）               |
+| 数据                                                                      | 来源                                                                     | 何时刷新                             |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------ | ------------------------------------ |
+| 11 枚徽章（版本/Star/Fork/贡献者/issue/最近提交/许可/CI/PHP/Laravel/Vue） | shields.io 与 GitHub Actions 出图（`src/data/site.ts` 的 `LIVE_BADGES`） | 访客每次打开页面，shields 缓存几分钟 |
+| 项目热度曲线                                                              | star-history.com 出图（含 README 自带的 `sealed_token`）                 | 访客每次打开页面                     |
+| 贡献者头像墙                                                              | contrib.rocks 出图                                                       | 访客每次打开页面                     |
+| 最新版本 tag + 发布日期 + 历史版本                                        | `src/data/github.json` 构建期快照                                        | 每次构建（`prebuild`）               |
+| 语言构成（前 5 + Other）                                                  | `src/data/github.json` 构建期快照                                        | 每次构建（`prebuild`）               |
 
 - 实时三样都是**服务端渲染的图片地址**：页面零客户端 JS，不引第三方 SDK，也不在访客浏览器里请求 GitHub API。徽章与图表都写死 `width`/`height`，配 `loading="lazy"`、`decoding="async"`、`referrerpolicy="no-referrer"`。
 - star-history 用 `<picture>` + `<source media="(prefers-color-scheme: dark)">` 切深浅两版：它**跟随系统配色，不跟随站内主题开关**。文案里不要写「跟随主题」。
@@ -140,9 +155,11 @@ npm run shots
 三处一起改，少一处 `npm run verify` 就会拦下：
 
 1. `site-web/src/data/site.ts` 的 `LIVE_BADGES`：`key`、`group`（`repo` / `stack`，决定换行位置）、`label`（徽章上的英文标签，同时是 `alt` 与链接的 `aria-label`）、`src`、`href`、`width`、`height`。
-2. `site-web/scripts/verify-build.mjs` 的 `SHIELD_BADGES`：把同一个 URL 抄进断言清单；数量变了还要改「徽章墙共 10 枚实时徽章」那条。
+2. `site-web/scripts/verify-build.mjs` 的 `SHIELD_BADGES`：把同一个 URL 抄进断言清单；数量变了还要改「徽章墙共 11 枚实时徽章」那条。
 
-**CI 徽章当前刻意不上首页**：`.github/workflows/ci.yml` 最后一次运行是 2026-08-24 且结论为 `failure`，之后没有新运行，挂上去就是一枚长期红色的 `failing`——那是仓库状态，不是站点故障，但会对访客产生误导。CI 恢复绿之后按上面两步加回来（`group: "repo"`），并同步把 verify 里的总数改成 11。3. 文案：`src/i18n/*.json` 的 `live.badgesTitle` / `live.badgesNote` 四语齐全（`zh_CN` 是真源）。
+**CI 徽章**：`ci.yml` 现在随 push 与 PR 触发、当前为绿，所以首页挂着它。它以前只有 `workflow_dispatch`，实际从不跑、长期停在一次失败上，那段时间首页刻意不挂——判断标准是「它是否真的在跑并且是绿的」，不是「README 里有没有」。哪天它又长期红，按同样方式撤下（删 `LIVE_BADGES` 里 `key: "ci"` 那一项、verify 清单和总数），别让访客面对一枚停在几个月前的 failing。
+
+3. 文案：`src/i18n/*.json` 的 `live.badgesTitle` 四语齐全（`zh_CN` 是真源）。
 
 `width` / `height` 填的是**当前徽章实测宽度**（`curl` 一把看 SVG 头部的 `width`），只作为加载前的占位；渲染时 CSS 固定 `height: 20px`、`width: auto`，数字从 `97` 长到 `1.2k` 也不会被属性宽度拉扯变形。
 
@@ -186,24 +203,24 @@ npm run shots
 
 ## 9. 排错
 
-| 现象                         | 原因                                                                   | 处理                                                                                |
-| ---------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
-| 线上页面是空的/只有骨架      | 构建产物里的正文没了，或部署的是旧产物                                 | 本地 `npm run verify` 复现；确认 EdgeOne 部署记录对应最新提交                       |
-| 首屏以下内容滚动才出现       | 这是刻意的进场动效；`prefers-reduced-motion` 下应当全部直接显示        | 若在无动效环境下仍然空白，说明 `is-pending` 没被移除，检查 JS 报错                  |
-| 构建日志里出现 `check_docs`  | 平台读的是仓库根 `edgeone.json`，不是 `site-web/edgeone.json`          | 按第 2 节回退：删仓库根配置，两个项目都改用控制台配置                               |
-| 构建日志出现 GitHub 抓取告警 | 断网、限流或仓库改名；构建会继续用旧快照                               | 看告警里的 HTTP 状态；需要时配 `GITHUB_TOKEN`，或本地 `npm run sync:data` 后提交    |
-| 项目动态的版本号落后一版     | 新 release 发了但还没重新部署                                          | 推一次 `main` 触发重建，或本地 `npm run sync:data && npm run build`                 |
-| 实拍图和线上站点对不上       | 截图是上一次跑的产物，站点改版后没重截                                 | `npm run shots` 重新生成 `public/shots/catalog.webp` 并提交                         |
-| 截图里有客服浮窗挡住内容     | 站点新增了固定浮层，`HIDE_SELECTORS` 没覆盖到                          | 在 `capture-shots.mjs` 里补选择器后重跑                                             |
-| 结构化数据报错               | `src/i18n/*.json` 或 `schema.ts` 的结构被改坏                          | `npm run verify` 会直接报"结构化数据可解析"失败                                     |
-| 切换主题时闪一下白底         | 主题脚本被挪到 `<body>` 或改成外链                                     | 必须留在 `<head>` 内联执行，见第 6 节                                               |
-| 某个语言页 404               | `src/pages/<path>/index.astro` 没建，或 `LOCALES` 路径与目录不一致     | 两处路径要一致；`verify-build.mjs` 会报缺页                                         |
-| 社交分享没有预览图           | 目前没有生成 `og:image`，只有文字卡片                                  | 补一张 1200×630 的封面放进 `public/`，再加 `og:image` 与 `twitter:image`            |
-| 页面能开但百度不收录         | 境外节点 + 新域名的抓取周期长，且未提交 sitemap                        | 到百度搜索资源平台提交 sitemap，补齐外链                                            |
-| 产物里多出一个未引用的 JS    | `@astrojs/vue` 的水合运行时会留在 `dist/_astro/`，页面不引用它         | 属正常；`npm run verify` 会断言它没被 HTML 引用，加载体积不受影响                   |
-| 徽章空白或显示英文 alt       | shields.io 被墙、限流或临时故障                                        | 换网络再看；长期不可用就按 7.3 换图源，并在文案里改口径                             |
-| 想看 CI 状态                 | 首页刻意不挂 CI 徽章（仓库 `ci.yml` 自 2026-08-24 起是失败且无新运行） | 去仓库 Actions 页看；CI 修绿后按 7.3 加回首页                                       |
-| star-history 图不显示        | `sealed_token` 过期或 star-history 改接口                              | 回 README 抄一份新地址到 `src/data/site.ts` 的 `STAR_HISTORY`，verify 里的 URL 同步 |
-| 深色模式下图表还是浅色       | `prefers-color-scheme` 跟系统走，不看站内主题                          | 属预期；文案已写明，不要为此加 JS 联动                                              |
-| 语言占比条少了一种           | 新语言没进 `LANGUAGE_COLORS`，落到中性灰                               | 补色卡（取 GitHub 语言色）后重建；占比本来只取前 5，其余合并成 Other                |
-| 二维码扫不出                 | `public/images/qq-group.jpg` 被替换成低分辨率图                        | 用原始二维码图覆盖，并同步 `COMMUNITY.qqQrcodeWidth` / `qqQrcodeHeight`             |
+| 现象                         | 原因                                                               | 处理                                                                                |
+| ---------------------------- | ------------------------------------------------------------------ | ----------------------------------------------------------------------------------- |
+| 线上页面是空的/只有骨架      | 构建产物里的正文没了，或部署的是旧产物                             | 本地 `npm run verify` 复现；确认 EdgeOne 部署记录对应最新提交                       |
+| 首屏以下内容滚动才出现       | 这是刻意的进场动效；`prefers-reduced-motion` 下应当全部直接显示    | 若在无动效环境下仍然空白，说明 `is-pending` 没被移除，检查 JS 报错                  |
+| 构建日志里出现 `check_docs`  | 平台读的是仓库根 `edgeone.json`，不是 `site-web/edgeone.json`      | 按第 2 节回退：删仓库根配置，两个项目都改用控制台配置                               |
+| 构建日志出现 GitHub 抓取告警 | 断网、限流或仓库改名；构建会继续用旧快照                           | 看告警里的 HTTP 状态；需要时配 `GITHUB_TOKEN`，或本地 `npm run sync:data` 后提交    |
+| 项目动态的版本号落后一版     | 新 release 发了但还没重新部署                                      | 推一次 `main` 触发重建，或本地 `npm run sync:data && npm run build`                 |
+| 实拍图和线上站点对不上       | 截图是上一次跑的产物，站点改版后没重截                             | `npm run shots` 重新生成 `public/shots/catalog.webp` 并提交                         |
+| 截图里有客服浮窗挡住内容     | 站点新增了固定浮层，`HIDE_SELECTORS` 没覆盖到                      | 在 `capture-shots.mjs` 里补选择器后重跑                                             |
+| 结构化数据报错               | `src/i18n/*.json` 或 `schema.ts` 的结构被改坏                      | `npm run verify` 会直接报"结构化数据可解析"失败                                     |
+| 切换主题时闪一下白底         | 主题脚本被挪到 `<body>` 或改成外链                                 | 必须留在 `<head>` 内联执行，见第 6 节                                               |
+| 某个语言页 404               | `src/pages/<path>/index.astro` 没建，或 `LOCALES` 路径与目录不一致 | 两处路径要一致；`verify-build.mjs` 会报缺页                                         |
+| 社交分享没有预览图           | 目前没有生成 `og:image`，只有文字卡片                              | 补一张 1200×630 的封面放进 `public/`，再加 `og:image` 与 `twitter:image`            |
+| 页面能开但百度不收录         | 境外节点 + 新域名的抓取周期长，且未提交 sitemap                    | 到百度搜索资源平台提交 sitemap，补齐外链                                            |
+| 产物里多出一个未引用的 JS    | `@astrojs/vue` 的水合运行时会留在 `dist/_astro/`，页面不引用它     | 属正常；`npm run verify` 会断言它没被 HTML 引用，加载体积不受影响                   |
+| 徽章空白或显示英文 alt       | shields.io 被墙、限流或临时故障                                    | 换网络再看；长期不可用就按 7.3 换图源，并在文案里改口径                             |
+| CI 徽章红着或长期不变        | 要么最近一次运行真的失败，要么 workflow 只剩手动触发、根本没在跑   | 先去 Actions 页确认真实状态；若长期红就修 CI，修不动先按 7.3 把徽章撤下             |
+| star-history 图不显示        | `sealed_token` 过期或 star-history 改接口                          | 回 README 抄一份新地址到 `src/data/site.ts` 的 `STAR_HISTORY`，verify 里的 URL 同步 |
+| 深色模式下图表还是浅色       | `prefers-color-scheme` 跟系统走，不看站内主题                      | 属预期；文案已写明，不要为此加 JS 联动                                              |
+| 语言占比条少了一种           | 新语言没进 `LANGUAGE_COLORS`，落到中性灰                           | 补色卡（取 GitHub 语言色）后重建；占比本来只取前 5，其余合并成 Other                |
+| 二维码扫不出                 | `public/images/qq-group.jpg` 被替换成低分辨率图                    | 用原始二维码图覆盖，并同步 `COMMUNITY.qqQrcodeWidth` / `qqQrcodeHeight`             |
