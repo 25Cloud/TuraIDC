@@ -1936,7 +1936,7 @@ class ProductSyncService
         return match (strtolower(trim((string) $billingCycle))) {
             'free', 'monthly' => 'monthly',
             'quarterly' => 'quarterly',
-            'semiannually', 'semi-annually', 'semi' => 'semiannually',
+            'semiannually', 'semi-annually', 'semi_annual', 'semi' => 'semiannually',
             'annually', 'yearly' => 'annually',
             'biennially', 'biennial' => 'biennially',
             'triennially', 'triennial' => 'triennially',
