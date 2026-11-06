@@ -50,6 +50,13 @@ class ApiKeyService
         return [$key, $plain];
     }
 
+    /**
+     * 开放接口密钥的前置校验。
+     *
+     * 这里约束的是「API 凭据」而不是网页上的资金操作，所以开关独立于账户级策略
+     * （open_api.require_phone / require_verified，见 OpenApiConfig）；
+     * 账户级要求（实名 / 手机号 / 邮箱是否强制）见 App\Services\Auth\AccountPolicyService。
+     */
     public function assertCanCreate(User $user): void
     {
         if (! $this->config->enabled()) {
