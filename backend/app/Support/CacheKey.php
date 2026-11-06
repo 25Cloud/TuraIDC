@@ -156,4 +156,15 @@ final class CacheKey
     {
         return 'lock:'.$name;
     }
+
+    /**
+     * 定时任务运行指纹（任务标识 + 时间片）。
+     *
+     * 与 `schedule_run_logs.fingerprint` 同口径：指纹本身是 sha1，缓存键保留可读的
+     * 任务与槽位，便于按前缀检索；仅用于短时互斥与排错提示，不做长期缓存。
+     */
+    public static function scheduleRunFingerprint(string $taskKey, string $slot): string
+    {
+        return 'schedule:run:'.$taskKey.':'.$slot;
+    }
 }

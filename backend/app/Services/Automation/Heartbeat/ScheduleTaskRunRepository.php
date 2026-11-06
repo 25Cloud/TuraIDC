@@ -161,6 +161,36 @@ class ScheduleTaskRunRepository
     }
 
     /**
+     * 列表/详情只取渲染需要的列。
+     *
+     * 不用 `SELECT *`：台账表有 `summary`（JSON）与 `error_msg`（TEXT）两个大字段，
+     * 以后再加诊断列时也不希望它们被列表无脑带出来。这里的列与
+     * `AdminScheduleTaskRunResource` 的字段一一对应，两边要一起改。
+     */
+    private const LIST_COLUMNS = [
+        'id',
+        'schedule_tick_id',
+        'parent_run_id',
+        'task_key',
+        'task_name',
+        'rule_description',
+        'source',
+        'queue',
+        'status',
+        'attempt',
+        'duration_ms',
+        'summary',
+        'error_msg',
+        'queued_at',
+        'started_at',
+        'finished_at',
+        'manual_retry_at',
+        'manual_retry_by',
+        'created_at',
+        'updated_at',
+    ];
+
+    /**
      * @param  array<string, mixed>  $filters
      */
     public function paginateRuns(array $filters, int $page, int $perPage): LengthAwarePaginator
@@ -181,7 +211,10 @@ class ScheduleTaskRunRepository
         $sort = in_array($sort, $allowedSorts, true) ? $sort : 'id';
         $direction = $direction === 'asc' ? 'asc' : 'desc';
 
+        // 列表不预载任何关联：资源只读本行字段，预载 parentRun/childRuns 只会多出
+        // 每页行数条查询（典型 N+1），而这几个关联只有人工重跑链路才会用到。
         return $query
+            ->select(self::LIST_COLUMNS)
             ->orderBy($sort, $direction)
             ->orderBy('id', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);

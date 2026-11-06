@@ -32,6 +32,7 @@ class AdminScheduleTaskRunResource extends JsonResource
 
         return [
             'id' => (int) $run->id,
+            'schedule_tick_id' => $run->schedule_tick_id !== null ? (int) $run->schedule_tick_id : null,
             'task_key' => (string) ($this->text($run->task_key) ?? ''),
             'task_name' => (string) ($this->text($run->task_name) ?? ''),
             'rule_description' => $this->text($run->rule_description),

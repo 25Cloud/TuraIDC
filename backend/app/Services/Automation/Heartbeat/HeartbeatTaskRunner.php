@@ -31,6 +31,14 @@ class HeartbeatTaskRunner
                 );
             }
 
+            // 运行日志里留一条 `skipped`（不是 failed）：重复投递/迟到 Job 没有执行，
+            // 把它记成失败会让失败计数与告警失真。
+            $this->scheduleRunLogService->recordSkipped(
+                $task->title(),
+                ScheduleRunLogService::SKIP_RUN_NOT_ACTIVE,
+                $context->toLogContext(),
+            );
+
             return [
                 'status' => 'skipped',
                 'reason' => 'schedule_run_not_active',
@@ -48,6 +56,12 @@ class HeartbeatTaskRunner
             );
 
             $durationMs = (int) (microtime(true) * 1000) - $startedAt;
+
+            // 同指纹已有运行中的执行（并发重入）：本次没跑，不能记成功。
+            if (is_array($result) && ($result['status'] ?? null) === ScheduleRunLogService::STATUS_SKIPPED) {
+                return $result;
+            }
+
             $summary = is_array($result) ? $result : ['result' => $result];
             $this->taskRuns->markSucceeded($context->taskRunId, $summary, $durationMs);
 
