@@ -158,6 +158,10 @@ class V2AdminUserWriteApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 40300);
 
+        // os-options 已从 user.manage 解耦到 service.view（实例运维不该连带整套用户管理权限），
+        // 所以这里换成只带 service.view 的管理员：既验证新码能进，也验证 user.manage 不再是通行证。
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::SERVICE_VIEW]));
+
         $this->getJson('/api/v2/admin/os-options?per_page=20')
             ->assertUnprocessable()
             ->assertJsonPath('code', 42200)

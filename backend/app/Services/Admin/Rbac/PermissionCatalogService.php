@@ -98,6 +98,8 @@ class PermissionCatalogService
             AdminPermissions::FINANCE_REPORT => 'finance_report',
             AdminPermissions::TICKET_LIST, AdminPermissions::TICKET_REPLY, AdminPermissions::TICKET_MANAGE, AdminPermissions::TICKET_DELIVERY_MANAGE, AdminPermissions::TICKET_PRE_REPLY_MANAGE => 'support_ticket',
             AdminPermissions::PRODUCT_LIST, AdminPermissions::PRODUCT_MANAGE, AdminPermissions::PRODUCT_SYNC => 'product_catalog',
+            // 服务实例与商品目录分开：主机名、实例配置属于运维动作，不该混在商品配置里
+            AdminPermissions::SERVICE_VIEW, AdminPermissions::SERVICE_MANAGE => 'service_instance',
             AdminPermissions::COUPON_LIST, AdminPermissions::COUPON_MANAGE => 'product_catalog',
             AdminPermissions::SUPPLIER_LIST, AdminPermissions::SUPPLIER_DETAIL, AdminPermissions::SUPPLIER_MANAGE, AdminPermissions::SUPPLIER_SYNC, AdminPermissions::SUPPLIER_SECRET_REVEAL => 'product_supplier',
             AdminPermissions::CONTENT_LIST, AdminPermissions::CONTENT_MANAGE => 'content_ops',
@@ -164,6 +166,7 @@ class PermissionCatalogService
             'finance_report' => '财务报表',
             'support_ticket' => '工单支持',
             'product_catalog' => '商品配置',
+            'service_instance' => '服务实例',
             'product_supplier' => '供应商接口',
             'content_ops' => '内容运营',
             'marketing_growth' => '推广会员',
@@ -247,7 +250,7 @@ class PermissionCatalogService
             'dashboard_workbench',
             'customer_profile', 'customer_verification',
             'finance_invoice', 'finance_order', 'finance_funds', 'finance_report',
-            'support_ticket', 'product_catalog', 'product_supplier', 'content_ops', 'marketing_growth',
+            'support_ticket', 'product_catalog', 'service_instance', 'product_supplier', 'content_ops', 'marketing_growth',
             'site_ops', 'system_config', 'system_open_api', 'system_database', 'system_integration', 'system_schedule', 'system_audit',
         ];
 
@@ -311,6 +314,8 @@ class PermissionCatalogService
             AdminPermissions::COUPON_LIST => '查看优惠券',
             AdminPermissions::COUPON_MANAGE => '管理优惠券',
             AdminPermissions::PRODUCT_SYNC => '同步商品',
+            AdminPermissions::SERVICE_VIEW => '查看服务实例',
+            AdminPermissions::SERVICE_MANAGE => '管理服务实例',
             AdminPermissions::SUPPLIER_LIST => '查看供应商列表',
             AdminPermissions::SUPPLIER_DETAIL => '查看供应商详情',
             AdminPermissions::SUPPLIER_MANAGE => '管理供应商',

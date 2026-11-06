@@ -160,6 +160,15 @@ jobs:
       - name: Migrate test database
         run: php artisan migrate --force
 
+      # 路由权限审计：api/v2/admin 每条路由都必须挂 CheckPermission（白名单只放登录与
+      # 「管理员本人」自服务端点）。缺权限或未知权限码时命令退出码为 1。
+      # 关于插件：命令只审「已注册」路由，CI 干净库里安装的插件与本地不同，注册出来的路由
+      # 会变；但插件自带的 admin 路由同样挂在 permission: 分组里（ai_assistant / auto_refund
+      # 的 routes/admin.php 都是整段分组），所以安装状态只改变路由条数，不会造成误报。
+      # 因此这里不加 `|| true`：一旦红了就是真的有人新加了没挂权限的 admin 路由，必须挡合并。
+      - name: Audit admin route permissions
+        run: php artisan audit:admin-routes
+
       # 插件用例（含自助退款、bridge、AI 助手）与单元用例：快、确定、不依赖外网。
       # 注意 PHPUnit 的 --testsuite 只接受一个值（重复传会互相覆盖），所以拆成两步。
       - name: Run plugin tests

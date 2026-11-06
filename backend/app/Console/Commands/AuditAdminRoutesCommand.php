@@ -29,6 +29,12 @@ use Throwable;
  *   2. `duplicates`  同一条路由挂了两个及以上**不同**权限码（语义含糊，必须人工裁决）；
  *   3. `unknown`     权限码不在权限表 `App\Support\AdminPermissions` 里。
  *
+ * 另外附带一项**只报告、不判红**的 `unused_codes`：权限表里有、但所有已注册 admin 路由
+ * 都没用到的码。它不是「可以删」的清单——真实引用可能藏在服务、通知、隐私判定等非路由位置
+ * （例：`privacy.view_raw` 由 `AdminPrivacy` 用、`order.manage` 由订单通知过滤用），
+ * 也可能由插件在安装后才注册路由。清理死码前必须按四种写法（`'code'`、`self::CODE`、
+ * `AdminPermissions::CODE`、`AdminPermissions.CODE`）全仓复核引用，别只靠这一项。
+ *
  * 权限表就是这个枚举类：仓库里没有 `permissions` 表（`App\Models\Permission` 模型没有任何
  * 引用点），角色权限存的是 JSON 数组，真正的码清单只在 `AdminPermissions` 的常量里。
  * 这里用反射读常量，避免再维护一份副本跟着漂移。
@@ -36,7 +42,8 @@ use Throwable;
  * 白名单只有登录与「管理员本人」的自服务端点：它们本来就只要求已登录，不该被权限点约束。
  * 用 method + uri 精确匹配而不是前缀匹配——前缀会把将来新增的同类路由一并「洗白」。
  *
- * 退出码：`missing` 或 `unknown` 非空返回 1，否则 0，可直接挂进 CI。
+ * 退出码：`missing` 或 `unknown` 非空返回 1，否则 0，可直接挂进 CI；
+ * `unused_codes` 恒不影响退出码。
  * 用法：
  *   php artisan audit:admin-routes
  *   php artisan audit:admin-routes --json
@@ -86,7 +93,7 @@ class AuditAdminRoutesCommand extends Command
     protected $signature = 'audit:admin-routes
         {--json : 以 JSON 输出结果}';
 
-    protected $description = '审计 api/v2/admin 路由的权限覆盖：缺权限、权限码重复、未知权限码（缺权限或未知码时退出码为 1）';
+    protected $description = '审计 api/v2/admin 路由的权限覆盖：缺权限、权限码重复、未知权限码（缺权限或未知码时退出码为 1）；另报告未被任何 admin 路由使用的权限码（仅供参考，不等于可删）';
 
     public function handle(): int
     {
@@ -160,6 +167,8 @@ class AuditAdminRoutesCommand extends Command
         $missing = [];
         $duplicates = [];
         $unknown = [];
+        // 被任何一条 admin 路由实际用到的码（含白名单路由上的码，虽然它们本来不该有）
+        $usedCodes = [];
 
         foreach ($routes as $route) {
             $uri = (string) ($route['uri'] ?? '');
@@ -177,6 +186,12 @@ class AuditAdminRoutesCommand extends Command
 
             if ($codes !== []) {
                 $covered++;
+            }
+
+            foreach ($codes as $code) {
+                if (! in_array($code, $usedCodes, true)) {
+                    $usedCodes[] = $code;
+                }
             }
 
             // 缺权限：白名单之外没有任何权限中间件，或中间件没带码（等于永远放行）
@@ -205,6 +220,11 @@ class AuditAdminRoutesCommand extends Command
             }
         }
 
+        // 只报告、不判红：权限表里有、但没有任何 admin 路由用到的码。
+        // 注意它**不是**「可以删」的清单——引用可能在服务/通知/隐私判定里，或由插件注册。
+        $unusedCodes = array_values(array_diff($registry, $usedCodes));
+        sort($unusedCodes);
+
         return [
             'dry_run' => true,
             'checked_at' => now()->toDateTimeString(),
@@ -215,6 +235,7 @@ class AuditAdminRoutesCommand extends Command
             'missing' => $missing,
             'duplicates' => $duplicates,
             'unknown' => $unknown,
+            'unused_codes' => $unusedCodes,
         ];
     }
 
@@ -375,6 +396,18 @@ class AuditAdminRoutesCommand extends Command
             foreach ($report['whitelisted_routes'] as $item) {
                 $this->line(sprintf('- %s %s', $item['method'], $item['uri']));
             }
+        }
+
+        // 只报告、不判红。必须写清「不等于可删」：引用可能在服务/通知/隐私判定里，或由插件注册
+        if ($report['unused_codes'] !== []) {
+            $this->line(sprintf(
+                '未使用的权限码 %d 个（权限表里有、当前没有任何 admin 路由用到；只报告，不等于可删）：',
+                count($report['unused_codes'])
+            ));
+            foreach ($report['unused_codes'] as $code) {
+                $this->line(sprintf('- %s', $code));
+            }
+            $this->line('  清理前请按四种写法全仓复核引用：\'code\' / self::CODE / AdminPermissions::CODE / AdminPermissions.CODE。');
         }
     }
 }

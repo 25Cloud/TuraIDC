@@ -43,6 +43,9 @@ class AuditAdminRoutesCommandTest extends TestCase
         // 现网 288 条 + 3 条夹具；白名单是 5 个管理员自服务端点
         $this->assertGreaterThanOrEqual(291, $report['total']);
         $this->assertGreaterThanOrEqual(5, $report['whitelisted']);
+        // unused_codes = 权限表 − 路由实际用到的码：夹具用到了 product.list，它不能出现在里面
+        $this->assertIsArray($report['unused_codes']);
+        $this->assertNotContains('product.list', $report['unused_codes']);
     }
 
     public function test_reports_unknown_permission_code_and_permission_without_code(): void
@@ -65,6 +68,9 @@ class AuditAdminRoutesCommandTest extends TestCase
         $noCode = $this->firstWhere($report['missing'], 'uri', 'api/v2/admin/audit-fixtures/no-code');
         $this->assertIsArray($noCode);
         $this->assertSame('permission_without_code', $noCode['reason']);
+
+        // 未知码不进 unused_codes：那一项是「权限表里有、但没被路由用到」，未知码根本不在权限表
+        $this->assertNotContains('not_a_real_permission', $report['unused_codes']);
     }
 
     public function test_passes_when_every_admin_route_is_covered_or_whitelisted(): void

@@ -125,13 +125,21 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::get('/users/{user}/services/{service}', [UserServiceController::class, 'show']);
     });
 
-    Route::middleware(['permission:'.AdminPermissions::USER_MANAGE])->group(function (): void {
+    // 服务实例权限与用户管理解耦：这两条原本借 user.manage，等于「改实例主机名」
+    // 必须连带用户的增删改、余额与登录态。os-options 只是实例配置用的只读下拉数据，走 view。
+    Route::middleware(['permission:'.AdminPermissions::SERVICE_VIEW])->group(function (): void {
         Route::get('/os-options', [UserController::class, 'osOptions']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::SERVICE_MANAGE])->group(function (): void {
+        Route::post('/services/custom-hostnames/batch', [ServiceController::class, 'batchUpdateCustomHostnames']);
+    });
+
+    Route::middleware(['permission:'.AdminPermissions::USER_MANAGE])->group(function (): void {
         Route::post('/users', [UserController::class, 'store']);
         Route::put('/users/{user}', [UserController::class, 'update']);
         Route::delete('/users/{user}', [UserController::class, 'destroy']);
         Route::patch('/users/{user}/status', [UserController::class, 'updateStatus']);
-        Route::post('/services/custom-hostnames/batch', [ServiceController::class, 'batchUpdateCustomHostnames']);
         Route::post('/users/{user}/services', [UserServiceController::class, 'store']);
         Route::post('/users/{user}/services/refresh-statuses', [UserServiceController::class, 'refreshStatuses']);
         Route::put('/users/{user}/services/{service}/meta', [UserServiceController::class, 'updateMeta']);

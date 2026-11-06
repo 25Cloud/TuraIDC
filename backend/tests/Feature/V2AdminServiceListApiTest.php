@@ -83,7 +83,8 @@ class V2AdminServiceListApiTest extends TestCase
             ->assertForbidden()
             ->assertJsonPath('code', 40300);
 
-        Sanctum::actingAs($this->createAdmin([AdminPermissions::USER_MANAGE]));
+        // 批量改实例主机名已从 user.manage 解耦到 service.manage
+        Sanctum::actingAs($this->createAdmin([AdminPermissions::SERVICE_MANAGE]));
 
         $this->postJson('/api/v2/admin/services/custom-hostnames/batch?per_page=20', [
             'items' => [

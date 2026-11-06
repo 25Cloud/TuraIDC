@@ -53,6 +53,26 @@ class AdminPermissionCatalogTest extends TestCase
         $this->assertSame('low', $items[AdminPermissions::DATABASE_VIEW]['risk_level']);
         $this->assertSame('system_database', $items[AdminPermissions::DATABASE_VIEW]['group']);
         $this->assertSame('查看数据库状态', $items[AdminPermissions::DATABASE_VIEW]['name']);
+
+        // service.* 与 product.* 同口径：读=low、写=medium；分组与中文名不能落到兜底
+        // （兜底会把键原样拼成 "service / view"，角色管理里就是一串英文）
+        $this->assertSame('service_instance', $items[AdminPermissions::SERVICE_VIEW]['group']);
+        $this->assertSame('服务实例', $items[AdminPermissions::SERVICE_VIEW]['group_label']);
+        $this->assertSame('查看服务实例', $items[AdminPermissions::SERVICE_VIEW]['name']);
+        $this->assertSame('low', $items[AdminPermissions::SERVICE_VIEW]['risk_level']);
+        $this->assertSame('service_instance', $items[AdminPermissions::SERVICE_MANAGE]['group']);
+        $this->assertSame('服务实例', $items[AdminPermissions::SERVICE_MANAGE]['group_label']);
+        $this->assertSame('管理服务实例', $items[AdminPermissions::SERVICE_MANAGE]['name']);
+        $this->assertSame('medium', $items[AdminPermissions::SERVICE_MANAGE]['risk_level']);
+        // 与商品目录的读写口径对齐，防止以后有人把风险表改歪
+        $this->assertSame(
+            $items[AdminPermissions::PRODUCT_LIST]['risk_level'],
+            $items[AdminPermissions::SERVICE_VIEW]['risk_level']
+        );
+        $this->assertSame(
+            $items[AdminPermissions::PRODUCT_MANAGE]['risk_level'],
+            $items[AdminPermissions::SERVICE_MANAGE]['risk_level']
+        );
     }
 
     public function test_manage_permissions_do_not_imply_secret_reveal_or_raw_privacy(): void

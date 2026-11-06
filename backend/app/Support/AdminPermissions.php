@@ -44,6 +44,16 @@ class AdminPermissions
 
     public const TICKET_PRE_REPLY_MANAGE = 'ticket.pre_reply_manage';
 
+    /**
+     * 服务实例权限与用户管理解耦：改实例主机名、批量调整实例配置本来被 user.manage 兜着，
+     * 结果「给客服改主机名」必须连带整套用户管理权限（能改用户资料、余额、登录态）。
+     * 这里单列 service.*，两个原本借 user.manage 的路由改挂它；
+     * 存量角色由回填迁移补码，能力不变。
+     */
+    public const SERVICE_VIEW = 'service.view';
+
+    public const SERVICE_MANAGE = 'service.manage';
+
     public const PRODUCT_LIST = 'product.list';
 
     public const PRODUCT_MANAGE = 'product.manage';
@@ -222,6 +232,7 @@ class AdminPermissions
     {
         return array_values(array_unique(array_merge(self::visitorPermissions(), [
             self::USER_MANAGE,
+            self::SERVICE_MANAGE,
             self::VERIFICATION_UNBIND,
             self::ORDER_MANAGE,
             self::INVOICE_MANAGE,
@@ -279,6 +290,7 @@ class AdminPermissions
     {
         return match ($permission) {
             self::USER_MANAGE => [self::USER_LIST, self::USER_DETAIL],
+            self::SERVICE_MANAGE => [self::SERVICE_VIEW],
             self::ORDER_MANAGE => [self::ORDER_LIST, self::ORDER_DETAIL],
             self::INVOICE_MANAGE => [self::INVOICE_LIST, self::INVOICE_DETAIL],
             self::TICKET_MANAGE => [self::TICKET_LIST, self::TICKET_REPLY],
