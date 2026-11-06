@@ -903,13 +903,7 @@ parameters:
 		-
 			message: '#^Cannot call method format\(\) on string\.$#'
 			identifier: method.nonObject
-			count: 3
-			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),mixed\>\:\:map\(\) contains unresolvable type\.$#'
-			identifier: argument.unresolvableType
-			count: 1
+			count: 2
 			path: app/Http/Resources/Admin/V2/AdminOrderSummaryResource.php
 
 		-
@@ -1589,12 +1583,6 @@ parameters:
 			identifier: identical.alwaysFalse
 			count: 1
 			path: app/Models/ContentArticle.php
-
-		-
-			message: '#^Access to an undefined property App\\Models\\EmailLog\:\:\$sent_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Models/EmailLog.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$discount\.$#'
@@ -4885,6 +4873,12 @@ parameters:
 			path: app/Services/Order/ClientOrderQueryService.php
 
 		-
+			message: '#^Using nullsafe property access "\?\-\>payments" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Order/ClientOrderQueryService.php
+
+		-
 			message: '#^Using nullsafe property access "\?\-\>pending" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -5661,7 +5655,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
 			identifier: property.notFound
-			count: 5
+			count: 1
 			path: app/Services/ProductCatalog/ProductSyncService.php
 
 		-
@@ -5737,6 +5731,12 @@ parameters:
 			path: app/Services/ProductCatalog/ProductSyncService.php
 
 		-
+			message: '#^Instanceof between App\\Models\\Product and App\\Models\\Product will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Services/ProductCatalog/ProductSyncService.php
+
+		-
 			message: '#^Method App\\Services\\ProductCatalog\\ProductSyncService\:\:applyLiveStockToProduct\(\) should return App\\Models\\Product but returns Illuminate\\Database\\Eloquent\\Model\.$#'
 			identifier: return.type
 			count: 1
@@ -5767,31 +5767,7 @@ parameters:
 			path: app/Services/ProductCatalog/ProductSyncService.php
 
 		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: int, Closure\(App\\Models\\Product\)\: int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
-			message: '#^Parameter \#1 \$callback of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:filter\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: bool\)\|null, Closure\(App\\Models\\Product\)\: bool given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
 			message: '#^Parameter \#1 \$column of method Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\:\:where\(\) expects array\<int\|model property of App\\Models\\Product, mixed\>\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\|\(Closure\(Illuminate\\Database\\Eloquent\\Builder\<App\\Models\\Product\>\)\: void\)\|Illuminate\\Contracts\\Database\\Query\\Expression\|model property of App\\Models\\Product, ''spb\.supplier_id'' given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
-			message: '#^Parameter \#1 \$groupBy of method Illuminate\\Support\\Collection\<\(int\|string\),Illuminate\\Database\\Eloquent\\Model\>\:\:groupBy\(\) expects \(callable\(Illuminate\\Database\\Eloquent\\Model, int\|string\)\: int\)\|list\<Closure\|string\>\|string, Closure\(App\\Models\\Product\)\: int given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ProductCatalog/ProductSyncService.php
-
-		-
-			message: '#^Parameter \#1 \$product of method App\\Services\\ProductCatalog\\ProductSyncService\:\:resolveProductUpstreamProductId\(\) expects App\\Models\\Product, Illuminate\\Database\\Eloquent\\Model given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Services/ProductCatalog/ProductSyncService.php
@@ -5817,7 +5793,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 4
+			count: 3
 			path: app/Services/ProductCatalog/ProductSyncService.php
 
 		-

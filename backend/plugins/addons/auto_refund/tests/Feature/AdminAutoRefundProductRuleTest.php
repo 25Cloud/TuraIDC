@@ -11,6 +11,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\AdminPermissions;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Laravel\Sanctum\Sanctum;
 use Tests\Support\InstallsAutoRefundAddon;
@@ -51,11 +52,10 @@ class AdminAutoRefundProductRuleTest extends TestCase
 
         Sanctum::actingAs($this->makeAdmin([AdminPermissions::INVOICE_LIST]));
 
-        $response = $this->getJson('/api/v2/admin/auto-refund/product-rules')
-            ->assertOk()
-            ->assertJsonPath('code', 0);
-
-        $rows = collect($response->json('data.list'))->keyBy('product_id');
+        // 商品库是共享的（测试库无 RefreshDatabase，历次用例会累积商品），
+        // 默认第一页未必包含刚造的两个商品，所以按页取全量再按 product_id 定位，
+        // 否则这个用例会随「库里已有多少商品」随机红。
+        $rows = $this->collectRuleRowsByProductId();
 
         $configuredRow = $rows[(int) $configured['product']->id];
         $this->assertTrue($configuredRow['configured']);
@@ -72,20 +72,17 @@ class AdminAutoRefundProductRuleTest extends TestCase
         $this->assertSame('未配置', $unconfiguredRow['enabled_label']);
 
         // status 过滤：未配置只返回没策略行的商品，已配置只返回有策略行的。
-        // 不断言 total：共享测试库里可能有别的商品，断言「本用例这两件在不在」才稳。
-        $unconfiguredIds = collect(
-            $this->getJson('/api/v2/admin/auto-refund/product-rules?status=unconfigured')
-                ->assertOk()
-                ->json('data.list')
-        )->pluck('product_id')->all();
+        // 不断言 total：共享测试库里可能有别的商品，断言「本用例这两件在不在」才稳；
+        // 同样翻页取全量，避免商品累计到几百条后这两件掉到第二页。
+        $unconfiguredIds = $this->collectRuleRowsByProductId(['status' => 'unconfigured'])
+            ->pluck('product_id')
+            ->all();
         $this->assertContains((int) $unconfigured['product']->id, $unconfiguredIds);
         $this->assertNotContains((int) $configured['product']->id, $unconfiguredIds);
 
-        $configuredIds = collect(
-            $this->getJson('/api/v2/admin/auto-refund/product-rules?status=configured')
-                ->assertOk()
-                ->json('data.list')
-        )->pluck('product_id')->all();
+        $configuredIds = $this->collectRuleRowsByProductId(['status' => 'configured'])
+            ->pluck('product_id')
+            ->all();
         $this->assertContains((int) $configured['product']->id, $configuredIds);
         $this->assertNotContains((int) $unconfigured['product']->id, $configuredIds);
     }
@@ -199,6 +196,45 @@ class AdminAutoRefundProductRuleTest extends TestCase
         // 连 invoice.list 都没有：列表也看不到
         Sanctum::actingAs($this->makeAdmin([AdminPermissions::DASHBOARD_VIEW]));
         $this->getJson('/api/v2/admin/auto-refund/product-rules')->assertStatus(403);
+    }
+
+    /**
+     * 按页取全量规则行并按 product_id 建索引。
+     *
+     * 测试库是共享的，商品数量会随其他用例增长，默认第一页不保证含本用例刚造的商品；
+     * 这里翻页直到取完（或命中页大小上限），既不依赖库规模也不放宽断言。
+     *
+     * @param  array<string, string>  $query  额外过滤条件（如 status）
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function collectRuleRowsByProductId(array $query = []): Collection
+    {
+        $rows = collect();
+
+        for ($page = 1; $page <= 20; $page++) {
+            $url = '/api/v2/admin/auto-refund/product-rules?'.http_build_query(array_merge($query, [
+                'page' => $page,
+                'page_size' => 100,
+            ]));
+
+            $response = $this->getJson($url)
+                ->assertOk()
+                ->assertJsonPath('code', 0);
+
+            $list = collect($response->json('data.list') ?? []);
+
+            if ($list->isEmpty()) {
+                break;
+            }
+
+            $rows = $rows->merge($list);
+
+            if ($list->count() < 100) {
+                break;
+            }
+        }
+
+        return $rows->keyBy('product_id');
     }
 
     /**
