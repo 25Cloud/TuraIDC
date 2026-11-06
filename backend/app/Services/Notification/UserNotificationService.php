@@ -18,6 +18,17 @@ class UserNotificationService
     private ?bool $tableReady = null;
 
     /**
+     * 请求内营销偏好缓存（user_id => 是否接受）。
+     *
+     * 批量场景（账单提醒、生命周期提醒逐用户写入）里同一个用户会被多次询问，
+     * 此前每次都要一条 `users` 查询。缓存只活在本实例的生命周期内，
+     * 用户改了偏好后新请求会读到新值，不存在跨请求的陈旧问题。
+     *
+     * @var array<int, bool>
+     */
+    private array $marketingPreferences = [];
+
+    /**
      * 创建一条站内信。
      *
      * @param  array<string,mixed>  $data  附加业务数据
@@ -63,12 +74,19 @@ class UserNotificationService
 
     /**
      * 用户是否接受营销类通知（marketing_alert 默认关闭）。
+     *
+     * 结果按 user_id 缓存在实例内：群发循环里同一用户被反复询问时只查一次库。
      */
     private function userAcceptsMarketing(int $userId): bool
     {
-        $user = User::query()->find($userId);
+        if (array_key_exists($userId, $this->marketingPreferences)) {
+            return $this->marketingPreferences[$userId];
+        }
 
-        return $user instanceof User && (bool) ($user->marketing_alert ?? 0);
+        // value() 只取单列，避免整行 hydration；用户不存在时返回 null → 视为不接受
+        $accepted = (bool) User::query()->whereKey($userId)->value('marketing_alert');
+
+        return $this->marketingPreferences[$userId] = $accepted;
     }
 
     public function unreadCount(int $userId): int

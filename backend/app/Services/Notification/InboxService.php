@@ -61,10 +61,18 @@ class InboxService
     /**
      * 完整列表：可选只看未读，分页返回。
      *
+     * 性能口径：总数交给数据库 `count()`，明细只取到「本页末尾」为止。
+     * 原实现把该用户**全部**站内信读进内存再 `slice`，通知累积几百上千条后
+     * 每次翻第 1 页都要 hydrate 全量模型；公告数量有限，仍整表读取并一次取回已读状态。
+     *
      * @return array{list: array<int,array<string,mixed>>, total: int}
      */
     public function list(int $userId, bool $unreadOnly = false, int $page = 1, int $pageSize = 15): array
     {
+        $pageSize = max(1, min($pageSize, 100));
+        $page = max(1, $page);
+        $offset = ($page - 1) * $pageSize;
+
         $notices = $this->mapNotices($this->visibleNoticeItems($userId));
 
         $personalQuery = UserNotification::query()->where('user_id', $userId);
@@ -73,7 +81,15 @@ class InboxService
         } else {
             $personalQuery->where(fn ($q) => $q->whereNull('read_at')->orWhere('read_at', '>=', now()->subDays(7)));
         }
-        $personal = $this->mapPersonal($personalQuery->orderByDesc('created_at')->get());
+
+        $personalTotal = (clone $personalQuery)->count();
+        $personal = $this->mapPersonal(
+            $personalQuery
+                ->orderByDesc('created_at')
+                ->orderByDesc('id')
+                ->limit($offset + $pageSize)
+                ->get()
+        );
 
         $merged = $notices->merge($personal);
         if ($unreadOnly) {
@@ -81,8 +97,6 @@ class InboxService
         }
 
         $sorted = $merged->sortByDesc('sort_at')->values();
-        $total = $sorted->count();
-        $offset = max(0, ($page - 1) * $pageSize);
 
         $items = $sorted
             ->slice($offset, $pageSize)
@@ -92,7 +106,7 @@ class InboxService
 
         return [
             'list' => $items,
-            'total' => $total,
+            'total' => $notices->count() + $personalTotal,
         ];
     }
 

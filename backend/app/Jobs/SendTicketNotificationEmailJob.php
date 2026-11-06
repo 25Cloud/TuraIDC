@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Jobs;
 
+use App\Jobs\Concerns\ClassifiesDeliveryRetries;
 use App\Services\System\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\Log;
 
 class SendTicketNotificationEmailJob implements ShouldQueue
 {
+    use ClassifiesDeliveryRetries;
     use Dispatchable;
     use InteractsWithQueue;
     use Queueable;
@@ -40,12 +42,26 @@ class SendTicketNotificationEmailJob implements ShouldQueue
 
     public function handle(NotificationService $notificationService): void
     {
-        $notificationService->sendTemplateEmail($this->to, $this->templateCode, $this->params);
+        // 收件人非法时直接跳过：一个坏地址不该占用重试额度，也不该制造注定失败的投递目标
+        $to = $this->deliverableRecipient($this->to);
+        if ($to === null) {
+            Log::warning('跳过收件人非法的工单通知邮件', array_merge($this->context, [
+                'to_email' => $this->to,
+                'template_code' => $this->templateCode,
+                'failure_reason' => 'invalid_recipient',
+            ]));
+
+            return;
+        }
+
+        $this->guardDelivery(
+            fn () => $notificationService->sendTemplateEmail($to, $this->templateCode, $this->params, $this->deliveryKey())
+        );
     }
 
     public function failed(\Throwable $exception): void
     {
-        Log::warning('异步发送工单通知邮件失败', array_merge($this->context, [
+        Log::warning('异步发送工单通知邮件失败', array_merge($this->context, $this->deliveryFailureContext($exception), [
             'to_email' => $this->to,
             'template_code' => $this->templateCode,
             'message' => $exception->getMessage(),

@@ -6,7 +6,10 @@ use App\Models\MessageLog;
 use App\Models\Setting;
 use App\Models\User;
 use App\Services\Integrations\Plugins\IntegrationDriverBindingResolver;
+use App\Services\Mail\MailDeliveryClassifier;
+use App\Services\Mail\MailDeliveryException;
 use App\Services\Mail\MailDriverManager;
+use App\Services\Mail\MailRecipient;
 use App\Support\PublicUrl;
 use App\Support\SiteConfigPayload;
 use App\Support\UploadUrl;
@@ -102,20 +105,56 @@ class NotificationService
         private ?NotificationTemplateService $notificationTemplateService = null,
     ) {}
 
-    public function sendEmail(string $to, string $subject, string $content, ?string $templateCode = null): void
+    /**
+     * 发一封邮件。
+     *
+     * 行为契约（排障入口就在这里，别在调用方重复判断）：
+     * 1. 模板被停用 → 静默跳过（`shouldSkipDisabledTemplate`），不发信也不写日志；
+     * 2. 收件人为空/格式非法 → 写**一条** `failed` 日志（`error_msg=invalid_recipient`）后 `return`，
+     *    **不抛异常**：同步群发是一个循环，一个坏地址不能中断后面的人，队列侧也不该为它重投；
+     * 3. 邮件总开关关闭 → 写 `failed` 日志（`error_msg=channel_disabled`）后抛
+     *    {@see MailDeliveryException::permanent()}，队列表层按原因码一次判死；
+     * 4. 发送抛错 → 写 `failed` 日志（`error_msg` 以原因码开头）后原样抛出，交给队列按退避重试；
+     * 5. 成功 → 同一条日志转 `success` 并写 `sent_at`。
+     *
+     * `$deliveryKey` 由队列任务传入（任务 uuid，重试期间不变）：只有同一 uuid 的重试会复用同一行日志，
+     * 不会给 message_logs 每次尝试留一行。同步调用方不传，行为与旧版一致（一次调用一条日志）。
+     */
+    public function sendEmail(string $to, string $subject, string $content, ?string $templateCode = null, ?string $deliveryKey = null): void
     {
         if ($this->shouldSkipDisabledTemplate('email', $templateCode)) {
             return;
         }
 
-        $logContext = $this->createEmailLog($to, $subject, $content, $templateCode);
+        $recipient = MailRecipient::normalize($to);
+
+        if ($recipient === null) {
+            $logContext = $this->createEmailLog($to, $subject, $content, $templateCode, $deliveryKey);
+            $this->updateEmailLog($logContext, [
+                'status' => 'failed',
+                'error_msg' => MailDeliveryClassifier::REASON_INVALID_RECIPIENT,
+            ]);
+
+            Log::warning('跳过收件人非法的邮件', [
+                'recipient' => $to,
+                'template_code' => $templateCode,
+                'failure_reason' => MailDeliveryClassifier::REASON_INVALID_RECIPIENT,
+            ]);
+
+            return;
+        }
+
+        $logContext = $this->createEmailLog($recipient, $subject, $content, $templateCode, $deliveryKey);
 
         try {
             if (! $this->isEmailEnabled()) {
-                throw new \RuntimeException('邮件通知未启用');
+                throw MailDeliveryException::permanent(
+                    '邮件通知未启用',
+                    MailDeliveryClassifier::REASON_CHANNEL_DISABLED,
+                );
             }
 
-            $this->mailDriverManager->resolve()->sendHtml($to, $subject, $this->inlineEmailCss($content), [
+            $this->mailDriverManager->resolve()->sendHtml($recipient, $subject, $this->inlineEmailCss($content), [
                 'template_code' => $templateCode,
             ]);
 
@@ -127,18 +166,21 @@ class NotificationService
         } catch (\Throwable $exception) {
             $this->updateEmailLog($logContext, [
                 'status' => 'failed',
-                'error_msg' => $exception->getMessage(),
+                'error_msg' => $this->describeDeliveryFailure($exception),
             ]);
 
             throw $exception;
         }
     }
 
-    public function sendTemplateEmail(string $to, string $templateCode, array $params = []): void
+    public function sendTemplateEmail(string $to, string $templateCode, array $params = [], ?string $deliveryKey = null): void
     {
         $template = $this->notificationTemplates()->find('email', $templateCode);
         if (! is_array($template)) {
-            throw new \RuntimeException('邮件模板不存在');
+            throw MailDeliveryException::permanent(
+                '邮件模板不存在',
+                MailDeliveryClassifier::REASON_TEMPLATE_MISSING,
+            );
         }
 
         if (! $this->templatePayloadIsEnabled($template)) {
@@ -161,7 +203,18 @@ class NotificationService
             $this->renderTemplateContent($contentTemplate, $renderParams)
         );
 
-        $this->sendEmail($to, $subject, $content, $templateCode);
+        $this->sendEmail($to, $subject, $content, $templateCode, $deliveryKey);
+    }
+
+    /**
+     * 日志里的失败原因：原因码开头，后面接原始错误，便于按原因聚合与排障。
+     */
+    private function describeDeliveryFailure(\Throwable $exception): string
+    {
+        $reason = MailDeliveryClassifier::reason($exception);
+        $message = trim($exception->getMessage());
+
+        return $message === '' ? $reason : $reason.': '.$message;
     }
 
     private function notificationTemplates(): NotificationTemplateService
@@ -195,7 +248,7 @@ class NotificationService
         ]);
     }
 
-    public function sendLoginEmailAlertToAddress(string $email, string $displayName, string $loginAt, string $ip, ?string $userAgent = null): void
+    public function sendLoginEmailAlertToAddress(string $email, string $displayName, string $loginAt, string $ip, ?string $userAgent = null, ?string $deliveryKey = null): void
     {
         $email = trim($email);
         if ($email === '') {
@@ -213,7 +266,7 @@ class NotificationService
             'login_at' => $loginAt,
             'ip' => $ip,
             'device' => $this->resolveUserAgentSummary($userAgent),
-        ]);
+        ], $deliveryKey);
     }
 
     public function sendLoginEmailAlert(User $user, string $loginAt, string $ip, ?string $userAgent = null): void
@@ -233,7 +286,8 @@ class NotificationService
         string $account,
         string $attemptAt,
         string $ip,
-        ?string $userAgent = null
+        ?string $userAgent = null,
+        ?string $deliveryKey = null
     ): void {
         $email = trim($email);
         if ($email === '') {
@@ -251,7 +305,7 @@ class NotificationService
             'attempt_at' => $attemptAt,
             'ip' => $ip,
             'device' => $this->resolveUserAgentSummary($userAgent),
-        ]);
+        ], $deliveryKey);
     }
 
     public function sendLoginLocationEmailAlertToAddress(
@@ -394,11 +448,29 @@ class NotificationService
      * @return array{id: int|null}
      */
     // 邮件日志明文保存完整正文，供管理端真实审计；管理员端不做脱敏（项目红线）
-    private function createEmailLog(string $to, string $subject, string $content, ?string $templateCode): array
+    private function createEmailLog(string $to, string $subject, string $content, ?string $templateCode, ?string $deliveryKey = null): array
     {
-        $traceId = $this->notificationTraceId('email', $templateCode);
+        $deliveryKey = trim((string) $deliveryKey);
+        $traceId = $deliveryKey === ''
+            ? $this->notificationTraceId('email', $templateCode)
+            : $this->deliveryTraceId($deliveryKey, $templateCode);
 
         try {
+            if ($deliveryKey !== '') {
+                // 同一次投递的队列重试复用同一行日志（trace_id 由任务 uuid 派生，重试期间不变），
+                // 只保留最终态：成功→success，永久失败→failed+原因码，不再每次尝试插一行。
+                $existingId = (int) MessageLog::query()
+                    ->where('channel', 'email')
+                    ->where('trace_id', $traceId)
+                    ->value('id');
+
+                if ($existingId > 0) {
+                    return [
+                        'id' => $existingId,
+                    ];
+                }
+            }
+
             $log = MessageLog::create(array_merge([
                 'channel' => 'email',
                 'recipient' => $to,
@@ -450,6 +522,16 @@ class NotificationService
         $template = trim((string) $templateCode) !== '' ? trim((string) $templateCode) : 'none';
 
         return substr($channel.':'.$template.':'.str_replace('-', '', (string) Str::uuid()), 0, 64);
+    }
+
+    /**
+     * 由队列任务的 uuid 派生的稳定 trace_id：同一次投递的多次重试命中同一行日志。
+     */
+    private function deliveryTraceId(string $deliveryKey, ?string $templateCode): string
+    {
+        $template = trim((string) $templateCode) !== '' ? trim((string) $templateCode) : 'none';
+
+        return substr('email:'.$template.':'.sha1($deliveryKey), 0, 64);
     }
 
     /**

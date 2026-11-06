@@ -1,6 +1,6 @@
 ---
 source: guide/configure/mail-and-sms.md
-sourceHash: 479b11396e64a7b741ce83f49a806030be36e05d88f1abcf5771597b2dcd783e
+sourceHash: cf98cd746dbb8efe0560fcd55a61c0a78c9df4a3913a5799ad08d05e1944e23f
 translatedAt: 2026-10-26
 ---
 
@@ -106,6 +106,23 @@ Common failure reference:
 - SMS reports "template parameter missing": `code_variable` does not match the variable name in the channel template body.
 - Reports "SMS driver [xxx] is not registered": the plugin was enabled but there is no binding record; disable it and enable it once more.
 - Email reports "email interface configuration incomplete": one of `host`, `port`, `username`, or `password` is empty.
+
+## 7. Email Failure Reason Codes
+
+The `error_msg` in email logs (the "Email Logs" page and the `message_logs` table) starts with a reason code, for example `transport_error: Connection to smtp.example.com:465 timed out`. The reason code decides whether that delivery will be retried:
+
+| Reason code            | Meaning                                                                                           | Retried                                             | What to do                                                                                                                           |
+| ---------------------- | ------------------------------------------------------------------------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `invalid_recipient`    | Recipient is empty or malformed (including header-injection characters such as line breaks)       | No, skipped                                         | Check whether the user's email is empty or was imported as dirty data                                                                |
+| `template_missing`     | The notification template for this scenario does not exist or was deleted                         | No                                                  | On the "Email Templates" page, confirm the template for that scenario (codes start at 100001) still exists                           |
+| `channel_disabled`     | "Enable Email Notifications" in site settings is off                                              | No                                                  | Turn on `email_enabled` in site settings, then trigger it again                                                                      |
+| `channel_unconfigured` | The email channel is not fully configured, or the driver is not registered                        | Yes (30s / 120s / 300s backoff, at most 3 attempts) | Fill in `host`, `port`, `username`, and `password`; after enabling the plugin, disable and enable it once more to create the binding |
+| `transport_error`      | Connection timeout, connection refused, rate limiting, or a temporary rejection from the provider | Yes                                                 | Check quotas and outbound access on the channel side first; a persistent occurrence is usually an SMTP provider block                |
+
+Two notes:
+
+- Permanent failures (the first three rows) are judged dead on the first attempt and no longer consume queue retries; retryable failures follow the backoff, and only the third failed attempt moves the job to failed jobs.
+- Multiple retries of the same delivery share one log record: `error_msg` keeps the reason from the last attempt, and a success turns that record into `success` instead of adding a new row per retry.
 
 ## Related Documents
 

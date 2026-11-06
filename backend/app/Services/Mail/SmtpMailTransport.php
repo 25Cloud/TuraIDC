@@ -6,6 +6,7 @@ namespace App\Services\Mail;
 
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class SmtpMailTransport
 {
@@ -14,6 +15,16 @@ class SmtpMailTransport
      */
     public function sendHtml(array $account, string $to, string $subject, string $html): void
     {
+        // 收件人先判：空/非法时抛永久失败，让调用方一次判死而不是按队列重投 3 次。
+        // 这一步必须在真正连 SMTP 之前——坏地址重投永远不会成功。
+        $recipient = MailRecipient::normalize($to);
+        if ($recipient === null) {
+            throw MailDeliveryException::permanent(
+                '收件人邮箱为空或格式非法',
+                MailDeliveryClassifier::REASON_INVALID_RECIPIENT,
+            );
+        }
+
         $host = trim((string) ($account['host'] ?? ''));
         $port = (int) (($account['port'] ?? 0) ?: 0);
         $username = trim((string) ($account['username'] ?? ''));
@@ -26,7 +37,11 @@ class SmtpMailTransport
         }
 
         if ($host === '' || $port <= 0 || $username === '' || $password === '') {
-            throw new \RuntimeException('邮件接口配置不完整');
+            // 通道未配置属于「站长还没配好」：按可重试处理（配好之后重投即可成功）
+            throw MailDeliveryException::transient(
+                '邮件接口配置不完整',
+                MailDeliveryClassifier::REASON_CHANNEL_UNCONFIGURED,
+            );
         }
 
         Config::set('mail.default', 'smtp');
@@ -46,9 +61,18 @@ class SmtpMailTransport
 
         app('mail.manager')->forgetMailers();
 
-        Mail::html($html, function ($message) use ($to, $subject, $fromAddress, $fromName): void {
-            $message->to($to)->subject($subject)->from($fromAddress, $fromName);
-        });
+        try {
+            Mail::html($html, function ($message) use ($recipient, $subject, $fromAddress, $fromName): void {
+                $message->to($recipient)->subject($subject)->from($fromAddress, $fromName);
+            });
+        } catch (Throwable $exception) {
+            // 连接/超时/厂商拒绝：统一归为可重试的传输错误，保留原始异常链便于排错
+            throw MailDeliveryException::transient(
+                '邮件发送失败：'.$exception->getMessage(),
+                MailDeliveryClassifier::REASON_TRANSPORT_ERROR,
+                $exception,
+            );
+        }
     }
 
     private function resolveEncryption(int $port, ?string $configured): ?string

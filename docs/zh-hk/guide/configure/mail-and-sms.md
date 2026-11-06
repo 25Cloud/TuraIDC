@@ -1,6 +1,6 @@
 ---
 source: guide/configure/mail-and-sms.md
-sourceHash: 479b11396e64a7b741ce83f49a806030be36e05d88f1abcf5771597b2dcd783e
+sourceHash: cf98cd746dbb8efe0560fcd55a61c0a78c9df4a3913a5799ad08d05e1944e23f
 generated: zh-hk
 ---
 
@@ -107,6 +107,23 @@ php artisan schedule:run
 - 短信報「模板參數缺失」：`code_variable` 與通道模板正文的變量名不一致。
 - 報「短信驅動 [xxx] 未註冊」：啟用了插件但沒有綁定記錄，重新停用再啟用一次。
 - 郵件報「郵件接口配置不完整」：`host`、`port`、`username`、`password` 有一項為空。
+
+## 7. 郵件失敗原因碼
+
+郵件日誌（「郵件日誌」頁與 `message_logs` 表）的 `error_msg` 以原因碼開頭，形如 `transport_error: Connection to smtp.example.com:465 timed out`。原因碼決定這次投遞還會不會重試：
+
+| 原因碼 | 含義 | 是否重試 | 處理建議 |
+| --- | --- | --- | --- |
+| `invalid_recipient` | 收件人為空或格式非法（含換行等郵件頭注入字符） | 否，直接跳過 | 檢查用戶電郵是否為空、是否被導入成髒數據 |
+| `template_missing` | 該場景的通知模板不存在或已被刪除 | 否 | 到「郵件模板」頁確認編號 100001 起對應場景的模板仍在 |
+| `channel_disabled` | 站點設置裡的「啟用郵件通知」為關閉 | 否 | 到站點設置打開 `email_enabled` 後重新觸發 |
+| `channel_unconfigured` | 郵件通道未配置完整，或驅動未註冊 | 是（30s / 120s / 300s 退避，最多 3 次） | 補齊 `host`、`port`、`username`、`password`；插件啟用後重新停用再啟用以生成綁定 |
+| `transport_error` | 連接超時、被拒絕、限流或廠商臨時拒信 | 是 | 先查通道側配額與出網；持續出現多為 SMTP 服務商封禁 |
+
+兩點補充：
+
+- 永久性失敗（前三行）第一次就判死，不再佔用隊列重試次數；可重試失敗按退避重投，第 3 次仍未成功才進失敗任務。
+- 同一次投遞的多次重試共用一條日誌：`error_msg` 保留最後一次的原因，成功會把該條改成 `success`，不會每次重試新增一行。
 
 ## 關聯文檔
 
