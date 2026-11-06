@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/testing.md
-sourceHash: 1afc6f8ba33fb4e7101a3500f4af9b304e34d33d52f8fd0bffbfc46541d4e769
+sourceHash: 7efc90174aa2e903fd810dddaf6d085440192978d603a13ffa2aef27a4f61de6
 generated: zh-hk
 ---
 
@@ -187,7 +187,6 @@ php -d opcache.enable_cli=1 vendor/bin/phpunit
 5. `php artisan test --testsuite=Feature`（1600+ 條，本地約 8 分鐘）。
 
 第 2 步不能省：本倉的安裝基線是那份 schema 快照，遷移只疊加增量，**空庫直接 `migrate` 會在早期遷移處失敗**。新增表或改結構後，除了本地遷移，記得確認 `db:audit-foreign-keys` 對新加的 `*_id` 列沒有未分類報告（該命令把每個 id 列映射到「邏輯外鍵」或「快照」兩類，未聲明的會以退出碼 1 擋住 CI 的 `DatabaseEngineeringCommandTest`）。
-
 
 當前後端測試組成：
 

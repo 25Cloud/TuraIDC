@@ -197,6 +197,29 @@ server {
 }
 ```
 
+### 前端站点的 CSP 与点击劫持
+
+三端 `index.html` 里都有一段 `<meta http-equiv="Content-Security-Policy">`，**它只是兜底**：静态 HTML 写死后端源站、也改不了环境，而且 meta 方式不支持 `frame-ancestors` / `report-uri` / `sandbox`（浏览器会直接忽略并告警）。真正生效的策略应该由 Nginx 响应头下发：更严、改了不用重新构建，还能把 API 源站精确到自己的域名。
+
+现成的三套值（含每个域名的理由）在仓库 `deploy/nginx/frontend-csp.conf`，直接复制进对应 `server {}` 即可，策略含义是：
+
+| 指令                                                            | 为什么要这么写                                                                                                                                |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `script-src 'unsafe-inline'`                                    | 官网、控制台的首屏预热/品牌注入脚本是内联的，管理端 `index.html` 也有内联引导；静态托管没有 nonce 可用。把内联脚本外移到 `/assets` 后可去掉。 |
+| `script-src 'unsafe-eval'`                                      | 三端都用 vue-i18n 在运行时编译语言包（未接 `@intlify/unplugin-vue-i18n` 预编译），去掉后整页抛 `EvalError`。接入预编译后可去掉。              |
+| 极验域名（`static.geetest.com` 等六个 + `monitor.geetest.com`） | 管理与控制台的登录验证码；`gt4.js` 运行期还会用脚本标签加载验证库并埋点，只放 `static` 会在初始化阶段被拦成「网络错误」。                     |
+| `https://res.25y.cn`                                            | 人机验证适配脚本（Corptcha）内部再加载的外网 SDK，由插件配置的 `script_url` 决定。                                                            |
+| `https://tdesign.gtimg.com`                                     | TDesign `t-icon` 默认 `loadDefaultIcons` 的 SVG 雪碧图。                                                                                      |
+| `style-src 'unsafe-inline'`                                     | TDesign / Element Plus 运行时注入样式，首屏 splash 与验证码样式也是内联。                                                                     |
+| `frame-src ... alipays:`                                        | 控制台充值页用隐藏 iframe 拉起支付宝 App。                                                                                                    |
+| `frame-ancestors 'self'`                                        | 只允许同源页面嵌入（`dash.example.com` 之类同域面板）。**这条只能写在响应头里**，meta 里写了无效。                                            |
+
+> **nginx 的坑**：`add_header` 不继承。只要某个 `location` 里已经写了 `add_header`（例如静态资源的 `Cache-Control`），就必须在该 `location` 内再贴一遍 CSP，否则这个路径的 `index.html` 会丢掉策略。建议把片段存成 `snippets/frontend-csp-<端>.conf` 再 `include`，避免三处值漂移。
+
+**开发态不用手改**：`pnpm run dev` 时 `VITE_API_BASE_URL` 通常是 `http://127.0.0.1:8000/api`（跨源 + http），`shared/vite/apiConnectSrcPlugin.mjs` 会在构建/预览时把该源站补进连接、图片、媒体与 iframe 指令，管理端与控制台还会补进 `script-src`（登录验证码脚本由后端代理到 API 源站）。生产 https 源站本来就被 `https:` 兜住，不会被写进产物。
+
+**自检**：`curl -sI https://console.example.com/ | grep -i content-security-policy` 确认响应头存在；浏览器控制台出现 `Refused to load ...` 就是漏了来源，按上面表格补域名，不要图省事改成 `*` 或 `https:` 通配（`script-src` 尤其不能放开 `https:`，等于允许任意第三方脚本）。
+
 ## 6. 进程守护（supervisor）
 
 队列消费由调度器的 `queue:drain` 每分钟驱动，**不需要**常驻队列 Worker；需要进程守护的是 VNC Relay（可选）。

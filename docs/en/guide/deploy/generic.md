@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/generic.md
-sourceHash: cef83a388d79f811d266f67952c32b7f4ee4354fbecc7570afc893fe2cb7ffc7
+sourceHash: 69c9b4e097fd80d1d4e13610171ef2c9b64e0e9f73e8f7439350fb50c94fecc4
 translatedAt: 2026-10-26
 ---
 
@@ -198,6 +198,29 @@ server {
     }
 }
 ```
+
+### CSP and Clickjacking for the Frontend Sites
+
+Each of the three `index.html` files carries a `<meta http-equiv="Content-Security-Policy">` tag, and **it is only a fallback**: a static HTML file cannot know the backend origin or the environment, and the meta form does not support `frame-ancestors`, `report-uri` or `sandbox` (browsers ignore them and log a warning). The policy that actually applies should be sent as an Nginx response header: it can be stricter, it can change without a rebuild, and it can pin the API origin to your own domain.
+
+Three ready-to-copy policies (with the reason for every origin) live in `deploy/nginx/frontend-csp.conf`. Paste the matching block into the corresponding `server {}`; what each directive is for:
+
+| Directive                                                                    | Why it is written this way                                                                                                                                                                                                           |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `script-src 'unsafe-inline'`                                                 | The first-paint preheat and branding scripts of the website and console are inline, and the admin `index.html` has an inline bootstrap too; static hosting has no nonce to offer. Move the inline scripts into `/assets` to drop it. |
+| `script-src 'unsafe-eval'`                                                   | All three frontends compile vue-i18n messages at runtime (no `@intlify/unplugin-vue-i18n` precompilation); without it every page throws `EvalError`. Enable precompilation to drop it.                                               |
+| Geetest origins (`static.geetest.com` and five more + `monitor.geetest.com`) | Login captcha for admin and console; `gt4.js` also loads verification libraries through script tags and reports to monitoring, so allowing only `static` fails during initialization with a network error.                           |
+| `https://res.25y.cn`                                                         | The external SDK that the captcha adapter script (Corptcha) loads internally; it comes from the plugin's `script_url`.                                                                                                               |
+| `https://tdesign.gtimg.com`                                                  | The SVG sprite that TDesign `t-icon` loads by default (`loadDefaultIcons`).                                                                                                                                                          |
+| `style-src 'unsafe-inline'`                                                  | TDesign and Element Plus inject styles at runtime, and both the first-paint splash and the captcha styles are inline.                                                                                                                |
+| `frame-src ... alipays:`                                                     | The console recharge page launches the Alipay app through a hidden iframe.                                                                                                                                                           |
+| `frame-ancestors 'self'`                                                     | Only same-origin pages may frame it (same-domain panels such as `dash.example.com`). **This one only works in a response header**; inside meta it is ignored.                                                                        |
+
+> **Nginx pitfall**: `add_header` is not inherited. As soon as a `location` block declares its own `add_header` (for example a `Cache-Control` on static assets), the CSP must be repeated inside that `location` too, otherwise `index.html` served from that path silently loses the policy. Keep the snippets as `snippets/frontend-csp-<app>.conf` and `include` them to avoid three copies drifting apart.
+
+**Nothing to change in development**: during `pnpm run dev`, `VITE_API_BASE_URL` is usually `http://127.0.0.1:8000/api` (cross-origin over http), so `shared/vite/apiConnectSrcPlugin.mjs` injects that origin into the connect, image, media and iframe directives at build/preview time, and for admin and console it also injects it into `script-src` (the login captcha script is proxied to the API origin by the backend). An https production origin is already covered by the `https:` fallback and is not written into the artifacts.
+
+**Self-check**: `curl -sI https://console.example.com/ | grep -i content-security-policy` proves the header is present; any `Refused to load ...` in the browser console means an origin is missing — add it per the table above instead of falling back to `*` or a bare `https:` (for `script-src` that would allow any third-party script).
 
 ## 6. Process Supervision (supervisor)
 

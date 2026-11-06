@@ -2,6 +2,29 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <!-- CSP：静态兜底，生产由 Nginx 响应头覆盖（更严、可改而不必重新构建）。
+         meta 方式不支持 frame-ancestors / report-uri / sandbox —— 浏览器会直接忽略并告警，
+         点击劫持防护交给 deploy/nginx/frontend-csp.conf 的响应头 CSP 与 X-Frame-Options。
+         下列放域名都按本端真实代码取证，收紧前请先确认调用点：
+         · 'unsafe-inline'：本文件末尾的内联 `window.global = window` 引导脚本；静态托管没有
+           nonce，hash 又会随内联内容变动静默失效，故只能放开内联。
+         · 'unsafe-eval'：vue-i18n 运行时用 new Function 编译语言包（src/locales/index.ts
+           的 createI18n 未接 @intlify/unplugin-vue-i18n 预编译），去掉后整页报 EvalError。
+         · 极验六域名：src/hooks/useGeeTestCaptcha.ts:53 默认加载
+           https://static.geetest.com/v4/gt4.js；gt4.js 运行期还会用脚本标签加载
+           gcaptcha4.* / static.* 的验证库与降级脚本、并向 monitor.geetest.com 埋点，
+           只放 static 会在初始化阶段被拦成「网络错误」，客户端已固定 https。
+         · https://res.25y.cn：本文件顶部 preconnect 注释所述的人机验证适配脚本内部 SDK
+           （Corptcha），由插件配置的 script_url 下发，缺它验证码组件起不来。
+         · https://tdesign.gtimg.com：t-icon 默认 loadDefaultIcons 的 SVG 雪碧图（页面 19 处）。
+         · style-src 'unsafe-inline'：TDesign 运行时注入样式；+ 极验 gt4.js 动态插入的 gcaptcha4.css。
+         · font-src data:：src/style/font-family.less 的 TencentSansW7 是 base64 data URI。
+         · img/media/connect/frame-src 的 https:：API 源站与面板 iframe 地址由 VITE_API_BASE_URL
+           决定，静态 HTML 写不死；开发态 http 源站由 shared/vite/apiConnectSrcPlugin.mjs 注入。 -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.geetest.com https://static.geevisit.com https://gcaptcha4.geetest.com https://gcaptcha4.geevisit.com https://gcaptcha4.gsensebot.com https://monitor.geetest.com https://res.25y.cn https://tdesign.gtimg.com; style-src 'self' 'unsafe-inline' https://static.geetest.com https://static.geevisit.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; media-src 'self' https: blob:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
     <link rel="icon" href="/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="color-scheme" content="light dark" />

@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/generic.md
-sourceHash: cef83a388d79f811d266f67952c32b7f4ee4354fbecc7570afc893fe2cb7ffc7
+sourceHash: 69c9b4e097fd80d1d4e13610171ef2c9b64e0e9f73e8f7439350fb50c94fecc4
 generated: zh-hk
 ---
 
@@ -203,6 +203,29 @@ server {
     }
 }
 ```
+
+### 前端站點的 CSP 與點擊劫持
+
+三端 `index.html` 裡都有一段 `<meta http-equiv="Content-Security-Policy">`，**它只是兜底**：靜態 HTML 寫死後端源站、也改不了環境，而且 meta 方式不支持 `frame-ancestors` / `report-uri` / `sandbox`（瀏覽器會直接忽略並告警）。真正生效的策略應該由 Nginx 響應頭下發：更嚴、改了不用重新構建，還能把 API 源站精確到自己的域名。
+
+現成的三套值（含每個域名的理由）在倉庫 `deploy/nginx/frontend-csp.conf`，直接複製進對應 `server {}` 即可，策略含義是：
+
+| 指令 | 為什麼要這麼寫 |
+| --- | --- |
+| `script-src 'unsafe-inline'` | 官網、控制台的首屏預熱/品牌注入腳本是內聯的，管理端 `index.html` 也有內聯引導；靜態託管沒有 nonce 可用。把內聯腳本外移到 `/assets` 後可去掉。 |
+| `script-src 'unsafe-eval'` | 三端都用 vue-i18n 在運行時編譯語言包（未接 `@intlify/unplugin-vue-i18n` 預編譯），去掉後整頁拋 `EvalError`。接入預編譯後可去掉。 |
+| 極驗域名（`static.geetest.com` 等六個 + `monitor.geetest.com`） | 管理與控制台的登錄驗證碼；`gt4.js` 運行期還會用腳本標籤加載驗證庫並埋點，只放 `static` 會在初始化階段被攔成「網絡錯誤」。 |
+| `https://res.25y.cn` | 人機驗證適配腳本（Corptcha）內部再加載的外網 SDK，由插件配置的 `script_url` 決定。 |
+| `https://tdesign.gtimg.com` | TDesign `t-icon` 默認 `loadDefaultIcons` 的 SVG 雪碧圖。 |
+| `style-src 'unsafe-inline'` | TDesign / Element Plus 運行時注入樣式，首屏 splash 與驗證碼樣式也是內聯。 |
+| `frame-src ... alipays:` | 控制台充值頁用隱藏 iframe 拉起支付寶 App。 |
+| `frame-ancestors 'self'` | 只允許同源頁面嵌入（`dash.example.com` 之類同域面板）。**這條只能寫在響應頭裡**，meta 裡寫了無效。 |
+
+> **nginx 的坑**：`add_header` 不繼承。只要某個 `location` 裡已經寫了 `add_header`（例如靜態資源的 `Cache-Control`），就必須在該 `location` 內再貼一遍 CSP，否則這個路徑的 `index.html` 會丟掉策略。建議把片段存成 `snippets/frontend-csp-<端>.conf` 再 `include`，避免三處值漂移。
+
+**開發態不用手改**：`pnpm run dev` 時 `VITE_API_BASE_URL` 通常是 `http://127.0.0.1:8000/api`（跨源 + http），`shared/vite/apiConnectSrcPlugin.mjs` 會在構建/預覽時把該源站補進連接、圖片、媒體與 iframe 指令，管理端與控制台還會補進 `script-src`（登錄驗證碼腳本由後端代理到 API 源站）。生產 https 源站本來就被 `https:` 兜住，不會被寫進產物。
+
+**自檢**：`curl -sI https://console.example.com/ | grep -i content-security-policy` 確認響應頭存在；瀏覽器控制台出現 `Refused to load ...` 就是漏了來源，按上面表格補域名，不要圖省事改成 `*` 或 `https:` 通配（`script-src` 尤其不能放開 `https:`，等於允許任意第三方腳本）。
 
 ## 6. 進程守護（supervisor）
 

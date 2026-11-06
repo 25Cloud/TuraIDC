@@ -2,6 +2,21 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
+  <!-- CSP：静态兜底，生产由 Nginx 响应头覆盖（更严、可改而不必重新构建）。
+       meta 方式不支持 frame-ancestors / report-uri / sandbox —— 浏览器会直接忽略并告警，
+       点击劫持防护交给 deploy/nginx/frontend-csp.conf 的响应头 CSP 与 X-Frame-Options。
+       · 'unsafe-inline'：本文件里的首页 LCP 预热脚本、站点品牌首帧注入脚本，以及
+         #app-splash 的内联样式都是内联资源，静态托管没有 nonce。
+       · 'unsafe-eval'：vue-i18n 运行时编译语言包（src/locales/index.ts 的 createI18n 未预编译）。
+       · 本端不列第三方脚本域名：Element Plus 与站点功能都打进 /assets，index.html 里只有
+         preconnect / dns-prefetch 提示（预连接不受 CSP 约束，被拦也只是少一次握手）。
+       · img/media/connect https:：API 源站、hero 视频与产品图是绝对地址，由 VITE_API_BASE_URL
+         与站点配置决定，静态 HTML 写不死；开发态 http 源站由 shared/vite/apiConnectSrcPlugin.mjs 注入。
+       · font-src data:：站点字体走本地 /assets 与 data: URIs。 -->
+  <meta
+    http-equiv="Content-Security-Policy"
+    content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; media-src 'self' https: blob:; frame-src 'self' https:; object-src 'none'; base-uri 'self'; form-action 'self'"
+  />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="format-detection" content="telephone=no,email=no,address=no" />
   <meta name="theme-color" content="#165dff" />

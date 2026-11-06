@@ -9,6 +9,8 @@ import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
 import { loadEnv } from 'vite';
 import svgLoader from 'vite-svg-loader';
 
+import { createApiConnectSrcPlugin } from '../shared/vite/apiConnectSrcPlugin.mjs';
+
 const CWD = process.cwd();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const compressionExtensions = new Set(['.css', '.html', '.js', '.json', '.map', '.mjs', '.svg', '.txt', '.xml']);
@@ -236,6 +238,9 @@ export default ({ mode }: ConfigEnv): UserConfig => {
       // 仅做类型对齐，避免双 vite 版本造成的类型伪冲突。
       svgLoader() as unknown as PluginOption,
       createIndexNetworkHintsPlugin(assetBase),
+      // CSP 是静态书写（index.html），开发态的 http API 源站与登录验证码代理脚本来不及写死：
+      // 前者补进 connect/img/media/frame-src，后者（跨源脚本、无 https: 兜底）补进 script-src
+      createApiConnectSrcPlugin(env, { scriptDirective: 'script-src' }),
       createPrecompressedAssetsPlugin(),
     ],
 

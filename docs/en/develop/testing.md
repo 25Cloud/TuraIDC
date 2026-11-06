@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/testing.md
-sourceHash: 1afc6f8ba33fb4e7101a3500f4af9b304e34d33d52f8fd0bffbfc46541d4e769
+sourceHash: 7efc90174aa2e903fd810dddaf6d085440192978d603a13ffa2aef27a4f61de6
 translatedAt: 2026-10-26
 ---
 

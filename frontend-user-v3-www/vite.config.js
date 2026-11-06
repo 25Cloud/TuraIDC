@@ -3,6 +3,8 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { brotliCompressSync, constants as zlibConstants, gzipSync } from 'node:zlib'
 import { defineConfig, loadEnv } from 'vite'
+
+import { createApiConnectSrcPlugin } from '../shared/vite/apiConnectSrcPlugin.mjs'
 import vue from '@vitejs/plugin-vue'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
@@ -220,6 +222,8 @@ export default defineConfig(({ mode, command }) => {
         resolvers: [ElementPlusResolver({ importStyle: 'sass', directives: true })],
       }),
       createPrecompressedAssetsPlugin(),
+      // 官网不加载第三方脚本，只把开发态 http API 源站补进连接/媒体/图片/iframe 指令
+      createApiConnectSrcPlugin(env),
       {
         name: 'client-fetch-priority',
         apply: 'build',

@@ -2,6 +2,25 @@
 <html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
+    <!-- CSP：静态兜底，生产由 Nginx 响应头覆盖（更严、可改而不必重新构建）。
+         meta 方式不支持 frame-ancestors / report-uri / sandbox —— 浏览器会直接忽略并告警，
+         点击劫持防护交给 deploy/nginx/frontend-csp.conf 的响应头 CSP 与 X-Frame-Options。
+         · 'unsafe-inline'：本文件两个内联脚本（站点品牌首帧注入、Aegis 遗留引导）。
+         · 'unsafe-eval'：vue-i18n 运行时编译语言包（src/locales/index.ts 的 createI18n）。
+         · 极验六域名：src/composables/useGeeTestCaptcha.ts:53 的默认 gt4.js 地址，且同文件
+           426-474 会把后端下发的相对 script_url 解析到 API 源站（那是跨源脚本，见 vite 插件注入）；
+           gt4.js 运行期还会加载 gcaptcha4.* / static.* 并埋点，只放 static 会初始化失败。
+         · https://res.25y.cn：人机验证适配脚本（Corptcha）内部 SDK 来源，与管理端同源配置。
+         · https://tdesign.gtimg.com：t-icon 默认 loadDefaultIcons 的 SVG 雪碧图（页面 12 处）。
+         · style-src 'unsafe-inline'：TDesign 运行时注入样式；+ 极验 gt4.js 动态插入的 gcaptcha4.css。
+         · frame-src alipays:：充值页用隐藏 iframe 拉起支付宝 App（src/domains/finance/useRecharge.ts:405-427）。
+         · font-src data:：src/style/font-family.less 的 TencentSansW7 是 base64 data URI。
+         · img/media/connect/frame-src 的 https:：API 源站、支付二维码代理与服务面板 iframe 由
+           VITE_API_BASE_URL 决定，静态 HTML 写不死；开发态 http 源站由 vite 插件注入。 -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://static.geetest.com https://static.geevisit.com https://gcaptcha4.geetest.com https://gcaptcha4.geevisit.com https://gcaptcha4.gsensebot.com https://monitor.geetest.com https://res.25y.cn https://tdesign.gtimg.com; style-src 'self' 'unsafe-inline' https://static.geetest.com https://static.geevisit.com; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' https:; media-src 'self' https: blob:; frame-src 'self' https: alipays:; object-src 'none'; base-uri 'self'; form-action 'self'"
+    />
     <!-- 首访不预置默认品牌图标：中性占位，缓存脚本或站点配置接口返回后再替换 -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3C/svg%3E" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />

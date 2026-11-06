@@ -11,6 +11,8 @@ import type { ConfigEnv, PluginOption, UserConfig } from 'vite';
 import { loadEnv } from 'vite';
 import svgLoader from 'vite-svg-loader';
 
+import { createApiConnectSrcPlugin } from '../shared/vite/apiConnectSrcPlugin.mjs';
+
 const CWD = process.cwd();
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const compressionExtensions = new Set(['.css', '.html', '.js', '.json', '.map', '.mjs', '.svg', '.txt', '.xml']);
@@ -242,6 +244,9 @@ export default ({ mode }: ConfigEnv): UserConfig => {
       // 运行时实际解析为本端 vite@6，仅做类型对齐避免双 vite 类型伪冲突。
       svgLoader() as unknown as PluginOption,
       createIndexNetworkHintsPlugin(assetBase),
+      // 极验脚本由后端代理下发（/api/v2/client/auth/captcha-script），控制台与 API 不同源：
+      // 开发态 http 源站要补进 connect/img/media/frame-src，脚本本身还要补进 script-src
+      createApiConnectSrcPlugin(env, { scriptDirective: 'script-src' }),
       createPrecompressedAssetsPlugin(),
     ],
 
