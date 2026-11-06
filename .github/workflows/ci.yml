@@ -144,9 +144,15 @@ jobs:
       # 测试库不是空库跑 migrate：本仓的安装基线是 database/schema/mysql-schema.sql，
       # 迁移只叠加增量（docs/develop/testing.md 第 173 行记的就是这套）。
       # 直接对空库 migrate 会因为早期迁移依赖基线表而失败。
-      - name: Prepare test database
+      # 干净 clone 里也没有 storage/ 与 bootstrap/cache（同样被 gitignore，本地是安装时生成的），
+      # 缺了它们 Laravel 抛「Please provide a valid cache path.」，路由类用例会整批失败。
+      - name: Prepare runtime directories and test database
         working-directory: .
         run: |
+          mkdir -p backend/storage/app/public backend/storage/framework/cache/data \
+                   backend/storage/framework/sessions backend/storage/framework/views \
+                   backend/storage/logs backend/bootstrap/cache
+          chmod -R 777 backend/storage backend/bootstrap/cache
           mysql -h127.0.0.1 -P3306 -uroot -proot \
             -e "CREATE DATABASE IF NOT EXISTS idc_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
           mysql -h127.0.0.1 -P3306 -uroot -proot idc_test < backend/database/schema/mysql-schema.sql

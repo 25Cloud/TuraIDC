@@ -15,6 +15,13 @@ class ZjmfProviderKeyMigrationTest extends TestCase
 
     public function test_it_converts_persisted_zjmf_identity_references_without_a_compatibility_alias(): void
     {
+        // 被验证的历史迁移在 database/_archive/ 下，那个目录是 gitignore 的（只在生产/迁移现场保留）。
+        // 干净 clone 与 CI 里没有这份文件，跳过而不是伪装通过。
+        $archivedMigration = database_path('_archive/migrations/2026_07_17_000002_rename_zjmf_finance_plugin_identity.php');
+        if (! is_file($archivedMigration)) {
+            $this->markTestSkipped('历史迁移归档不在当前工作区（database/_archive 被忽略），跳过该用例');
+        }
+
         $this->assertTrue(Schema::hasTable('integration_plugins'));
         $this->assertTrue(Schema::hasTable('integration_plugin_runtime_logs'));
         $this->assertTrue(Schema::hasTable('settings'));
@@ -42,7 +49,7 @@ class ZjmfProviderKeyMigrationTest extends TestCase
 
         $legacyPluginId = $this->insertLegacyPluginWhenNoZjmfPluginExists($suffix);
 
-        $migration = require database_path('_archive/migrations/2026_07_17_000002_rename_zjmf_finance_plugin_identity.php');
+        $migration = require $archivedMigration;
         $migration->up();
 
         $this->assertDatabaseHas('integration_plugin_runtime_logs', [
