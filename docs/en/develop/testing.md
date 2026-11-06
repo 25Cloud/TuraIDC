@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/testing.md
-sourceHash: e99cc960d8c33d3edb2a6030d2449499bcf29328ed1b9f59b1caefab9ccc837d
+sourceHash: 1afc6f8ba33fb4e7101a3500f4af9b304e34d33d52f8fd0bffbfc46541d4e769
 translatedAt: 2026-10-26
 ---
 
@@ -174,6 +174,18 @@ php -d opcache.enable_cli=1 vendor/bin/phpunit
 ```
 
 Test dependencies: the `idc_test` test database (import the baseline `database/schema/mysql-schema.sql`, then run `php artisan migrate --env=testing --force`); when the local machine has no Redis, `phpunit.xml.dist` already switches the `redis_volatile` store to `array` (`CACHE_VOLATILE_DRIVER`), so no real Redis is needed.
+
+### 6.2 Backend tests in CI
+
+The `backend-tests` job in `.github/workflows/ci.yml` runs on every push to `main` and on pull requests, mirroring the local steps:
+
+1. start the MySQL 8 service;
+2. create the `idc_test` database and import `database/schema/mysql-schema.sql`;
+3. `php artisan migrate --force`;
+4. `php artisan test --testsuite=Plugins --testsuite=Unit` (about 500 tests, under a minute);
+5. `php artisan test --testsuite=Feature` (1600+ tests, about 8 minutes locally).
+
+Step 2 is not optional: this repository installs from that schema snapshot and migrations only add increments, so **migrating an empty database fails in the early migrations**. After adding tables or changing structure, besides migrating locally, confirm `db:audit-foreign-keys` reports no unclassified `*_id` column (the command maps every id column to either a logical foreign key or a snapshot; undeclared ones exit non-zero and break `DatabaseEngineeringCommandTest` in CI).
 
 Current backend test composition:
 

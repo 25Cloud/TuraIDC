@@ -77,6 +77,77 @@ jobs:
       - name: Static analysis (PHPStan)
         run: composer analyse
 
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: finance
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 3306
+      DB_DATABASE: idc_test
+      DB_USERNAME: root
+      DB_PASSWORD: root
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: pdo_mysql, mbstring, openssl, redis
+          coverage: none
+          tools: composer:v2
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: backend/vendor
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: |
+            composer-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      # 测试库不是空库跑 migrate：本仓的安装基线是 database/schema/mysql-schema.sql，
+      # 迁移只叠加增量（docs/develop/testing.md 第 173 行记的就是这套）。
+      # 直接对空库 migrate 会因为早期迁移依赖基线表而失败。
+      - name: Prepare test database
+        working-directory: .
+        run: |
+          mysql -h127.0.0.1 -P3306 -uroot -proot \
+            -e "CREATE DATABASE IF NOT EXISTS idc_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+          mysql -h127.0.0.1 -P3306 -uroot -proot idc_test < backend/database/schema/mysql-schema.sql
+
+      - name: Migrate test database
+        run: php artisan migrate --force
+
+      # 插件用例（含自助退款、bridge、AI 助手）与单元用例：快、确定、不依赖外网。
+      - name: Run plugin and unit tests
+        run: php artisan test --testsuite=Plugins --testsuite=Unit
+
+      # 全量功能用例：1600+ 条，本地约 8 分钟。跑在同一个测试库上，失败即挡合并。
+      - name: Run feature tests
+        run: php artisan test --testsuite=Feature
+
   frontend:
     name: Frontend (Vue 3)
     runs-on: ubuntu-latest

@@ -172,6 +172,18 @@ php -d opcache.enable_cli=1 vendor/bin/phpunit
 
 测试依赖：`idc_test` 测试库（基线 `database/schema/mysql-schema.sql` 导入后补跑 `php artisan migrate --env=testing --force`）；本机无 Redis 时 `phpunit.xml.dist` 已把 `redis_volatile` store 切为 `array`（`CACHE_VOLATILE_DRIVER`），无需真实 Redis。
 
+### 6.2 CI 上跑的后端测试
+
+`.github/workflows/ci.yml` 的 `backend-tests` 作业在每次推送 `main` 与 PR 时执行，步骤与本地一致：
+
+1. 起 MySQL 8 服务；
+2. 建 `idc_test` 库并导入 `database/schema/mysql-schema.sql`；
+3. `php artisan migrate --force`；
+4. `php artisan test --testsuite=Plugins --testsuite=Unit`（约 500 条，1 分钟内）；
+5. `php artisan test --testsuite=Feature`（1600+ 条，本地约 8 分钟）。
+
+第 2 步不能省：本仓的安装基线是那份 schema 快照，迁移只叠加增量，**空库直接 `migrate` 会在早期迁移处失败**。新增表或改结构后，除了本地迁移，记得确认 `db:audit-foreign-keys` 对新加的 `*_id` 列没有未分类报告（该命令把每个 id 列映射到「逻辑外键」或「快照」两类，未声明的会以退出码 1 挡住 CI 的 `DatabaseEngineeringCommandTest`）。
+
 当前后端测试组成：
 
 - `tests/Feature/`：大量业务回归测试，覆盖登录、用户、商品、站点、支付、账单、工单、返佣、调度、服务控制台、VNC、安全、黑洞查询等

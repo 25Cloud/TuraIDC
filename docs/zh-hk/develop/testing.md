@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/testing.md
-sourceHash: e99cc960d8c33d3edb2a6030d2449499bcf29328ed1b9f59b1caefab9ccc837d
+sourceHash: 1afc6f8ba33fb4e7101a3500f4af9b304e34d33d52f8fd0bffbfc46541d4e769
 generated: zh-hk
 ---
 
@@ -175,6 +175,19 @@ php -d opcache.enable_cli=1 vendor/bin/phpunit
 ```
 
 測試依賴：`idc_test` 測試庫（基線 `database/schema/mysql-schema.sql` 導入後補跑 `php artisan migrate --env=testing --force`）；本機無 Redis 時 `phpunit.xml.dist` 已把 `redis_volatile` store 切為 `array`（`CACHE_VOLATILE_DRIVER`），無需真實 Redis。
+
+### 6.2 CI 上跑的後端測試
+
+`.github/workflows/ci.yml` 的 `backend-tests` 作業在每次推送 `main` 與 PR 時執行，步驟與本地一致：
+
+1. 起 MySQL 8 服務；
+2. 建 `idc_test` 庫並導入 `database/schema/mysql-schema.sql`；
+3. `php artisan migrate --force`；
+4. `php artisan test --testsuite=Plugins --testsuite=Unit`（約 500 條，1 分鐘內）；
+5. `php artisan test --testsuite=Feature`（1600+ 條，本地約 8 分鐘）。
+
+第 2 步不能省：本倉的安裝基線是那份 schema 快照，遷移只疊加增量，**空庫直接 `migrate` 會在早期遷移處失敗**。新增表或改結構後，除了本地遷移，記得確認 `db:audit-foreign-keys` 對新加的 `*_id` 列沒有未分類報告（該命令把每個 id 列映射到「邏輯外鍵」或「快照」兩類，未聲明的會以退出碼 1 擋住 CI 的 `DatabaseEngineeringCommandTest`）。
+
 
 當前後端測試組成：
 
