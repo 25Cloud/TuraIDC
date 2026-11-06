@@ -372,7 +372,16 @@ class V2ProductApiTest extends TestCase
         $this->assertSame('3.10GHz', $listProduct['cpu_turbo_frequency'] ?? null);
         $this->assertSame($this->siteProductListWhitelist(), array_keys($response->json('data.list.0')));
         $this->assertNoSensitiveKeys($response->json());
-        $this->assertLessThan(50 * 1024, strlen((string) $response->getContent()));
+        // 这里断言的是「单个商品摘要不臃肿」，不是整包字节数：
+        // 测试库是共享的（无 RefreshDatabase），历次用例会累积商品，
+        // 整包字节数随之浮动，按绝对值断言等于在断言「测试库里有多少商品」。
+        $payloadBytes = strlen((string) $response->getContent());
+        $listCount = max(1, count((array) $response->json('data.list')));
+        $this->assertLessThan(
+            2048,
+            (int) ceil($payloadBytes / $listCount),
+            '单个商品摘要不得超 2KB（整包 '.$payloadBytes.' 字节 / '.$listCount.' 条）'
+        );
     }
 
     public function test_site_product_detail_hides_invisible_products_and_sensitive_keys(): void

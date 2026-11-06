@@ -10,19 +10,23 @@ use App\Constants\OrderType;
 use App\Constants\ProductType;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
+use App\Jobs\RunHeartbeatTaskJob;
 use App\Models\FirstProductGroup;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\SecondProductGroup;
 use App\Models\Supplier;
 use App\Models\ThirdProductGroup;
+use App\Services\Automation\Heartbeat\HeartbeatTaskRegistry;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\Integrations\Plugins\UpstreamBindingWriter;
 use App\Services\ProductCatalog\Concerns\HandlesProductCatalogHelpers;
 use App\Services\Upstream\Contracts\ProvidesConsoleCatalog;
+use App\Services\Upstream\ProviderKey;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\ProductGroupHierarchyFields;
 use App\Support\TextSanitizer;
+use App\Support\UpstreamStockCache;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -37,7 +41,14 @@ class ProductSyncService
 
     private const IMPORT_PRICING_MONTHS = BillingCycle::RENEWABLE_MONTHS;
 
-    private const REMOTE_STOCK_CACHE_TTL_SECONDS = 15;
+    /** 上游商品库存同步（核心心跳任务，见 CoreScheduledTaskProvider） */
+    private const STOCK_SYNC_TASK_KEY = 'supplier-product-stock-sync';
+
+    /** ZJMF 插件的库存 + 服务同步任务：核心任务在它存在时会排除 ZJMF 供应商，得改推它 */
+    private const ZJMF_STOCK_SYNC_TASK_KEY = 'sync-zjmf-finance-inventory-and-services';
+
+    /** 派发来源标记：只进运行日志，用来区分「心跳触发」与「浏览路径兜底触发」 */
+    private const STOCK_REFRESH_JOB_SOURCE = 'stock_cache_stale';
 
     /**
      * 上游售罄覆盖窗口：开通/升级被上游以「库存不足」拒绝后写入，
@@ -56,6 +67,9 @@ class ProductSyncService
 
     /** `products.stock_synced_at` 列存在性缓存，避免逐商品重复查元数据 */
     private ?bool $hasStockSyncedAtColumn = null;
+
+    /** 上游库存三层缓存（新鲜 / 陈旧 / 失败退避），键与 TTL 见 App\Support\UpstreamStockCache */
+    private ?UpstreamStockCache $upstreamStockCache = null;
 
     public function __construct(
         private readonly ProviderResolver $providerResolver,
@@ -1141,18 +1155,24 @@ class ProductSyncService
             return null;
         }
 
-        $product = $this->applyLiveStockToProduct($product->loadMissing('supplier'));
+        // 浏览路径：非 strict，只读新鲜/陈旧缓存，未命中回退本地快照，请求内绝不同步打上游。
+        // 上游库存缓存最短 15 秒，而一次真实拉取实测 1.5~3 秒；照旧在请求内拉上游会让
+        // 商品详情页的库存区长时间停在「加载中」。真正的实时闸门是下单时的
+        // assertProductCanBeProvisioned()（strict），它不看这份缓存。
+        $sources = [];
+        $product = $this->applyLiveStockToProduct($product->loadMissing('supplier'), false, $sources);
 
         $result = [
             'product_id' => (int) $product->id,
             'stock' => (int) ($product->live_stock ?? $product->stock),
         ];
 
-        // 缓存 60 秒而不是 15 秒：这条路径每次未命中都要打一次上游面板，实测冷态
-        // 900ms 上下（上游均价 2 秒级），而商品页会同时请求多个商品的库存，15 秒的
-        // TTL 让热门商品几乎每分钟都在重新拉上游。
-        // 放宽到 60 秒是安全的：真正决定能不能下单的是 assertProductCanBeProvisioned()
-        // 的 strict 实时校验，它不读这份缓存；这里只服务前台展示。
+        // 命中陈旧/空缓存时补一次后台刷新：数字最多落后一分钟，而不是死等下一个心跳槽。
+        // 触发失败、队列不可用、拿不到去重锁都只是跳过，绝不影响本次响应与返回值来源。
+        $this->requestBrowseStockRefresh($product, $sources);
+
+        // 这里再压一层 60 秒的「成品响应」缓存：商品页会同时请求多个商品的库存，
+        // 展示口径不需要秒级新鲜，省掉连带的在途预留聚合查询。
         Cache::store('redis_volatile')->put($cacheKey, $result, now()->addSeconds(60));
 
         return $result;
@@ -1169,14 +1189,25 @@ class ProductSyncService
         );
     }
 
-    public function applyLiveStockToProduct(Product $product, bool $strict = false): Product
+    public function applyLiveStockToProduct(Product $product, bool $strict = false, ?array &$sources = null): Product
     {
-        $products = $this->applyLiveStockToProducts(new Collection([$product]), $strict);
+        $products = $this->applyLiveStockToProducts(new Collection([$product]), $strict, $sources);
 
         return $products->first() ?? $product;
     }
 
-    public function applyLiveStockToProducts(Collection $products, bool $strict = false): Collection
+    /**
+     * 把上游库存叠加成 `live_stock`（= 上游值 − 在途预留）。
+     *
+     * $strict=false（浏览路径 `/stock`）：只读新鲜/陈旧缓存，未命中回退本地快照，
+     * 请求内绝不同步打上游——上游库存缓存最短 15 秒，过期后每个请求等 1.5~3 秒，
+     * 商品详情页的库存区就会长时间停在「加载中」。
+     * $strict=true（下单单据校验、后台刷新）：允许打上游，且上游不可用时必须失败，
+     * 放行会让用户付完款才发现开不出来。
+     *
+     * @param  array<int, string>|null  $sources  出参：供应商 id → 本次库存值来源（见 UpstreamStockCache::SOURCE_*）
+     */
+    public function applyLiveStockToProducts(Collection $products, bool $strict = false, ?array &$sources = null): Collection
     {
         if ($products->isEmpty()) {
             return $products;
@@ -1192,60 +1223,90 @@ class ProductSyncService
                 ->all()
         );
 
+        // 一次请求里同一供应商只解析一次：绑定查询与 provider 能力探测都是 DB 查询，
+        // 按商品重复调用等于把固定开销乘上商品数（定时同步一次要过成百上千个商品）。
+        /** @var array<int, Supplier|null> $supplierByProduct */
+        $supplierByProduct = [];
+        /** @var array<int, bool> $catalogSupportBySupplier */
+        $catalogSupportBySupplier = [];
+
         $liveStockMap = [];
-        $upstreamProducts = $products->filter(function (Product $product) {
-            $supplier = $this->resolveProductSupplier($product);
 
-            return $this->resolveProductUpstreamProductId($product) > 0
-                && $supplier instanceof Supplier
-                && $this->providerResolver->resolveForSupplier($supplier)->supports(ProvidesConsoleCatalog::class);
-        });
+        /** @var array<int, list<Product>> $productsBySupplier */
+        $productsBySupplier = [];
 
-        foreach ($upstreamProducts->groupBy(fn (Product $product) => (int) ($this->resolveProductSupplier($product)?->id ?? 0)) as $supplierProducts) {
-            $firstProduct = $supplierProducts->first();
-            $supplier = $firstProduct instanceof Product ? $this->resolveProductSupplier($firstProduct) : null;
+        foreach ($products as $product) {
+            if (! $product instanceof Product) {
+                continue;
+            }
+
+            $supplier = $this->resolveProductSupplierCached($product, $supplierByProduct);
 
             if (! $supplier instanceof Supplier) {
                 continue;
             }
 
-            $supplierProductIds = $supplierProducts
-                ->map(fn (Product $product) => $this->resolveProductUpstreamProductId($product))
-                ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
-                ->values()
-                ->all();
+            if ($this->resolveProductUpstreamProductId($product) <= 0) {
+                continue;
+            }
 
-            try {
-                $remoteStocks = $this->resolveSupplierRemoteStocks($supplier, $supplierProductIds);
-            } catch (\Throwable $exception) {
+            if (! $this->supplierSupportsConsoleCatalog($supplier, $catalogSupportBySupplier)) {
+                continue;
+            }
+
+            $productsBySupplier[(int) $supplier->id][] = $product;
+        }
+
+        foreach ($productsBySupplier as $supplierProducts) {
+            $firstProduct = $supplierProducts[0] ?? null;
+            $supplier = $firstProduct instanceof Product
+                ? ($supplierByProduct[(int) $firstProduct->id] ?? null)
+                : null;
+
+            if (! $supplier instanceof Supplier) {
+                continue;
+            }
+
+            $supplierProductIds = [];
+            foreach ($supplierProducts as $product) {
+                $supplierProductId = $this->resolveProductUpstreamProductId($product);
+                if ($supplierProductId > 0) {
+                    $supplierProductIds[$supplierProductId] = $supplierProductId;
+                }
+            }
+
+            $batch = $this->loadSupplierRemoteStocks($supplier, array_values($supplierProductIds), $strict);
+
+            if ($sources !== null) {
+                $sources[(int) $supplier->id] = $batch['source'];
+            }
+
+            if ($batch['error'] instanceof \Throwable) {
                 // 无论是否 strict 都要落日志：strict 是前台下单路径，此前直接抛出
                 // 且不记录，导致一次前台失败在日志里完全看不到痕迹，只能靠猜。
-                // 远程库存失败时不写缓存（TTL 15 秒），异常期会反复进入这里，
-                // 因此按供应商维度做 60 秒节流。
-                $throttleKey = 'stock_log:detail_fail:'.$supplier->id;
-                if (! Cache::store('redis_volatile')->has($throttleKey)) {
-                    Cache::store('redis_volatile')->put($throttleKey, true, now()->addSeconds(60));
-                    Log::warning('[商品库存] 拉取上游明细库存失败', [
-                        'supplier_id' => $supplier->id,
-                        'supplier_name' => $supplier->name,
-                        'strict' => $strict,
-                        'message' => $exception->getMessage(),
-                        'exception' => $exception::class,
-                    ]);
-                }
+                // 失败已经写进 60 秒退避窗口，这里按供应商维度节流，避免异常期把日志刷爆。
+                $this->logUpstreamStockFailure($supplier, $batch['error'], $strict);
 
                 if ($strict) {
                     throw new BusinessException(
-                        $this->buildUpstreamStockFailureMessage($exception),
+                        $this->buildUpstreamStockFailureMessage($batch['error']),
                         50300,
                         503,
                     );
                 }
-
-                $remoteStocks = [];
+            } elseif ($batch['source'] === UpstreamStockCache::SOURCE_BACKOFF && $strict) {
+                // 上游刚失败过、正处于退避窗口：不再发请求，但严格校验不能拿陈旧值放行。
+                throw new BusinessException('暂时无法获取上游库存，请稍后重试', 50300, 503);
             }
 
+            $remoteStocks = $batch['stocks'];
+
+            // 只有「真的取到过上游口径值」才允许回写快照。三层缓存全空时用的是本地旧值，
+            // 把本地值再写回去等于把快照钉死，之后永远不会被刷新。
+            $allowSnapshotWrite = $batch['source'] !== UpstreamStockCache::SOURCE_EMPTY;
+
             foreach ($supplierProducts as $product) {
+                $productId = (int) $product->id;
                 $supplierProductId = $this->resolveProductUpstreamProductId($product);
                 $remoteStock = array_key_exists($supplierProductId, $remoteStocks)
                     ? $remoteStocks[$supplierProductId]
@@ -1253,13 +1314,13 @@ class ProductSyncService
 
                 if ($remoteStock === null) {
                     // 与拉取失败同理：strict 是前台路径，必须留痕。
-                    // 远程库存失败时不会写入缓存（TTL 15 秒），高频商品会反复命中此处，
+                    // 上游没给出这台商品的库存时不会写缓存，高频商品会反复命中此处，
                     // 因此沿用按商品维度的 60 秒节流，避免异常期把日志刷爆。
-                    $notFoundThrottleKey = 'stock_log:not_found:'.$product->id;
+                    $notFoundThrottleKey = 'stock_log:not_found:'.$productId;
                     if (! Cache::store('redis_volatile')->has($notFoundThrottleKey)) {
                         Cache::store('redis_volatile')->put($notFoundThrottleKey, true, now()->addSeconds(60));
                         Log::warning('[商品库存] 未找到对应上游商品库存', [
-                            'product_id' => (int) $product->id,
+                            'product_id' => $productId,
                             'supplier_id' => (int) $supplier->id,
                             'supplier_name' => $supplier->name,
                             'upstream_product_id' => $supplierProductId,
@@ -1274,21 +1335,18 @@ class ProductSyncService
                     continue;
                 }
 
-                $reservedCount = (int) ($reservedCounts[(int) $product->id] ?? 0);
-                $liveStockMap[(int) $product->id] = $this->resolveLiveStockValue(
+                $liveStockMap[$productId] = $this->resolveLiveStockValue(
                     (int) ($product->stock ?? -1),
                     $remoteStock,
-                    $reservedCount,
+                    (int) ($reservedCounts[$productId] ?? 0),
                     true
                 );
 
-                // 把这次实时查到的上游库存落库。下单校验与商品详情页本来就在实时查，
-                // 却从不保存结果，于是 products.stock 长期停留在导入时的旧值。顺手回写
-                // 等于把用户流量变成免费的同步机会：热门商品自动保持新鲜，定时轮转
-                // 只需兜底无人问津的冷门商品。
-                // instanceof 不是多余的：groupBy 之后集合元素退化成 Model，这里与上面
-                // $firstProduct 的判断同源。
-                if ($product instanceof Product) {
+                // 回写的是上游原始值，不是上面那份已扣过在途预留的净值：
+                // 净值落库会把预留重复扣一次（预留在 products.stock 的 decrement 和
+                // queryOpenStockReservations 里已经各算过一遍），下一轮定时同步又会按
+                // 上游值纠回来，products.stock 会在两个口径之间来回跳。
+                if ($allowSnapshotWrite && $product instanceof Product) {
                     $this->persistSyncedStock($product, $remoteStock);
                 }
             }
@@ -1469,40 +1527,67 @@ class ProductSyncService
         return '暂时无法获取上游库存，请稍后重试';
     }
 
+    /**
+     * 打上游取库存（定时同步专用，失败向上抛）。
+     *
+     * 与 loadSupplierRemoteStocks() 的区别只有一个：这里把「取不到」也当成异常，
+     * 让定时任务按供应商整体记失败；实时路径需要区分「失败」与「这台上游没给值」，
+     * 所以走下面的非抛出版本。
+     *
+     * @param  int[]  $supplierProductIds
+     * @return array<int, int|null>
+     */
     private function resolveSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array
     {
-        $normalizedSupplierProductIds = collect($supplierProductIds)
-            ->map(fn ($id) => (int) $id)
-            ->filter(fn (int $supplierProductId) => $supplierProductId > 0)
-            ->unique()
-            ->sort()
-            ->values()
-            ->all();
+        $result = $this->loadSupplierRemoteStocks($supplier, $supplierProductIds, true);
 
-        if ($normalizedSupplierProductIds === []) {
-            return [];
+        if ($result['error'] instanceof \Throwable) {
+            throw $result['error'];
         }
 
-        $cacheKey = $this->supplierRemoteStockCacheKey($supplier, $normalizedSupplierProductIds);
-        $cached = Cache::store('redis_volatile')->get($cacheKey);
-
-        if (is_array($cached)) {
-            $remoteStocks = $cached;
-        } else {
-            $remoteStocks = $this->fetchSupplierRemoteStocks($supplier, $normalizedSupplierProductIds);
-
-            Cache::store('redis_volatile')->put($cacheKey, $remoteStocks, now()->addSeconds(self::REMOTE_STOCK_CACHE_TTL_SECONDS));
+        if ($result['source'] === UpstreamStockCache::SOURCE_BACKOFF) {
+            throw new BusinessException('暂时无法获取上游库存，请稍后重试', 50300, 503);
         }
+
+        return $result['stocks'];
+    }
+
+    /**
+     * 库存读取的唯一入口：是否允许打上游由调用方决定。
+     *
+     * $allowUpstreamFetch=false → 只读新鲜/陈旧缓存（浏览路径）；
+     * $allowUpstreamFetch=true  → 缓存未命中才打上游，失败写入 60 秒退避窗口并把异常交回调用方。
+     *
+     * @param  int[]  $supplierProductIds
+     * @return array{stocks: array<int, int|null>, source: string, error: \Throwable|null}
+     */
+    private function loadSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds, bool $allowUpstreamFetch): array
+    {
+        $supplierId = (int) $supplier->id;
+
+        $result = $allowUpstreamFetch
+            ? $this->upstreamStockCache()->remember(
+                $supplierId,
+                $supplierProductIds,
+                fn (array $ids): array => $this->fetchSupplierRemoteStocks($supplier, $ids)
+            )
+            : $this->upstreamStockCache()->read($supplierId, $supplierProductIds);
 
         // 售罄覆盖必须套在缓存之外：缓存里是上游原始值，覆盖按 TTL 自然过期，
         // 若写进缓存则上游补货后要等缓存过期才恢复，且缓存键按商品集合分片，
         // 单个商品售罄会连累同批其它商品的缓存条目。
-        return $this->applyUpstreamStockShortageOverrides((int) $supplier->id, $remoteStocks);
+        $result['stocks'] = $this->applyUpstreamStockShortageOverrides($supplierId, $result['stocks']);
+
+        return $result;
     }
 
     private function fetchSupplierRemoteStocks(Supplier $supplier, array $supplierProductIds): array
     {
-        $configStocks = $this->resolveCatalogCapability($supplier)->fetchBatchProductStocks($supplier, $supplierProductIds);
+        // 供应商配置（含 syncSupplierBinding 的一次绑定写入）在一批里只解析一次：
+        // 此前下面 fallback 分支又调了一次 resolveCatalogCapability()，同一批库存要跑两遍绑定同步。
+        $catalogCapability = $this->resolveCatalogCapability($supplier);
+
+        $configStocks = $catalogCapability->fetchBatchProductStocks($supplier, $supplierProductIds);
         $catalogProducts = [];
         $missingCatalogIds = collect($supplierProductIds)
             ->filter(fn (int $supplierProductId) => ! is_array($configStocks[$supplierProductId] ?? null))
@@ -1511,7 +1596,7 @@ class ProductSyncService
 
         if ($missingCatalogIds !== []) {
             $missingCatalogLookup = array_fill_keys($missingCatalogIds, true);
-            $catalog = $this->resolveCatalogCapability($supplier)->getProductCatalog($supplier);
+            $catalog = $catalogCapability->getProductCatalog($supplier);
             $catalogProducts = collect($catalog['products'] ?? [])
                 ->filter(fn ($item) => is_array($item) && isset($missingCatalogLookup[(int) ($item['id'] ?? 0)]))
                 ->keyBy(fn (array $item) => (int) ($item['id'] ?? 0))
@@ -1530,9 +1615,150 @@ class ProductSyncService
         return $remoteStocks;
     }
 
-    private function supplierRemoteStockCacheKey(Supplier $supplier, array $supplierProductIds): string
+    /**
+     * 上游库存拉取失败的留痕，按供应商 60 秒节流。
+     *
+     * strict 是前台下单路径，此前直接抛出且不记录，一次前台失败在日志里完全看不到痕迹。
+     */
+    private function logUpstreamStockFailure(Supplier $supplier, \Throwable $exception, bool $strict): void
     {
-        return 'product_remote_stock:'.$supplier->id.':'.sha1(implode(',', $supplierProductIds));
+        $throttleKey = 'stock_log:detail_fail:'.$supplier->id;
+
+        if (Cache::store('redis_volatile')->has($throttleKey)) {
+            return;
+        }
+
+        Cache::store('redis_volatile')->put($throttleKey, true, now()->addSeconds(60));
+        Log::warning('[商品库存] 拉取上游明细库存失败', [
+            'supplier_id' => $supplier->id,
+            'supplier_name' => $supplier->name,
+            'strict' => $strict,
+            'message' => $exception->getMessage(),
+            'exception' => $exception::class,
+        ]);
+    }
+
+    /**
+     * 同一请求内复用商品 → 供应商解析结果（绑定时查询是 DB 查询）。
+     *
+     * @param  array<int, Supplier|null>  $cache
+     */
+    private function resolveProductSupplierCached(Product $product, array &$cache): ?Supplier
+    {
+        $productId = (int) $product->id;
+
+        if (array_key_exists($productId, $cache)) {
+            return $cache[$productId];
+        }
+
+        return $cache[$productId] = $this->resolveProductSupplier($product);
+    }
+
+    /**
+     * 同一请求内复用供应商 → 是否具备商品目录能力（每次探测都要读一次上游插件绑定）。
+     *
+     * @param  array<int, bool>  $cache
+     */
+    private function supplierSupportsConsoleCatalog(Supplier $supplier, array &$cache): bool
+    {
+        $supplierId = (int) $supplier->id;
+
+        if (array_key_exists($supplierId, $cache)) {
+            return $cache[$supplierId];
+        }
+
+        return $cache[$supplierId] = $this->providerResolver
+            ->resolveForSupplier($supplier)
+            ->supports(ProvidesConsoleCatalog::class);
+    }
+
+    private function upstreamStockCache(): UpstreamStockCache
+    {
+        return $this->upstreamStockCache ??= app(UpstreamStockCache::class);
+    }
+
+    /**
+     * 浏览路径命中的是陈旧/空缓存时，异步补一次该供应商的库存刷新。
+     *
+     * 三条硬要求：
+     * - 不阻塞：只做一次 dispatch，绝不同步执行任务；
+     * - 不影响响应：注册表解析、队列驱动、派发失败一律吞掉并留日志；
+     * - 不改变返回值来源：本次仍用缓存/快照的值，刷新结果下一轮请求才可见。
+     *
+     * @param  array<int, string>  $sources  供应商 id → 本次库存值来源
+     */
+    private function requestBrowseStockRefresh(Product $product, array $sources): void
+    {
+        // 先用「值来源」做个零成本预判：新鲜命中或退避窗口内都不该推，省掉查绑定的开销。
+        $refreshable = [UpstreamStockCache::SOURCE_STALE, UpstreamStockCache::SOURCE_EMPTY];
+        if (array_intersect($refreshable, $sources) === []) {
+            return;
+        }
+
+        // 只有真要推的时候才解析供应商：这一步要查上游绑定，不能给每个 /stock 请求都加上。
+        $supplier = $this->resolveProductSupplier($product);
+
+        if (! $supplier instanceof Supplier) {
+            return;
+        }
+
+        if (! in_array($sources[(int) $supplier->id] ?? null, $refreshable, true)) {
+            return;
+        }
+
+        // 同步驱动下 dispatch() 会在当前请求里直接执行整批同步（最长 900 秒），
+        // 那就不是「异步」了：宁可等下一个心跳槽，也不能把商品页钉住。
+        if (in_array((string) config('queue.default', 'sync'), ['sync', 'null'], true)) {
+            return;
+        }
+
+        $cache = $this->upstreamStockCache();
+
+        // 距上次成功取数还不到 60 秒：刚同步过，不用补。
+        if (! $cache->refreshRequestDue((int) $supplier->id)) {
+            return;
+        }
+
+        // 60 秒内同一供应商只推一次；抢不到说明别的请求已经在推，直接跳过。
+        if (! $cache->claimRefreshRequest((int) $supplier->id)) {
+            return;
+        }
+
+        try {
+            $taskKey = $this->resolveStockRefreshTaskKey($supplier);
+
+            if ($taskKey === null) {
+                return;
+            }
+
+            RunHeartbeatTaskJob::dispatch($taskKey, null, null, null, self::STOCK_REFRESH_JOB_SOURCE);
+        } catch (\Throwable $exception) {
+            Log::warning('[商品库存] 浏览路径触发后台刷新失败', [
+                'product_id' => (int) $product->id,
+                'supplier_id' => (int) $supplier->id,
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+        }
+    }
+
+    /**
+     * 该推哪个后台任务。
+     *
+     * 核心任务 `supplier-product-stock-sync` 在 ZJMF 插件任务存在时会排除 ZJMF 供应商
+     * （见 CoreScheduledTaskProvider），对 ZJMF 绑定的商品推核心任务等于空转，
+     * 所以沿用同一判定改推插件任务；两者都没注册时返回 null，由调用方静默跳过。
+     */
+    private function resolveStockRefreshTaskKey(Supplier $supplier): ?string
+    {
+        $registry = app(HeartbeatTaskRegistry::class);
+        $providerKey = trim((string) ($supplier->provider_key ?? ''));
+
+        if ($providerKey === ProviderKey::ZJMF_FINANCE_API && $registry->supports(self::ZJMF_STOCK_SYNC_TASK_KEY)) {
+            return self::ZJMF_STOCK_SYNC_TASK_KEY;
+        }
+
+        return $registry->supports(self::STOCK_SYNC_TASK_KEY) ? self::STOCK_SYNC_TASK_KEY : null;
     }
 
     private function findSaleProductForStock(int $productId): ?Product
