@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin\V2;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\V2\Product\CopyProductPricingRequest;
 use App\Http\Requests\Admin\V2\Product\DeleteProductRequest;
 use App\Http\Requests\Admin\V2\Product\ListProductOwnersRequest;
 use App\Http\Requests\Admin\V2\Product\ListProductsRequest;
@@ -30,6 +31,7 @@ use App\Http\Resources\Admin\V2\AdminProductSummaryResource;
 use App\Http\Resources\Admin\V2\AdminProductSummaryStatsResource;
 use App\Models\Product;
 use App\Services\Admin\V2\AdminCatalogActionV2Service;
+use App\Services\ProductCatalog\ProductPricingSyncService;
 use App\Services\ProductCatalog\ProductV2QueryService;
 use Illuminate\Http\JsonResponse;
 
@@ -38,6 +40,7 @@ class ProductController extends Controller
     public function __construct(
         private readonly ProductV2QueryService $products,
         private readonly AdminCatalogActionV2Service $actions,
+        private readonly ProductPricingSyncService $pricingSync,
     ) {}
 
     public function index(ListProductsRequest $request): JsonResponse
@@ -83,6 +86,27 @@ class ProductController extends Controller
         return $this->success([
             'product' => AdminProductDetailResource::make($this->products->findAdminProduct((int) $product->id))->resolve(),
         ], '商品更新成功');
+    }
+
+    /**
+     * 按月价同步到其他周期（Issue #77）。
+     *
+     * 一次性动作：服务层按 `BillingCycle` 的月数换算并写库，之后各周期独立可改；
+     * 这里不注册任何观察者，改月付不会反过来改年付。
+     */
+    public function copyPricing(CopyProductPricingRequest $request, Product $product): JsonResponse
+    {
+        $result = $this->pricingSync->copy($product, $request->validated(), [
+            'operator_id' => (int) ($request->user()?->id ?? 0),
+            'operator_name' => (string) ($request->user()?->username ?? $request->user()?->name ?? $request->user()?->email ?? 'admin'),
+            'ip_address' => (string) $request->ip(),
+            'trace_id' => (string) $request->header('X-Request-Id', ''),
+        ]);
+
+        $message = (string) ($result['message'] ?? '');
+        unset($result['message']);
+
+        return $this->success($result, $message);
     }
 
     public function destroy(DeleteProductRequest $request, int $product): JsonResponse

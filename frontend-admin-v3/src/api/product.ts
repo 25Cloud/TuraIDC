@@ -265,6 +265,39 @@ export interface ProductSummary {
   [key: string]: unknown;
 }
 
+/** 「按月价同步到其他周期」的入参：键名由后端接口钉死，不要改名 */
+export interface ProductPricingSyncPayload {
+  from_cycle: string;
+  to_cycles: string[];
+  overwrite: boolean;
+}
+
+/**
+ * 同步结果的一行。
+ *
+ * `updated` 行带 months/before/after；`skipped` 行带 reason/current——
+ * 跳过的周期必须能说出「为什么没改」，否则就是静默丢弃。
+ */
+export interface ProductPricingSyncRow {
+  cycle: string;
+  label: string;
+  months?: number;
+  before?: string;
+  after?: string;
+  reason?: string;
+  current?: string;
+}
+
+export interface ProductPricingSyncResult {
+  product_id: number;
+  from_cycle: string;
+  from_price: string;
+  /** 同步后的完整价目表（未勾选的周期原样保留），前端直接回填表单 */
+  pricing: Record<string, string>;
+  updated: ProductPricingSyncRow[];
+  skipped: ProductPricingSyncRow[];
+}
+
 function toRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
@@ -504,6 +537,14 @@ export const productApi = {
     request
       .put<V2ProductDetailResponse>({ url: `/v2/admin/products/${id}`, data })
       .then((response) => normalizeV2ProductDetail(response)),
+  /**
+   * 按月价同步到其他周期（Issue #77）。
+   *
+   * 一次性写库：服务端用 `BillingCycle` 的月数换算并落库，之后各周期独立可改。
+   * 金额只由服务端算，前端弹窗里的预览仅用于确认，提交后以返回的 `pricing` 回填。
+   */
+  copyPricing: (id: number | string, data: ProductPricingSyncPayload) =>
+    request.put<ProductPricingSyncResult>({ url: `/v2/admin/products/${id}/pricing/copy`, data }),
   delete: (id: number | string) => request.delete({ url: `/v2/admin/products/${id}` }),
   restore: (id: number | string) =>
     request

@@ -261,6 +261,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::post('/product-groups/{group}/batch-update-products', [ProductGroupController::class, 'batchUpdateProducts']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{product}', [ProductController::class, 'update']);
+        // 「按月价同步到其他周期」：一次性写价，服务层按 BillingCycle 月数换算（Issue #77）
+        Route::put('/products/{product}/pricing/copy', [ProductController::class, 'copyPricing']);
         Route::delete('/products/{product}', [ProductController::class, 'destroy']);
         Route::post('/products/{product}/restorations', [ProductController::class, 'restore']);
         Route::delete('/products/{product}/force', [ProductController::class, 'forceDelete']);

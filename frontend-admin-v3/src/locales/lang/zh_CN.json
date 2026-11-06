@@ -3126,6 +3126,35 @@
       "targetDuplicated": "同一分组下的目标流量不能重复",
       "priceInvalid": "售价不能小于 0"
     },
+    "pricingSync": {
+      "entry": "同步到其他周期",
+      "title": "按月价同步到其他周期",
+      "sourceLine": "基准：月付价 {amount}；勾选后按周期月数换算——季付 ×3、半年付 ×6、年付 ×12，四舍五入到分。",
+      "monthsHint": "×{months} 个月",
+      "existingTag": "已有价格",
+      "overwrite": "覆盖已有价格",
+      "overwriteHint": "关闭时只填空档：已有价格的周期会被跳过，并在结果里逐条列出。",
+      "discountTitle": "折扣与优惠说明",
+      "discountShared": "折扣分组与代理折扣按「商品 / 折扣分组」生效，四个周期自动共享，不需要随定价复制。",
+      "discountCoupon": "优惠券与优惠活动的「适用周期」是独立配置，不会随本次同步改动；需要调整请到优惠券里单独设置。",
+      "discountPreset": "本次只做「月付价 × 月数」换算，与上面的折扣规则预设无关；同步后各周期价格独立可改，不是持续联动。",
+      "monthlyRequired": "月付价必须大于 0 才能同步",
+      "selectRequired": "请至少勾选一个目标周期",
+      "needSavedProduct": "请先保存商品，再同步定价",
+      "unsavedPricing": "定价有未保存的修改，请先保存再同步",
+      "confirm": "确认同步",
+      "failed": "同步定价失败",
+      "resultUpdated": "已覆盖 {count} 个周期",
+      "resultSkipped": "跳过 {count} 个已有价格的周期",
+      "resultTitle": "同步完成：覆盖 {updated} 个周期，跳过 {skipped} 个",
+      "resultUpdatedLine": "覆盖 {label}：{before} → {after}",
+      "resultSkippedLine": "跳过 {label}：已有价格 {current}",
+      "cycles": {
+        "quarterly": "季付",
+        "semiannually": "半年付",
+        "annually": "年付"
+      }
+    },
     "edit": {
       "sectionBasic": "详情",
       "sectionBasicHint": "名称、分类、状态",

@@ -3126,6 +3126,35 @@
       "targetDuplicated": "同一分組下的目標流量不能重複",
       "priceInvalid": "售價不能小於 0"
     },
+    "pricingSync": {
+      "entry": "同步到其他週期",
+      "title": "按月價同步到其他週期",
+      "sourceLine": "基準：月付價 {amount}；勾選後按週期月數換算——季付 ×3、半年付 ×6、年付 ×12，四捨五入到分。",
+      "monthsHint": "×{months} 個月",
+      "existingTag": "已有價格",
+      "overwrite": "覆蓋已有價格",
+      "overwriteHint": "關閉時只填空檔：已有價格的週期會被跳過，並在結果裡逐條列出。",
+      "discountTitle": "折扣與優惠說明",
+      "discountShared": "折扣分組與代理折扣按「商品 / 折扣分組」生效，四個週期自動共享，不需要隨定價複製。",
+      "discountCoupon": "優惠券與優惠活動的「適用週期」是獨立配置，不會隨本次同步改動；需要調整請到優惠券裡單獨設置。",
+      "discountPreset": "本次只做「月付價 × 月數」換算，與上面的折扣規則預設無關；同步後各週期價格獨立可改，不是持續聯動。",
+      "monthlyRequired": "月付價必須大於 0 才能同步",
+      "selectRequired": "請至少勾選一個目標週期",
+      "needSavedProduct": "請先保存商品，再同步定價",
+      "unsavedPricing": "定價有未保存的修改，請先保存再同步",
+      "confirm": "確認同步",
+      "failed": "同步定價失敗",
+      "resultUpdated": "已覆蓋 {count} 個週期",
+      "resultSkipped": "跳過 {count} 個已有價格的週期",
+      "resultTitle": "同步完成：覆蓋 {updated} 個週期，跳過 {skipped} 個",
+      "resultUpdatedLine": "覆蓋 {label}：{before} → {after}",
+      "resultSkippedLine": "跳過 {label}：已有價格 {current}",
+      "cycles": {
+        "quarterly": "季付",
+        "semiannually": "半年付",
+        "annually": "年付"
+      }
+    },
     "edit": {
       "sectionBasic": "詳情",
       "sectionBasicHint": "名稱、分類、狀態",

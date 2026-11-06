@@ -3126,6 +3126,35 @@
       "targetDuplicated": "Target traffic must be unique within a group",
       "priceInvalid": "Price cannot be less than 0"
     },
+    "pricingSync": {
+      "entry": "Sync to other cycles",
+      "title": "Sync monthly price to other cycles",
+      "sourceLine": "Base: monthly price {amount}. Selected cycles are computed as monthly × cycle months — quarterly ×3, semiannual ×6, annual ×12, rounded to cents.",
+      "monthsHint": "×{months} months",
+      "existingTag": "Has price",
+      "overwrite": "Overwrite existing prices",
+      "overwriteHint": "When off, only empty cycles are filled; cycles that already have a price are skipped and listed one by one in the result.",
+      "discountTitle": "Discounts and coupons",
+      "discountShared": "Discount groups and agent discounts apply per product / discount group, so all four cycles share them automatically — nothing to copy here.",
+      "discountCoupon": "A coupon or campaign's applicable cycles are configured on the coupon itself and are not changed by this sync; adjust them in Coupons if needed.",
+      "discountPreset": "This is a plain monthly × months conversion, unrelated to the discount rule preset above; afterwards each cycle stays independently editable — it is not a continuous link.",
+      "monthlyRequired": "The monthly price must be greater than 0 before syncing",
+      "selectRequired": "Select at least one target cycle",
+      "needSavedProduct": "Save the product first, then sync pricing",
+      "unsavedPricing": "Pricing has unsaved changes; save first, then sync",
+      "confirm": "Confirm sync",
+      "failed": "Failed to sync pricing",
+      "resultUpdated": "Overwrote {count} cycles",
+      "resultSkipped": "Skipped {count} already priced cycles",
+      "resultTitle": "Sync finished: {updated} overwritten, {skipped} skipped",
+      "resultUpdatedLine": "Overwrote {label}: {before} → {after}",
+      "resultSkippedLine": "Skipped {label}: existing price {current}",
+      "cycles": {
+        "quarterly": "Quarterly",
+        "semiannually": "Semiannual",
+        "annually": "Annual"
+      }
+    },
     "edit": {
       "sectionBasic": "Details",
       "sectionBasicHint": "Name, category and status",

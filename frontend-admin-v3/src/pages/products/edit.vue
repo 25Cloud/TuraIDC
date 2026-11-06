@@ -94,8 +94,54 @@
                       :value="item.value"
                     />
                   </t-select>
+                  <!-- 一次性动作：以月付价 × 周期月数写进勾选的周期，不监听月价变化 -->
+                  <t-button size="small" variant="outline" @click="openPricingSync">
+                    {{ $t('products.pricingSync.entry') }}
+                  </t-button>
                 </div>
               </div>
+
+              <!-- 结果按「覆盖 / 跳过」分列，跳过必须说明原因，不许静默丢弃 -->
+              <t-alert
+                v-if="pricingSyncResult"
+                class="product-edit-pricing-sync-result"
+                :theme="pricingSyncResult.updated.length ? 'success' : 'warning'"
+                close
+                @close="pricingSyncResult = null"
+              >
+                <template #message>
+                  <div class="product-edit-pricing-sync-result__title">
+                    {{
+                      $t('products.pricingSync.resultTitle', {
+                        updated: pricingSyncResult.updated.length,
+                        skipped: pricingSyncResult.skipped.length,
+                      })
+                    }}
+                  </div>
+                  <ul v-if="pricingSyncResult.updated.length" class="product-edit-pricing-sync-result__list">
+                    <li v-for="row in pricingSyncResult.updated" :key="`updated-${row.cycle}`">
+                      {{
+                        $t('products.pricingSync.resultUpdatedLine', {
+                          label: row.label,
+                          before: row.before,
+                          after: row.after,
+                        })
+                      }}
+                    </li>
+                  </ul>
+                  <ul v-if="pricingSyncResult.skipped.length" class="product-edit-pricing-sync-result__list">
+                    <li v-for="row in pricingSyncResult.skipped" :key="`skipped-${row.cycle}`">
+                      {{
+                        $t('products.pricingSync.resultSkippedLine', {
+                          label: row.label,
+                          current: row.current,
+                        })
+                      }}
+                    </li>
+                  </ul>
+                </template>
+              </t-alert>
+
               <div class="product-edit-grid">
                 <t-form-item :label="$t('products.catalog.monthlyPrice')" name="monthly_price">
                   <t-input-number v-model="form.monthly_price" :min="0" style="width: 100%" />
@@ -480,6 +526,19 @@
         </div>
       </t-form>
     </t-dialog>
+
+    <!-- 按月价同步到其他周期：预览确认 → 服务端写库 → 结果按「覆盖 / 跳过」分列 -->
+    <pricing-sync-dialog
+      v-model:visible="pricingSyncVisible"
+      :product-id="productId"
+      :monthly-price="loadedMonthlyPrice"
+      :current-prices="{
+        quarterly: loadedPrices.quarterly,
+        semiannually: loadedPrices.semiannually,
+        annually: loadedPrices.annually,
+      }"
+      @synced="handlePricingSynced"
+    />
   </div>
 </template>
 <script setup lang="ts">
@@ -490,7 +549,12 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { adminApi } from '@/api/admin';
-import type { ProductCategoryRecord, ProductDescriptionItem, ProductRecord } from '@/api/product';
+import type {
+  ProductCategoryRecord,
+  ProductDescriptionItem,
+  ProductPricingSyncResult,
+  ProductRecord,
+} from '@/api/product';
 import { productApi } from '@/api/product';
 import type { SupplierRecord } from '@/api/supplier';
 import { supplierApi } from '@/api/supplier';
@@ -498,6 +562,7 @@ import { t } from '@/locales';
 import type { DescriptionSyncResult } from '@/utils/descriptionSyncResult';
 import { describeDescriptionSyncResult } from '@/utils/descriptionSyncResult';
 
+import PricingSyncDialog from './components/PricingSyncDialog.vue';
 import ProductDescriptionEditor from './components/ProductDescriptionEditor.vue';
 import {
   errorMessage,
@@ -831,6 +896,8 @@ async function loadProductDetail() {
       product_discount_group_id: resolveDiscountGroupId(detail),
       description: String(detail.description ?? ''),
     });
+    // 记住库里的价格：同步到其他周期只按这份价格换算，表单里的未保存改动要先保存
+    snapshotLoadedPricing();
     if (form.supplier_id) {
       loadSupplierProducts(form.supplier_id);
     }
@@ -1019,6 +1086,91 @@ function hasPositivePrice() {
   return [form.monthly_price, form.quarterly_price, form.semiannually_price, form.annually_price].some(
     (value) => Number(value || 0) > 0,
   );
+}
+
+/* ===== 按月价同步到其他周期（Issue #77） ===== */
+
+const pricingSyncVisible = ref(false);
+const pricingSyncResult = ref<ProductPricingSyncResult | null>(null);
+
+/**
+ * 加载时（以及每次同步成功后）的**库里**价格。
+ *
+ * 同步接口在服务端按库里的月付价换算，所以表单里存在未保存的定价改动时必须先拦住，
+ * 否则管理员看到的是「按我写的价同步」，实际落库的却是旧价。
+ */
+const loadedMonthlyPrice = ref(0);
+const loadedPrices = reactive({
+  quarterly: 0,
+  semiannually: 0,
+  annually: 0,
+});
+
+function snapshotLoadedPricing() {
+  loadedMonthlyPrice.value = Number(form.monthly_price || 0);
+  loadedPrices.quarterly = Number(form.quarterly_price || 0);
+  loadedPrices.semiannually = Number(form.semiannually_price || 0);
+  loadedPrices.annually = Number(form.annually_price || 0);
+}
+
+function hasUnsavedPricing() {
+  return (
+    Number(form.monthly_price || 0) !== loadedMonthlyPrice.value ||
+    Number(form.quarterly_price || 0) !== loadedPrices.quarterly ||
+    Number(form.semiannually_price || 0) !== loadedPrices.semiannually ||
+    Number(form.annually_price || 0) !== loadedPrices.annually
+  );
+}
+
+function openPricingSync() {
+  if (!isEdit.value) {
+    MessagePlugin.warning(t('products.pricingSync.needSavedProduct'));
+
+    return;
+  }
+
+  if (!(Number(form.monthly_price || 0) > 0)) {
+    MessagePlugin.warning(t('products.pricingSync.monthlyRequired'));
+
+    return;
+  }
+
+  // 服务端只认库里的价：先保存未落库的定价，避免「按 A 预览、按 B 落库」
+  if (hasUnsavedPricing()) {
+    MessagePlugin.warning(t('products.pricingSync.unsavedPricing'));
+
+    return;
+  }
+
+  pricingSyncVisible.value = true;
+}
+
+function handlePricingSynced(result: ProductPricingSyncResult) {
+  const pricing = (result.pricing || {}) as Record<string, unknown>;
+  const readPrice = (cycle: string, current: number) => {
+    const value = pricing[cycle];
+    if (value === undefined || value === null || value === '') return current;
+
+    const parsed = Number(value);
+
+    return Number.isFinite(parsed) ? parsed : current;
+  };
+
+  form.monthly_price = readPrice('monthly', form.monthly_price);
+  form.quarterly_price = readPrice('quarterly', form.quarterly_price);
+  form.semiannually_price = readPrice('semiannually', form.semiannually_price);
+  form.annually_price = readPrice('annually', form.annually_price);
+  // 同步已经在服务端落库：把「库里现值」一起前移，别让下一次被误判成有未保存改动
+  snapshotLoadedPricing();
+
+  pricingSyncResult.value = result;
+
+  if (result.updated.length) {
+    MessagePlugin.success(t('products.pricingSync.resultUpdated', { count: result.updated.length }));
+  }
+  if (result.skipped.length) {
+    MessagePlugin.warning(t('products.pricingSync.resultSkipped', { count: result.skipped.length }));
+  }
 }
 
 // --- Config option helpers ---
@@ -1732,6 +1884,21 @@ function goBack() {
   color: var(--td-text-color-secondary);
   font-size: var(--td-font-size-size-2, 13px);
   line-height: 20px;
+}
+
+/* 「同步到其他周期」的结果：覆盖与跳过各一组，逐条列出来才看得出哪档被跳过 */
+.product-edit-pricing-sync-result {
+  margin-bottom: var(--td-comp-margin-l);
+}
+
+.product-edit-pricing-sync-result__title {
+  font-weight: 600;
+}
+
+.product-edit-pricing-sync-result__list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  line-height: 1.7;
 }
 
 .product-edit-interface-panel {
