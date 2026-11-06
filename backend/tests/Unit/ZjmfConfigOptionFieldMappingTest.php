@@ -116,6 +116,52 @@ class ZjmfConfigOptionFieldMappingTest extends TestCase
     }
 
     /**
+     * 工单回归：区域两个变体（只差【原生】/【非原生】后缀）同步后必须都在。
+     *
+     * option_type=20 是 RadioLevelLinkAge（单选框-层级联动），值是 sub 的 ID。
+     * 它既不在 judgeQuantity() 的区间型集合里，也不该被归一化成数量项；
+     * sub 一个都不能合并、后缀不能裁。
+     */
+    public function test_radio_level_linkage_option_keeps_every_sub_and_its_suffix(): void
+    {
+        $options = $this->fetchConfigOptions([
+            [
+                'id' => 81,
+                'option_type' => 20,
+                'option_name' => 'area|数据中心',
+                'sub' => [
+                    ['id' => 9101, 'option_name' => 'US^美国^美国数据中心【原生】', 'hidden' => 0],
+                    ['id' => 9102, 'option_name' => 'US^美国^美国数据中心【非原生】', 'hidden' => 0],
+                ],
+            ],
+        ]);
+
+        $option = $options[81];
+
+        // 20 不是区间型：qty 不参与、参数留空给 sub
+        $this->assertSame('area', $option['field']);
+        $this->assertSame(0, $option['qty_minimum']);
+        $this->assertSame(0, $option['qty_maximum']);
+
+        // 两个变体都在，顺序按上游
+        $this->assertCount(2, $option['sub']);
+        $this->assertSame(
+            ['美国数据中心【原生】', '美国数据中心【非原生】'],
+            array_column($option['sub'], 'version')
+        );
+        // label 取链路末段，后缀原样保留
+        $this->assertSame(
+            ['美国数据中心【原生】', '美国数据中心【非原生】'],
+            array_column($option['sub'], 'option_name')
+        );
+
+        // sub 合成 parameter 时两个值都要在，不能只剩一个
+        $parameter = (string) $option['parameter'];
+        $this->assertStringContainsString('美国数据中心【原生】', $parameter);
+        $this->assertStringContainsString('美国数据中心【非原生】', $parameter);
+    }
+
+    /**
      * @param  list<array<string, mixed>>  $configOptions
      * @return array<int, array<string, mixed>>
      */

@@ -73,6 +73,27 @@ const TEXT_OPTION_MODE = "text";
 // 区间型（滑块/数量）的呈现模式，由后端 Presenter 归一化下发
 const RANGE_OPTION_MODE = "range";
 
+/**
+ * 取多级链路名称（A^B^C）的最后一段。
+ *
+ * '^' 是上游把层级拼在一起的连接符：「CentOS^CentOS-7.9」「中国^香港^HK-2」。
+ * 按钮文字用末尾段，但必须原样返回 —— 只差【原生】/【非原生】后缀的两个区域
+ * 变体就靠后缀区分，裁掉后缀等于把两者合成一个按钮。
+ */
+function lastLinkageSegment(raw) {
+  const parts = String(raw || "")
+    .split("^")
+    .map((part) => part.trim());
+
+  for (let index = parts.length - 1; index >= 0; index -= 1) {
+    if (parts[index]) {
+      return parts[index];
+    }
+  }
+
+  return "";
+}
+
 export function useWebsiteProductConfigurator(productDetail) {
   const configForm = reactive({});
 
@@ -104,7 +125,19 @@ export function useWebsiteProductConfigurator(productDetail) {
 
     const minQ = Number(item.qty_minimum ?? -1);
     const maxQ = Number(item.qty_maximum ?? -1);
-    if (minQ >= 0 && maxQ >= 0 && minQ === maxQ && !item.parameter) {
+    // 有可见 sub 的项一定是离散选项（option_type=20 层级联动这类，值是 sub 的 ID）。
+    // min===max 且没有 parameter 的兜底本来是给「父项范围缺失的存量区间项」用的，
+    // 用在带 sub 的项上会把整组选项塌成一个数字输入框：选项与真实传参值一起丢。
+    const hasVisibleSub = Array.isArray(item.sub)
+      ? item.sub.some((subItem) => !subItem.hidden)
+      : false;
+    if (
+      minQ >= 0 &&
+      maxQ >= 0 &&
+      minQ === maxQ &&
+      !item.parameter &&
+      !hasVisibleSub
+    ) {
       return true;
     }
 
@@ -113,10 +146,24 @@ export function useWebsiteProductConfigurator(productDetail) {
   }
 
   function parseSubOptions(item) {
+    // 可见 sub 是上游的真实选项清单：label 是选项原文，value 是真实传参值。
+    // 只要有一个可见 sub 就必须用 sub —— 此前要求 >=2 才用，只有一个可见 sub 的
+    // 项（如「美国数据中心【原生】」这类只差后缀的变体）整条回退到 parameter
+    // 拼串，选项名后缀与真实传参值一起丢失，用户端只剩一个被拼串改写过的按钮。
+    // parameter 只在完全没有 sub 时兜底（存量快照里的纯 parameter 配置项）。
     const subs = Array.isArray(item.sub)
       ? item.sub.filter((subItem) => !subItem.hidden)
       : [];
-    if (subs.length > 1) {
+    if (subs.length >= 1) {
+      // parameter（值|文案,值|文案）是真实传参值的第二来源：sub 缺 value 时按
+      // 选项原文回查，避免把库里的自增 id 当参数提交给上游。
+      const parameterValues = new Map(
+        parseParamOptions(item.parameter).map((option) => [
+          option.label,
+          option.id,
+        ]),
+      );
+
       return subs.map((subItem) => {
         const version = String(
           subItem.version ||
@@ -124,17 +171,22 @@ export function useWebsiteProductConfigurator(productDetail) {
             subItem.option_name_first ||
             "",
         );
-        const parts = version.split("^");
-        const label = parts[parts.length - 1] || version || String(subItem.id);
-        // value 是上游 parameter 里的真实传参值；option_name_first 在旧数据里
-        // 等于 sub 的自增 id，优先用 value，避免把 id 提交给上游。
-        const value = String(
-          subItem.value ||
-            subItem.option_name_first ||
-            subItem.qty_minimum ||
-            label ||
-            subItem.id,
-        );
+        // '^' 只拆多级链路，末尾段原样保留：【原生】/【非原生】这类后缀必须
+        // 出现在按钮文字里，否则两个变体在用户端不可分辨。
+        const label =
+          lastLinkageSegment(version) ||
+          String(subItem.option_name || "").trim() ||
+          String(subItem.id);
+        // value 优先级：value → parameter 映射 → option_name_first → id。
+        // id 是本地选中标记，只在没有任何真实传参值时兜底。
+        const value =
+          String(
+            subItem.value ||
+              parameterValues.get(label) ||
+              subItem.option_name_first ||
+              subItem.id ||
+              "",
+          ).trim() || label;
 
         return {
           id: String(subItem.id),
@@ -252,18 +304,38 @@ export function useWebsiteProductConfigurator(productDetail) {
 
   const regionOptions = computed(() => {
     const raw = productDetail.value?.config_options || [];
-    const item = raw.find((configItem) => {
+    const items = raw.filter((configItem) => {
       const { key } = parseField(configItem);
       return REGION_FIELD_KEYS.includes(key);
     });
 
-    if (!item) {
+    if (!items.length) {
       return [];
     }
 
-    const options = parseSubOptions(item).length
-      ? parseSubOptions(item)
-      : parseParamOptions(item.parameter);
+    // 合并「全部」区域类配置项，而不是只取第一条：同一供应商把「原生 / 非原生」
+    // 这类变体同步成两个 area 配置项时，只取第一条会让另一组变体凭空消失。
+    // 按提交值去重，防止同一选项在多条配置项里重复铺按钮。
+    const seen = new Set();
+    const options = [];
+    for (const item of items) {
+      const subOptions = parseSubOptions(item);
+      const candidates = subOptions.length
+        ? subOptions
+        : parseParamOptions(item.parameter);
+
+      for (const option of candidates) {
+        const dedupeKey = String(
+          option.value || option.id || option.label || "",
+        );
+        if (dedupeKey === "" || seen.has(dedupeKey)) {
+          continue;
+        }
+        seen.add(dedupeKey);
+        options.push(option);
+      }
+    }
+
     return options.map((option) => {
       const flag =
         Object.entries(REGION_FLAGS).find(([keyword]) =>
@@ -275,12 +347,36 @@ export function useWebsiteProductConfigurator(productDetail) {
 
   const regionConfigItem = computed(() => {
     const raw = productDetail.value?.config_options || [];
-    return (
-      raw.find((item) => {
-        const { key } = parseField(item);
-        return REGION_FIELD_KEYS.includes(key);
-      }) || null
-    );
+    const items = raw.filter((item) => {
+      const { key } = parseField(item);
+      return REGION_FIELD_KEYS.includes(key);
+    });
+
+    if (!items.length) {
+      return null;
+    }
+
+    // 多个区域类配置项时，提交参数必须落在「拥有当前选中项」的那一条上，
+    // 否则会把 A 组的选中值塞进 B 组的字段名。选不出就退回第一条。
+    // 只读 configForm.region（选中值的兼容镜像），不读 regionValue ——
+    // regionValue 又依赖本 computed 推出的 field key，读了就是循环依赖。
+    const current = String(configForm.region || "").trim();
+    if (current !== "" && items.length > 1) {
+      const owner = items.find((item) => {
+        const subs = parseSubOptions(item);
+        const candidates = subs.length
+          ? subs
+          : parseParamOptions(item.parameter);
+        return candidates.some(
+          (option) => String(option.value || option.id || "") === current,
+        );
+      });
+      if (owner) {
+        return owner;
+      }
+    }
+
+    return items[0];
   });
   const regionFieldKey = computed(
     () => parseField(regionConfigItem.value || {}).key || "region",
