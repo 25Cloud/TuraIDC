@@ -72,11 +72,16 @@ class UpstreamStockShortageClassificationTest extends TestCase
             ->shouldReceive('request')
             ->once()
             ->andReturn(['status' => 200, 'data' => ['invoiceid' => 990]]);
-        // 上游换品时目标商品库存为 0，加购/结算被拒
+        // 上游换品时目标商品库存为 0，加购/结算被拒。
+        // 账单支付自本次修复起改用 requestWithMeta：裸 post 丢 HTTP 状态，
+        // 上游 5xx（或 4xx 拒绝）且业务码看似正常时会被误判成已付，所以这里按带 HTTP 状态的形式造桩。
         $hostingTransport
-            ->shouldReceive('request')
+            ->shouldReceive('requestWithMeta')
             ->once()
-            ->andReturn(['status' => 400, 'msg' => '产品88库存不足']);
+            ->andReturn([
+                'response' => ['status' => 400, 'msg' => '产品88库存不足'],
+                'http_code' => 400,
+            ]);
 
         $transport = $this->makeTransport($hostingTransport);
         $networkService = new ZjmfNetworkService($transport, new ZjmfConsoleService($transport));
@@ -104,9 +109,12 @@ class UpstreamStockShortageClassificationTest extends TestCase
             ->once()
             ->andReturn(['status' => 200, 'data' => ['invoiceid' => 990]]);
         $hostingTransport
-            ->shouldReceive('request')
+            ->shouldReceive('requestWithMeta')
             ->once()
-            ->andReturn(['status' => 401, 'msg' => '登录已失效，请重新登录']);
+            ->andReturn([
+                'response' => ['status' => 401, 'msg' => '登录已失效，请重新登录'],
+                'http_code' => 401,
+            ]);
 
         $transport = $this->makeTransport($hostingTransport);
         $networkService = new ZjmfNetworkService($transport, new ZjmfConsoleService($transport));
