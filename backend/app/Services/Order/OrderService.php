@@ -20,6 +20,7 @@ use App\Services\Finance\PaymentService;
 use App\Services\Order\Concerns\HandlesOrderCalculation;
 use App\Services\System\NotificationService;
 use App\Services\System\OperationLogService;
+use App\Support\PaymentChannelProjection;
 use App\Support\StockReservation;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -606,7 +607,22 @@ class OrderService
             ?? $payments->first(fn (Payment $item) => in_array((int) $item->status, [PaymentStatus::SUCCESS, PaymentStatus::REFUNDED], true));
 
         if (! $payment instanceof Payment) {
-            return null;
+            // 余额支付与 0 元收口都不产生 Payment 记录：渠道由
+            // `PaymentChannelProjection` 按账单/订单状态推导，与账单侧同一口径。
+            $projection = PaymentChannelProjection::forOrder($order);
+
+            if (! is_array($projection)) {
+                return null;
+            }
+
+            return array_merge($projection, [
+                'refund_method' => '',
+                'refund_method_label' => '',
+                'refund_amount' => '',
+                'refund_reason' => '',
+                'refunded_at' => '',
+                'out_request_no' => '',
+            ]);
         }
 
         $refund = (array) data_get((array) ($payment->callback_raw ?? []), 'refund', []);

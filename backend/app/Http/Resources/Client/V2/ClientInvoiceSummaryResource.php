@@ -62,6 +62,9 @@ class ClientInvoiceSummaryResource extends AdminInvoiceSummaryResource
             'status' => (int) ($payment['status'] ?? 0),
             'status_label' => (string) ($payment['status_label'] ?? ''),
             'paid_at' => $payment['paid_at'] ?? null,
+            // 渠道是按账单状态推导出来的（余额支付/0 元收口没有 Payment 流水），
+            // 前端据此区分「真实流水」与「推导渠道」，展示口径仍然是 gateway_label。
+            'derived' => (bool) ($payment['derived'] ?? false),
         ];
     }
 }

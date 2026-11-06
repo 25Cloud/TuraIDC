@@ -510,6 +510,11 @@ class CheckoutService
         $this->productCatalogService->assertProductCanBeProvisioned($product, $quantity);
     }
 
+    /**
+     * 商品级附加要求：只有配了 purchase_requires 的商品才成立，与账户级策略是叠加关系（两者都要满足）。
+     * 账户级要求（实名 / 手机号 / 邮箱是否强制）见 App\Services\Auth\AccountPolicyService，
+     * 由下单入口统一断言，这里不要重复实现。
+     */
     private function assertPurchaseRequires(Product $product, int $userId): void
     {
         $requires = (array) ($product->purchase_requires ?? []);

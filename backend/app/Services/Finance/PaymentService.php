@@ -24,6 +24,7 @@ use App\Models\RechargeRecord;
 use App\Models\Refund;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\Auth\AccountPolicyService;
 use App\Services\ClientServiceConsole\ServiceTrafficPackageService;
 use App\Services\ClientServiceConsole\ServiceUpgradeService;
 use App\Services\Integrations\Payments\PaymentGatewayManager;
@@ -40,11 +41,13 @@ use App\Support\StockReservation;
 use App\Support\VersionedJson;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Cache\LockTimeoutException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class PaymentService
 {
@@ -69,6 +72,12 @@ class PaymentService
      */
     public function payByBalance(Invoice $invoice, User $user, array $context = []): Invoice
     {
+        // 0 元账单走「直接收口」：余额支付对 0 元永远算不出可付金额，
+        // 按旧口径会抛「当前账单无需支付」并一直停在待支付，最终被超时清理取消。
+        if ($this->invoiceNeedsZeroAmountSettlement($invoice)) {
+            return $this->settleZeroAmountInvoice($invoice, $user, $context);
+        }
+
         $traceId = trim((string) ($context['trace_id'] ?? ''));
         $lockKey = "lock:pay:invoice:{$invoice->id}";
 
@@ -210,6 +219,163 @@ class PaymentService
         }
 
         return $paidInvoice?->fresh() ?? $paidInvoice ?? $order->invoice;
+    }
+
+    /**
+     * 0 元账单收口：金额为 0 的账单不需要任何支付渠道，直接把账单/订单推进到已支付
+     * 并触发后续履约。
+     *
+     * ## 核心语义（将来重构别踩回去）
+     *
+     * **0 元单不建 Payment 行、不动余额，但必须履约，且不可被超时清理取消。**
+     *
+     * - 不建 Payment、不动余额：0 元没有任何资金流，凭空造支付单会污染对账，
+     *   也会凭空多出「可退额度」；
+     * - 必须履约：状态推进后必须走 `handlePaidInvoice()`，否则用户手里有单、系统里没服务；
+     * - 不可被超时清理取消：`InvoiceCleanupAutomationService` 必须**先**跑
+     *   `settleZeroAmountInvoices()` 再做未付账单取消——顺序反了，0 元单就会被当
+     *   「未支付超时」清掉。
+     *
+     * 状态流转与 `payByBalance` 同款（账单 PAID + `paid_amount` + `paid_at`，订单同步 PAID），
+     * 可退上限因此天然为 0。幂等：账单已是 PAID 时直接返回，不重复调用
+     * `handlePaidInvoice`，避免重复开通/重复通知。
+     */
+    public function settleZeroAmountInvoice(Invoice $invoice, User $user, array $context = []): Invoice
+    {
+        $traceId = trim((string) ($context['trace_id'] ?? ''));
+        $lockKey = "lock:pay:invoice:{$invoice->id}";
+        $alreadySettled = false;
+
+        $settled = $this->withLock($lockKey, 30, function () use ($invoice, $user, $traceId, &$alreadySettled) {
+            return DB::transaction(function () use ($invoice, $user, $traceId, &$alreadySettled) {
+                $lockedInvoice = Invoice::query()
+                    ->lockForUpdate()
+                    ->with('order')
+                    ->findOrFail($invoice->id);
+
+                // 幂等闸门：已收口就直接返回，不再走履约，避免重复开通/重复通知。
+                if ((int) $lockedInvoice->status === InvoiceStatus::PAID) {
+                    $alreadySettled = true;
+
+                    return $lockedInvoice;
+                }
+
+                throw_if(
+                    ! in_array((int) $lockedInvoice->status, [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE], true),
+                    new BusinessException('账单状态异常，无法支付')
+                );
+
+                throw_if(
+                    (int) $lockedInvoice->user_id !== (int) $user->id,
+                    new ModelNotFoundException('账单不存在')
+                );
+
+                $amount = round((float) $lockedInvoice->amount - (float) ($lockedInvoice->paid_amount ?? 0), 2);
+                throw_if($amount > 0, new BusinessException('当前账单仍需支付，无法按 0 元收口'));
+
+                $lockedInvoice->forceFill([
+                    'status' => InvoiceStatus::PAID,
+                    'paid_amount' => $lockedInvoice->amount,
+                    'paid_at' => now(),
+                    'trace_id' => $traceId !== '' ? $traceId : $lockedInvoice->trace_id,
+                ])->save();
+
+                $order = $lockedInvoice->order;
+                if ($order instanceof Order && (int) $order->status === OrderStatus::PENDING) {
+                    $order->forceFill([
+                        'status' => OrderStatus::PAID,
+                        'paid_amount' => $lockedInvoice->amount,
+                        'paid_at' => now(),
+                    ])->save();
+                }
+
+                // 0 元收口没有资金流：先点过网关、又改走 0 元收口的 pending 支付单全部关闭，
+                // 避免它们之后回调进来把已付账单再打一次。
+                $this->closeOtherPendingPayments($lockedInvoice, 0, 'invoice_paid_zero_amount', false);
+
+                return $lockedInvoice;
+            });
+        }, '支付请求处理中，请勿重复提交');
+
+        // 账务已提交、状态已 PAID 之后才触发履约：履约失败不回滚账单（与余额支付同口径），
+        // 由履约跟踪标记 pending 后重试。已收口过的则完全跳过，保证不重复履约。
+        if (! $alreadySettled) {
+            $this->handlePaidInvoice($settled, $traceId !== '' ? 'free:'.$traceId : 'free:'.$invoice->id);
+        }
+
+        return $settled->fresh() ?? $settled;
+    }
+
+    /**
+     * 批量收口 0 元账单（定时任务用）。
+     *
+     * 为什么要有批处理：0 元账单不一定会有人点「支付」——前端可能根本不显示支付入口。
+     * 清理任务取消超时未付账单之前先扫一遍 0 元单，才能保证它们不会以「未支付」被取消。
+     *
+     * @return int 本次收口的账单数
+     */
+    public function settleZeroAmountInvoices(int $limit = 200): int
+    {
+        $limit = max(1, min(2000, $limit));
+
+        $invoiceIds = Invoice::query()
+            ->whereIn('status', [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE])
+            ->where('amount', '<=', 0)
+            ->where('paid_amount', '<=', 0)
+            ->orderBy('id')
+            ->limit($limit)
+            ->pluck('id');
+
+        $settled = 0;
+
+        foreach ($invoiceIds as $invoiceId) {
+            $invoice = Invoice::query()->find((int) $invoiceId);
+            if (! $invoice instanceof Invoice) {
+                continue;
+            }
+
+            $user = User::query()->find((int) $invoice->user_id);
+            if (! $user instanceof User) {
+                continue;
+            }
+
+            try {
+                $this->settleZeroAmountInvoice($invoice, $user, [
+                    'trace_id' => 'zero-amount-settle:'.$invoice->id,
+                    'operator' => 'system',
+                    'operator_name' => 'schedule:zero-amount-settle',
+                ]);
+                $settled++;
+
+                Log::info('[账务] 0 元账单自动收口', [
+                    'invoice_id' => (int) $invoice->id,
+                    'invoice_no' => (string) $invoice->invoice_no,
+                    'order_id' => $invoice->order_id !== null ? (int) $invoice->order_id : null,
+                ]);
+            } catch (Throwable $exception) {
+                Log::warning('[账务] 0 元账单自动收口失败，已跳过', [
+                    'invoice_id' => (int) $invoice->id,
+                    'invoice_no' => (string) $invoice->invoice_no,
+                    'message' => $exception->getMessage(),
+                    'exception' => $exception::class,
+                ]);
+            }
+        }
+
+        return $settled;
+    }
+
+    /**
+     * 该账单是否该走「0 元直接收口」。
+     *
+     * 只认「金额本身为 0 且未付」：金额非 0 但已付清的账单属于重复支付，仍按
+     * 「账单状态异常」拒绝，不能拿 0 元通道把它当成功。
+     */
+    private function invoiceNeedsZeroAmountSettlement(Invoice $invoice): bool
+    {
+        return round((float) $invoice->amount, 2) <= 0
+            && round((float) ($invoice->paid_amount ?? 0), 2) <= 0
+            && in_array((int) $invoice->status, [InvoiceStatus::UNPAID, InvoiceStatus::OVERDUE], true);
     }
 
     /**
@@ -564,14 +730,23 @@ class PaymentService
         ]);
     }
 
+    /**
+     * 充值入口的账户要求：业务线开关 + 账户策略，两者是「OR」关系。
+     *
+     * - 开关：管理端「推荐与充值 → 充值须实名认证」（finance.recharge_requires_verification），
+     *   打开时本次充值额外强制实名，与账户策略是否开启无关；
+     * - 策略：管理端「推荐与充值 → 账户信息强制项」（实名/手机号/邮箱）。
+     *
+     * 判定与文案都不在这里重写：「用户是否已实名 / 已绑手机 / 已绑邮箱」的唯一口径是
+     * {@see AccountPolicyService}，缺失项与提示语都由它给出。
+     */
     private function assertVerifiedUser(User $user): void
     {
-        $enforceRechargeVerification = $this->rechargeRequiresVerification();
+        $forcedItems = $this->rechargeRequiresVerification()
+            ? [AccountPolicyService::ITEM_VERIFICATION]
+            : [];
 
-        throw_if(
-            $enforceRechargeVerification && ! $user->hasCompletedVerification(),
-            new BusinessException('请先完成实名认证后再继续操作', 40301)
-        );
+        app(AccountPolicyService::class)->assertSatisfied($user, 'recharge', $forcedItems);
     }
 
     /**
@@ -1143,7 +1318,7 @@ class PaymentService
                 $subject,
                 $this->resolveInvoicePaymentTimeoutExpress($lockedInvoice)
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->restoreReservedMixBalance($alipayPayment, [
                 'trace_id' => $traceId,
                 'closed_reason' => 'alipay_precreate_failed',
@@ -1279,7 +1454,7 @@ class PaymentService
                 $this->resolveInvoicePaymentTimeoutExpress($lockedInvoice),
                 $context
             );
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             $this->restoreReservedMixBalance($gatewayPayment, [
                 'trace_id' => $traceId,
                 'closed_reason' => "{$gateway}_precreate_failed",
@@ -1615,7 +1790,7 @@ class PaymentService
             ]);
 
             return false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::error("[{$gatewayLabel}回调] 处理异常", [
                 'payment_no' => $paymentNo,
                 'trade_no' => $tradeNo,
@@ -1888,7 +2063,7 @@ class PaymentService
             ]);
 
             return false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::error('[支付宝回调] 处理异常', [
                 'payment_no' => $paymentNo,
                 'trade_no' => $tradeNo,
@@ -2137,7 +2312,7 @@ class PaymentService
                     ];
                 });
             }, '支付处理中，请稍后重试');
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::error('[支付宝主动查询] 入账处理异常', [
                 'payment_no' => $payment->payment_no,
                 'trade_no' => $tradeNo,
@@ -2635,7 +2810,7 @@ class PaymentService
         $stepStartedAt = microtime(true);
         try {
             $this->couponService->syncInvoiceCouponUsageAfterResponse($invoice);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::warning('[购买链路] 支付成功后优惠券同步调度失败', [
                 'invoice_id' => (int) $invoice->id,
                 'invoice_no' => (string) ($invoice->invoice_no ?? ''),
@@ -2650,7 +2825,7 @@ class PaymentService
         $stepStartedAt = microtime(true);
         try {
             $this->adminOrderNotificationService->notifyInvoicePaidAfterResponse($invoice);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::warning('[购买链路] 支付成功后管理员通知调度失败', [
                 'invoice_id' => (int) $invoice->id,
                 'invoice_no' => (string) ($invoice->invoice_no ?? ''),
@@ -2698,7 +2873,7 @@ class PaymentService
             $this->provisionService->processPaidInvoice($invoice);
 
             return false;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::error('[支付后自动开通] 基于账单的开通失败', [
                 'invoice_id' => $invoice->id,
                 'invoice_no' => $invoice->invoice_no ?? '',
@@ -2718,7 +2893,7 @@ class PaymentService
         $callback = function () use ($invoice, $traceId): void {
             try {
                 $this->referralService->rewardForPaidInvoice($invoice, $traceId);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 Log::error('[支付后推荐奖励] 基于账单的奖励处理失败', [
                     'invoice_id' => $invoice->id,
                     'invoice_no' => $invoice->invoice_no ?? '',
@@ -2748,7 +2923,7 @@ class PaymentService
 
         try {
             $this->referralService->rewardForPaidOrder($order, $traceId);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::error('[支付后推荐奖励] 处理失败', [
                 'order_id' => $order->id,
                 'order_no' => $order->order_no,
@@ -2811,7 +2986,7 @@ class PaymentService
         try {
             $lock = Cache::lock("lock:paid-order-fulfillment:{$orderId}", 1500);
             $acquired = $lock->get();
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::warning('[支付后自动开通] 订单履约锁不可用，降级继续履约', [
                 'order_id' => $orderId,
                 'message' => $exception->getMessage(),
@@ -2949,7 +3124,7 @@ class PaymentService
             $this->notifyOrderPaid($invoice, 'new');
 
             return true;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Log::error('[支付后自动开通] 调用开通服务失败', [
                 'invoice_id' => $invoice->id,
                 'order_id' => $order->id,

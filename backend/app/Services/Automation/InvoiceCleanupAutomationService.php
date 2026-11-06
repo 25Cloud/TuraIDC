@@ -35,12 +35,37 @@ class InvoiceCleanupAutomationService
     {
         $config = $this->settingService->getAutomationConfig();
 
+        // 必须先收口 0 元账单，再做超时未付清理：0 元单在旧口径下永远付不掉，
+        // 直接进清理会被当「未支付超时」取消，用户手里的单和服务一起丢。
+        $zeroAmountSettled = $this->settleZeroAmountInvoices();
+
         return [
+            'zero_amount_invoices_settled' => $zeroAmountSettled,
             'invoices_cancelled' => $this->cleanupPendingInvoices($config),
             'orders_cancelled' => $this->cleanupPendingOrders($config),
             'recharges_expired' => $this->cleanupPendingRecharges($config),
             'supplier_balance_logs_purged' => $this->cleanupSupplierBalanceLogs($config),
         ];
+    }
+
+    /**
+     * 收口金额为 0 的待支付账单（免费商品、100% 优惠券、差价 0 元的升级等）。
+     *
+     * 挂在既有清理任务里而不是单开调度槽：0 元单量小，与待支付清理同频（15 分钟）
+     * 已经足够，而且必须与取消动作同批执行才能保证「先收口、再取消」的顺序。
+     */
+    private function settleZeroAmountInvoices(): int
+    {
+        try {
+            return $this->paymentService->settleZeroAmountInvoices();
+        } catch (\Throwable $exception) {
+            Log::warning('[定时任务] 0 元账单收口失败，本次跳过', [
+                'message' => $exception->getMessage(),
+                'exception' => $exception::class,
+            ]);
+
+            return 0;
+        }
     }
 
     /**

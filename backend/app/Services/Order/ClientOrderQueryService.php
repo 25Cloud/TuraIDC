@@ -7,7 +7,9 @@ namespace App\Services\Order;
 use App\Constants\OrderStatus;
 use App\Constants\OrderType;
 use App\Models\Order;
+use App\Models\Payment;
 use App\Services\ProductCatalog\ProductFullPathResolver;
+use App\Support\PaymentChannelProjection;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -192,8 +194,31 @@ class ClientOrderQueryService
         ] : null;
         $base['config_snapshot'] = (array) ($order->config_snapshot ?? []);
         $base['config_pricing_snapshot'] = (array) ($order->config_pricing_snapshot ?? []);
+        $base['payment_summary'] = $this->paymentSummary($order);
 
         return $base;
+    }
+
+    /**
+     * 订单支付渠道：有真实流水就用流水，没有就按账单/订单状态推导。
+     *
+     * 推导口径与账单详情完全同源（`PaymentChannelProjection`）：余额支付不产生
+     * Payment 记录、0 元收口没有任何资金流，但订单详情照样要能看出「余额/免费」。
+     * 只在详情里 `loadMissing` 流水关系：列表页不需要渠道，预载会变成每行两条查询。
+     *
+     * @return array<string, mixed>|null
+     */
+    private function paymentSummary(Order $order): ?array
+    {
+        $order->loadMissing('invoice.payments');
+
+        $payment = PaymentChannelProjection::primaryThirdPartyPayment($order->invoice?->payments ?? []);
+
+        if ($payment instanceof Payment) {
+            return PaymentChannelProjection::fromPayment($payment);
+        }
+
+        return PaymentChannelProjection::forOrder($order);
     }
 
     /**

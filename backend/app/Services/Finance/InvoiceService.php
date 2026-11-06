@@ -19,6 +19,7 @@ use App\Models\User;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\System\OperationLogService;
 use App\Support\AdminPrivacy;
+use App\Support\PaymentChannelProjection;
 use App\Support\SqlLike;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Carbon;
@@ -809,7 +810,10 @@ class InvoiceService
         $payment = $this->resolvePrimaryInvoicePayment($invoice->payments);
 
         if (! $payment instanceof Payment) {
-            return null;
+            // 余额支付与 0 元收口都不产生 Payment 记录（见 PaymentService::payByBalance），
+            // 只看 payments 会让这两类已付账单显示「支付方式为空」。这里按账单状态补一个
+            // 推导出的渠道，前端拿到的仍是同一组 gateway / gateway_key / gateway_label 字段。
+            return $this->resolveDerivedPaymentSummary($invoice);
         }
 
         $refund = (array) data_get((array) ($payment->callback_raw ?? []), 'refund', []);
@@ -829,17 +833,39 @@ class InvoiceService
             'refund_method_label' => (string) ($refund['refund_method_label'] ?? ''),
             'refund_reason' => (string) ($refund['refund_reason'] ?? ''),
             'refunded_at' => (string) ($refund['refunded_at'] ?? ($refund['gmt_refund_pay'] ?? '')),
+            'derived' => false,
         ];
+    }
+
+    /**
+     * 无第三方支付单时按账单状态推导支付渠道。
+     *
+     * 推导规则住在 `PaymentChannelProjection`：订单、账单、管理端资源三处共用同一份口径，
+     * 文案统一取 `PaymentGatewayCode::label()`，这里只补账单摘要独有的退款字段。
+     *
+     * `derived = true` 明确告诉前端「这条不是支付流水，是按账单状态推出来的渠道」，
+     * 不影响展示，只是避免把它当成可退款的支付单。
+     */
+    private function resolveDerivedPaymentSummary(Invoice $invoice): ?array
+    {
+        $projection = PaymentChannelProjection::forInvoice($invoice);
+
+        if (! is_array($projection)) {
+            return null;
+        }
+
+        return array_merge($projection, [
+            'refund_method' => '',
+            'refund_method_label' => '',
+            'refund_reason' => '',
+            'refunded_at' => '',
+        ]);
     }
 
     private function resolvePrimaryInvoicePayment(iterable $payments): ?Payment
     {
-        $collection = $this->thirdPartyPayments($payments);
-
-        return $collection
-            ->first(fn (Payment $payment) => ! (bool) data_get((array) ($payment->callback_raw ?? []), 'duplicate_paid', false)
-                && in_array((int) $payment->status, [PaymentStatus::SUCCESS, PaymentStatus::REFUNDED], true))
-            ?? $collection->first(fn (Payment $payment) => in_array((int) $payment->status, [PaymentStatus::SUCCESS, PaymentStatus::REFUNDED], true));
+        // 主支付单的选择口径与订单/客户端共用一份实现（过滤第三方 + 判重 + 成功态）。
+        return PaymentChannelProjection::primaryThirdPartyPayment($payments);
     }
 
     private function thirdPartyPayments(iterable $payments): Collection

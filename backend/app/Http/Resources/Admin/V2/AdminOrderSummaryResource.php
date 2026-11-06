@@ -11,6 +11,7 @@ use App\Models\Payment;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductFullPathResolver;
 use App\Support\AdminPrivacy;
+use App\Support\PaymentChannelProjection;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -122,28 +123,59 @@ class AdminOrderSummaryResource extends JsonResource
     }
 
     /**
+     * 支付流水：第三方网关的 Payment 行。
+     *
+     * 余额支付与 0 元收口都不产生 Payment 记录，只看流水会让这两类已付订单显示
+     * 「没有支付方式」。此时按订单/账单状态补一条推导出的渠道（`derived = true`），
+     * 字段口径与真实流水一致，前端不需要分支。
+     *
      * @return list<array<string, mixed>>
      */
     protected function payments(Order $order): array
     {
         $payments = $order->invoice?->payments ?? collect();
 
-        return collect($payments)
+        $rows = collect($payments)
             ->filter(fn (Payment $payment): bool => $payment->isThirdPartyGateway())
-            ->map(fn (Payment $payment): array => [
-                'id' => (int) $payment->id,
-                'payment_no' => (string) $payment->payment_no,
-                'gateway' => $payment->gatewayKey(),
-                'gateway_key' => $payment->gatewayKey(),
-                'trade_no' => (string) ($payment->trade_no ?? ''),
-                'amount' => $this->money($payment->amount),
-                'status' => (int) $payment->status,
-                'paid_at' => $payment->paid_at?->format('Y-m-d H:i:s'),
-                'trace_id' => (string) ($payment->trace_id ?? ''),
-                'created_at' => $payment->created_at?->format('Y-m-d H:i:s'),
-            ])
+            ->map(fn (Payment $payment): array => array_merge(
+                PaymentChannelProjection::fromPayment($payment),
+                [
+                    'trace_id' => (string) ($payment->trace_id ?? ''),
+                    'created_at' => $payment->created_at?->format('Y-m-d H:i:s'),
+                ],
+            ))
             ->values()
             ->all();
+
+        if ($rows !== []) {
+            return $rows;
+        }
+
+        $derived = $this->derivedPayment($order);
+
+        return $derived === null ? [] : [$derived];
+    }
+
+    /**
+     * 没有第三方流水时，按订单/账单状态推导支付渠道。
+     *
+     * 推导规则与账单侧同源（`PaymentChannelProjection`）：0 元 → 免费开通，
+     * 其余已付 → 余额支付；这里只补订单流水视图独有的 trace_id/created_at。
+     *
+     * @return array<string, mixed>|null
+     */
+    protected function derivedPayment(Order $order): ?array
+    {
+        $projection = PaymentChannelProjection::forOrder($order);
+
+        if (! is_array($projection)) {
+            return null;
+        }
+
+        return array_merge($projection, [
+            'trace_id' => '',
+            'created_at' => $order->created_at?->format('Y-m-d H:i:s'),
+        ]);
     }
 
     protected function displayResolver(): ProductDisplayNameResolver
