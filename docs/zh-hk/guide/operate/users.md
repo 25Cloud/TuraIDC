@@ -1,6 +1,6 @@
 ---
 source: guide/operate/users.md
-sourceHash: 1939e2558c48445bc15b483e0ded92ee914ffcf0b172c25a18e514ddc1648907
+sourceHash: 4a4cb51cd6d1607d8e19a821f539439d90b789d9b485ec43b1e5f725e32c197d
 generated: zh-hk
 ---
 
@@ -39,9 +39,50 @@ generated: zh-hk
 - **管理端入口**：用戶 → 實名列表（`/admin/users/verification`）與實名管理（`/admin/users/verification/manage`），權限 `verification.list`。駁回/解綁需要額外權限 `verification.unbind`，駁回原因必填；人工訂正資料走 `PUT /v2/admin/verifications/{user}` 接口。
 - **認證插件**：目錄 `backend/plugins/certification/`，內置 `alipay_certify`（支付寶）、`baidu_face`、`leaf_face`（人臉）、`smapi`、`stay33`、`demo_verification`。啟用與配置入口：系統 → 插件管理 → 實名認證（`/admin/integration-plugins/verification`）。
 - **實名與業務的聯動**：
-  1. 商品的 `purchase_requires.require_verification` 打開後，未實名用戶下單被拒（40301「該商品需要實名認證後才能購買，請先完成實名認證」）；同一組開關裡的 `require_phone` 用於強制綁定手機號（40302）。
-  2. 申請提現必須先實名（見第 7 節）。
-  3. 充值是否必須實名由設置項 `finance.recharge_requires_verification` 決定，默認開啟，入口在管理端「營銷推廣 → 推廣管理 → 推薦與充值」的「賬戶充值」分段（`/admin/referral-settings`），見[財務與賬單](finance.md)。
+  1. 商品的 `purchase_requires.require_verification` 打開後，未實名用戶下單被拒（40301「該商品需要實名認證後才能購買，請先完成實名認證」）；同一組開關裡的 `require_phone` 用於強制綁定手機號（40302）。這是**商品級附加要求**，與賬戶策略疊加，兩者都要滿足。
+  2. 申請提現先過賬戶策略（見下面的「賬戶策略」小節）；舊版本是寫死必須實名，現在由管理端開關決定。
+  3. 充值：業務線開關 `finance.recharge_requires_verification`（默認開啟，入口在「推薦與充值 → 賬戶充值」分段）與賬戶策略是**「或」**關係，任一未滿足都會被攔；判定與提示文案統一由賬戶策略給出，不再各寫一套。
+  4. 開放接口密鑰的手機號 / 實名要求是開放接口頁自己的開關，只約束 API 憑據，不受賬戶策略影響。
+
+### 賬戶策略：實名 / 手機號 / 電郵是否強制
+
+入口：管理端「推薦與充值」頁的「賬戶信息強制項」分段（`/admin/referral-settings`），查看需 `settings.view`、保存需 `settings.manage`。配置落在通用設置分組 `account`，三項均為開關，**默認全部關閉**（升級不改變存量行為）。
+
+| 鍵                         | 含義         | 判定口徑                                          |
+| -------------------------- | ------------ | ------------------------------------------------- |
+| `require_verification`     | 強制實名     | `is_verified = 1` 或 `verification_status = 2`    |
+| `require_phone`            | 強制綁定手機 | `users.phone` 非空（不要求短信驗證標記）          |
+| `require_email`            | 強制綁定電郵 | `users.email` 非空（不要求郵件驗證標記）          |
+
+生效範圍只有「會動錢的寫操作」，判定在服務端一處完成：
+
+- 下單 `POST /api/v2/client/invoices`、支付（餘額 / 支付寶 / 組合）、充值 `POST /api/v2/client/recharge`、提現 `POST /api/v2/client/referral/withdrawals`；
+- 不達標返回 HTTP 403、`code: 40301`，`message` 可直接展示給用戶，例如「下單前請先完成實名認證、綁定手機號」「提現前請先完成綁定手機號」；
+- **不攔**登錄、`GET /api/v2/client/auth/info`、所有隻讀列表與詳情。老用戶被策略收緊後照樣能進控制台看已有服務與賬單，只是上述操作會要求補齊信息，不會只剩一個報錯頁。
+
+老用戶第一次觸達能拿到什麼：控制台拉用戶信息時（`GET /api/v2/client/auth/info`）就直接帶回賬戶策略，不必先撞一次 403：
+
+```json
+{
+  "account_policy": {
+    "require_verification": true,
+    "require_phone": true,
+    "require_email": false,
+    "missing_items": ["verification", "phone"],
+    "message": "继续操作前请先完成实名认证、绑定手机号"
+  }
+}
+```
+
+- `missing_items` 只有三個枚舉：`verification`（實名）、`phone`（手機號）、`email`（電郵）；順序固定為實名 → 手機號 → 電郵，且只列「開關開着、用戶還沒滿足」的項。三項都滿足（或開關全關）時是空數組。
+- `message` 句式固定為「{場景}前請先完成{缺失項}」，缺失項之間用「、」連接；`auth/info` 的場景是「繼續操作」，寫操作報錯時換成對應入口名（下單 / 支付 / 充值 / 提現）。前端展示直接用 `message`，不要自己拼文案。
+- 保存設置後立即生效：settings 是按分組快取的，保存會清掉 `account` 分組快取，不需要重啟或等過期。
+
+開啟前請確認存量數據：
+
+- `require_email` 會攔「只用手機號註冊、從未填過電郵」的老用戶；
+- `require_phone` 按「手機號是否填寫」判定，不看短信驗證標記，因此歷史號碼也算已綁定；
+- 三項默認全關，開啟屬於運營策略變更，建議先看一遍存量賬號的手機號 / 電郵覆蓋率再開。
 
 ## 4. 會員等級與返利比例
 

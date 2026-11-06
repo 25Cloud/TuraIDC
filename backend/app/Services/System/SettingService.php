@@ -12,6 +12,9 @@ use Illuminate\Support\Collection;
 
 class SettingService
 {
+    /** 账户策略（实名 / 手机号 / 邮箱是否强制）所用设置分组 */
+    public const ACCOUNT_POLICY_GROUP = 'account';
+
     private const FIXED_RENEW_NOTICE_DAYS = [7, 3, 1];
 
     private const LOG_ARCHIVE_SETTING_KEYS = [
@@ -78,6 +81,37 @@ class SettingService
             'traffic_package_option_keyword' => '流量',
             'traffic_package_allow_choice_mode' => true,
             'traffic_package_allow_quantity_mode' => true,
+        ];
+    }
+
+    /**
+     * 账户策略：是否强制实名、强制绑定手机号、强制绑定邮箱。
+     *
+     * 默认全部关闭。默认关闭而不是默认打开，是因为存量站点里存在大量未实名/无手机的老用户：
+     * 升级后一上线就开始拦人，等于把运营策略变更做成一次事故。
+     *
+     * @return array{require_verification: bool, require_phone: bool, require_email: bool}
+     */
+    public static function defaultAccountPolicyConfig(): array
+    {
+        return [
+            'require_verification' => false,
+            'require_phone' => false,
+            'require_email' => false,
+        ];
+    }
+
+    /**
+     * @return array{require_verification: bool, require_phone: bool, require_email: bool}
+     */
+    public function getAccountPolicyConfig(): array
+    {
+        $defaults = self::defaultAccountPolicyConfig();
+
+        return [
+            'require_verification' => $this->getBool(self::ACCOUNT_POLICY_GROUP, 'require_verification', $defaults['require_verification']),
+            'require_phone' => $this->getBool(self::ACCOUNT_POLICY_GROUP, 'require_phone', $defaults['require_phone']),
+            'require_email' => $this->getBool(self::ACCOUNT_POLICY_GROUP, 'require_email', $defaults['require_email']),
         ];
     }
 
@@ -498,6 +532,11 @@ class SettingService
         return match ($group) {
             'system' => [],
             'log_archive' => self::defaultLogArchiveConfig(),
+            // 账户策略三个开关始终回显（默认关闭），管理端不必等有人保存过一次才看得到开关
+            self::ACCOUNT_POLICY_GROUP => array_map(
+                fn (bool $enabled): string => $enabled ? '1' : '0',
+                self::defaultAccountPolicyConfig()
+            ),
             'traffic_package' => [
                 'traffic_package_enabled' => '1',
                 'traffic_package_display_threshold_percent' => '0',
@@ -591,8 +630,39 @@ class SettingService
 
         $this->validateAutomationScheduleSettings($group, $settings);
         $this->validateLogArchiveSettings($group, $settings);
+        $settings = $this->prepareAccountPolicySettings($group, $settings);
 
         return $settings;
+    }
+
+    /**
+     * 账户策略只接受三个开关，且一律归一成 '1' / '0'。
+     *
+     * 归一而不是原样落库，是因为它被当成布尔判据使用：管理端的 t-switch 会提交 true/false，
+     * 直接调用 API 的可能提交 1/'on'，落库形态不统一会让 getBool 之外的读者各猜一套。
+     *
+     * @param  array<string, mixed>  $settings
+     * @return array<string, mixed>
+     */
+    private function prepareAccountPolicySettings(string $group, array $settings): array
+    {
+        if (trim($group) !== self::ACCOUNT_POLICY_GROUP) {
+            return $settings;
+        }
+
+        $unsupported = array_diff(
+            array_map('strval', array_keys($settings)),
+            array_keys(self::defaultAccountPolicyConfig())
+        );
+
+        if ($unsupported !== []) {
+            throw new BusinessException('账户策略配置包含不受支持的字段：'.implode('、', $unsupported), 42200);
+        }
+
+        return array_map(
+            fn (mixed $value): string => in_array($value, [true, 1, '1', 'true', 'on'], true) ? '1' : '0',
+            $settings
+        );
     }
 
     /**

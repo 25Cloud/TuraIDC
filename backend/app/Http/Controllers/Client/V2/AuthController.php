@@ -20,6 +20,7 @@ use App\Http\Requests\Client\V2\Auth\UpdatePasswordRequest;
 use App\Http\Requests\Client\V2\Auth\UpdatePhoneRequest;
 use App\Http\Requests\Client\V2\Auth\UpdateProfileRequest;
 use App\Models\User;
+use App\Services\Auth\AccountPolicyService;
 use App\Services\Auth\AuthService;
 use App\Services\Auth\CaptchaPolicyService;
 use App\Services\Auth\GeeTestService;
@@ -45,6 +46,7 @@ class AuthController extends Controller
         private NotificationService $notificationService,
         private SmsService $smsService,
         private VerificationCodeService $codeService,
+        private AccountPolicyService $accountPolicy,
     ) {}
 
     /**
@@ -335,6 +337,9 @@ class AuthController extends Controller
             // 可选功能可用性（插件提供能力、页面托管在核心）：控制台据此隐藏侧栏入口
             // 与路由（见 App\Support\OptionalFeature 与 site 侧 requiresFeature）。
             'features' => OptionalFeature::map(),
+            // 账户策略随用户信息下发：老用户被收紧后第一次进控制台就能看到「还缺哪几项」，
+            // 不必先点一次下单撞出 403。（只读接口一律不拦，见 AccountPolicyService 注释。）
+            'account_policy' => $this->accountPolicy->payload($user),
             'last_login_at' => $user->last_login_at?->format('Y-m-d H:i:s'),
             'last_login_ip' => (string) ($user->last_login_ip ?? ''),
             'verified_at' => $user->verified_at?->format('Y-m-d H:i:s'),

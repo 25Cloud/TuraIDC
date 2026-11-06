@@ -15,10 +15,24 @@ class BusinessException extends Exception
 
     protected int $httpStatus;
 
-    public function __construct(string $message = '业务异常', int $errorCode = 42200, int $httpStatus = 422)
+    /**
+     * 附带的结构化上下文，渲染进响应体 `data`。
+     *
+     * 只给「前端需要据此改变行为」的场景用（例如账户策略缺项要给出直达按钮），
+     * 不传时渲染成 null，与历史响应完全一致。
+     *
+     * @var array<string, mixed>|null
+     */
+    protected ?array $context;
+
+    /**
+     * @param  array<string, mixed>|null  $context
+     */
+    public function __construct(string $message = '业务异常', int $errorCode = 42200, int $httpStatus = 422, ?array $context = null)
     {
         $this->errorCode = $errorCode;
         $this->httpStatus = $httpStatus;
+        $this->context = $context;
         parent::__construct(self::localize($message), $httpStatus);
     }
 
@@ -75,6 +89,6 @@ class BusinessException extends Exception
 
     public function render(): JsonResponse
     {
-        return ApiResponseBuilder::error($this->errorCode, $this->getMessage(), null, $this->httpStatus);
+        return ApiResponseBuilder::error($this->errorCode, $this->getMessage(), $this->context, $this->httpStatus);
     }
 }

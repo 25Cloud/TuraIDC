@@ -1,6 +1,6 @@
 ---
 source: guide/configure/site-settings.md
-sourceHash: a274c4f93271a1789d715ff7b31f95b50f4c20f9ead27daac43881d9acca3a63
+sourceHash: effdc01a41d6013c4ba6edf580503dec6908c31128322482e5bd28b4b0279555
 translatedAt: 2026-10-26
 ---
 
@@ -60,6 +60,10 @@ The "Notification master switches" section on the same page belongs to the `noti
 - `sms_enabled` Enables SMS notifications, off by default.
 
 These two switches are the only source of truth for whether outbound messages are actually sent. When they are off, outbound sends such as registration verification codes and password recovery return "Email service is temporarily unavailable", while the "Send test email / Send test SMS" buttons on the admin plugin detail page send directly through the driver and are not bound by the master switches — a successful test does not mean outbound sending works, because the test result also returns the master switch state and warns about exactly this. For the channel configuration itself, see [Email and SMS](mail-and-sms.md).
+
+## 3.1 Required Account Details (not on this page)
+
+Whether real-name verification, a phone number, and an email are mandatory is not managed here: the switches live in the "Required account details" section of the Referral & top-up page (`/admin/referral-settings`), in the settings group `account`, all off by default. They gate ordering, payment, top-up, and withdrawal, and hand the "which items are still missing" list to the console together with the user info; the full rules and the fields sent to the front end are in [Users and Referral → Account policy](../operate/users.md).
 
 ## 4. How Long Changes Take to Apply
 

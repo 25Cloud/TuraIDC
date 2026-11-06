@@ -32,9 +32,50 @@
 - **管理端入口**：用户 → 实名列表（`/admin/users/verification`）与实名管理（`/admin/users/verification/manage`），权限 `verification.list`。驳回/解绑需要额外权限 `verification.unbind`，驳回原因必填；人工订正资料走 `PUT /v2/admin/verifications/{user}` 接口。
 - **认证插件**：目录 `backend/plugins/certification/`，内置 `alipay_certify`（支付宝）、`baidu_face`、`leaf_face`（人脸）、`smapi`、`stay33`、`demo_verification`。启用与配置入口：系统 → 插件管理 → 实名认证（`/admin/integration-plugins/verification`）。
 - **实名与业务的联动**：
-  1. 商品的 `purchase_requires.require_verification` 打开后，未实名用户下单被拒（40301「该商品需要实名认证后才能购买，请先完成实名认证」）；同一组开关里的 `require_phone` 用于强制绑定手机号（40302）。
-  2. 申请提现必须先实名（见第 7 节）。
-  3. 充值是否必须实名由设置项 `finance.recharge_requires_verification` 决定，默认开启，入口在管理端「营销推广 → 推广管理 → 推荐与充值」的「账户充值」分段（`/admin/referral-settings`），见[财务与账单](finance.md)。
+  1. 商品的 `purchase_requires.require_verification` 打开后，未实名用户下单被拒（40301「该商品需要实名认证后才能购买，请先完成实名认证」）；同一组开关里的 `require_phone` 用于强制绑定手机号（40302）。这是**商品级附加要求**，与账户策略叠加，两者都要满足。
+  2. 申请提现先过账户策略（见下面的「账户策略」小节）；旧版本是写死必须实名，现在由管理端开关决定。
+  3. 充值：业务线开关 `finance.recharge_requires_verification`（默认开启，入口在「推荐与充值 → 账户充值」分段）与账户策略是**「或」**关系，任一未满足都会被拦；判定与提示文案统一由账户策略给出，不再各写一套。
+  4. 开放接口密钥的手机号 / 实名要求是开放接口页自己的开关，只约束 API 凭据，不受账户策略影响。
+
+### 账户策略：实名 / 手机号 / 邮箱是否强制
+
+入口：管理端「推荐与充值」页的「账户信息强制项」分段（`/admin/referral-settings`），查看需 `settings.view`、保存需 `settings.manage`。配置落在通用设置分组 `account`，三项均为开关，**默认全部关闭**（升级不改变存量行为）。
+
+| 键                     | 含义         | 判定口径                                       |
+| ---------------------- | ------------ | ---------------------------------------------- |
+| `require_verification` | 强制实名     | `is_verified = 1` 或 `verification_status = 2` |
+| `require_phone`        | 强制绑定手机 | `users.phone` 非空（不要求短信验证标记）       |
+| `require_email`        | 强制绑定邮箱 | `users.email` 非空（不要求邮件验证标记）       |
+
+生效范围只有「会动钱的写操作」，判定在服务端一处完成：
+
+- 下单 `POST /api/v2/client/invoices`、支付（余额 / 支付宝 / 组合）、充值 `POST /api/v2/client/recharge`、提现 `POST /api/v2/client/referral/withdrawals`；
+- 不达标返回 HTTP 403、`code: 40301`，`message` 可直接展示给用户，例如「下单前请先完成实名认证、绑定手机号」「提现前请先完成绑定手机号」；
+- **不拦**登录、`GET /api/v2/client/auth/info`、所有只读列表与详情。老用户被策略收紧后照样能进控制台看已有服务与账单，只是上述操作会要求补齐信息，不会只剩一个报错页。
+
+老用户第一次触达能拿到什么：控制台拉用户信息时（`GET /api/v2/client/auth/info`）就直接带回账户策略，不必先撞一次 403：
+
+```json
+{
+  "account_policy": {
+    "require_verification": true,
+    "require_phone": true,
+    "require_email": false,
+    "missing_items": ["verification", "phone"],
+    "message": "继续操作前请先完成实名认证、绑定手机号"
+  }
+}
+```
+
+- `missing_items` 只有三个枚举：`verification`（实名）、`phone`（手机号）、`email`（邮箱）；顺序固定为实名 → 手机号 → 邮箱，且只列「开关开着、用户还没满足」的项。三项都满足（或开关全关）时是空数组。
+- `message` 句式固定为「{场景}前请先完成{缺失项}」，缺失项之间用「、」连接；`auth/info` 的场景是「继续操作」，写操作报错时换成对应入口名（下单 / 支付 / 充值 / 提现）。前端展示直接用 `message`，不要自己拼文案。
+- 保存设置后立即生效：settings 是按分组缓存的，保存会清掉 `account` 分组缓存，不需要重启或等过期。
+
+开启前请确认存量数据：
+
+- `require_email` 会拦「只用手机号注册、从未填过邮箱」的老用户；
+- `require_phone` 按「手机号是否填写」判定，不看短信验证标记，因此历史号码也算已绑定；
+- 三项默认全关，开启属于运营策略变更，建议先看一遍存量账号的手机号 / 邮箱覆盖率再开。
 
 ## 4. 会员等级与返利比例
 

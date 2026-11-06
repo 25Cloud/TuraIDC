@@ -11,6 +11,7 @@ use App\Http\Requests\Client\V2\Invoice\PayByBalanceAndAlipayRequest;
 use App\Http\Requests\Client\V2\Invoice\PayByBalanceRequest;
 use App\Http\Requests\Client\V2\Invoice\QueryAlipayStatusRequest;
 use App\Http\Requests\Client\V2\Invoice\StoreRequest;
+use App\Services\Auth\AccountPolicyService;
 use App\Services\Finance\ClientInvoicePaymentWorkflowService;
 use Illuminate\Http\Request;
 
@@ -18,6 +19,7 @@ class InvoiceWorkflowController extends Controller
 {
     public function __construct(
         private readonly ClientInvoicePaymentWorkflowService $workflow,
+        private readonly AccountPolicyService $accountPolicy,
     ) {}
 
     public function summary(Request $request)
@@ -30,6 +32,9 @@ class InvoiceWorkflowController extends Controller
 
     public function store(StoreRequest $request)
     {
+        // 账户策略前置：拦在账单创建之前，避免先建出一张永远付不掉的账单
+        $this->accountPolicy->assertSatisfied($request->user(), 'checkout');
+
         return $this->success(
             $this->workflow->create(
                 $request->user(),
@@ -43,6 +48,8 @@ class InvoiceWorkflowController extends Controller
 
     public function payByBalance(PayByBalanceRequest $request, int $id)
     {
+        $this->accountPolicy->assertSatisfied($request->user(), 'payment');
+
         return $this->success(
             $this->workflow->payByBalance(
                 $request->user(),
@@ -57,6 +64,8 @@ class InvoiceWorkflowController extends Controller
 
     public function payByBalanceAndAlipay(PayByBalanceAndAlipayRequest $request, int $id)
     {
+        $this->accountPolicy->assertSatisfied($request->user(), 'payment');
+
         return $this->success(
             $this->workflow->payByBalanceAndAlipay(
                 $request->user(),
@@ -73,6 +82,8 @@ class InvoiceWorkflowController extends Controller
 
     public function payByAlipay(PayByAlipayRequest $request, int $id)
     {
+        $this->accountPolicy->assertSatisfied($request->user(), 'payment');
+
         return $this->success(
             $this->workflow->payByGateway(
                 $request->user(),

@@ -6,7 +6,6 @@ use App\Http\Middleware\AuthenticateApiKey;
 use App\Http\Middleware\CheckPermission;
 use App\Http\Middleware\EnsureAdminAuthenticated;
 use App\Http\Middleware\EnsureClientAuthenticated;
-use App\Http\Middleware\EnsureEmailIsVerified;
 use App\Http\Middleware\EnsureZjmfUpstreamAuthenticated;
 use App\Http\Middleware\LogOperation;
 use App\Http\Middleware\NormalizeZjmfUpstreamPath;
@@ -129,7 +128,6 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         $middleware->alias([
-            'verified' => EnsureEmailIsVerified::class,
             'permission' => CheckPermission::class,
             'ensure.admin' => EnsureAdminAuthenticated::class,
             'ensure.client' => EnsureClientAuthenticated::class,

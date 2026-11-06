@@ -18,6 +18,7 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Models\UserAccount;
 use App\Models\UserReferral;
+use App\Services\Auth\AccountPolicyService;
 use App\Services\Finance\InvoiceService;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\ProductCatalog\ProductFullPathResolver;
@@ -641,9 +642,9 @@ class ReferralService
         $amount = round((float) ($data['amount'] ?? 0), 2);
         $minAmount = $this->withdrawMinAmount();
 
-        // 提现涉及资金外流，必须先完成实名认证（反洗钱/合规底线）。
-        // is_verified / verification_status 字段已存在，此处对齐 hasCompletedVerification 判断。
-        throw_if(! $user->hasCompletedVerification(), new BusinessException('请先完成实名认证后再申请提现'));
+        // 提现涉及资金外流：强制项（实名 / 手机号 / 邮箱）由管理端「账户策略」统一控制，
+        // 这里只调用策略服务，不再写死实名判断。
+        app(AccountPolicyService::class)->assertSatisfied($user, 'withdrawal');
 
         throw_if($amount <= 0, new BusinessException('提现金额必须大于 0'));
         throw_if($amount < $minAmount, new BusinessException("奖励满 {$minAmount} 元才可提现"));

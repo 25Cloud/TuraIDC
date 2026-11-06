@@ -1,6 +1,6 @@
 ---
 source: guide/operate/users.md
-sourceHash: 1939e2558c48445bc15b483e0ded92ee914ffcf0b172c25a18e514ddc1648907
+sourceHash: 4a4cb51cd6d1607d8e19a821f539439d90b789d9b485ec43b1e5f725e32c197d
 translatedAt: 2026-10-26
 ---
 
@@ -38,9 +38,50 @@ This document is for site operators running TuraIDC. It explains how users come 
 - **Admin panel entry points**: Users → Verification List (`/admin/users/verification`) and Verification Management (`/admin/users/verification/manage`), permission `verification.list`. Rejecting/unbinding requires the additional permission `verification.unbind`, and the rejection reason is required; correcting data by hand goes through the `PUT /v2/admin/verifications/{user}` endpoint.
 - **Verification plugins**: the directory is `backend/plugins/certification/`, with the built-in `alipay_certify` (Alipay), `baidu_face`, `leaf_face` (face recognition), `smapi`, `stay33`, and `demo_verification`. Enable and configure them at System → Plugin Management → Real-Name Verification (`/admin/integration-plugins/verification`).
 - **How real-name verification hooks into business flows**:
-  1. Once a product's `purchase_requires.require_verification` is on, orders from users without real-name verification are rejected (40301 "This product requires real-name verification before purchase, please complete real-name verification first"); `require_phone` in the same switch group forces phone number binding (40302).
-  2. Applying for a withdrawal requires real-name verification first (see section 7).
-  3. Whether a top-up requires real-name verification is decided by the setting `finance.recharge_requires_verification`, on by default; the entry point is the "Account top-up" section of Marketing → Referral → Referral & top-up (`/admin/referral-settings`) in the admin panel, see [Finance and Statements](finance.md).
+  1. Once a product's `purchase_requires.require_verification` is on, orders from users without real-name verification are rejected (40301 "This product requires real-name verification before purchase, please complete real-name verification first"); `require_phone` in the same switch group forces phone number binding (40302). This is a **product-level extra requirement** that stacks with the account policy — both must be satisfied.
+  2. Applying for a withdrawal goes through the account policy (see the "Account policy" subsection below); older versions hard-coded "real-name verification required", now it follows the admin switches.
+  3. Top-up: the business-line switch `finance.recharge_requires_verification` (on by default, entry point is the "Account top-up" section of Referral & top-up) and the account policy are **OR**-related — either one being unsatisfied blocks the request, and the check plus the message both come from the account policy.
+  4. The phone / real-name requirements for open API keys are their own switches on the Open API page; they only constrain API credentials and are not affected by the account policy.
+
+### Account policy: are real-name, phone, and email mandatory
+
+Entry point: the "Required account details" section of the Referral & top-up page in the admin panel (`/admin/referral-settings`); viewing requires `settings.view`, saving requires `settings.manage`. The configuration lives in the shared settings group `account`, all three items are switches, and **all are off by default** (upgrading does not change existing behaviour).
+
+| Key                    | Meaning                | How it is judged                                               |
+| ---------------------- | ---------------------- | -------------------------------------------------------------- |
+| `require_verification` | Require real-name      | `is_verified = 1` or `verification_status = 2`                 |
+| `require_phone`        | Require a phone number | `users.phone` is not empty (no SMS-verification flag needed)   |
+| `require_email`        | Require an email       | `users.email` is not empty (no email-verification flag needed) |
+
+Only "money-moving write actions" are gated, and the check happens in exactly one place on the server:
+
+- order creation `POST /api/v2/client/invoices`, payment (balance / Alipay / mixed), top-up `POST /api/v2/client/recharge`, withdrawal `POST /api/v2/client/referral/withdrawals`;
+- when unsatisfied they return HTTP 403 with `code: 40301`, and `message` can be shown to the user as is, e.g. "Complete real-name verification and bind a phone number before ordering";
+- **not gated**: sign-in, `GET /api/v2/client/auth/info`, and every read-only list or detail endpoint. After a policy tightening, existing users can still open the console and see their services and invoices — only the actions above ask them to complete the missing items, so nobody is left with nothing but an error page.
+
+What an existing user gets on first touch: fetching user info (`GET /api/v2/client/auth/info`) already returns the account policy, so nobody has to hit a 403 first:
+
+```json
+{
+  "account_policy": {
+    "require_verification": true,
+    "require_phone": true,
+    "require_email": false,
+    "missing_items": ["verification", "phone"],
+    "message": "继续操作前请先完成实名认证、绑定手机号"
+  }
+}
+```
+
+- `missing_items` has exactly three enum values: `verification` (real-name), `phone` (phone number), `email` (email); the order is always real-name → phone → email, and only items that are "required and still missing for this user" are listed. When everything is satisfied (or all switches are off) it is an empty array.
+- The `message` shape is fixed: "{action} requires {missing items}", with missing items joined by a separator; `auth/info` uses the "continuing" action, while write-action errors use the entry name (order, payment, top-up, withdrawal). Front ends should display `message` directly instead of building their own wording.
+- Changes take effect immediately after saving: settings are cached per group, and saving clears the `account` group cache, so no restart or expiry wait is needed.
+
+Check existing data before enabling:
+
+- `require_email` blocks existing users who registered by phone and never filled in an email;
+- `require_phone` is judged by "phone number filled in", not by an SMS-verification flag, so historical numbers count as bound;
+- all three switches are off by default, and enabling them is an operational policy change — check the phone / email coverage of existing accounts first.
 
 ## 4. Membership Tiers and Reward Rates
 

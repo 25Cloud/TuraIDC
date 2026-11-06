@@ -988,6 +988,37 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
         ],
       },
       {
+        key: 'account_policy',
+        title: t('settings.index.sectionAccountPolicy'),
+        description: t('settings.index.sectionAccountPolicyDesc'),
+        fields: [
+          {
+            key: 'require_verification',
+            group: 'account',
+            label: t('settings.index.accountRequireVerification'),
+            type: 'switch',
+            default: false,
+            help: t('settings.index.accountRequireVerificationHint'),
+          },
+          {
+            key: 'require_phone',
+            group: 'account',
+            label: t('settings.index.accountRequirePhone'),
+            type: 'switch',
+            default: false,
+            help: t('settings.index.accountRequirePhoneHint'),
+          },
+          {
+            key: 'require_email',
+            group: 'account',
+            label: t('settings.index.accountRequireEmail'),
+            type: 'switch',
+            default: false,
+            help: t('settings.index.accountRequireEmailHint'),
+          },
+        ],
+      },
+      {
         key: 'reward',
         title: t('settings.index.sectionReferral'),
         fields: [
