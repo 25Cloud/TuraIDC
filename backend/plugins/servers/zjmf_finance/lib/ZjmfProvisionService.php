@@ -21,7 +21,7 @@ use Illuminate\Support\Facades\Log;
 
 final class ZjmfProvisionService
 {
-    private const UPSTREAM_HTTP_CODE_META_KEY = '_zjmf_upstream_http_code';
+    private const UPSTREAM_HTTP_CODE_META_KEY = ZjmfUpstreamResponse::HTTP_CODE_META_KEY;
 
     private const RANGE_TYPES = [4, 7, 9, 11, 14, 15, 16, 17, 18, 19];
 
@@ -80,15 +80,22 @@ final class ZjmfProvisionService
                 // 而上游账单实际未扣款，造成收入缺口；账单未付时重试供应商余额支付。
                 $existingInvoiceId = (int) ($existingProvisionData['upstream_invoice_id'] ?? 0);
                 if ($existingInvoiceId > 0) {
-                    $invoiceResponse = $this->responseWithHttpCode(
-                        $this->transport->get($supplier, "/v1/invoices/{$existingInvoiceId}", $jwt)
+                    // 必须用 requestWithMeta：裸 get() 的响应体交给 withHttpCode() 会得到
+                    // 空数组 + http_code=0，幂等回查会被恒判失败而阻断。
+                    $invoiceResponse = ZjmfUpstreamResponse::withHttpCode(
+                        $this->transport->requestWithMeta($supplier, 'GET', "/v1/invoices/{$existingInvoiceId}", [], $jwt)
                     );
                     $this->assertUpstreamSuccess($invoiceResponse, [200, 1000, 1001], '校验上游开通账单支付状态');
-                    $invoicePayload = $this->extractPayload($invoiceResponse);
-                    $upstreamStatus = strtolower(trim((string) ($invoicePayload['status'] ?? '')));
 
-                    if ($upstreamStatus !== 'paid') {
-                        $fundResponse = $this->transport->post($supplier, "/v1/invoices/{$existingInvoiceId}/fund", [], $jwt);
+                    // 账单支付状态在 data.invoices.status（业务码在顶层 data.status=200）。
+                    // 按顶层读会恒得到 "200"，每张已付账单都被当成未付再去补付，
+                    // 而上游对已付账单回 400「Bill paid」，开通重试直接失败。
+                    if (! ZjmfUpstreamResponse::isInvoicePaid($invoiceResponse)) {
+                        // 与账单查询同口径保留 HTTP 状态：裸 post 只带业务码，
+                        // 上游 5xx 且业务码看似正常时会被误判为支付成功。
+                        $fundResponse = ZjmfUpstreamResponse::withHttpCode(
+                            $this->transport->requestWithMeta($supplier, 'POST', "/v1/invoices/{$existingInvoiceId}/fund", [], $jwt)
+                        );
                         $this->assertUpstreamSuccess($fundResponse, [200, 1000, 1001], '重试供应商余额支付开通账单');
                     }
                 }
@@ -824,7 +831,7 @@ final class ZjmfProvisionService
 
     private function extractPayload(array $response): array
     {
-        return is_array($response['data'] ?? null) ? $response['data'] : $response;
+        return ZjmfUpstreamResponse::payload($response);
     }
 
     private function extractInvoiceId(array $response, array $payload): int
@@ -907,9 +914,7 @@ final class ZjmfProvisionService
 
     private function hasSuccessfulUpstreamHttpStatus(array $response): bool
     {
-        $httpCode = (int) ($response[self::UPSTREAM_HTTP_CODE_META_KEY] ?? 0);
-
-        return $httpCode >= 200 && $httpCode < 300;
+        return ZjmfUpstreamResponse::hasSuccessfulHttpStatus($response);
     }
 
     private function throwUpstreamFailure(array $response, string $action): never
@@ -935,7 +940,7 @@ final class ZjmfProvisionService
 
     private function extractResponseStatus(array $response): int
     {
-        return (int) ($response['status'] ?? $response['code'] ?? $response['status_code'] ?? 0);
+        return ZjmfUpstreamResponse::status($response);
     }
 
     private function findHostIdsForProvision(Supplier $supplier, string $jwt, int $invoiceId, string $hostname): array
@@ -983,10 +988,7 @@ final class ZjmfProvisionService
      */
     private function responseWithHttpCode(array $meta): array
     {
-        $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
-        $response[self::UPSTREAM_HTTP_CODE_META_KEY] = (int) ($meta['http_code'] ?? 0);
-
-        return $response;
+        return ZjmfUpstreamResponse::withHttpCode($meta);
     }
 
     private function assertHostDetailPresent(array $hostDetail, int $hostId): void

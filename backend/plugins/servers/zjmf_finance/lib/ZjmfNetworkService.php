@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Log;
 
 final class ZjmfNetworkService
 {
-    private const UPSTREAM_HTTP_CODE_META_KEY = '_zjmf_upstream_http_code';
+    private const UPSTREAM_HTTP_CODE_META_KEY = ZjmfUpstreamResponse::HTTP_CODE_META_KEY;
 
     public function __construct(
         private readonly ZjmfFinanceTransport $transport,
@@ -132,7 +132,10 @@ final class ZjmfNetworkService
 
     public function fundInvoice(Supplier $supplier, int $invoiceId, ?string $jwt = null, string $action = '支付上游账单'): array
     {
-        $response = $this->transport->post($supplier, "/v1/invoices/{$invoiceId}/fund", [], $this->resolveJwt($supplier, $jwt));
+        // 保留 HTTP 状态：裸 post 只带业务码，上游 5xx 且 status 看似正常时会被误判为支付成功。
+        $response = ZjmfUpstreamResponse::withHttpCode(
+            $this->transport->requestWithMeta($supplier, 'POST', "/v1/invoices/{$invoiceId}/fund", [], $this->resolveJwt($supplier, $jwt))
+        );
         $this->assertUpstreamSuccess($response, [200, 1001], $action);
 
         return [
@@ -269,7 +272,7 @@ final class ZjmfNetworkService
 
     private function responseStatus(array $response): int
     {
-        return (int) ($response['status'] ?? $response['code'] ?? $response['status_code'] ?? 0);
+        return ZjmfUpstreamResponse::status($response);
     }
 
     private function assertUpstreamSuccess(array $response, array $allowedStatuses, string $action): void
@@ -289,17 +292,12 @@ final class ZjmfNetworkService
 
     private function responseWithHttpCode(array $meta): array
     {
-        $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
-        $response[self::UPSTREAM_HTTP_CODE_META_KEY] = (int) ($meta['http_code'] ?? 0);
-
-        return $response;
+        return ZjmfUpstreamResponse::withHttpCode($meta);
     }
 
     private function hasSuccessfulUpstreamHttpStatus(array $response): bool
     {
-        $httpCode = (int) ($response[self::UPSTREAM_HTTP_CODE_META_KEY] ?? 0);
-
-        return $httpCode >= 200 && $httpCode < 300;
+        return ZjmfUpstreamResponse::hasSuccessfulHttpStatus($response);
     }
 
     private function throwUpstreamFailure(array $response, string $action): never

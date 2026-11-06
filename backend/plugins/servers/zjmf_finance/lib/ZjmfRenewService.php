@@ -19,6 +19,8 @@ final class ZjmfRenewService
 
     private const RENEWABLE_CYCLES_CACHE_TTL_SECONDS = 300;
 
+    private const UPSTREAM_HTTP_CODE_META_KEY = ZjmfUpstreamResponse::HTTP_CODE_META_KEY;
+
     public function __construct(
         private readonly ZjmfFinanceTransport $transport,
     ) {}
@@ -250,10 +252,16 @@ final class ZjmfRenewService
 
     private function checkInvoicePayment(Supplier $supplier, int $upstreamInvoiceId, string $jwt): array
     {
-        $response = $this->transport->post($supplier, '/check_order', ['id' => $upstreamInvoiceId], $jwt);
+        // 账单查询必须保留 HTTP 状态：/check_order 既可能回业务码（1000/1001 已付），
+        // 也可能回账单对象（data.invoices.status=paid）；上游 5xx 时不能凭业务码判「已付」。
+        $response = ZjmfUpstreamResponse::withHttpCode(
+            $this->transport->requestWithMeta($supplier, 'POST', '/check_order', ['id' => $upstreamInvoiceId], $jwt)
+        );
         $status = $this->extractPaymentStatus($response);
 
-        if (! in_array($status, [0, 200, 1000, 1001], true)) {
+        // 业务码 0 表示上游没给判定，此时只按 HTTP 状态挡硬失败
+        if (! in_array($status, [0, 200, 1000, 1001], true)
+            || ! ZjmfUpstreamResponse::hasSuccessfulHttpStatus($response)) {
             $this->assertUpstreamSuccess($response, [200, 1000, 1001], '确认上游续费账单支付状态');
         }
 
@@ -334,6 +342,10 @@ final class ZjmfRenewService
         return $payment === '' ? [] : ['payment' => $payment];
     }
 
+    /**
+     * 上游业务码（1000/1001 表示支付完成）。这是**业务结果**，不是账单支付状态：
+     * 账单状态字符串请用 {@see ZjmfUpstreamResponse::invoiceStatus()}。
+     */
     private function extractPaymentStatus(array $response): int
     {
         $statuses = [];
@@ -354,22 +366,44 @@ final class ZjmfRenewService
         return $statuses[0] ?? 0;
     }
 
+    /**
+     * 上游「支付是否完成」：账单状态字符串优先（data.invoices.status=paid），
+     * 只有上游完全没给字符串状态时才回退业务码 1000/1001。
+     * 顶层 `status` 是业务码（200/1001），不能单独当作支付状态。
+     */
     private function isPaymentCompleted(array $response): bool
     {
+        if (ZjmfUpstreamResponse::invoiceStatus($response) !== '') {
+            return ZjmfUpstreamResponse::isInvoicePaid($response);
+        }
+
         return in_array($this->extractPaymentStatus($response), [1000, 1001], true);
     }
 
     private function assertUpstreamSuccess(array $response, array $allowedStatuses, string $action): void
     {
-        $status = (int) ($response['status'] ?? $response['code'] ?? $response['status_code'] ?? 200);
+        // 先看 HTTP：上游 5xx 且业务码看似正常时不得判成功
+        if (ZjmfUpstreamResponse::hasHttpCodeMeta($response)
+            && ! ZjmfUpstreamResponse::hasSuccessfulHttpStatus($response)) {
+            $this->throwUpstreamFailure($response, $action, 'HTTP 状态异常');
+        }
+
+        $status = ZjmfUpstreamResponse::status($response, 200);
         if (in_array($status, $allowedStatuses, true)) {
             return;
         }
 
+        $this->throwUpstreamFailure($response, $action);
+    }
+
+    private function throwUpstreamFailure(array $response, string $action, string $reason = ''): never
+    {
         $message = trim((string) ($response['msg'] ?? $response['message'] ?? ''));
         Log::warning('[ZJMF 财务续费] 返回失败', [
             'action' => $action,
-            'status' => $status,
+            'status' => ZjmfUpstreamResponse::status($response),
+            'http_code' => $response[self::UPSTREAM_HTTP_CODE_META_KEY] ?? null,
+            'reason' => $reason,
             'message' => SensitiveDataSanitizer::sanitizeText($message),
         ]);
 

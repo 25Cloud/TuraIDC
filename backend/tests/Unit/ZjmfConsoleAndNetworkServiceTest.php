@@ -405,11 +405,17 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
             ->once()
             ->with($supplier, 'POST', '/v1/hosts/123/actions/upgradeconfig/checkout', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
             ->andReturn(['status' => 200, 'data' => ['invoiceid' => 456]]);
+        // 账单支付改用 requestWithMeta：裸 post 丢 HTTP 状态，5xx + 业务码正常会被误判为已付
         $hostingTransport
-            ->shouldReceive('request')
+            ->shouldReceive('requestWithMeta')
             ->once()
             ->with($supplier, 'POST', '/v1/invoices/456/fund', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
-            ->andReturn(['status' => 1001, 'data' => []]);
+            ->andReturn([
+                'response' => ['status' => 1001, 'data' => []],
+                'headers' => [],
+                'http_code' => 200,
+                'content_type' => 'application/json',
+            ]);
         $hostingTransport
             ->shouldReceive('requestWithMeta')
             ->once()
@@ -459,10 +465,15 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
             ->with($supplier, 'POST', '/v1/hosts/77/actions/upgrade/checkout', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
             ->andReturn(['status' => 200, 'data' => ['invoiceid' => 990]]);
         $hostingTransport
-            ->shouldReceive('request')
+            ->shouldReceive('requestWithMeta')
             ->once()
             ->with($supplier, 'POST', '/v1/invoices/990/fund', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
-            ->andReturn(['status' => 1001, 'data' => []]);
+            ->andReturn([
+                'response' => ['status' => 1001, 'data' => []],
+                'headers' => [],
+                'http_code' => 200,
+                'content_type' => 'application/json',
+            ]);
         $hostingTransport
             ->shouldReceive('requestWithMeta')
             ->once()
@@ -499,10 +510,15 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
             ->with($supplier, 'POST', '/v1/hosts/77/actions/upgrade/checkout', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
             ->andReturn(['status' => 200, 'data' => ['invoiceid' => 990]]);
         $hostingTransport
-            ->shouldReceive('request')
+            ->shouldReceive('requestWithMeta')
             ->once()
             ->with($supplier, 'POST', '/v1/invoices/990/fund', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
-            ->andReturn(['status' => 200, 'data' => ['invoiceid' => 990]]);
+            ->andReturn([
+                'response' => ['status' => 200, 'data' => ['invoiceid' => 990]],
+                'headers' => [],
+                'http_code' => 200,
+                'content_type' => 'application/json',
+            ]);
         $hostingTransport
             ->shouldNotReceive('request')
             ->with($supplier, 'GET', '/host/header', Mockery::any(), Mockery::any(), Mockery::any(), Mockery::any());
@@ -531,10 +547,15 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
             ->with($supplier, 'POST', '/v1/hosts/77/actions/upgrade/checkout', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
             ->andReturn(['status' => 200, 'data' => ['invoiceid' => 990]]);
         $hostingTransport
-            ->shouldReceive('request')
+            ->shouldReceive('requestWithMeta')
             ->once()
             ->with($supplier, 'POST', '/v1/invoices/990/fund', [], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
-            ->andReturn(['status' => 1001, 'data' => []]);
+            ->andReturn([
+                'response' => ['status' => 1001, 'data' => []],
+                'headers' => [],
+                'http_code' => 200,
+                'content_type' => 'application/json',
+            ]);
         $hostingTransport
             ->shouldReceive('requestWithMeta')
             ->once()

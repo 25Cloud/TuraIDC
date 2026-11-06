@@ -250,7 +250,7 @@ class ProvisionService
             $requestedHost = (string) ($result['requested_host'] ?? '');
             $serviceStatus = $this->resolveServiceStatusFromUpstream($hostDetail);
 
-            $provisionData = array_merge($this->serviceProvisionData($service), [
+            $provisionData = array_merge($this->latestServiceProvisionData($service), [
                 'provider_key' => $providerKey,
                 'supplier_id' => $this->resolveProductSupplierId($order->product),
                 'requested_host' => $requestedHost !== '' ? $requestedHost : null,
@@ -332,7 +332,10 @@ class ProvisionService
                 ? $exception->getMessage()
                 : '上游开通失败，请检查供应商配置或日志';
 
-            $provisionData = array_merge($this->serviceProvisionData($service), [
+            // 失败回写取数据库最新值：驱动在失败前可能已经落过检查点
+            // （upstream_invoice_id / upstream_host_id / downstream_token），
+            // 用调用方手里的旧快照整段覆盖会把它们抹掉，重试就只能重开一单。
+            $provisionData = array_merge($this->latestServiceProvisionData($service), [
                 'provider_key' => $providerKey,
                 'supplier_id' => $this->resolveProductSupplierId($order->product),
                 'upstream_product_id' => $this->resolveUpstreamProductId($order->product),
@@ -1966,5 +1969,30 @@ class ProvisionService
         return $includeSecrets
             ? $provisionData
             : $this->pluginBindingResolver()->sanitizeServiceProvisionData($provisionData);
+    }
+
+    /**
+     * 基线取数据库最新值：与成功/失败回写同口径。
+     *
+     * 驱动类（尤其 zjmf_finance 插件）会在开通途中自行落库检查点
+     * （upstream_invoice_id / upstream_host_id / downstream_token 等）。调用方手里的实例
+     * 是进入本次开通前的快照，用它的 provision_data 拼数据写回会把那些检查点冲掉，
+     * 重试时只剩主机名可依，上游幂等门失效后只能重开一单。
+     *
+     * 用基类按主键回查而不是 `$service->fresh()`：调用方可能传入 Service 的匿名子类
+     * （测试夹具、驱动包装），Eloquent 会按类名推导表名，`fresh()` 会拼出一张不存在的表。
+     */
+    private function latestServiceProvisionData(Service $service, bool $includeSecrets = false): array
+    {
+        if (! $service->exists || (int) $service->getKey() <= 0) {
+            return $this->serviceProvisionData($service, $includeSecrets);
+        }
+
+        $latest = Service::query()->find($service->getKey());
+
+        return $this->serviceProvisionData(
+            $latest instanceof Service ? $latest : $service,
+            $includeSecrets
+        );
     }
 }

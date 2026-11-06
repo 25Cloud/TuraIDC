@@ -95,6 +95,27 @@ final class ZjmfRenewAndStatusServiceTest extends TestCase
                 };
             }
 
+            /**
+             * 账单支付查询走 requestWithMeta（保留 HTTP 状态），这里转发到 request，
+             * 断言仍可从 $requests 里取到这次调用。
+             */
+            public function requestWithMeta(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                return [
+                    'response' => $this->request($supplier, $method, $uri, $payload, $jwt, $headers, $query),
+                    'headers' => [],
+                    'http_code' => 200,
+                    'content_type' => 'application/json',
+                ];
+            }
+
             public function requestText(
                 Supplier $supplier,
                 string $method,
@@ -200,6 +221,23 @@ final class ZjmfRenewAndStatusServiceTest extends TestCase
                         'msg' => 'not found',
                     ],
                 };
+            }
+
+            public function requestWithMeta(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                return [
+                    'response' => $this->request($supplier, $method, $uri, $payload, $jwt, $headers, $query),
+                    'headers' => [],
+                    'http_code' => 200,
+                    'content_type' => 'application/json',
+                ];
             }
 
             public function requestText(
