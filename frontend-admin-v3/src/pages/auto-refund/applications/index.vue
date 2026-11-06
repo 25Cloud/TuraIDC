@@ -415,17 +415,28 @@ function openDetail(row: AutoRefundApplication) {
   void reloadDetail();
 }
 
+/**
+ * 请求竞态防护：详情抽屉可以直接点另一行走（不用先关），
+ * 慢的旧详情响应返回后会把新申请的数据覆盖掉——抽屉标题是新单号、内容是旧单号。
+ * 序号 + 单号双重确认：不是最新一次、或单号已经不是当前这行，都丢弃。
+ */
+let detailRequestSeq = 0;
+
 async function reloadDetail() {
   const id = detail.application?.id;
   if (!id) return;
 
+  const currentSeq = ++detailRequestSeq;
   detail.loading = true;
   try {
-    detail.application = await adminApi.autoRefund.application(id);
+    const application = await adminApi.autoRefund.application(id);
+    if (currentSeq !== detailRequestSeq || detail.application?.id !== id) return;
+    detail.application = application;
   } catch (error) {
+    if (currentSeq !== detailRequestSeq) return;
     MessagePlugin.error(errorMessage(error, t('autoRefund.detailFailed')));
   } finally {
-    detail.loading = false;
+    if (currentSeq === detailRequestSeq) detail.loading = false;
   }
 }
 

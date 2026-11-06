@@ -182,7 +182,11 @@ const departmentOptions = [
   { label: t('tickets.index.departmentAbuse'), value: 'abuse' },
 ];
 
+// 请求竞态防护：状态页签与筛选可快速切换，慢的旧响应不得覆盖新列表
+let loadRequestSeq = 0;
+
 async function loadList() {
+  const currentSeq = ++loadRequestSeq;
   loading.value = true;
   try {
     const response = await adminApi.tickets.list({
@@ -190,16 +194,18 @@ async function loadList() {
       page: page.value,
       page_size: pageSize.value,
     });
+    if (currentSeq !== loadRequestSeq) return;
     list.value = Array.isArray(response.list) ? response.list : [];
     total.value = Number(response.total || 0);
     page.value = Number(response.page || page.value);
     pageSize.value = Number(response.page_size || pageSize.value);
   } catch (error) {
+    if (currentSeq !== loadRequestSeq) return;
     list.value = [];
     total.value = 0;
     MessagePlugin.error(errorMessage(error, t('tickets.index.loadFailed')));
   } finally {
-    loading.value = false;
+    if (currentSeq === loadRequestSeq) loading.value = false;
   }
 }
 

@@ -39,7 +39,16 @@ export function useListPage<F extends Record<string, any>, T>(options: UseListPa
     pageSizeOptions: [20, 50, 100],
   });
 
+  /**
+   * 请求序号：筛选与分页可以被连续点击，慢的旧响应可能晚于新响应返回。
+   *
+   * 没有这一层时，先发出的请求后返回就会把新数据覆盖回旧数据（表现为「筛选条件已变、
+   * 列表还是上一次的结果」）。序号只让最新一次请求写状态，旧响应整段丢弃。
+   */
+  let loadSeq = 0;
+
   async function loadList() {
+    const seq = ++loadSeq;
     loading.value = true;
     try {
       const res = await fetch({
@@ -47,16 +56,19 @@ export function useListPage<F extends Record<string, any>, T>(options: UseListPa
         page: pagination.page,
         page_size: pagination.page_size,
       });
+      if (seq !== loadSeq) return;
       list.value = res.list || [];
       total.value = Number(res.total || 0);
       if (res.page) pagination.page = Number(res.page);
       if (res.page_size) pagination.page_size = Number(res.page_size);
     } catch (err) {
+      if (seq !== loadSeq) return;
       error.value = err instanceof Error ? err.message : t('common.listPage.loadFailed');
       console.error('[useListPage] 列表加载失败:', err);
       if (onError) onError(err);
     } finally {
-      loading.value = false;
+      // 旧请求收尾时不能关 loading：新请求还在飞，关了界面就像已经加载完了
+      if (seq === loadSeq) loading.value = false;
     }
   }
 

@@ -267,7 +267,11 @@ const createRules: Record<string, FormRule[]> = {
   ],
 };
 
+// 请求竞态防护：关键字与状态筛选可连续切换，慢的旧响应不得把新列表覆盖回去
+let loadRequestSeq = 0;
+
 async function loadList() {
+  const currentSeq = ++loadRequestSeq;
   loading.value = true;
   try {
     const response = await userApi.list({
@@ -276,13 +280,15 @@ async function loadList() {
       page: page.value,
       page_size: pageSize.value,
     });
+    if (currentSeq !== loadRequestSeq) return;
     list.value = response.list || [];
     total.value = Number(response.total || 0);
   } catch {
+    if (currentSeq !== loadRequestSeq) return;
     list.value = [];
     total.value = 0;
   } finally {
-    loading.value = false;
+    if (currentSeq === loadRequestSeq) loading.value = false;
   }
 }
 

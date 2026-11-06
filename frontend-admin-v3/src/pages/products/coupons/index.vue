@@ -722,7 +722,11 @@ async function ensureSelectedUsersLoaded(userIds: number[]) {
   mergeUserOptions(results.filter(Boolean) as UserOption[]);
 }
 
+// 请求竞态防护：筛选条件与分页可连续切换，慢的旧响应不得覆盖新列表
+let loadRequestSeq = 0;
+
 async function loadList() {
+  const currentSeq = ++loadRequestSeq;
   loading.value = true;
   try {
     const response = await adminApi.coupons.list({
@@ -730,14 +734,16 @@ async function loadList() {
       page: page.value,
       page_size: pageSize.value,
     });
+    if (currentSeq !== loadRequestSeq) return;
     coupons.value = response.list || [];
     total.value = Number(response.total || 0);
   } catch (error) {
+    if (currentSeq !== loadRequestSeq) return;
     coupons.value = [];
     total.value = 0;
     MessagePlugin.error(errorMessage(error, t('products.coupons.loadCouponsFailed')));
   } finally {
-    loading.value = false;
+    if (currentSeq === loadRequestSeq) loading.value = false;
   }
 }
 
