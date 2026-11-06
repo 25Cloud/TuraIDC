@@ -1,6 +1,6 @@
 import { MessagePlugin } from 'tdesign-vue-next';
 import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
@@ -15,7 +15,7 @@ import {
 import { t } from '@/locales';
 import { useUserStore } from '@/store';
 import type { ClientUserInfo } from '@/types/client';
-import { getErrorMessage } from '@/utils/error';
+import { getErrorMessage, reportRequestError } from '@/utils/error';
 import { copyText as copyShared } from '@/utils/format';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
@@ -25,6 +25,7 @@ const PROFILE_TABS = new Set<ProfileTab>(['profile', 'security', 'agent', 'notif
 
 export function useProfile() {
   const router = useRouter();
+  const route = useRoute();
   const userStore = useUserStore();
   const { runWithCaptcha } = useGeeTestCaptcha({
     onPrompt: () => MessagePlugin.warning(t('profile.captchaRequired')),
@@ -437,7 +438,8 @@ export function useProfile() {
       await loadProfile();
       MessagePlugin.success(t('profile.updated'));
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, t('profile.profileSaveFailed')));
+      // 拦截器已给过反馈（含 40301 账户策略补齐对话框）时不再重复 toast
+      reportRequestError(error, t('profile.profileSaveFailed'));
     } finally {
       profileLoading.value = false;
     }
@@ -499,6 +501,27 @@ export function useProfile() {
       notificationLoading.value = false;
     }
   }
+
+  onMounted(() => {
+    // 账户策略提示条 / 40301 对话框的「去绑定」深链：/client/profile?bind=phone|email
+    // 绑定入口是页内弹窗而不是独立路由，所以用 query 指明要打开哪一个。
+    const bind = String(route.query.bind ?? '').trim();
+
+    if (bind !== 'phone' && bind !== 'email') {
+      return;
+    }
+
+    if (bind === 'phone') {
+      openPhoneDialog();
+    } else {
+      openEmailDialog();
+    }
+
+    // 打开后清掉 query：刷新或切换 tab 时不该再弹一次
+    const nextQuery = { ...route.query };
+    delete nextQuery.bind;
+    void router.replace({ path: route.path, query: nextQuery });
+  });
 
   onMounted(() => {
     // 已有数据才复用。若共享数据为空（例如会话被清理过），照常重新拉取，

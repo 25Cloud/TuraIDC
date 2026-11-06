@@ -14,7 +14,7 @@ import type {
   ReferralUserBrief,
   ReferralWithdrawalRecord,
 } from '@/types/client';
-import { getErrorMessage } from '@/utils/error';
+import { getErrorMessage, reportRequestError } from '@/utils/error';
 import { copyText } from '@/utils/format';
 
 type TagTheme = 'default' | 'success' | 'warning' | 'primary' | 'danger';
@@ -205,7 +205,8 @@ export function useReferral() {
       withdrawForm.amount = '';
       await loadAll();
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, '提现申请提交失败'));
+      // 提现会被账户策略拦截（40301 + scope=account_policy）：拦截器弹了补齐对话框就不再 toast
+      reportRequestError(error, '提现申请提交失败');
     } finally {
       withdrawSubmitting.value = false;
     }

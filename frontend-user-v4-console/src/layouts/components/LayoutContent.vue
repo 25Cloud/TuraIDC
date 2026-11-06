@@ -60,6 +60,8 @@
         </template>
       </t-tab-panel>
     </t-tabs>
+    <!-- 账户策略提示条：后端下发 missing_items 时出现在所有控制台页面顶部 -->
+    <account-policy-banner />
     <t-content :class="`${prefix}-content-layout`">
       <l-breadcrumb v-if="settingStore.showBreadcrumb" />
       <l-content />
@@ -78,6 +80,7 @@ import { useLocale } from '@/locales/useLocale';
 import { useSettingStore, useTabsRouterStore } from '@/store';
 import type { TRouterInfo, TTabRemoveOptions } from '@/types/interface';
 
+import AccountPolicyBanner from './AccountPolicyBanner.vue';
 import LBreadcrumb from './Breadcrumb.vue';
 import LContent from './Content.vue';
 

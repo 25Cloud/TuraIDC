@@ -37,6 +37,13 @@
             "rateLimitedRetry": "Too many requests, please try again in {seconds}s"
         }
     },
+    "accountPolicy": {
+        "dialogTitle": "Complete your account details",
+        "goVerification": "Verify identity",
+        "goBind": "Link account",
+        "gotIt": "Got it",
+        "fallbackMessage": "Please complete your account details before continuing"
+    },
     "components": {
         "isSetup": {
             "on": "Enabled",

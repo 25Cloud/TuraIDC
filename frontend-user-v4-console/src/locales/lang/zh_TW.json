@@ -37,6 +37,13 @@
             "rateLimitedRetry": "請求過於頻繁，請 {seconds} 秒後重試"
         }
     },
+    "accountPolicy": {
+        "dialogTitle": "需要補齊賬戶資訊",
+        "goVerification": "去實名",
+        "goBind": "去綁定",
+        "gotIt": "知道了",
+        "fallbackMessage": "請先補齊賬戶資訊後再繼續操作"
+    },
     "components": {
         "isSetup": {
             "on": "已啟用",

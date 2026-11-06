@@ -11,7 +11,7 @@ import type {
   RechargeStatusPayload,
   ServiceInstance,
 } from '@/types/client';
-import { getErrorMessage } from '@/utils/error';
+import { getErrorMessage, reportRequestError } from '@/utils/error';
 import { copyText, formatMoney } from '@/utils/format';
 
 const ACTIVE_SERVICE_STATUS = 1;
@@ -217,12 +217,8 @@ export function useRecharge() {
       return paymentPayload.value;
     } catch (error: unknown) {
       if (seq !== paymentRequestSeq) return null;
-      // interceptor 对 HTTP 错误已调用 showError，避免重复弹窗
-      const alreadyHandled =
-        typeof error === 'object' && error !== null && (error as Record<string, unknown>).__handled === true;
-      if (!alreadyHandled) {
-        MessagePlugin.error(getErrorMessage(error, t('finance.messages.createRechargeFailed')));
-      }
+      // 充值会被账户策略拦截（40301 + scope=account_policy）：拦截器弹了补齐对话框就不再 toast
+      reportRequestError(error, t('finance.messages.createRechargeFailed'));
       return null;
     } finally {
       if (seq === paymentRequestSeq) {

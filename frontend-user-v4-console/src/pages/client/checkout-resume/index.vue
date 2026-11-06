@@ -39,6 +39,7 @@ import { useRoute, useRouter } from 'vue-router';
 import clientApi from '@/api/client';
 import { formatBillingCycle } from '@/domains/finance/useRecords';
 import { t } from '@/locales';
+import { isHandledRequestError } from '@/utils/error';
 import { openPublicProducts } from '@/utils/publicSite';
 import type { PendingWebsiteCheckout } from '@/utils/websiteCheckout';
 import {
@@ -175,7 +176,12 @@ async function resumeCheckout() {
     await router.replace(invoiceId > 0 ? `/client/invoices/${invoiceId}/pay` : '/client/invoices');
   } catch (error) {
     status.value = 'error';
-    errorMessage.value = error instanceof Error ? error.message : t('checkoutResume.createFailed');
+    // 拦截器已弹过提示（含 40301 账户策略补齐对话框）时，不再把同一条文案铺到页面上
+    errorMessage.value = isHandledRequestError(error)
+      ? ''
+      : error instanceof Error
+        ? error.message
+        : t('checkoutResume.createFailed');
   }
 }
 

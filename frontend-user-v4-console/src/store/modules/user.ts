@@ -4,7 +4,8 @@ import { clientAuthApi } from '@/api/auth';
 import { getClientToken, removeClientToken, setClientToken } from '@/app/runtime/session';
 import { resetProfileState } from '@/domains/account/profileState';
 import { store } from '@/store';
-import type { ClientAuthSessionPayload, ClientUserInfo } from '@/types/client';
+import type { ClientAccountPolicy, ClientAuthSessionPayload, ClientUserInfo } from '@/types/client';
+import { setAccountPolicy } from '@/utils/accountPolicy';
 
 const initUserInfo: ClientUserInfo = {
   name: '',
@@ -27,12 +28,22 @@ function normalizeFeatures(raw: unknown): Record<string, boolean> {
 
 function normalizeUserInfo(raw: Record<string, unknown> = {}): ClientUserInfo {
   const nickname = String(raw.nickname || raw.name || raw.email || '').trim();
+  const accountPolicy =
+    raw.account_policy && typeof raw.account_policy === 'object' && !Array.isArray(raw.account_policy)
+      ? (raw.account_policy as ClientAccountPolicy)
+      : null;
+
+  // 账户策略要同步给请求拦截器（40301 对话框按缺失项给直达按钮）；
+  // 拦截器不能反向 import store，因此这里把快照写进 utils/accountPolicy。
+  setAccountPolicy(accountPolicy);
+
   return {
     ...raw,
     name: nickname || '用户',
     nickname,
     roles: ['client'],
     features: normalizeFeatures(raw.features),
+    account_policy: accountPolicy,
   };
 }
 
@@ -69,6 +80,8 @@ export const useUserStore = defineStore('user', {
       // 退出登录 / 会话失效时一并清空账户设置的共享资料，
       // 避免下一个登录的人看到上一个账号的昵称、实名信息等
       resetProfileState();
+      // 账户策略快照同理：不清会让提示条与 40301 对话框带上一个账号的缺失项
+      setAccountPolicy(null);
     },
     async clientLogin(loginData: Record<string, unknown>) {
       const res = await clientAuthApi.login(loginData);

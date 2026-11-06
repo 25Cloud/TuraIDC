@@ -37,6 +37,13 @@
             "rateLimitedRetry": "请求过于频繁，请 {seconds} 秒后重试"
         }
     },
+    "accountPolicy": {
+        "dialogTitle": "需要补齐账户信息",
+        "goVerification": "去实名",
+        "goBind": "去绑定",
+        "gotIt": "知道了",
+        "fallbackMessage": "请先补齐账户信息后再继续操作"
+    },
     "components": {
         "isSetup": {
             "on": "已启用",

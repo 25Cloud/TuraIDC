@@ -10,16 +10,21 @@ import {
 } from '@turaidc/shared/runtime';
 import type { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import axios from 'axios';
-import { MessagePlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
 import { getClientToken, removeClientToken } from '@/app/runtime/session';
 import { i18n } from '@/locales';
 import router from '@/router';
+import type { ClientAccountPolicyItem } from '@/types/client';
+import { firstPolicyItemRoute, isAccountPolicyItem } from '@/utils/accountPolicy';
 import { toUserMessage } from '@/utils/userMessage';
 
 const DEFAULT_TIMEOUT = 18000;
 const SAFE_TIMEOUT = 16000;
 const WEAK_NETWORK_TIMEOUT_BOOST = 9000;
+
+/** 账户策略未达标的业务码（后端 AccountPolicyService::assertSatisfied） */
+const ACCOUNT_POLICY_REQUIRED_CODE = 40301;
 
 interface ClientConfigExtras {
   safeRetryCount?: number;
@@ -75,6 +80,82 @@ function redirectLogin() {
   }
   router.push('/client/login').finally(() => {
     redirectingToLogin = false;
+  });
+}
+
+/** 40301 对话框同一时间只开一个：并发的写请求不该叠出多个弹窗 */
+let accountPolicyDialogOpen = false;
+
+/**
+ * 账户策略拦截的结构化载荷（后端 BusinessException 第四参数）。
+ *
+ * `scope` 是判别位：只有 `account_policy` 才是本功能的拦截；同样用 40301 的
+ * 「服务面板访问凭证缺失/失效」（ServiceConsoleAreaService）没有这个字段，
+ * 必须继续走普通错误提示，不能弹补齐对话框。
+ */
+interface AccountPolicyErrorPayload {
+  scope?: unknown;
+  scene?: unknown;
+  missing_items?: unknown;
+}
+
+/** 从错误响应体里取出账户策略缺失项；不是账户策略拦截时返回 null */
+function resolveAccountPolicyMissingItems(payload: unknown): ClientAccountPolicyItem[] | null {
+  const data = (payload as { data?: AccountPolicyErrorPayload } | null | undefined)?.data;
+
+  if (!data || typeof data !== 'object' || data.scope !== 'account_policy') {
+    return null;
+  }
+
+  return Array.isArray(data.missing_items) ? data.missing_items.filter(isAccountPolicyItem) : [];
+}
+
+/**
+ * 账户策略未达标：弹对话框 + 直达按钮，而不是只弹一个裸 toast。
+ *
+ * 按钮完全按错误响应里的 `data.missing_items` 决定，**不读**内存里的 auth/info 快照：
+ * 用户可能刚被策略收紧、info 还没刷新，此时只有错误响应是可信的。
+ */
+function promptAccountPolicy(message: string, missingItems: ClientAccountPolicyItem[]): void {
+  if (accountPolicyDialogOpen) {
+    return;
+  }
+
+  accountPolicyDialogOpen = true;
+
+  const header = i18n.global.t('accountPolicy.dialogTitle');
+  const body = message || i18n.global.t('accountPolicy.fallbackMessage');
+  const target = firstPolicyItemRoute(missingItems);
+  const release = () => {
+    accountPolicyDialogOpen = false;
+  };
+
+  if (!target) {
+    DialogPlugin.alert({
+      header,
+      body,
+      confirmBtn: i18n.global.t('accountPolicy.gotIt'),
+      onClose: release,
+      onClosed: release,
+    });
+
+    return;
+  }
+
+  const dialog = DialogPlugin.confirm({
+    header,
+    body,
+    confirmBtn: i18n.global.t(
+      missingItems[0] === 'verification' ? 'accountPolicy.goVerification' : 'accountPolicy.goBind',
+    ),
+    cancelBtn: i18n.global.t('accountPolicy.gotIt'),
+    theme: 'warning',
+    onConfirm() {
+      dialog.hide();
+      void router.push(target);
+    },
+    onClose: release,
+    onClosed: release,
   });
 }
 
@@ -171,6 +252,21 @@ httpClient.interceptors.response.use(
         return Promise.reject(new Error(msg));
       }
 
+      // 账户策略拦截（40301 + data.scope=account_policy）：对话框带直达按钮，不落成裸 toast。
+      // 其他 40301（例如服务面板访问凭证失效）没有 scope，继续走下面的普通错误提示。
+      const policyMissingItems =
+        res.code === ACCOUNT_POLICY_REQUIRED_CODE ? resolveAccountPolicyMissingItems(res) : null;
+
+      if (policyMissingItems !== null) {
+        promptAccountPolicy(msg, policyMissingItems);
+
+        const policyErr = new Error(msg) as RuntimeHandledError;
+        policyErr.__handled = true;
+        policyErr.response = { ...response, data: res };
+        policyErr.config = response.config;
+        return Promise.reject(policyErr);
+      }
+
       const shownByInterceptor = !captchaRequired && !runtimeConfig?.silentError;
       if (shownByInterceptor) {
         showError(msg);
@@ -189,6 +285,25 @@ httpClient.interceptors.response.use(
   async (error) => {
     if (axios.isCancel(error) || error?.code === 'ERR_CANCELED' || error?.name === 'CanceledError') {
       return Promise.reject(error);
+    }
+
+    // 业务码与结构化载荷优先于 HTTP 状态判断：40301 会以 HTTP 403 回来
+    // （见 ApiResponseBuilder::httpStatusForErrorCode），但是否走账户策略对话框取决于
+    // `data.scope === 'account_policy'`；没有 scope 的 40301 仍按普通错误提示处理。
+    const errorResponseData = (error.response?.data ?? null) as { code?: unknown; message?: unknown } | null;
+    const businessCode = Number(errorResponseData?.code ?? 0);
+    const policyMissingItems =
+      businessCode === ACCOUNT_POLICY_REQUIRED_CODE ? resolveAccountPolicyMissingItems(error.response?.data) : null;
+
+    if (policyMissingItems !== null) {
+      const policyMessage = toUserMessage(errorResponseData?.message, i18n.global.t('common.errors.requestFailed'));
+      promptAccountPolicy(policyMessage, policyMissingItems);
+
+      const policyErr = new Error(policyMessage) as RuntimeHandledError;
+      policyErr.__handled = true;
+      policyErr.response = error.response;
+      policyErr.config = error.config;
+      return Promise.reject(policyErr);
     }
 
     try {

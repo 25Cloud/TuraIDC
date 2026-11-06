@@ -47,6 +47,24 @@ export interface ClientAgentGroup {
   [key: string]: unknown;
 }
 
+/** 账户策略的缺失项；枚举码由后端 App\Services\Auth\AccountPolicyService::ITEM_* 定义 */
+export type ClientAccountPolicyItem = 'verification' | 'phone' | 'email';
+
+/**
+ * 账户策略（`GET /api/v2/client/auth/info` 的 `data.account_policy`）。
+ *
+ * 唯一判据在后端（`App\Services\Auth\AccountPolicyService`）：前端不自己判断「要不要实名」，
+ * 只按 `missing_items` 决定是否提示、给哪些补齐动作；`message` 是后端拼好的整句，前端直接展示。
+ * 后端未下发该字段（老版本或策略未收紧前）时整块不渲染。
+ */
+export interface ClientAccountPolicy {
+  require_verification?: boolean;
+  require_phone?: boolean;
+  require_email?: boolean;
+  missing_items?: Array<ClientAccountPolicyItem | string>;
+  message?: string;
+}
+
 export interface ClientUserInfo {
   id?: number | string;
   name?: string;
@@ -93,6 +111,8 @@ export interface ClientUserInfo {
    * 键名是插件 slug，例如 `ai_assistant`、`auto_refund`；缺键一律按不可用处理。
    */
   features?: Record<string, boolean>;
+  /** 账户策略（实名 / 手机 / 邮箱是否强制）；后端未下发时为 undefined */
+  account_policy?: ClientAccountPolicy | null;
   [key: string]: unknown;
 }
 

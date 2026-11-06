@@ -14,6 +14,7 @@ import type {
   InvoicePaymentSecurity,
   InvoiceRecord,
 } from '@/types/client';
+import { reportRequestError } from '@/utils/error';
 import { formatMoney } from '@/utils/format';
 
 import { resolveQuickDateRange } from './dateFilters';
@@ -616,7 +617,8 @@ export function useInvoiceDetail() {
       detail.value = res.data?.invoice || detail.value;
       await loadDetail();
     } catch (error: unknown) {
-      MessagePlugin.error(getErrorMessage(error, t('finance.messages.balancePayFailed')));
+      // 支付会被账户策略拦截（40301 + scope=account_policy）：拦截器已弹补齐对话框时不再重复 toast
+      reportRequestError(error, t('finance.messages.balancePayFailed'));
     } finally {
       paying.value = false;
     }
@@ -689,9 +691,8 @@ export function useInvoiceDetail() {
         }, 5000);
       }
     } catch (error: unknown) {
-      MessagePlugin.error(
-        getErrorMessage(error, t('finance.messages.qrGenerateFailed', { method: selectedPayMethodName.value })),
-      );
+      // 同上：账户策略拦截时由拦截器的对话框负责反馈
+      reportRequestError(error, t('finance.messages.qrGenerateFailed', { method: selectedPayMethodName.value }));
     } finally {
       paying.value = false;
     }
