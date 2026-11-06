@@ -93,6 +93,18 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=10
+      # redis 扩展装上之后，魔方财务相关用例会真的去连 Redis（JWT 缓存），
+      # 本机没装扩展时它们靠「找不到类」的路径侥幸通过，CI 一旦装上就 Connection refused。
+      # 与其把扩展去掉掩盖依赖，不如按真实环境起一个 Redis。
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
     defaults:
       run:
         working-directory: backend
@@ -105,6 +117,8 @@ jobs:
       DB_DATABASE: idc_test
       DB_USERNAME: root
       DB_PASSWORD: root
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
     steps:
       - uses: actions/checkout@v4
 
@@ -141,8 +155,12 @@ jobs:
         run: php artisan migrate --force
 
       # 插件用例（含自助退款、bridge、AI 助手）与单元用例：快、确定、不依赖外网。
-      - name: Run plugin and unit tests
-        run: php artisan test --testsuite=Plugins --testsuite=Unit
+      # 注意 PHPUnit 的 --testsuite 只接受一个值（重复传会互相覆盖），所以拆成两步。
+      - name: Run plugin tests
+        run: php artisan test --testsuite=Plugins
+
+      - name: Run unit tests
+        run: php artisan test --testsuite=Unit
 
       # 全量功能用例：1600+ 条，本地约 8 分钟。跑在同一个测试库上，失败即挡合并。
       - name: Run feature tests
