@@ -103,7 +103,8 @@ class ProductController extends Controller
             'trace_id' => (string) $request->header('X-Request-Id', ''),
         ]);
 
-        $message = (string) ($result['message'] ?? '');
+        // 服务层返回值里 message 一定存在（同 destroy/restore 的写法），不再做空值兜底
+        $message = (string) $result['message'];
         unset($result['message']);
 
         return $this->success($result, $message);
