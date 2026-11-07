@@ -4,10 +4,15 @@
     "forks": 18,
     "openIssues": 0,
     "license": "AGPL-3.0",
-    "pushedAt": "2026-11-06T17:43:40Z",
+    "pushedAt": "2026-11-07T01:51:04Z",
     "url": "https://github.com/25Cloud/TuraIDC"
   },
   "releases": [
+    {
+      "tag": "v0.4.5",
+      "publishedAt": "2026-11-07T01:51:19Z",
+      "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.5"
+    },
     {
       "tag": "v0.4.4",
       "publishedAt": "2026-11-01T09:55:22Z",
@@ -27,11 +32,6 @@
       "tag": "v0.4.1",
       "publishedAt": "2026-10-15T11:28:04Z",
       "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.1"
-    },
-    {
-      "tag": "v0.4.0",
-      "publishedAt": "2026-10-13T04:41:11Z",
-      "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.0"
     }
   ],
   "languages": [
