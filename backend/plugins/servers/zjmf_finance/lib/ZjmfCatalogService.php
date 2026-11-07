@@ -100,7 +100,17 @@ final class ZjmfCatalogService
         private readonly ZjmfFinanceTransport $transport,
         private readonly ZjmfCloudConfigTemplate $cloudConfigTemplate,
         private readonly ZjmfProductTypeMapper $productTypeMapper = new ZjmfProductTypeMapper,
+        private readonly ?ZjmfProductConfigGateway $productConfigGateway = null,
     ) {}
+
+    /**
+     * 商品配置统一走 ZjmfProductConfigGateway：新版上游只剩 api/product/prodetail，
+     * 老版本才认 cart/get_product_config，具体用哪条由供应商档位 + 实测结果决定。
+     */
+    private function productConfig(): ZjmfProductConfigGateway
+    {
+        return $this->productConfigGateway ?? new ZjmfProductConfigGateway($this->transport);
+    }
 
     public function getProductCatalog(Supplier $supplier): array
     {
@@ -180,12 +190,11 @@ final class ZjmfCatalogService
         }
 
         $chunkSize = max(1, min($chunkSize, 12));
-        $rootUrl = $this->transport->resolveSupplierRootUrl($supplier);
         $results = [];
 
         foreach (array_chunk($ids, $chunkSize) as $chunk) {
             // 优先并行拉取（每批并发，替代逐商品串行请求，减少 RTT）。
-            $pricingMap = $this->fetchPricingChunkInParallel($supplier, $chunk, $rootUrl);
+            $pricingMap = $this->fetchPricingChunkInParallel($supplier, $chunk);
 
             foreach ($chunk as $productId) {
                 if (isset($pricingMap[$productId])) {
@@ -207,23 +216,15 @@ final class ZjmfCatalogService
     }
 
     /**
-     * 并发拉取一批商品的 /cart/get_product_config 并提取价格。
+     * 并发拉取一批商品的配置并提取价格。
      *
      * @param  array<int, int>  $chunk
      * @return array<int, array<string, mixed>>
      */
-    private function fetchPricingChunkInParallel(Supplier $supplier, array $chunk, string $rootUrl): array
+    private function fetchPricingChunkInParallel(Supplier $supplier, array $chunk): array
     {
         try {
-            $responses = $this->transport->parallelGet(
-                $supplier,
-                collect($chunk)->mapWithKeys(fn (int $productId) => [
-                    (string) $productId => [
-                        'uri' => $rootUrl.'/cart/get_product_config',
-                        'query' => ['pid' => $productId],
-                    ],
-                ])->all()
-            );
+            $responses = $this->productConfig()->fetchMany($supplier, $chunk);
         } catch (\Throwable $exception) {
             Log::warning('[ZJMF 财务接口] 批量价格并发拉取失败，回退串行', [
                 'supplier_id' => $supplier->id,
@@ -235,7 +236,7 @@ final class ZjmfCatalogService
 
         $results = [];
         foreach ($chunk as $productId) {
-            $response = $responses[(string) $productId]['response'] ?? null;
+            $response = $responses[$productId] ?? null;
             if (! is_array($response)) {
                 continue;
             }
@@ -256,14 +257,9 @@ final class ZjmfCatalogService
     private function fetchPricingFallback(Supplier $supplier, int $productId): array
     {
         try {
-            $response = $this->transport->get(
-                $supplier,
-                '/cart/get_product_config',
-                null,
-                ['pid' => $productId],
-            );
+            $response = $this->productConfig()->fetch($supplier, $productId);
 
-            return is_array($response) ? $this->extractProductPricingFromResponse($response) : [];
+            return $this->extractProductPricingFromResponse($response);
         } catch (\Throwable $exception) {
             Log::warning('[ZJMF 财务接口] 单个商品价格补充失败', [
                 'supplier_id' => $supplier->id,
@@ -354,12 +350,7 @@ final class ZjmfCatalogService
 
     public function fetchRealConfigOptions(Supplier $supplier, int $productId): array
     {
-        $response = $this->transport->get(
-            $supplier,
-            '/cart/get_product_config',
-            $this->transport->login($supplier),
-            ['pid' => $productId],
-        );
+        $response = $this->productConfig()->fetch($supplier, $productId);
 
         return $this->normalizeRemoteConfigOptions(
             $this->extractStorefrontConfigOptionsFromResponse($response)
@@ -379,29 +370,15 @@ final class ZjmfCatalogService
             return [];
         }
 
-        $chunkSize = max(1, min($chunkSize, 12));
-        $jwt = $this->transport->login($supplier);
+        $responses = $this->productConfig()->fetchMany($supplier, $ids, null, max(1, min($chunkSize, 12)));
         $results = [];
 
-        foreach (array_chunk($ids, $chunkSize) as $chunk) {
-            $responses = $this->transport->parallelGet(
-                $supplier,
-                collect($chunk)->mapWithKeys(fn (int $productId) => [
-                    (string) $productId => [
-                        'uri' => '/cart/get_product_config',
-                        'query' => ['pid' => $productId],
-                    ],
-                ])->all(),
-                $jwt,
-            );
-
-            foreach ($chunk as $productId) {
-                $response = $responses[(string) $productId]['response'] ?? null;
-                $storefrontConfigOptions = $this->extractStorefrontConfigOptionsFromResponse($response);
-                $results[$productId] = $storefrontConfigOptions !== []
-                    ? $this->normalizeRemoteConfigOptions($storefrontConfigOptions)
-                    : [];
-            }
+        foreach ($ids as $productId) {
+            $response = $responses[$productId] ?? null;
+            $storefrontConfigOptions = $this->extractStorefrontConfigOptionsFromResponse($response);
+            $results[$productId] = $storefrontConfigOptions !== []
+                ? $this->normalizeRemoteConfigOptions($storefrontConfigOptions)
+                : [];
         }
 
         return $results;
@@ -420,28 +397,14 @@ final class ZjmfCatalogService
             return [];
         }
 
-        $chunkSize = max(1, min($chunkSize, 12));
-        $jwt = $this->transport->login($supplier);
+        $responses = $this->productConfig()->fetchMany($supplier, $ids, null, max(1, min($chunkSize, 12)));
         $results = [];
 
-        foreach (array_chunk($ids, $chunkSize) as $chunk) {
-            $responses = $this->transport->parallelGet(
-                $supplier,
-                collect($chunk)->mapWithKeys(fn (int $productId) => [
-                    (string) $productId => [
-                        'uri' => '/cart/get_product_config',
-                        'query' => ['pid' => $productId],
-                    ],
-                ])->all(),
-                $jwt,
-            );
-
-            foreach ($chunk as $productId) {
-                $response = $responses[(string) $productId]['response'] ?? null;
-                $results[$productId] = is_array($response)
-                    ? $this->extractLegacyProductStock($response, $productId)
-                    : null;
-            }
+        foreach ($ids as $productId) {
+            $response = $responses[$productId] ?? null;
+            $results[$productId] = is_array($response)
+                ? $this->extractLegacyProductStock($response, $productId)
+                : null;
         }
 
         return $results;

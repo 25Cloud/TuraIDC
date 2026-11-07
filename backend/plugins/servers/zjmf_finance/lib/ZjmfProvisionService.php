@@ -46,7 +46,17 @@ final class ZjmfProvisionService
     public function __construct(
         private readonly ZjmfFinanceTransport $transport,
         private ?PluginBindingResolver $bindingResolver = null,
+        private readonly ?ZjmfProductConfigGateway $productConfigGateway = null,
     ) {}
+
+    /**
+     * 商品配置统一入口：新版上游只认 api/product/prodetail，老版本认
+     * cart/get_product_config，用哪条由供应商档位 + 实测结果决定。
+     */
+    private function productConfig(): ZjmfProductConfigGateway
+    {
+        return $this->productConfigGateway ?? new ZjmfProductConfigGateway($this->transport);
+    }
 
     public function provisionOrder(Order $order, Supplier $supplier, ?Service $existingService = null): array
     {
@@ -80,23 +90,14 @@ final class ZjmfProvisionService
                 // 而上游账单实际未扣款，造成收入缺口；账单未付时重试供应商余额支付。
                 $existingInvoiceId = (int) ($existingProvisionData['upstream_invoice_id'] ?? 0);
                 if ($existingInvoiceId > 0) {
-                    // 必须用 requestWithMeta：裸 get() 的响应体交给 withHttpCode() 会得到
-                    // 空数组 + http_code=0，幂等回查会被恒判失败而阻断。
-                    $invoiceResponse = ZjmfUpstreamResponse::withHttpCode(
-                        $this->transport->requestWithMeta($supplier, 'GET', "/v1/invoices/{$existingInvoiceId}", [], $jwt)
-                    );
-                    $this->assertUpstreamSuccess($invoiceResponse, [200, 1000, 1001], '校验上游开通账单支付状态');
+                    // 老版本能直接读 /v1/invoices/{id} 判断支付状态；3.8.0 起没有 /v1，
+                    // fetchInvoice 返回 null，这时直接补一次余额支付：上游对已付账单回
+                    // 「账单已处理」，payInvoiceWithCredit 会归一成 already_paid 成功。
+                    $invoiceResponse = $this->transport->fetchInvoice($supplier, $existingInvoiceId, $jwt);
+                    $invoicePaid = $invoiceResponse !== null && ZjmfUpstreamResponse::isInvoicePaid($invoiceResponse);
 
-                    // 账单支付状态在 data.invoices.status（业务码在顶层 data.status=200）。
-                    // 按顶层读会恒得到 "200"，每张已付账单都被当成未付再去补付，
-                    // 而上游对已付账单回 400「Bill paid」，开通重试直接失败。
-                    if (! ZjmfUpstreamResponse::isInvoicePaid($invoiceResponse)) {
-                        // 与账单查询同口径保留 HTTP 状态：裸 post 只带业务码，
-                        // 上游 5xx 且业务码看似正常时会被误判为支付成功。
-                        $fundResponse = ZjmfUpstreamResponse::withHttpCode(
-                            $this->transport->requestWithMeta($supplier, 'POST', "/v1/invoices/{$existingInvoiceId}/fund", [], $jwt)
-                        );
-                        $this->assertUpstreamSuccess($fundResponse, [200, 1000, 1001], '重试供应商余额支付开通账单');
+                    if (! $invoicePaid) {
+                        $this->transport->payInvoiceWithCredit($supplier, $existingInvoiceId, $jwt);
                     }
                 }
 
@@ -158,15 +159,11 @@ final class ZjmfProvisionService
             $upstreamProductId = $this->resolveProductUpstreamProductId($product);
 
             $stepStartedAt = microtime(true);
-            $productConfigResponse = $this->requestCartWithSession(
+            $productConfigResponse = $this->productConfig()->fetch(
                 $supplier,
-                'GET',
-                '/cart/get_product_config',
-                [],
+                $upstreamProductId,
                 $jwt,
                 $cartCookieJar,
-                [],
-                ['pid' => $upstreamProductId]
             );
             $latency['product_config_ms'] = $this->elapsedMilliseconds($stepStartedAt);
             $this->assertUpstreamSuccess($productConfigResponse, [200], '读取上游商品配置');
@@ -347,9 +344,7 @@ final class ZjmfProvisionService
 
     public function getProductProvisionConfig(Supplier $supplier, int $productId): array
     {
-        return $this->transport->get($supplier, '/cart/get_product_config', $this->transport->login($supplier), [
-            'pid' => $productId,
-        ]);
+        return $this->productConfig()->fetch($supplier, $productId);
     }
 
     private function buildCartPayload(Order $order, Product $product, int $currencyId): array

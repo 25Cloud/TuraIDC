@@ -42,6 +42,8 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
 
     private readonly ZjmfSecurityService $securityService;
 
+    private readonly ZjmfProductConfigGateway $productConfigGateway;
+
     public function __construct(
         HostingPanelApiTransport $transport,
         ZjmfCloudConfigTemplate $cloudConfigTemplate,
@@ -54,17 +56,24 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
         ?ZjmfConsoleService $consoleService = null,
         ?ZjmfNetworkService $networkService = null,
         ?ZjmfSecurityService $securityService = null,
+        ?ZjmfProductConfigGateway $productConfigGateway = null,
     ) {
         $this->transport = $zjmfTransport ?? new ZjmfFinanceTransport(
             $transport,
             new ZjmfAuthManager($transport)
         );
+        $this->productConfigGateway = $productConfigGateway ?? new ZjmfProductConfigGateway($this->transport);
         $this->catalogService = $catalogService ?? new ZjmfCatalogService(
             $this->transport,
             $cloudConfigTemplate,
-            $this->productTypeMapper
+            $this->productTypeMapper,
+            $this->productConfigGateway,
         );
-        $this->provisionService = $provisionService ?? new ZjmfProvisionService($this->transport);
+        $this->provisionService = $provisionService ?? new ZjmfProvisionService(
+            $this->transport,
+            null,
+            $this->productConfigGateway,
+        );
         $this->renewService = $renewService ?? new ZjmfRenewService($this->transport);
         $this->statusService = $statusService ?? new ZjmfStatusService($this->transport);
         $this->consoleService = $consoleService ?? new ZjmfConsoleService($this->transport);
@@ -135,6 +144,24 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
     public function getProductProvisionConfig(Supplier $supplier, int $productId): array
     {
         return $this->provisionService->getProductProvisionConfig($supplier, $productId);
+    }
+
+    /**
+     * 当前供应商实际生效的版本/接口档位（含实测回退结果）。
+     */
+    public function compatibilityProfile(Supplier $supplier): ZjmfCompatibilityProfile
+    {
+        return ZjmfCompatibilityProfile::fromSupplier($supplier);
+    }
+
+    /**
+     * 读单个上游商品的配置（新老接口自动切换），返回 cart/get_product_config 同结构。
+     *
+     * @return array<string, mixed>
+     */
+    public function fetchProductConfig(Supplier $supplier, int $productId): array
+    {
+        return $this->productConfigGateway->fetch($supplier, $productId);
     }
 
     public function renewHost(Supplier $supplier, int $hostId, string $billingCycle): array

@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use App\Services\Upstream\Support\WebSessionCookieParser;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 final class ZjmfFinanceTransport
 {
@@ -16,6 +17,7 @@ final class ZjmfFinanceTransport
         private readonly HostingPanelApiTransport $transport,
         private readonly ZjmfAuthManager $authManager,
         private readonly ?WebSessionCookieParser $webSessionCookieParser = null,
+        private readonly ?ZjmfCapabilityMemory $capabilityMemory = null,
     ) {}
 
     public function login(Supplier $supplier): string
@@ -35,14 +37,30 @@ final class ZjmfFinanceTransport
 
     public function getUserProfile(Supplier $supplier): array
     {
-        $response = $this->get($supplier, '/v1/user', $this->login($supplier));
-        $data = $response['data'] ?? null;
+        // /v1/user 只存在于 3.7.6 及更早；3.8.0 起整套 /v1 被删。
+        // 拿不到时用 /cart/credit 拼一个等价结构（余额 + 货币），够供应商卡片与余额同步用。
+        if ($this->profile($supplier)->allowsV1()) {
+            try {
+                $response = $this->get($supplier, '/v1/user', $this->login($supplier));
+                $data = $response['data'] ?? null;
 
-        if (! is_array($data) || ! isset($data['client']) || ! is_array($data['client'])) {
-            throw new BusinessException((string) ($response['msg'] ?? '获取会员基础资料失败'), 42200);
+                if (is_array($data) && isset($data['client']) && is_array($data['client'])) {
+                    return $data;
+                }
+            } catch (\Throwable $exception) {
+                if (! str_contains($exception->getMessage(), '404')) {
+                    throw $exception;
+                }
+            }
         }
 
-        return $data;
+        $balance = $this->getBalance($supplier);
+
+        return [
+            'client' => $balance['client'],
+            'currency' => $balance['currency'],
+            'source' => 'cart/credit',
+        ];
     }
 
     public function getBalance(Supplier $supplier): array
@@ -59,6 +77,151 @@ final class ZjmfFinanceTransport
             'client' => ['credit' => (string) $data['credit']],
             'currency' => is_array($data['currency'] ?? null) ? $data['currency'] : [],
         ];
+    }
+
+    public function profile(Supplier $supplier): ZjmfCompatibilityProfile
+    {
+        return ZjmfCompatibilityProfile::fromSupplier($supplier);
+    }
+
+    /**
+     * 读上游账单详情。
+     *
+     * 只有 3.7.6 及更早有 /v1/invoices/{id}；3.8.0 起整套 /v1 被删，
+     * 这里返回 null 表示「读不到」，由调用方改用 /apply_credit 的结果判断支付状态。
+     *
+     * @return array<string, mixed>|null
+     */
+    public function fetchInvoice(Supplier $supplier, int $invoiceId, ?string $jwt = null): ?array
+    {
+        if ($invoiceId <= 0) {
+            return null;
+        }
+
+        if (! $this->profile($supplier)->allowsV1()) {
+            return null;
+        }
+
+        try {
+            $meta = $this->requestWithMeta(
+                $supplier,
+                'GET',
+                "/v1/invoices/{$invoiceId}",
+                [],
+                $this->resolveJwt($supplier, $jwt)
+            );
+        } catch (\Throwable $exception) {
+            if (! str_contains($exception->getMessage(), '404')) {
+                Log::warning('[ZJMF 财务接口] 读取上游账单失败', [
+                    'supplier_id' => (int) $supplier->id,
+                    'upstream_invoice_id' => $invoiceId,
+                    'message' => $exception->getMessage(),
+                ]);
+            }
+
+            return null;
+        }
+
+        $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
+
+        return (int) ($response['status'] ?? 0) === 200 ? ZjmfUpstreamResponse::withHttpCode($meta) : null;
+    }
+
+    /**
+     * 用供应商余额支付上游账单。
+     *
+     * 候选顺序由供应商档位决定：
+     * - /apply_credit            购物车结算页那条，3.7.6 → 3.8.0 都在，新版首选
+     * - /v1/invoices/{id}/fund   只有老版本有，老站首选
+     *
+     * 账单已支付时上游回 400/406「账单已处理」，这里归一成 already_paid 成功返回，
+     * 让幂等重试能把「已经付过」当成目标状态而不是错误。
+     *
+     * @param  list<string>  $headers
+     * @param  array<string, mixed>  $query
+     * @return array<string, mixed>
+     */
+    public function payInvoiceWithCredit(
+        Supplier $supplier,
+        int $invoiceId,
+        ?string $jwt = null,
+        array $headers = [],
+        array $query = [],
+    ): array {
+        if ($invoiceId <= 0) {
+            throw new BusinessException('上游账单编号无效，无法支付');
+        }
+
+        $jwt = $this->resolveJwt($supplier, $jwt);
+        $headers = array_merge(['Accept: application/json'], $headers);
+        $errors = [];
+
+        foreach ($this->profile($supplier)->invoicePayOrder() as $channel) {
+            try {
+                $meta = $channel === ZjmfCompatibilityProfile::INVOICE_PAY_V1_FUND
+                    ? $this->requestWithMeta(
+                        $supplier,
+                        'POST',
+                        "/v1/invoices/{$invoiceId}/fund",
+                        [],
+                        $jwt,
+                        $headers,
+                        $query
+                    )
+                    : $this->requestWithMeta(
+                        $supplier,
+                        'POST',
+                        '/apply_credit',
+                        ['invoiceid' => $invoiceId, 'use_credit' => 1, 'enough' => 1],
+                        $jwt,
+                        array_merge($headers, ['Content-Type: application/x-www-form-urlencoded']),
+                        $query
+                    );
+            } catch (\Throwable $exception) {
+                $errors[$channel] = $exception->getMessage();
+
+                continue;
+            }
+
+            $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
+            $status = (int) ($response['status'] ?? 0);
+            if (in_array($status, [200, 1001], true)) {
+                return ZjmfUpstreamResponse::withHttpCode($meta);
+            }
+
+            $message = trim((string) ($response['msg'] ?? $response['message'] ?? ''));
+            if ($this->isInvoiceAlreadySettledMessage($message)) {
+                return array_merge(ZjmfUpstreamResponse::withHttpCode($meta), ['status' => 200, 'already_paid' => true]);
+            }
+
+            $errors[$channel] = $message !== '' ? $message : '上游返回异常';
+        }
+
+        $labels = [
+            ZjmfCompatibilityProfile::INVOICE_PAY_APPLY_CREDIT => 'apply_credit',
+            ZjmfCompatibilityProfile::INVOICE_PAY_V1_FUND => 'v1/invoices/fund',
+        ];
+        $parts = [];
+        foreach ($errors as $channel => $message) {
+            $parts[] = ($labels[$channel] ?? $channel).'：'.$message;
+        }
+
+        throw new BusinessException('使用供应商余额支付上游账单失败（'.implode('；', $parts).'），请稍后重试');
+    }
+
+    private function isInvoiceAlreadySettledMessage(string $message): bool
+    {
+        if ($message === '') {
+            return false;
+        }
+
+        foreach (['已处理', '已支付', '已付款', 'paid', 'already'] as $needle) {
+            if (str_contains(strtolower($message), strtolower($needle))) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function getProductCatalog(Supplier $supplier): array
@@ -451,15 +614,22 @@ final class ZjmfFinanceTransport
         array $query = []
     ): array {
         $resolvedJwt = $this->resolveRequestJwt($supplier, $jwt, $uri, $headers);
-        $response = $this->transport->request(
-            $supplier,
-            $method,
-            $uri,
-            $payload,
-            $resolvedJwt,
-            $this->withBearerAuthorization($resolvedJwt, $headers),
-            $query
-        );
+        $this->guardV1($supplier, $uri);
+
+        try {
+            $response = $this->transport->request(
+                $supplier,
+                $method,
+                $uri,
+                $payload,
+                $resolvedJwt,
+                $this->withBearerAuthorization($resolvedJwt, $headers),
+                $query
+            );
+        } catch (\Throwable $exception) {
+            $this->handleV1Failure($supplier, $uri, $exception);
+        }
+
         $this->authManager->forgetIfUnauthorizedResponse($supplier, 0, $response, $resolvedJwt);
 
         return $response;
@@ -478,15 +648,22 @@ final class ZjmfFinanceTransport
         array $query = []
     ): array {
         $resolvedJwt = $this->resolveRequestJwt($supplier, $jwt, $uri, $headers);
-        $meta = $this->transport->requestWithMeta(
-            $supplier,
-            $method,
-            $uri,
-            $payload,
-            $resolvedJwt,
-            $this->withBearerAuthorization($resolvedJwt, $headers),
-            $query
-        );
+        $this->guardV1($supplier, $uri);
+
+        try {
+            $meta = $this->transport->requestWithMeta(
+                $supplier,
+                $method,
+                $uri,
+                $payload,
+                $resolvedJwt,
+                $this->withBearerAuthorization($resolvedJwt, $headers),
+                $query
+            );
+        } catch (\Throwable $exception) {
+            $this->handleV1Failure($supplier, $uri, $exception);
+        }
+
         $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
         $this->authManager->forgetIfUnauthorizedResponse(
             $supplier,
@@ -496,6 +673,70 @@ final class ZjmfFinanceTransport
         );
 
         return $meta;
+    }
+
+    private function memory(): ZjmfCapabilityMemory
+    {
+        return $this->capabilityMemory ?? new ZjmfCapabilityMemory;
+    }
+
+    /**
+     * /v1/* 在 3.8.0 起被整体移除。供应商档位明确关掉、或这个供应商已经实测过 404 时，
+     * 直接给可操作的提示，不再打一次必然失败的请求。
+     */
+    private function guardV1(Supplier $supplier, string $uri): void
+    {
+        if (! $this->isV1Uri($uri)) {
+            return;
+        }
+
+        $profile = $this->profile($supplier);
+        if (! $profile->allowsV1()) {
+            throw $profile->v1UnavailableMessage($this->v1ActionLabel($uri));
+        }
+
+        if ($this->memory()->recall((int) $supplier->id, 'v1') === 'unavailable') {
+            throw $profile->v1UnavailableMessage($this->v1ActionLabel($uri));
+        }
+    }
+
+    /**
+     * /v1 打回 404 时记下「本供应商没有 /v1」，并把原始异常换成能照着做的提示。
+     *
+     * @phpstan-return never
+     */
+    private function handleV1Failure(Supplier $supplier, string $uri, \Throwable $exception): void
+    {
+        if (! $this->isV1Uri($uri) || ! str_contains($exception->getMessage(), '404')) {
+            throw $exception;
+        }
+
+        $this->memory()->remember((int) $supplier->id, 'v1', 'unavailable');
+
+        Log::warning('[ZJMF 财务接口] 上游 /v1 接口不存在，已按无 /v1 处理', [
+            'supplier_id' => (int) $supplier->id,
+            'uri' => $uri,
+        ]);
+
+        throw $this->profile($supplier)->v1UnavailableMessage($this->v1ActionLabel($uri));
+    }
+
+    private function isV1Uri(string $uri): bool
+    {
+        return str_starts_with(ltrim(trim($uri)), '/v1/');
+    }
+
+    private function v1ActionLabel(string $uri): string
+    {
+        $uri = strtolower($uri);
+
+        return match (true) {
+            str_contains($uri, 'upgradeconfig') => '升级配置',
+            str_contains($uri, 'upgrade') => '升级套餐',
+            str_contains($uri, 'invoices') => '支付或读取上游账单',
+            str_contains($uri, 'user') => '读取会员资料',
+            default => '执行该操作',
+        };
     }
 
     private function resolveJwt(Supplier $supplier, ?string $jwt): string

@@ -82,7 +82,9 @@ final class ZjmfFinanceDriver implements ProvidesSupplierFormSchema, UpstreamDri
     public function supplierFormSchema(): array
     {
         return [
-            'help' => 'ZJMF 财务插件使用供应商后台地址、账号和密码/API 密钥登录并刷新 JWT。',
+            'help' => 'ZJMF 财务插件使用供应商后台地址、账号和密码/API 密钥登录并刷新 JWT。'
+                .'魔方财务 3.8.0 删除了整套 /v1 接口并把商品配置换了新路由，'
+                .'如果供应商升级过，请把「接口版本」选成 3.8.0 及以后；不确定就留「自动探测」。',
             'fields' => [
                 [
                     'key' => 'api_url',
@@ -104,6 +106,32 @@ final class ZjmfFinanceDriver implements ProvidesSupplierFormSchema, UpstreamDri
                     'required' => true,
                     'secret' => true,
                     'placeholder' => '编辑时留空则保持原密钥',
+                ],
+                [
+                    'key' => 'version_profile',
+                    'label' => '接口版本',
+                    'type' => 'select',
+                    'default' => 'auto',
+                    'options' => [
+                        ['label' => '自动探测（推荐）', 'value' => 'auto'],
+                        ['label' => '3.7.6 及更早（老版本）', 'value' => 'legacy_376'],
+                        ['label' => '3.8.0 及以后（新版本）', 'value' => 'modern_380'],
+                    ],
+                    'description' => '只影响优先尝试哪个接口：老版本商品配置走 cart/get_product_config，'
+                        .'3.8.0 起走 api/product/prodetail。选错只会多一次探测请求，不会直接失败。',
+                ],
+                [
+                    'key' => 'use_v1_api',
+                    'label' => '走 /v1 接口',
+                    'type' => 'select',
+                    'default' => 'auto',
+                    'options' => [
+                        ['label' => '自动（按版本推导）', 'value' => 'auto'],
+                        ['label' => '强制开启', 'value' => 'always'],
+                        ['label' => '关闭（3.8.0 及以上建议）', 'value' => 'never'],
+                    ],
+                    'description' => '3.8.0 起魔方财务删除了 /v1/invoices、/v1/hosts 等接口。'
+                        .'关闭后升级配置/升级套餐会在本地直接提示，不再打出必然 404 的请求。',
                 ],
             ],
         ];

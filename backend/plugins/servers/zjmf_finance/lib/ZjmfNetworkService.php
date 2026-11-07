@@ -132,16 +132,22 @@ final class ZjmfNetworkService
 
     public function fundInvoice(Supplier $supplier, int $invoiceId, ?string $jwt = null, string $action = '支付上游账单'): array
     {
-        // 保留 HTTP 状态：裸 post 只带业务码，上游 5xx 且 status 看似正常时会被误判为支付成功。
-        $response = ZjmfUpstreamResponse::withHttpCode(
-            $this->transport->requestWithMeta($supplier, 'POST', "/v1/invoices/{$invoiceId}/fund", [], $this->resolveJwt($supplier, $jwt))
+        // 走 apply_credit（全版本可用）→ /v1/invoices/fund（老版本）的候选链，
+        // 返回值保留 HTTP 状态：裸 post 只带业务码，上游 5xx 且 status 看似正常时会被误判为支付成功。
+        $response = $this->transport->payInvoiceWithCredit($supplier, $invoiceId, $this->resolveJwt($supplier, $jwt));
+        $status = $this->responseStatus($response);
+        $alreadyPaid = (bool) ($response['already_paid'] ?? false);
+
+        throw_if(
+            ! $alreadyPaid && $status !== 0 && ! in_array($status, [200, 1001], true),
+            new BusinessException(sprintf('%s失败：%s', $action, (string) ($response['msg'] ?? '上游返回异常')))
         );
-        $this->assertUpstreamSuccess($response, [200, 1001], $action);
 
         return [
             ...$response,
-            'fund_status' => $this->responseStatus($response),
-            'payment_completed' => $this->responseStatus($response) === 1001,
+            'fund_status' => $status,
+            // apply_credit 成功即已扣余额；老版本 fund 用 1001 表示直接完成
+            'payment_completed' => $alreadyPaid || in_array($status, [200, 1001], true),
         ];
     }
 
