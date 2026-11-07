@@ -1,6 +1,6 @@
 ---
 source: guide/configure/mail-and-sms.md
-sourceHash: cf98cd746dbb8efe0560fcd55a61c0a78c9df4a3913a5799ad08d05e1944e23f
+sourceHash: 3a7289514f46861374b343f0735a36fa09fa1d00204dca244e2ec19998548fad
 translatedAt: 2026-10-26
 ---
 

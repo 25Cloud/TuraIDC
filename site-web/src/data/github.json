@@ -1,10 +1,10 @@
 {
   "repo": {
-    "stars": 271,
-    "forks": 17,
+    "stars": 279,
+    "forks": 18,
     "openIssues": 0,
     "license": "AGPL-3.0",
-    "pushedAt": "2026-11-06T15:15:45Z",
+    "pushedAt": "2026-11-06T17:43:40Z",
     "url": "https://github.com/25Cloud/TuraIDC"
   },
   "releases": [
@@ -37,22 +37,22 @@
   "languages": [
     {
       "name": "PHP",
-      "bytes": 12393930,
-      "percent": 62.9
+      "bytes": 12610212,
+      "percent": 63.2
     },
     {
       "name": "Vue",
-      "bytes": 3342167,
-      "percent": 17
+      "bytes": 3348080,
+      "percent": 16.8
     },
     {
       "name": "TypeScript",
-      "bytes": 2021156,
+      "bytes": 2048933,
       "percent": 10.3
     },
     {
       "name": "JavaScript",
-      "bytes": 914226,
+      "bytes": 918667,
       "percent": 4.6
     },
     {
@@ -62,7 +62,7 @@
     },
     {
       "name": "Other",
-      "bytes": 645900,
+      "bytes": 652423,
       "percent": 3.3
     }
   ]

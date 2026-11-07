@@ -1,6 +1,6 @@
 ---
 source: guide/operate/users.md
-sourceHash: 4a4cb51cd6d1607d8e19a821f539439d90b789d9b485ec43b1e5f725e32c197d
+sourceHash: c448a322ed59d8d3d50508e30915d4c3ad3a1cba5066fc40de3fa1bfa4c2c996
 generated: zh-tw
 ---
 
@@ -48,11 +48,11 @@ generated: zh-tw
 
 入口：管理端「推薦與充值」頁的「賬戶資訊強制項」分段（`/admin/referral-settings`），檢視需 `settings.view`、儲存需 `settings.manage`。配置落在通用設定分組 `account`，三項均為開關，**預設全部關閉**（升級不改變存量行為）。
 
-| 鍵                         | 含義         | 判定口徑                                          |
-| -------------------------- | ------------ | ------------------------------------------------- |
-| `require_verification`     | 強制實名     | `is_verified = 1` 或 `verification_status = 2`    |
-| `require_phone`            | 強制繫結手機 | `users.phone` 非空（不要求簡訊驗證標記）          |
-| `require_email`            | 強制繫結電子郵件 | `users.email` 非空（不要求郵件驗證標記）          |
+| 鍵                     | 含義         | 判定口徑                                       |
+| ---------------------- | ------------ | ---------------------------------------------- |
+| `require_verification` | 強制實名     | `is_verified = 1` 或 `verification_status = 2` |
+| `require_phone`        | 強制繫結手機 | `users.phone` 非空（不要求簡訊驗證標記）       |
+| `require_email`        | 強制繫結電子郵件 | `users.email` 非空（不要求郵件驗證標記）       |
 
 生效範圍只有「會動錢的寫操作」，判定在服務端一處完成：
 

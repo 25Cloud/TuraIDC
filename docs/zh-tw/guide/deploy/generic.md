@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/generic.md
-sourceHash: 69c9b4e097fd80d1d4e13610171ef2c9b64e0e9f73e8f7439350fb50c94fecc4
+sourceHash: d5e384f3d77b76546c634a94853ea1f94d703b47a777e2c8eb8bff0ebf2cff54
 generated: zh-tw
 ---
 
@@ -210,16 +210,16 @@ server {
 
 現成的三套值（含每個域名的理由）在倉庫 `deploy/nginx/frontend-csp.conf`，直接複製進對應 `server {}` 即可，策略含義是：
 
-| 指令 | 為什麼要這麼寫 |
-| --- | --- |
-| `script-src 'unsafe-inline'` | 官網、控制台的首屏預熱/品牌注入指令碼是內聯的，管理端 `index.html` 也有內聯引導；靜態託管沒有 nonce 可用。把內聯指令碼外移到 `/assets` 後可去掉。 |
-| `script-src 'unsafe-eval'` | 三端都用 vue-i18n 在執行時編譯語言包（未接 `@intlify/unplugin-vue-i18n` 預編譯），去掉後整頁拋 `EvalError`。接入預編譯後可去掉。 |
-| 極驗域名（`static.geetest.com` 等六個 + `monitor.geetest.com`） | 管理與控制台的登入驗證碼；`gt4.js` 執行期還會用指令碼標籤載入驗證庫並埋點，只放 `static` 會在初始化階段被攔成「網路錯誤」。 |
-| `https://res.25y.cn` | 人機驗證適配指令碼（Corptcha）內部再載入的外網 SDK，由外掛配置的 `script_url` 決定。 |
-| `https://tdesign.gtimg.com` | TDesign `t-icon` 預設 `loadDefaultIcons` 的 SVG 雪碧圖。 |
-| `style-src 'unsafe-inline'` | TDesign / Element Plus 執行時注入樣式，首屏 splash 與驗證碼樣式也是內聯。 |
-| `frame-src ... alipays:` | 控制台充值頁用隱藏 iframe 拉起支付寶 App。 |
-| `frame-ancestors 'self'` | 只允許同源頁面嵌入（`dash.example.com` 之類同域面板）。**這條只能寫在響應頭裡**，meta 裡寫了無效。 |
+| 指令                                                            | 為什麼要這麼寫                                                                                                                                |
+| --------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `script-src 'unsafe-inline'`                                    | 官網、控制台的首屏預熱/品牌注入指令碼是內聯的，管理端 `index.html` 也有內聯引導；靜態託管沒有 nonce 可用。把內聯指令碼外移到 `/assets` 後可去掉。 |
+| `script-src 'unsafe-eval'`                                      | 三端都用 vue-i18n 在執行時編譯語言包（未接 `@intlify/unplugin-vue-i18n` 預編譯），去掉後整頁拋 `EvalError`。接入預編譯後可去掉。              |
+| 極驗域名（`static.geetest.com` 等六個 + `monitor.geetest.com`） | 管理與控制台的登入驗證碼；`gt4.js` 執行期還會用指令碼標籤載入驗證庫並埋點，只放 `static` 會在初始化階段被攔成「網路錯誤」。                     |
+| `https://res.25y.cn`                                            | 人機驗證適配指令碼（Corptcha）內部再載入的外網 SDK，由外掛配置的 `script_url` 決定。                                                            |
+| `https://tdesign.gtimg.com`                                     | TDesign `t-icon` 預設 `loadDefaultIcons` 的 SVG 雪碧圖。                                                                                      |
+| `style-src 'unsafe-inline'`                                     | TDesign / Element Plus 執行時注入樣式，首屏 splash 與驗證碼樣式也是內聯。                                                                     |
+| `frame-src ... alipays:`                                        | 控制台充值頁用隱藏 iframe 拉起支付寶 App。                                                                                                    |
+| `frame-ancestors 'self'`                                        | 只允許同源頁面嵌入（`dash.example.com` 之類同域面板）。**這條只能寫在響應頭裡**，meta 裡寫了無效。                                            |
 
 > **nginx 的坑**：`add_header` 不繼承。只要某個 `location` 裡已經寫了 `add_header`（例如靜態資源的 `Cache-Control`），就必須在該 `location` 內再貼一遍 CSP，否則這個路徑的 `index.html` 會丟掉策略。建議把片段存成 `snippets/frontend-csp-<端>.conf` 再 `include`，避免三處值漂移。
 
