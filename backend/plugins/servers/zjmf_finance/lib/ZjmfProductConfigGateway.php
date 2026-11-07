@@ -44,7 +44,7 @@ final class ZjmfProductConfigGateway
         Supplier $supplier,
         int $productId,
         ?string $jwt = null,
-        array $cookieJar = [],
+        array &$cookieJar = [],
         array $headers = [],
     ): array {
         if ($productId <= 0) {
@@ -311,7 +311,7 @@ final class ZjmfProductConfigGateway
     }
 
     /**
-     * @param  array<string, string>  $cookieJar
+     * @param  array<string, string>  $cookieJar  购物车会话 cookie（老站需要，响应里的 Set-Cookie 会回填进来）
      * @param  list<string>  $headers
      * @return array<string, mixed>
      */
@@ -319,7 +319,7 @@ final class ZjmfProductConfigGateway
         Supplier $supplier,
         int $productId,
         string $jwt,
-        array $cookieJar = [],
+        array &$cookieJar = [],
         array $headers = [],
     ): array {
         $headers = array_merge(['Accept: application/json'], $headers);
@@ -338,7 +338,43 @@ final class ZjmfProductConfigGateway
             }
         }
 
-        return $this->transport->get($supplier, self::CART_PATH, $jwt, ['pid' => $productId], $headers);
+        // 必须用 requestWithMeta：购物车会话靠响应里的 Set-Cookie 维持，
+        // 裸 get() 拿不到响应头，后续 add_to_shop 会丢会话。
+        $meta = $this->transport->requestWithMeta(
+            $supplier,
+            'GET',
+            self::CART_PATH,
+            [],
+            $jwt,
+            $headers,
+            ['pid' => $productId]
+        );
+
+        $this->mergeResponseCookies($cookieJar, (array) ($meta['headers'] ?? []));
+
+        return is_array($meta['response'] ?? null) ? $meta['response'] : [];
+    }
+
+    /**
+     * @param  array<string, string>  $cookieJar
+     * @param  array<int, mixed>  $responseHeaders
+     */
+    private function mergeResponseCookies(array &$cookieJar, array $responseHeaders): void
+    {
+        foreach ($responseHeaders as $header) {
+            $line = trim((string) $header);
+            if (! str_starts_with(strtolower($line), 'set-cookie:')) {
+                continue;
+            }
+
+            $pair = explode(';', substr($line, 11), 2)[0];
+            [$name, $value] = array_pad(explode('=', trim($pair), 2), 2, '');
+            $name = trim($name);
+            $value = trim($value);
+            if ($name !== '' && $value !== '') {
+                $cookieJar[$name] = $value;
+            }
+        }
     }
 
     /**

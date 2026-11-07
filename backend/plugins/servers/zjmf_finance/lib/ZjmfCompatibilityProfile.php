@@ -124,21 +124,19 @@ final class ZjmfCompatibilityProfile
     /**
      * 账单用余额支付的候选顺序。
      *
-     * /apply_credit 是购物车结算页那条路由，三个版本都在；/v1/invoices/{id}/fund
-     * 只在老版本存在，所以 auto 与 modern 都先走 apply_credit，只有明确选老站
-     * 且允许 /v1 时才优先 fund（老版本上 fund 的返回体更完整）。
+     * 老版本与 auto 都先走 /v1/invoices/{id}/fund：3.7.6 站点上这是原生路径，
+     * 3.8.0 站点第一次会吃到 404，随后被记成「无 /v1」，之后直接走 /apply_credit。
+     * 明确选了 3.8.0+ 或关掉 /v1 时只发 /apply_credit（购物车结算页那条，全版本都在）。
      *
      * @return list<string>
      */
     public function invoicePayOrder(): array
     {
-        if (! $this->allowsV1()) {
+        if (! $this->allowsV1() || $this->version === self::VERSION_MODERN) {
             return [self::INVOICE_PAY_APPLY_CREDIT];
         }
 
-        return $this->version === self::VERSION_LEGACY
-            ? [self::INVOICE_PAY_V1_FUND, self::INVOICE_PAY_APPLY_CREDIT]
-            : [self::INVOICE_PAY_APPLY_CREDIT, self::INVOICE_PAY_V1_FUND];
+        return [self::INVOICE_PAY_V1_FUND, self::INVOICE_PAY_APPLY_CREDIT];
     }
 
     /**

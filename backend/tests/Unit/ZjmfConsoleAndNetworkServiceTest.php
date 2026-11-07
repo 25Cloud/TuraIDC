@@ -649,6 +649,9 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
             'api_url' => 'https://upstream.example/api',
             'interface_type' => 'zjmf_finance_api',
         ]);
+        // 这些用例锁的是 3.7.6 的既有链路（/v1 升级与 fund 优先），
+        // 显式钉住老版本档位，避免自动档位先打 api/product/prodetail 把请求序列打乱。
+        $supplier->setAttribute('provider_config', ['version_profile' => 'legacy_376']);
 
         return $supplier;
     }

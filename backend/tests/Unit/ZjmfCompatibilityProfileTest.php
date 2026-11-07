@@ -76,9 +76,19 @@ class ZjmfCompatibilityProfileTest extends TestCase
             [ZjmfCompatibilityProfile::PRODUCT_CONFIG_PRODETAIL, ZjmfCompatibilityProfile::PRODUCT_CONFIG_CART],
             $profile->productConfigOrder()
         );
+        // 3.8.0 没有 /v1/invoices，直接走 apply_credit，不发注定 404 的请求
         $this->assertSame(
-            [ZjmfCompatibilityProfile::INVOICE_PAY_APPLY_CREDIT, ZjmfCompatibilityProfile::INVOICE_PAY_V1_FUND],
+            [ZjmfCompatibilityProfile::INVOICE_PAY_APPLY_CREDIT],
             $profile->invoicePayOrder()
+        );
+    }
+
+    public function test_auto_profile_keeps_legacy_fund_first_for_376_sites(): void
+    {
+        // auto 必须和老版本行为一致：先 fund，3.8.0 站点靠 404 回退 apply_credit
+        $this->assertSame(
+            [ZjmfCompatibilityProfile::INVOICE_PAY_V1_FUND, ZjmfCompatibilityProfile::INVOICE_PAY_APPLY_CREDIT],
+            ZjmfCompatibilityProfile::fromSupplier($this->supplier())->invoicePayOrder()
         );
     }
 

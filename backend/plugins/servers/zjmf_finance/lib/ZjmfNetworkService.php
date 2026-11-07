@@ -137,17 +137,23 @@ final class ZjmfNetworkService
         $response = $this->transport->payInvoiceWithCredit($supplier, $invoiceId, $this->resolveJwt($supplier, $jwt));
         $status = $this->responseStatus($response);
         $alreadyPaid = (bool) ($response['already_paid'] ?? false);
+        $channel = (string) ($response['payment_channel'] ?? '');
 
         throw_if(
             ! $alreadyPaid && $status !== 0 && ! in_array($status, [200, 1001], true),
             new BusinessException(sprintf('%s失败：%s', $action, (string) ($response['msg'] ?? '上游返回异常')))
         );
 
+        // 两个通道的「完成」口径不同：/apply_credit 扣完余额即完成（回 200 或 1001）；
+        // /v1/invoices/{id}/fund 回 200 只代表受理，1001 才表示已付（老版本行为，保持不动）。
+        $completed = $alreadyPaid
+            || ($channel === ZjmfCompatibilityProfile::INVOICE_PAY_APPLY_CREDIT && in_array($status, [200, 1001], true))
+            || ($channel === ZjmfCompatibilityProfile::INVOICE_PAY_V1_FUND && $status === 1001);
+
         return [
             ...$response,
             'fund_status' => $status,
-            // apply_credit 成功即已扣余额；老版本 fund 用 1001 表示直接完成
-            'payment_completed' => $alreadyPaid || in_array($status, [200, 1001], true),
+            'payment_completed' => $completed,
         ];
     }
 

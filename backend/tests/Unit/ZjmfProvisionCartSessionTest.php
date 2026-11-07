@@ -42,6 +42,9 @@ class ZjmfProvisionCartSessionTest extends TestCase
             'api_username' => 'demo',
             'api_key' => 'secret',
         ]);
+        // 钉住 3.7.6 档位：本文件断言的是 cart/get_product_config 的会话 cookie 行为，
+        // 自动档位会先试 api/product/prodetail，把请求序列和 cookie 断言全部打乱。
+        $supplier->setAttribute('provider_config', ['version_profile' => 'legacy_376']);
 
         $product = (new Product)->forceFill([
             'id' => 771,
@@ -483,6 +486,7 @@ class ZjmfProvisionCartSessionTest extends TestCase
             'api_username' => 'demo',
             'api_key' => 'secret',
         ]);
+        $supplier->setAttribute('provider_config', ['version_profile' => 'legacy_376']);
         $product = (new Product)->forceFill([
             'id' => 772,
             'name' => 'ZJMF HTTP 响应测试主机',

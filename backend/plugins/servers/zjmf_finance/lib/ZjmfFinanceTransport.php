@@ -153,7 +153,6 @@ final class ZjmfFinanceTransport
         }
 
         $jwt = $this->resolveJwt($supplier, $jwt);
-        $headers = array_merge(['Accept: application/json'], $headers);
         $errors = [];
 
         foreach ($this->profile($supplier)->invoicePayOrder() as $channel) {
@@ -186,12 +185,16 @@ final class ZjmfFinanceTransport
             $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
             $status = (int) ($response['status'] ?? 0);
             if (in_array($status, [200, 1001], true)) {
-                return ZjmfUpstreamResponse::withHttpCode($meta);
+                return array_merge(ZjmfUpstreamResponse::withHttpCode($meta), ['payment_channel' => $channel]);
             }
 
             $message = trim((string) ($response['msg'] ?? $response['message'] ?? ''));
             if ($this->isInvoiceAlreadySettledMessage($message)) {
-                return array_merge(ZjmfUpstreamResponse::withHttpCode($meta), ['status' => 200, 'already_paid' => true]);
+                return array_merge(ZjmfUpstreamResponse::withHttpCode($meta), [
+                    'status' => 200,
+                    'already_paid' => true,
+                    'payment_channel' => $channel,
+                ]);
             }
 
             $errors[$channel] = $message !== '' ? $message : '上游返回异常';

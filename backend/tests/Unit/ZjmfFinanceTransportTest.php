@@ -411,6 +411,8 @@ class ZjmfFinanceTransportTest extends TestCase
             'api_username' => 'demo',
             'api_key' => 'secret',
         ]);
+        // 本用例锁的是 3.7.6 的 cart/get_product_config 调用口径
+        $supplier->setAttribute('provider_config', ['version_profile' => 'legacy_376']);
 
         $innerTransport = new class extends HostingPanelApiTransport
         {
@@ -443,6 +445,23 @@ class ZjmfFinanceTransportTest extends TestCase
                     ],
                     default => ['status' => 400, 'msg' => 'unexpected uri'],
                 };
+            }
+
+            public function requestWithMeta(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                return [
+                    'response' => $this->request($supplier, $method, $uri, $payload, $jwt, $headers, $query),
+                    'headers' => [],
+                    'http_code' => 200,
+                    'content_type' => 'application/json',
+                ];
             }
         };
 

@@ -130,6 +130,26 @@ class ZjmfCloudConfigTemplateTest extends TestCase
         {
             public function __construct(private readonly array $products) {}
 
+            /**
+             * 商品配置走 requestWithMeta（需要响应头维持购物车会话），这里包一层复用上面的桩。
+             */
+            public function requestWithMeta(
+                Supplier $supplier,
+                string $method,
+                string $uri,
+                array|string $payload = [],
+                ?string $jwt = null,
+                array $headers = [],
+                array $query = []
+            ): array {
+                return [
+                    'response' => $this->request($supplier, $method, $uri, $payload, $jwt, $headers, $query),
+                    'headers' => [],
+                    'http_code' => 200,
+                    'content_type' => 'application/json',
+                ];
+            }
+
             public function request(
                 Supplier $supplier,
                 string $method,
