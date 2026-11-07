@@ -110,21 +110,37 @@ final class ZjmfFinanceTransport
                 [],
                 $this->resolveJwt($supplier, $jwt)
             );
-        } catch (\Throwable $exception) {
-            if (! str_contains($exception->getMessage(), '404')) {
-                Log::warning('[ZJMF 财务接口] 读取上游账单失败', [
-                    'supplier_id' => (int) $supplier->id,
-                    'upstream_invoice_id' => $invoiceId,
-                    'message' => $exception->getMessage(),
-                ]);
-            }
-
+        } catch (ZjmfEndpointMissingException) {
+            // 这条上游没有 /v1：调用方改用 /apply_credit 的结果判断支付状态
             return null;
+        } catch (\Throwable $exception) {
+            // 5xx / 连接错误绝不能当成「读不到就当作没付」：那会导致重复扣款
+            Log::warning('[ZJMF 财务接口] 读取上游账单失败', [
+                'supplier_id' => (int) $supplier->id,
+                'upstream_invoice_id' => $invoiceId,
+                'message' => $exception->getMessage(),
+            ]);
+
+            throw $exception;
         }
 
         $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
+        $httpCode = (int) ($meta['http_code'] ?? 0);
+        $status = (int) ($response['status'] ?? 0);
 
-        return (int) ($response['status'] ?? 0) === 200 ? ZjmfUpstreamResponse::withHttpCode($meta) : null;
+        if ($httpCode >= 500) {
+            throw new BusinessException(sprintf('读取上游账单失败（HTTP %d）', $httpCode));
+        }
+
+        if ($status === 200) {
+            return ZjmfUpstreamResponse::withHttpCode($meta);
+        }
+
+        // 业务层拒答（如账单不存在）：无法确认支付状态，按失败处理，禁止继续补付
+        throw new BusinessException(sprintf(
+            '读取上游账单失败：%s',
+            trim((string) ($response['msg'] ?? $response['message'] ?? '上游返回异常')) ?: '上游返回异常'
+        ));
     }
 
     /**
@@ -176,14 +192,31 @@ final class ZjmfFinanceTransport
                         array_merge($headers, ['Content-Type: application/x-www-form-urlencoded']),
                         $query
                     );
-            } catch (\Throwable $exception) {
+            } catch (ZjmfEndpointMissingException $exception) {
+                // 只有「这条上游没有该接口」才允许换下一条通道
                 $errors[$channel] = $exception->getMessage();
 
                 continue;
+            } catch (\Throwable $exception) {
+                // 5xx / 连接错误 / 业务异常一律直接失败：换个通道再付一次可能造成重复扣款
+                Log::warning('[ZJMF 财务接口] 上游账单支付失败', [
+                    'supplier_id' => (int) $supplier->id,
+                    'upstream_invoice_id' => $invoiceId,
+                    'channel' => $channel,
+                    'message' => $exception->getMessage(),
+                ]);
+
+                throw $exception;
             }
 
             $response = is_array($meta['response'] ?? null) ? $meta['response'] : [];
+            $httpCode = (int) ($meta['http_code'] ?? 0);
             $status = (int) ($response['status'] ?? 0);
+
+            if ($httpCode >= 500) {
+                throw new BusinessException(sprintf('上游账单支付失败（HTTP %d），请稍后重试', $httpCode));
+            }
+
             if (in_array($status, [200, 1001], true)) {
                 return array_merge(ZjmfUpstreamResponse::withHttpCode($meta), ['payment_channel' => $channel]);
             }

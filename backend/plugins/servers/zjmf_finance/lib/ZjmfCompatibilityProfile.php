@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
-use App\Exceptions\BusinessException;
 use App\Models\Supplier;
 
 /**
@@ -157,13 +156,13 @@ final class ZjmfCompatibilityProfile
     /**
      * 明确关掉 /v1（或选新版本且不强制）时，给升级类操作一个能落地的提示。
      */
-    public function v1UnavailableMessage(string $action): BusinessException
+    public function v1UnavailableMessage(string $action): ZjmfEndpointMissingException
     {
         $hint = $this->v1 === self::V1_NEVER
             ? '当前供应商已设置「不走 /v1」'
             : '魔方财务 3.8.0 起已移除 /v1 接口';
 
-        return new BusinessException(sprintf(
+        return new ZjmfEndpointMissingException(sprintf(
             '%s，无法通过接口%s；请在供应商后台手工操作，或把该供应商的「接口版本」设为 3.7.6 及更早后重试',
             $hint,
             $action
