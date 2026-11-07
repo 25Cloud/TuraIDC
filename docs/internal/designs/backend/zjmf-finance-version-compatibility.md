@@ -1,3 +1,9 @@
+---
+status: active
+updated: 2026-11-07
+owner: backend-platform
+---
+
 # 魔方财务上游的版本兼容层
 
 状态：已实现（v0.4.6 未发布）

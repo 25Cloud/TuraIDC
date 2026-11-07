@@ -337,6 +337,12 @@
       "review_by": "2027-01-21"
     },
     {
+      "path": "internal/designs/backend/zjmf-finance-version-compatibility.md",
+      "status": "active",
+      "summary": "魔方财务 3.7.6 → 3.8.0 兼容层：商品配置双通道回退、/v1 开关、同步推送 v2 签名。",
+      "review_by": "2026-12-31"
+    },
+    {
       "path": "internal/designs/backend/zjmf-purchase-renewal-document-comparison.md",
       "status": "needs-review",
       "summary": "Zjmf 与 TuraIDC 新购/续费单据创建流程对比与同步创建验证。"
