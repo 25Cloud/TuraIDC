@@ -9,6 +9,7 @@
 - **魔方财务上游版本档位**：供应商表单新增「接口版本」（自动探测 / 3.7.6 及更早 / 3.8.0 及以后）与「走 /v1 接口」（自动 / 强制开启 / 关闭），落在 `supplier_plugin_bindings.config_json` 的 `provider_config` 里，老记录不迁移、缺省即自动探测
 - **商品配置双通道自动回退**：新增 `ZjmfProductConfigGateway`，优先 `api/product/prodetail`（3.7.6 → 3.8.0 都在），失败自动换 `cart/get_product_config`（老站），并把走通的那条按供应商记 6 小时；`prodetail` 返回体归一成 `cart/get_product_config` 的老结构，所有既有解析代码零改动
 - **批量商品配置合并请求**：`prodetail` 支持一次带多个 `pids`，价格/配置项/库存同步从「每商品一次请求」变成「每批一次请求」
+- **同步推送签名 v2**：新增 `ZjmfSyncSignature`（3.8.0 的 HMAC-SHA256 规范化载荷算法）；本系统作为上游向下游推送 `api/host/sync` 时先发 v2，下游回「签名验证失败」再自动回退 legacy；作为下游接收 `api/host/sync`、`api/ticket_reply/sync` 时两代签名都收，v2 额外校验时间戳（±300 秒）与 32 位 nonce 并做重放拦截
 
 ### 优化
 

@@ -68,6 +68,30 @@
 
 `prodetail` 的返回是 `{data:{detail:{pid:{…商品行, product_pricings, config_groups, customfields}}}}`，网关把它摊平成 `{data:{products, product_pricings, config_groups, customfields, config_links}}`，与 `cart/get_product_config` 同形，所以 `ZjmfCatalogService`、`ZjmfProvisionService` 与 `app/Services/Provisioning/ProvisionService` 的解析逻辑一行都不用改。
 
+## 反方向：本系统作为上游被魔方财务对接
+
+魔方财务在另一头把 TuraIDC 当「财务类上游」时，走的是 `{本站}/api/v2/zjmf/*`（见 `routes/v2-zjmf-upstream.php`）：`zjmf_api_login` 换 JWT，之后 `cart/*`、`host/*`、`apply_credit` 等。这一面 3.7.6 已经跑了很多年，3.8.0 的差异集中在**同步推送的签名**上。
+
+### 签名两代
+
+| 版本         | 算法                                             | 参与字段                                                                  |
+| ------------ | ------------------------------------------------ | ------------------------------------------------------------------------- |
+| 3.7.6 及更早 | `upper(md5(json(ksort([id, token, rand_str]))))` | 只有这三个                                                                |
+| 3.8.0 起     | `upper(hmac_sha256(规范化载荷, token))`          | 全部业务字段 + `signature_version=2` + `timestamp` + `nonce` + `rand_str` |
+
+规范化载荷 = 去掉 `signature` 与 `token` 后，递归按键名 `SORT_STRING` 排序、`null` 归一成空串、标量统一转字符串，再用 `JSON_UNESCAPED_UNICODE|JSON_UNESCAPED_SLASHES` 编码。`timestamp` 容差 ±300 秒，`nonce` 必须是 32 位十六进制，且一次性。
+
+3.8.0 的接收端默认**拒绝 legacy**（除非它自己开了 `ALLOW_LEGACY_SYNC_SIGNATURES=1`），所以两边都按「v2 优先、被明确拒绝才回退 legacy」实现：
+
+- 出站 `App\Services\ZjmfUpstream\ZjmfDownstreamPushService`：先发 v2；下游回 `400 + 签名验证失败` 时用 legacy 重发一次
+- 入站 `App\Http\Middleware\VerifyTicketUpstreamCallbackSignature`：按请求声明的 `signature_version` 分支，v2 校验 timestamp/nonce/HMAC 并做 nonce 重放拦截，legacy 原样保留
+
+算法只写在 `App\Services\ZjmfUpstream\ZjmfSyncSignature` 一处，两侧共用，避免「发 v2、收 legacy」的口径漂移。
+
+### 上游账号前提
+
+3.8.0 给 `api/product/proinfo`、`api/product/prodetail`、`cart/get_product_config` 加了 `UpstreamApiCheck`：下游财务的账号必须开着「供应商 API 功能」（`clients.api_open=1`）或者是资源池账号（`usertype=3`），否则回 405/400。本系统作为下游时如果撞上这个，报错会原样带出来，需要上游管理员把账号的 API 开关打开。
+
 ## 取舍与已知限制
 
 - **升级类操作（升级配置 / 升级套餐）暂时没有可移植替代**：3.8.0 的入口是 `/upgrade/*` 系列（会话态），参数结构与 `/v1/hosts/{id}/actions/upgrade*` 不同，需要在真机上调通再改，先做的是「明确报错 + 指路」。关闭 `/v1` 或在 3.8.0 站点上实测 404 后，提示为「请在供应商后台手工操作，或把该供应商的接口版本设为 3.7.6 及更早」。

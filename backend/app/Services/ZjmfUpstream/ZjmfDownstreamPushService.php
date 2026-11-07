@@ -11,7 +11,6 @@ use App\Models\ZjmfUpstreamBinding;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
  * 上游 → 下游（魔方财务）状态推送发送方：POST {downstream_url}/api/host/sync。
@@ -114,35 +113,45 @@ class ZjmfDownstreamPushService
             $payload['type'] = $type;
         }
 
-        $payload = array_merge($payload, $this->sign(['id' => $downstreamId], $token));
-
+        // 先按 3.8.0 的 v2 签名发（HMAC-SHA256 + timestamp + nonce）；
+        // 下游明确回「签名验证失败」时再回退 legacy（3.7.6 及更早只认 md5）。
+        // 顺序不能反：3.8.0 下游默认拒绝 legacy（除非它自己开了 ALLOW_LEGACY_SYNC_SIGNATURES）。
         try {
-            $response = Http::asForm()
-                ->connectTimeout(self::CONNECT_TIMEOUT_SECONDS)
-                ->timeout(self::TIMEOUT_SECONDS)
-                ->post($url.'/api/host/sync', $payload);
-        } catch (\Throwable $exception) {
-            Log::warning('[zjmf-upstream] 下游状态推送失败', [
+            $signed = ZjmfSyncSignature::signV2($payload, $token);
+        } catch (BusinessException $exception) {
+            Log::warning('[zjmf-upstream] 下游推送签名失败', [
                 'service_id' => (int) $service->id,
                 'binding_id' => (int) $binding->id,
-                'type' => $type,
                 'error' => $exception->getMessage(),
             ]);
 
             return false;
         }
 
-        $body = $response->json();
-        $status = is_array($body) ? (int) ($body['status'] ?? 0) : 0;
+        $result = $this->send($url.'/api/host/sync', array_merge($payload, $signed));
 
-        if ($response->status() !== 200 || $status !== 200) {
+        if (! $result['ok'] && ZjmfSyncSignature::isSignatureRejected($result['body'])) {
+            Log::info('[zjmf-upstream] 下游拒绝 v2 签名，回退 legacy 重发', [
+                'service_id' => (int) $service->id,
+                'binding_id' => (int) $binding->id,
+                'type' => $type,
+            ]);
+
+            $legacy = ZjmfSyncSignature::signLegacy($payload, $token);
+            $result = $this->send(
+                $url.'/api/host/sync',
+                array_merge($payload, $legacy, ['token' => $token])
+            );
+        }
+
+        if (! $result['ok']) {
             Log::warning('[zjmf-upstream] 下游状态推送未受理', [
                 'service_id' => (int) $service->id,
                 'binding_id' => (int) $binding->id,
                 'type' => $type,
-                'http_status' => $response->status(),
-                'body_status' => $status,
-                'msg' => is_array($body) ? (string) ($body['msg'] ?? '') : '',
+                'http_status' => $result['http_status'],
+                'body_status' => (int) ($result['body']['status'] ?? 0),
+                'msg' => (string) ($result['body']['msg'] ?? ''),
             ]);
 
             return false;
@@ -152,27 +161,32 @@ class ZjmfDownstreamPushService
     }
 
     /**
-     * 对齐魔方财务 createSign。
-     *
-     * @param  array<string, mixed>  $params
-     * @return array{signature: string, rand_str: string}
+     * @param  array<string, mixed>  $payload
+     * @return array{ok: bool, http_status: int, body: array<string, mixed>}
      */
-    private function sign(array $params, string $token): array
+    private function send(string $url, array $payload): array
     {
-        // 密钥缺省即拒绝：下游 token 为空时签出来的签名下游必然验不过，
-        // 与其发一次注定失败的请求，不如直接拒绝并留下可定位的日志。
-        if (trim($token) === '') {
-            throw new BusinessException('下游回推凭据未配置，无法签名');
+        try {
+            $response = Http::asForm()
+                ->connectTimeout(self::CONNECT_TIMEOUT_SECONDS)
+                ->timeout(self::TIMEOUT_SECONDS)
+                ->post($url, $payload);
+        } catch (\Throwable $exception) {
+            Log::warning('[zjmf-upstream] 下游状态推送失败', [
+                'url' => $url,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return ['ok' => false, 'http_status' => 0, 'body' => []];
         }
 
-        $randStr = Str::lower(Str::random(6));
-        $params['token'] = $token;
-        $params['rand_str'] = $randStr;
-        ksort($params, SORT_STRING);
+        $body = $response->json();
+        $body = is_array($body) ? $body : [];
 
         return [
-            'signature' => strtoupper(md5((string) json_encode($params))),
-            'rand_str' => $randStr,
+            'ok' => $response->status() === 200 && (int) ($body['status'] ?? 0) === 200,
+            'http_status' => $response->status(),
+            'body' => $body,
         ];
     }
 

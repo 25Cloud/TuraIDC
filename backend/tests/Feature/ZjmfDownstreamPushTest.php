@@ -10,6 +10,7 @@ use App\Models\Service;
 use App\Models\User;
 use App\Models\ZjmfUpstreamBinding;
 use App\Services\ZjmfUpstream\ZjmfDownstreamPushService;
+use App\Services\ZjmfUpstream\ZjmfSyncSignature;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -83,13 +84,48 @@ class ZjmfDownstreamPushTest extends TestCase
                 return false;
             }
 
-            // 签名必须与下游 validateSign 口径一致：
-            // strtoupper(md5(json_encode(ksort(['id','token','rand_str'], SORT_STRING))))
-            $expected = ['id' => (int) $data['id'], 'token' => $token, 'rand_str' => (string) $data['rand_str']];
-            ksort($expected, SORT_STRING);
+            // 签名必须与 3.8.0 的 validateSign 口径一致（v2）：
+            // strtoupper(hmac_sha256(canonical(去掉 signature/token 后递归排序编码), token))
+            if ((string) ($data['signature_version'] ?? '') !== '2') {
+                return false;
+            }
+            if (! ZjmfSyncSignature::verifyV2($data, $token)) {
+                return false;
+            }
 
-            return strtoupper(md5((string) json_encode($expected))) === (string) ($data['signature'] ?? '');
+            // 3.8.0 的接收端会用自己的库里的 token 重新注入，所以发送端不需要带 token
+            return ! array_key_exists('token', $data) || (string) $data['token'] === '';
         });
+    }
+
+    #[Test]
+    public function retries_with_legacy_signature_when_downstream_rejects_v2(): void
+    {
+        Http::fake([
+            '*' => Http::sequence()
+                ->push(['status' => 400, 'msg' => '签名验证失败'])
+                ->push(['status' => 200, 'msg' => '更新成功']),
+        ]);
+
+        $token = str_repeat('c', 32);
+        [$service] = $this->makeServiceWithBinding($token);
+
+        $delivered = app(ZjmfDownstreamPushService::class)->pushForService(
+            $service,
+            ZjmfDownstreamPushService::TYPE_CREATE
+        );
+
+        $this->assertTrue($delivered);
+
+        $sent = Http::recorded();
+        $this->assertCount(2, $sent);
+
+        $second = (array) $sent[1][0]->data();
+        $expected = ['id' => (int) $second['id'], 'token' => $token, 'rand_str' => (string) $second['rand_str']];
+        ksort($expected, SORT_STRING);
+
+        $this->assertSame(strtoupper(md5((string) json_encode($expected))), (string) $second['signature']);
+        $this->assertSame($token, (string) $second['token']);
     }
 
     #[Test]
