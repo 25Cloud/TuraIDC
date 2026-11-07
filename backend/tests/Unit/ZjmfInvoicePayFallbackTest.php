@@ -9,7 +9,6 @@ use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginFileLoader;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
-use Illuminate\Support\Facades\Cache;
 use Tests\TestCase;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfAuthManager;
 use TuraIDC\Plugins\Servers\ZjmfFinance\Lib\ZjmfCapabilityMemory;
@@ -30,7 +29,8 @@ class ZjmfInvoicePayFallbackTest extends TestCase
         );
 
         config(['idc.hosting_panel_api.jwt_cache_store' => 'array']);
-        Cache::flush();
+        // 只清本用例自己的「无 /v1」记忆，不动全局缓存
+        (new ZjmfCapabilityMemory)->forget(962, 'v1');
     }
 
     private function supplier(array $providerConfig = []): Supplier

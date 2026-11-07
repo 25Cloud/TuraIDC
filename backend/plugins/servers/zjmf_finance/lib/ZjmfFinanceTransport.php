@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\ZjmfFinance\Lib;
 
 use App\Exceptions\BusinessException;
+use App\Exceptions\UpstreamStockShortageException;
 use App\Models\Supplier;
 use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use App\Services\Upstream\Support\WebSessionCookieParser;
@@ -230,7 +231,12 @@ final class ZjmfFinanceTransport
                 ]);
             }
 
-            $errors[$channel] = $message !== '' ? $message : '上游返回异常';
+            // 业务失败（库存不足、余额不足、账单异常…）直接抛上游原文：
+            // 换通道再付一次没有意义，而且上层要靠原文做库存不足/余额不足分类。
+            $failureMessage = $message !== '' ? $message : '上游账单支付失败';
+            throw UpstreamStockShortageException::matches($failureMessage)
+                ? new UpstreamStockShortageException($failureMessage, 42200)
+                : new BusinessException($failureMessage);
         }
 
         $labels = [
