@@ -82,7 +82,7 @@ async function mockConsoleApi(page: Page, preloadAll?: boolean) {
       return respond(capabilities);
     }
     if (url.pathname.endsWith(`/services/${SERVICE_ID}/console/tickets`)) {
-      return respond({ ticket: 'area-ticket-1', expires_in: 600 });
+      return respond({ ticket: 'area-ticket-1', expires_in: 180 });
     }
     if (url.pathname.endsWith(`/services/${SERVICE_ID}/console-area/content`)) {
       const module = url.searchParams.get('module') || '';
@@ -123,6 +123,10 @@ test('切换 tab 不重建 iframe 实例', async ({ page }) => {
 
   await expect(areaFrames(page)).toHaveCount(2);
   const before = await areaFrames(page).evaluateAll((nodes) => nodes.map((node) => (node as HTMLIFrameElement).src));
+  expect(
+    before.every((src) => !new URL(src).searchParams.has('ticket')),
+    'iframe 地址不得携带区域票据，票据应仅通过 HttpOnly Cookie 传递',
+  ).toBe(true);
 
   await sidebarItem(page, '管理面板').click();
   await expect(areaFrames(page), '切 tab 后实例数量不变').toHaveCount(2);

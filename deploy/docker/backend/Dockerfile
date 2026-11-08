@@ -5,9 +5,9 @@
 # 构建上下文 = 仓库根目录（compose 中 context: ../..）
 # ============================================================================
 
-# php:8.3-fpm-bookworm 是浮动标签：重建即取该分支最新补丁版（当前 ≥ 8.3.36，含 CVE-2026-109618 / CVE-2026-109619
-# 的修复——两个未认证 RCE，CVSS 9.2）。升级 PHP 后必须重建镜像，旧镜像不会自动获得补丁。
-FROM php:8.3-fpm-bookworm AS base
+# 基础镜像按多架构 manifest digest 固定；升级 PHP 补丁时由维护者显式刷新 digest，
+# 并在镜像扫描通过后再更新，避免重建时悄然漂移到未经审查的基础层。
+FROM php:8.3-fpm-bookworm@sha256:d7677e2a3c1579fbe52848cc446bc24860187c876c383a43b7d4b8e06dce537e AS base
 
 # ---- 系统依赖（运行时保留的部分）----
 # 这里只装最终镜像真正需要的包：nginx/supervisor/cron 由 Supervisor 托管，
@@ -74,6 +74,7 @@ RUN set -eux; \
         opcache \
         exif \
         sockets \
+        xml \
     ; \
     pecl install redis; \
     docker-php-ext-enable redis; \
@@ -101,7 +102,7 @@ RUN set -eux; \
     }
 
 # ---- Composer（国内镜像已在 backend/composer.json 配置为腾讯云源）----
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2@sha256:07cb23c4c9d528524a8b9a67c403d6ad7fef2268651eb1448e3874d40f28b789 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /opt/backend-src
 

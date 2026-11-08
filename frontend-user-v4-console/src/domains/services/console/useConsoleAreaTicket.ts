@@ -11,43 +11,48 @@ import type { ServiceConsoleAreaTicket } from '@/types/client';
  *   2. in-flight 去重：预热请求还没回来时用户就点了 tab，两次调用会打同一张票。
  */
 
-const TICKET_TTL_MS = 10 * 60 * 1000;
-/** 剩余有效期低于这个值就重新签发，避免边界上带着将过期的票据去请求面板 */
-const TICKET_SAFE_MARGIN_MS = 60 * 1000;
+/** 后端未返回 expires_in 时的保守兜底，Cookie 过期前会自动续期。 */
+const FALLBACK_TICKET_TTL_MS = 180 * 1000;
+/** 剩余有效期低于这个值就重新签发，避免边界上带着将过期的 Cookie 请求面板。 */
+const TICKET_SAFE_MARGIN_MS = 15 * 1000;
 
 interface TicketEntry {
-  ticket: string;
   expiresAt: number;
 }
 
 const ticketCache = new Map<number, TicketEntry>();
-const inflightTickets = new Map<number, Promise<string>>();
+const inflightTickets = new Map<number, Promise<number>>();
 
-function readCachedTicket(serviceId: number): string {
+function readCachedTicketTtl(serviceId: number): number {
   const cached = ticketCache.get(serviceId);
-  if (!cached) return '';
+  if (!cached) return 0;
+
+  const remainingMs = cached.expiresAt - Date.now();
 
   // 顺手清掉过期条目，别让 Map 无限增长
-  if (cached.expiresAt - Date.now() <= TICKET_SAFE_MARGIN_MS) {
+  if (remainingMs <= TICKET_SAFE_MARGIN_MS) {
     ticketCache.delete(serviceId);
-    return '';
+    return 0;
   }
 
-  return cached.ticket;
+  return remainingMs;
 }
 
 /**
  * 拿到可用票据，优先复用缓存 / 复用正在飞行的请求。
  * 调用方负责处理失败（预热场景静默忽略即可，真实打开面板时才提示错误）。
+ *
+ * 票据由后端写入 HttpOnly Cookie，返回值是本次 Cookie 的剩余有效期，
+ * 只用于安排续期，不得再拼进 iframe、资源或动作 URL。
  */
-export function ensureAreaTicket(serviceId: number): Promise<string> {
+export function ensureAreaTicket(serviceId: number): Promise<number> {
   if (!(serviceId > 0)) {
     return Promise.reject(new Error(t('serviceConsole.errors.areaServiceIdInvalid')));
   }
 
-  const cached = readCachedTicket(serviceId);
-  if (cached) {
-    return Promise.resolve(cached);
+  const cachedTtl = readCachedTicketTtl(serviceId);
+  if (cachedTtl > 0) {
+    return Promise.resolve(cachedTtl);
   }
 
   const inflight = inflightTickets.get(serviceId);
@@ -58,13 +63,13 @@ export function ensureAreaTicket(serviceId: number): Promise<string> {
   const task = clientApi
     .createServiceConsoleAreaTicket(serviceId)
     .then((res) => {
-      const next = String((res.data as ServiceConsoleAreaTicket | undefined)?.ticket || '');
-      if (!next) {
-        throw new Error(t('serviceConsole.errors.areaTokenFailed'));
-      }
+      const payload = res.data as ServiceConsoleAreaTicket | undefined;
+      const expiresIn = Number(payload?.expires_in);
+      const ttlMs = Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn * 1000 : FALLBACK_TICKET_TTL_MS;
 
-      ticketCache.set(serviceId, { ticket: next, expiresAt: Date.now() + TICKET_TTL_MS });
-      return next;
+      // 不读取或缓存响应里的票据值：真正的访问凭证只存在后端下发的 HttpOnly Cookie 中。
+      ticketCache.set(serviceId, { expiresAt: Date.now() + ttlMs });
+      return ttlMs;
     })
     .finally(() => {
       inflightTickets.delete(serviceId);

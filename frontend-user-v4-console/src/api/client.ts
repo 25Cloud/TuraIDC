@@ -354,11 +354,12 @@ const clientApi = {
   serviceConsoleCapabilities: (id: number | string) =>
     getEnvelope<ServiceConsoleCapabilities>(`/v2/client/services/${id}/console/capabilities`),
   createServiceConsoleAreaTicket: (id: number | string) =>
-    postEnvelope<ServiceConsoleAreaTicket>(`/v2/client/services/${id}/console/tickets`),
-  serviceConsoleAreaContentUrl: (id: number | string, ticket: string, moduleKey: string) =>
-    `${apiBaseUrl}/v2/client/services/${id}/console-area/content?ticket=${encodeURIComponent(
-      ticket,
-    )}&module=${encodeURIComponent(moduleKey)}`,
+    postEnvelope<ServiceConsoleAreaTicket>(`/v2/client/services/${id}/console/tickets`, undefined, {
+      // 区域票据由后端写入 HttpOnly Cookie，iframe 后续请求不能手工附加 Authorization。
+      withCredentials: true,
+    }),
+  serviceConsoleAreaContentUrl: (id: number | string, moduleKey: string) =>
+    `${apiBaseUrl}/v2/client/services/${id}/console-area/content?module=${encodeURIComponent(moduleKey)}`,
 
   balanceLogs: (params?: QueryParams) => getEnvelope<PagedList<BalanceLog>>('/v2/client/balance-logs', { params }),
   balanceLogsSummary: (params?: QueryParams) => request.get('/v2/client/balance-logs/summary', { params }),

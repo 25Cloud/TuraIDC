@@ -472,6 +472,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "internal/execution-plans/active/security-audit-remediation-2026-11-08.md",
+      "status": "active",
+      "summary": "Issue_idc 安全审查整改：认证、回源、控制台票据/CSP、回调幂等、插件供应链、Docker 密钥、依赖与 CI 门禁。",
+      "review_by": "2026-12-08"
+    },
+    {
       "path": "internal/execution-plans/active/site-web-landing-2026-10-24.md",
       "status": "active",
       "summary": "项目官网首页落地：site-web 骨架、九段内容、产物自检与 EdgeOne Pages 上线。",

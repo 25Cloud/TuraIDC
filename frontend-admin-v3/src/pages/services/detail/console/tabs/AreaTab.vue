@@ -184,6 +184,12 @@ function handleBridgeMessage(event: MessageEvent) {
   // 不校验来源等于把「代开任意网址」的能力交给了任何页面。
   const frame = frameRef.value;
   if (!frame || event.source !== frame.contentWindow) return;
+  try {
+    const expectedOrigin = new URL(frame.src, window.location.href).origin;
+    if (event.origin !== expectedOrigin) return;
+  } catch {
+    return;
+  }
 
   const data = event.data as { type?: string; id?: string; url?: string } | null;
   if (!data || data.type !== POPUP_BRIDGE_EVENT || !data.url) return;

@@ -37,6 +37,22 @@ final class ServiceConsoleAssetService
     /** 单个资源上限，超过不缓存也不回传（正常面板资源都在百 KB 级） */
     private const MAX_BYTES = 2 * 1024 * 1024;
 
+    /** 响应头上限，避免异常上游用超长 Location/头字段耗尽内存。 */
+    private const MAX_HEADER_BYTES = 64 * 1024;
+
+    /** 手动跟随跳转的上限；每一跳都会重新校验目标地址。 */
+    private const MAX_REDIRECTS = 3;
+
+    /** DNS 解析和连接目标必须是可从公网访问的地址。 */
+    private const BLOCKED_HOSTNAMES = [
+        'localhost',
+        'localhost.localdomain',
+        'metadata',
+        'metadata.google.internal',
+        'instance-data',
+        'instance-data.ec2.internal',
+    ];
+
     /** 允许原样回传的 Content-Type 前缀；不在表内的一律降级为 text/plain */
     private const ALLOWED_CONTENT_TYPES = [
         'text/css',
@@ -234,42 +250,79 @@ final class ServiceConsoleAssetService
      */
     private function download(string $url, string $rootUrl, Supplier $supplier, string $path): array
     {
-        $context = stream_context_create([
-            'http' => [
-                'method' => 'GET',
-                'timeout' => self::TIMEOUT_SECONDS,
-                'ignore_errors' => true,
-                // 上游可能有跳转（如带版本号的 CDN 路径），跟随少量跳转
-                'follow_location' => 1,
-                'max_redirects' => 3,
-                'user_agent' => 'Mozilla/5.0 (compatible; TuraIDC-ConsolePanel/1.0)',
-                'header' => implode("\r\n", [
-                    'Accept: text/css,application/javascript,image/*,font/*,*/*;q=0.8',
-                    // 少数上游按 Referer 防盗链，这里带上供应商自身的来源
-                    'Referer: '.rtrim($rootUrl, '/').'/',
-                ]),
-            ],
-            'ssl' => [
-                'verify_peer' => true,
-                'verify_peer_name' => true,
-            ],
-        ]);
+        $currentUrl = $url;
+        $redirects = 0;
+        $deadline = microtime(true) + self::TIMEOUT_SECONDS;
+        $rootParts = parse_url($rootUrl);
+        $allowedHost = is_array($rootParts) ? strtolower(rtrim((string) ($rootParts['host'] ?? ''), '.')) : '';
+        if (str_starts_with($allowedHost, '[') && str_ends_with($allowedHost, ']')) {
+            $allowedHost = substr($allowedHost, 1, -1);
+        }
+        $allowedScheme = is_array($rootParts) ? strtolower((string) ($rootParts['scheme'] ?? '')) : '';
+        $allowedPort = is_array($rootParts) && isset($rootParts['port'])
+            ? (int) $rootParts['port']
+            : ($allowedScheme === 'https' ? 443 : 80);
+        $body = false;
+        $responseHeaders = [];
+        $httpCode = 0;
+        $contentType = '';
+        $lastError = null;
 
-        error_clear_last();
-        $body = @file_get_contents($url, false, $context);
-        $lastError = error_get_last();
-        // 连接失败时 $http_response_header 不存在；裸 is_array() 会先抛
-        // "Undefined variable" 警告并把真实网络错误盖掉。
-        $responseHeaders = is_array($http_response_header ?? null) ? $http_response_header : [];
-        $httpCode = $this->resolveHttpCode($responseHeaders);
-        $contentType = $this->resolveHeaderValue($responseHeaders, 'Content-Type');
+        while (true) {
+            $remainingMilliseconds = (int) ceil(($deadline - microtime(true)) * 1000);
 
-        $failed = $body === false || $httpCode !== 200 || trim((string) $body) === '' || strlen((string) $body) > self::MAX_BYTES;
+            if ($remainingMilliseconds < 1) {
+                $lastError = ['message' => '请求超时'];
+                break;
+            }
+
+            $target = $this->assertSafeUpstreamUrl($currentUrl, $allowedHost, $allowedScheme, $allowedPort);
+
+            [$body, $responseHeaders, $httpCode, $lastError] = $this->requestUrl(
+                $currentUrl,
+                $rootUrl,
+                $target,
+                min($remainingMilliseconds, self::TIMEOUT_SECONDS * 1000)
+            );
+
+            if (in_array($httpCode, [301, 302, 303, 307, 308], true)) {
+                if ($redirects >= self::MAX_REDIRECTS) {
+                    $lastError = ['message' => '重定向次数超过限制'];
+                    break;
+                }
+
+                $location = $this->resolveHeaderValue($responseHeaders, 'Location');
+                if ($location === '') {
+                    $lastError = ['message' => '重定向缺少目标地址'];
+                    break;
+                }
+
+                try {
+                    $currentUrl = $this->resolveRedirectUrl($currentUrl, $location);
+                    // 下一轮会再次校验 scheme、host、port 和 DNS 地址。
+                } catch (BusinessException $exception) {
+                    $lastError = ['message' => $exception->getMessage()];
+                    break;
+                }
+
+                $redirects++;
+
+                continue;
+            }
+
+            $contentType = $this->resolveHeaderValue($responseHeaders, 'Content-Type');
+
+            break;
+        }
+
+        $failed = $body === false
+            || $httpCode !== 200
+            || trim((string) $body) === ''
+            || strlen((string) $body) > self::MAX_BYTES;
 
         if ($failed) {
             Log::warning('[服务控制台] 面板静态资源回源失败', [
                 'supplier_id' => (int) $supplier->id,
-                'path' => $path,
                 'http_code' => $httpCode,
                 'bytes' => $body === false ? 0 : strlen((string) $body),
                 'error' => (string) ($lastError['message'] ?? ''),
@@ -282,6 +335,423 @@ final class ServiceConsoleAssetService
             'body' => (string) $body,
             'content_type' => $this->sanitizeContentType($contentType),
         ];
+    }
+
+    /**
+     * 发起一次不跟随重定向的请求，并在写入回调中限制响应体大小。
+     *
+     * @param  array{host: string, port: int, ip: string, is_ip: bool}  $target
+     * @return array{0: string|false, 1: array<int, string>, 2: int, 3: array{message: string}|null}
+     */
+    private function requestUrl(string $url, string $rootUrl, array $target, int $timeoutMilliseconds): array
+    {
+        if (! function_exists('curl_init')) {
+            return [false, [], 0, ['message' => '服务器未启用 cURL 扩展']];
+        }
+
+        $body = '';
+        $headers = [];
+        $headerBytes = 0;
+        $curl = curl_init($url);
+
+        if ($curl === false) {
+            return [false, [], 0, ['message' => '无法初始化网络请求']];
+        }
+
+        $options = [
+            CURLOPT_RETURNTRANSFER => false,
+            CURLOPT_FOLLOWLOCATION => false,
+            CURLOPT_MAXREDIRS => 0,
+            CURLOPT_CONNECTTIMEOUT_MS => max(1, min(3000, $timeoutMilliseconds)),
+            CURLOPT_TIMEOUT_MS => max(1, $timeoutMilliseconds),
+            CURLOPT_SSL_VERIFYPEER => true,
+            CURLOPT_SSL_VERIFYHOST => 2,
+            CURLOPT_NOSIGNAL => true,
+            CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; TuraIDC-ConsolePanel/1.0)',
+            CURLOPT_HTTPHEADER => [
+                'Accept: text/css,application/javascript,image/*,font/*,*/*;q=0.8',
+                // 少数上游按 Referer 防盗链，这里带上供应商自身的来源。
+                'Referer: '.rtrim($rootUrl, '/').'/',
+            ],
+            // 代理会绕过本地 DNS/IP 校验，资源回源必须直连已校验的目标。
+            CURLOPT_PROXY => '',
+            CURLOPT_WRITEFUNCTION => static function ($handle, string $chunk) use (&$body): int {
+                if (strlen($body) + strlen($chunk) > self::MAX_BYTES) {
+                    return 0;
+                }
+
+                $body .= $chunk;
+
+                return strlen($chunk);
+            },
+            CURLOPT_HEADERFUNCTION => static function ($handle, string $headerLine) use (&$headers, &$headerBytes): int {
+                if ($headerBytes + strlen($headerLine) > self::MAX_HEADER_BYTES) {
+                    return 0;
+                }
+
+                $headerBytes += strlen($headerLine);
+                $headers[] = rtrim($headerLine, "\r\n");
+
+                return strlen($headerLine);
+            },
+        ];
+
+        if (! $target['is_ip']) {
+            $options[CURLOPT_RESOLVE] = [
+                $target['host'].':'.$target['port'].':'.$target['ip'],
+            ];
+        }
+
+        if (defined('CURLOPT_PROTOCOLS') && defined('CURLPROTO_HTTP') && defined('CURLPROTO_HTTPS')) {
+            $options[CURLOPT_PROTOCOLS] = CURLPROTO_HTTP | CURLPROTO_HTTPS;
+        }
+
+        curl_setopt_array($curl, $options);
+        $result = curl_exec($curl);
+        $error = curl_error($curl);
+        $errorNumber = curl_errno($curl);
+        $httpCode = (int) curl_getinfo($curl, CURLINFO_RESPONSE_CODE);
+        curl_close($curl);
+
+        if ($result === false || $errorNumber !== 0) {
+            return [false, $headers, $httpCode, ['message' => $error !== '' ? $error : '网络请求失败']];
+        }
+
+        return [$body, $headers, $httpCode, null];
+    }
+
+    /**
+     * 校验一个回源或跳转地址，并返回用于固定 DNS 解析结果的目标信息。
+     *
+     * @return array{host: string, port: int, ip: string, is_ip: bool}
+     */
+    private function assertSafeUpstreamUrl(string $url, string $expectedHost = '', string $expectedScheme = '', int $expectedPort = 0): array
+    {
+        if (preg_match('~[\x00-\x20\x7F]~', $url) === 1) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        try {
+            $parts = parse_url($url);
+        } catch (\Throwable $exception) {
+            $parts = false;
+        }
+
+        if (! is_array($parts)) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        $scheme = strtolower(trim((string) ($parts['scheme'] ?? '')));
+        $rawHost = trim((string) ($parts['host'] ?? ''));
+
+        if (! in_array($scheme, ['http', 'https'], true)
+            || $rawHost === ''
+            || isset($parts['user'])
+            || isset($parts['pass'])
+            || isset($parts['fragment'])
+            || preg_match('~[\x00-\x20\x7F\\/\"\'<>]~', $rawHost) === 1) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        $host = $rawHost;
+        if (str_starts_with($host, '[') && str_ends_with($host, ']')) {
+            $host = substr($host, 1, -1);
+        }
+
+        if (str_ends_with($host, '.')) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        $host = strtolower($host);
+        if ($host === '' || strlen($host) > 253) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        // 资源代理只能跟随供应商自身的跳转，不能把供应商响应变成任意公网
+        // 探测器；这也确保后续 DNS 解析仍绑定在同一供应商主机上。
+        if ($expectedHost !== '' && $host !== $expectedHost) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+        // 允许 HTTP 上游升级到 HTTPS，但不允许 HTTPS 资源被重定向降级到明文。
+        if ($expectedScheme === 'https' && $scheme !== 'https') {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        $port = isset($parts['port'])
+            ? (int) $parts['port']
+            : ($scheme === 'https' ? 443 : 80);
+
+        if ($port < 1 || $port > 65535) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+        $httpsUpgrade = $expectedScheme === 'http'
+            && $scheme === 'https'
+            && $expectedPort === 80
+            && $port === 443;
+        if ($expectedPort > 0 && $port !== $expectedPort && ! $httpsUpgrade) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        $isIp = filter_var($host, FILTER_VALIDATE_IP) !== false;
+        if ($isIp) {
+            if ($this->isPrivateOrReservedIp($host)) {
+                throw new BusinessException('资源地址无效', 42200);
+            }
+
+            return [
+                'host' => $host,
+                'port' => $port,
+                'ip' => $host,
+                'is_ip' => true,
+            ];
+        }
+
+        if (in_array($host, self::BLOCKED_HOSTNAMES, true)
+            || str_ends_with($host, '.localhost')
+            || str_ends_with($host, '.internal')) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        if (filter_var($host, FILTER_VALIDATE_DOMAIN, FILTER_FLAG_HOSTNAME) === false) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        $addresses = $this->resolveHostAddresses($host);
+        if ($addresses === []) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        foreach ($addresses as $address) {
+            if ($this->isPrivateOrReservedIp($address)) {
+                throw new BusinessException('资源地址无效', 42200);
+            }
+        }
+
+        // 优先固定 IPv4；只有纯 IPv6 目标时才使用 IPv6，避免双栈服务器因本机 IPv6
+        // 不可达而误判为上游不可用。所有候选地址都已经在上面完成安全校验。
+        $ip = $addresses[0];
+        foreach ($addresses as $address) {
+            if (filter_var($address, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false) {
+                $ip = $address;
+                break;
+            }
+        }
+
+        return [
+            'host' => $host,
+            'port' => $port,
+            'ip' => $ip,
+            'is_ip' => false,
+        ];
+    }
+
+    /** @return list<string> */
+    private function resolveHostAddresses(string $host): array
+    {
+        $addresses = [];
+        $ipv4 = @gethostbynamel($host);
+        if (is_array($ipv4)) {
+            $addresses = array_merge($addresses, $ipv4);
+        }
+
+        if (function_exists('dns_get_record')) {
+            $records = @dns_get_record($host, DNS_A + DNS_AAAA);
+            if (is_array($records)) {
+                foreach ($records as $record) {
+                    $address = (string) ($record['ip'] ?? $record['ipv6'] ?? '');
+                    if ($address !== '') {
+                        $addresses[] = $address;
+                    }
+                }
+            }
+        }
+
+        return array_values(array_unique(array_filter(
+            $addresses,
+            static fn (string $address): bool => filter_var($address, FILTER_VALIDATE_IP) !== false
+        )));
+    }
+
+    /**
+     * 拒绝所有不能作为公网资源回源目标的地址，包括 IPv4 映射/兼容 IPv6。
+     */
+    private function isPrivateOrReservedIp(string $ip): bool
+    {
+        $ip = $this->normalizeIpForPolicyCheck(trim($ip));
+        $packed = @inet_pton($ip);
+        if ($packed === false) {
+            return true;
+        }
+
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false) {
+            return true;
+        }
+
+        $networks = strlen($packed) === 4
+            ? [
+                ['0.0.0.0', 8],
+                ['10.0.0.0', 8],
+                ['100.64.0.0', 10],
+                ['127.0.0.0', 8],
+                ['169.254.0.0', 16],
+                ['172.16.0.0', 12],
+                ['192.0.0.0', 24],
+                ['192.0.2.0', 24],
+                ['192.88.99.0', 24],
+                ['192.168.0.0', 16],
+                ['198.18.0.0', 15],
+                ['198.51.100.0', 24],
+                ['203.0.113.0', 24],
+                ['224.0.0.0', 4],
+                ['240.0.0.0', 4],
+            ]
+            : [
+                ['::', 128],
+                ['::1', 128],
+                ['100::', 64],
+                ['2001::', 32],
+                ['2001:2::', 48],
+                ['2001:3::', 32],
+                ['2001:4:112::', 48],
+                ['2001:10::', 28],
+                ['2001:20::', 28],
+                ['2001:db8::', 32],
+                ['2002::', 16],
+                ['3fff::', 20],
+                ['fc00::', 7],
+                ['fe80::', 10],
+                ['ff00::', 8],
+            ];
+
+        foreach ($networks as [$network, $prefixLength]) {
+            $networkPacked = @inet_pton($network);
+            if ($networkPacked !== false && $this->ipInNetwork($packed, $networkPacked, $prefixLength)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function ipInNetwork(string $ip, string $network, int $prefixLength): bool
+    {
+        $fullBytes = intdiv($prefixLength, 8);
+        if ($fullBytes > 0 && substr($ip, 0, $fullBytes) !== substr($network, 0, $fullBytes)) {
+            return false;
+        }
+
+        $remainingBits = $prefixLength % 8;
+        if ($remainingBits === 0) {
+            return true;
+        }
+
+        $mask = (0xFF << (8 - $remainingBits)) & 0xFF;
+
+        return (ord($ip[$fullBytes]) & $mask) === (ord($network[$fullBytes]) & $mask);
+    }
+
+    private function normalizeIpForPolicyCheck(string $ip): string
+    {
+        $packed = @inet_pton($ip);
+        if ($packed === false || strlen($packed) !== 16) {
+            return $ip;
+        }
+
+        $mappedPrefix = str_repeat("\x00", 10)."\xff\xff";
+        $compatiblePrefix = str_repeat("\x00", 12);
+        if (! str_starts_with($packed, $mappedPrefix) && ! str_starts_with($packed, $compatiblePrefix)) {
+            return $ip;
+        }
+
+        $ipv4 = @inet_ntop(substr($packed, 12));
+
+        return is_string($ipv4) && filter_var($ipv4, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) !== false
+            ? $ipv4
+            : $ip;
+    }
+
+    private function resolveRedirectUrl(string $baseUrl, string $location): string
+    {
+        $location = trim($location);
+        if ($location === ''
+            || preg_match('~[\x00-\x20\x7F]~', $location) === 1
+            || str_contains($location, '\\')) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        if (str_starts_with($location, '#')) {
+            return $baseUrl;
+        }
+
+        try {
+            $base = parse_url($baseUrl);
+            $target = parse_url($location);
+        } catch (\Throwable $exception) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        if (! is_array($base) || ! is_array($target)) {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        $baseScheme = strtolower((string) ($base['scheme'] ?? ''));
+        $baseHost = (string) ($base['host'] ?? '');
+        if ($baseScheme === '' || $baseHost === '') {
+            throw new BusinessException('资源地址无效', 42200);
+        }
+
+        if (isset($target['scheme'])) {
+            $resolved = $location;
+        } elseif (str_starts_with($location, '//')) {
+            $resolved = $baseScheme.':'.$location;
+        } else {
+            $origin = $baseScheme.'://'.$baseHost;
+            if (isset($base['port'])) {
+                $origin .= ':'.$base['port'];
+            }
+
+            $targetPath = (string) ($target['path'] ?? '');
+            if (str_starts_with($location, '?')) {
+                $targetPath = (string) ($base['path'] ?? '/');
+            } elseif (! str_starts_with($location, '/')) {
+                $basePath = (string) ($base['path'] ?? '/');
+                $directory = str_ends_with($basePath, '/') ? $basePath : dirname($basePath).'/';
+                $targetPath = $this->normalizeRedirectPath($directory.$targetPath);
+            }
+
+            if ($targetPath === '') {
+                $targetPath = '/';
+            }
+
+            $resolved = $origin.$targetPath;
+            if (isset($target['query'])) {
+                $resolved .= '?'.$target['query'];
+            } elseif (str_starts_with($location, '?')) {
+                $resolved = $origin.$targetPath.'?'.substr($location, 1);
+            }
+        }
+
+        return $resolved;
+    }
+
+    private function normalizeRedirectPath(string $path): string
+    {
+        $segments = [];
+        foreach (explode('/', $path) as $segment) {
+            if ($segment === '' || $segment === '.') {
+                continue;
+            }
+
+            if ($segment === '..') {
+                array_pop($segments);
+
+                continue;
+            }
+
+            $segments[] = $segment;
+        }
+
+        return '/'.implode('/', $segments);
     }
 
     /**
@@ -305,22 +775,9 @@ final class ServiceConsoleAssetService
     /**
      * @param  array<int, string>  $headers
      */
-    private function resolveHttpCode(array $headers): int
-    {
-        foreach ($headers as $header) {
-            if (preg_match('~^HTTP/\S+\s+(\d{3})~i', (string) $header, $matches) === 1) {
-                return (int) $matches[1];
-            }
-        }
-
-        return 0;
-    }
-
-    /**
-     * @param  array<int, string>  $headers
-     */
     private function resolveHeaderValue(array $headers, string $name): string
     {
+        $value = '';
         foreach ($headers as $header) {
             $position = strpos((string) $header, ':');
             if ($position === false) {
@@ -328,10 +785,10 @@ final class ServiceConsoleAssetService
             }
 
             if (strcasecmp(trim(substr((string) $header, 0, $position)), $name) === 0) {
-                return trim(substr((string) $header, $position + 1));
+                $value = trim(substr((string) $header, $position + 1));
             }
         }
 
-        return '';
+        return $value;
     }
 }

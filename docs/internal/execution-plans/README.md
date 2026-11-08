@@ -33,6 +33,7 @@
 | [工单上游传递日志与自动转发排查](active/ticket-upstream-delivery-logs-and-auto-delivery-troubleshooting-2026-08-20.md) | active | 工单上游转发事件日志、管理端状态展示与自动转发未触发原因排查。                                     |
 | [魔方财务对接链路打通](active/zjmf-upstream-integration-2026-09-15.md)                                                 | active | 上游 API 自助凭据入口、provision/default 全 func 分发、ZJMF 协议固定 200 兜底与剩余缺口。          |
 | [自助退款插件](active/auto-refund-plugin-2026-11-01.md)                                                                | active | `addons/auto_refund`：控制台自助申请、上游 query/submit/cancel 串联、本地台账与管理端结算。        |
+| [安全审查、依赖与 CI 修复](active/security-audit-remediation-2026-11-08.md)                                            | active | 上游 JWT、回源 SSRF、控制台票据/CSP、回调幂等、插件供应链、Docker 密钥、依赖与 CI 门禁修复。       |
 
 ## 已完成（completed/）
 

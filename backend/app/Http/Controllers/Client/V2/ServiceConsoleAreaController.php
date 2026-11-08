@@ -15,11 +15,15 @@ use Illuminate\Support\Facades\Log;
 /**
  * 服务自定义控制台区域（自定义 HTML / 自定义 tab）
  *
- * capabilities / tickets 走常规登录态；content / actions 供 iframe 使用
- * （iframe 无法携带 Authorization 头），通过短时效票据校验。
+ * capabilities / tickets 走常规登录态；content / actions 供 iframe 使用，
+ * 通过路径限定的短时效 HttpOnly Cookie 校验，Bearer 头保留给非 iframe 调用方。
  */
 class ServiceConsoleAreaController extends Controller
 {
+    private const AREA_TICKET_COOKIE_PREFIX = 'tura_console_area_ticket_';
+
+    private const AREA_TICKET_COOKIE_SAME_SITE = 'lax';
+
     public function __construct(
         private readonly ClientServiceConsoleService $clientServiceConsoleService,
     ) {}
@@ -33,15 +37,25 @@ class ServiceConsoleAreaController extends Controller
 
     public function createTicket(Request $request, int $service)
     {
-        return $this->success(
-            $this->clientServiceConsoleService->createConsoleAreaTicketForUser($request->user(), (int) $service),
-            '已生成访问凭证'
-        );
+        $payload = $this->clientServiceConsoleService->createConsoleAreaTicketForUser($request->user(), (int) $service);
+        $ticket = trim((string) ($payload['ticket'] ?? ''));
+
+        return $this->success($payload, '已生成访问凭证')->withCookie(cookie(
+            self::ticketCookieName((int) $service),
+            $ticket,
+            (int) ($payload['expires_in'] ?? 180),
+            self::ticketCookiePath((int) $service),
+            null,
+            $request->isSecure() || app()->environment('production'),
+            true,
+            true,
+            self::AREA_TICKET_COOKIE_SAME_SITE
+        ));
     }
 
     public function content(Request $request, int $service)
     {
-        $ticket = trim((string) $request->query('ticket', ''));
+        $ticket = $this->ticketFromRequest($request, (int) $service);
         $moduleKey = trim((string) $request->query('module', ''));
 
         try {
@@ -65,7 +79,7 @@ class ServiceConsoleAreaController extends Controller
 
     public function actions(Request $request, int $service)
     {
-        $ticket = trim((string) ($request->query('ticket', '') ?: $request->input('ticket', '')));
+        $ticket = $this->ticketFromRequest($request, (int) $service);
         $data = $request->except(['ticket', '_token']);
 
         try {
@@ -83,7 +97,11 @@ class ServiceConsoleAreaController extends Controller
             ];
         }
 
-        return response()->json($result);
+        return response()->json($result, 200, [
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Referrer-Policy' => 'no-referrer',
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
     }
 
     /**
@@ -95,29 +113,36 @@ class ServiceConsoleAreaController extends Controller
      */
     public function asset(Request $request, int $service)
     {
-        $ticket = $request->query('ticket');
         $path = $request->query('path');
 
         try {
             $asset = $this->clientServiceConsoleService->getConsoleAreaAssetForTicket(
-                is_string($ticket) ? $ticket : '',
+                $this->ticketFromRequest($request, (int) $service),
                 (int) $service,
                 is_string($path) ? $path : ''
             );
 
             return response($asset['body'], 200, [
                 'Content-Type' => $asset['content_type'],
-                'Cache-Control' => 'public, max-age=86400',
+                // 资源请求仍携带路径限定的 bearer cookie；禁止浏览器/代理把带凭据
+                // 的响应写入共享缓存，避免跨用户复用或通过缓存日志泄漏上下文。
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'Pragma' => 'no-cache',
+                'Expires' => '0',
                 'X-Content-Type-Options' => 'nosniff',
+                'Referrer-Policy' => 'no-referrer',
             ]);
         } catch (\Throwable $exception) {
             Log::warning('[服务控制台] 面板静态资源代理失败', [
                 'service_id' => (int) $service,
-                'path' => is_string($path) ? $path : '',
                 'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
             ]);
 
-            return response('', 404, ['Cache-Control' => 'no-store']);
+            return response('', 404, [
+                'Cache-Control' => 'private, no-store, max-age=0',
+                'Referrer-Policy' => 'no-referrer',
+                'X-Content-Type-Options' => 'nosniff',
+            ]);
         }
     }
 
@@ -129,8 +154,8 @@ class ServiceConsoleAreaController extends Controller
      *     X-Frame-Options: SAMEORIGIN 与 frame-ancestors 'none'，否则浏览器直接
      *     判为「拒绝连接」，面板根本无法渲染；
      *   - frame-ancestors 只放行受信前端来源（与 CORS 同一份白名单配置）；
-     *   - 面板的样式与脚本来自供应商域名且含内联脚本，资源来源必须放开，否则会被
-     *     全部拦截，面板退化成无样式、按钮失效的静态页。
+     *   - 上游脚本、事件属性和危险 URL 已在服务层清理；运行时脚本统一从本站静态
+     *     资源加载，CSP 只允许本站脚本、样式和动作请求。
      *
      * @return array<string, string>
      */
@@ -147,11 +172,49 @@ class ServiceConsoleAreaController extends Controller
 
         return [
             'Content-Type' => 'text/html; charset=UTF-8',
-            'Cache-Control' => 'no-store',
+            'Cache-Control' => 'private, no-store, max-age=0',
+            'Pragma' => 'no-cache',
+            'Expires' => '0',
+            'Referrer-Policy' => 'no-referrer',
+            'X-Content-Type-Options' => 'nosniff',
             AppendSecurityHeaders::EMBEDDABLE_HEADER => '1',
-            'Content-Security-Policy' => "default-src 'self' https: http: data: blob: 'unsafe-inline' 'unsafe-eval'; "
-                .'frame-ancestors '.implode(' ', array_unique($ancestors)),
+            'Content-Security-Policy' => implode('; ', [
+                "default-src 'none'",
+                "base-uri 'none'",
+                "script-src 'self'",
+                "script-src-attr 'none'",
+                "style-src 'self'",
+                "style-src-attr 'none'",
+                "img-src 'self'",
+                "font-src 'self'",
+                "connect-src 'self'",
+                "media-src 'self'",
+                "form-action 'self'",
+                "frame-src 'none'",
+                "object-src 'none'",
+                'frame-ancestors '.implode(' ', array_unique($ancestors)),
+            ]),
         ];
+    }
+
+    private static function ticketCookieName(int $service): string
+    {
+        return self::AREA_TICKET_COOKIE_PREFIX.$service;
+    }
+
+    private static function ticketCookiePath(int $service): string
+    {
+        return '/api/v2/client/services/'.$service.'/console-area';
+    }
+
+    private function ticketFromRequest(Request $request, int $service): string
+    {
+        $bearer = trim((string) $request->bearerToken());
+        if ($bearer !== '') {
+            return $bearer;
+        }
+
+        return trim((string) $request->cookie(self::ticketCookieName($service), ''));
     }
 
     private function errorPage(string $message): string
@@ -160,13 +223,8 @@ class ServiceConsoleAreaController extends Controller
 
         return '<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8">'
             .'<meta name="viewport" content="width=device-width,initial-scale=1">'
-            .'<title>加载失败</title></head>'
-            .'<body style="margin:0;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',Roboto,sans-serif;'
-            .'background:#f7f8fa;color:#4b5563;">'
-            .'<div style="max-width:30rem;margin:4rem auto;padding:2rem;background:#fff;border-radius:0.5rem;'
-            .'box-shadow:0 1px 3px rgba(0,0,0,.08);text-align:center;">'
-            .'<div style="font-size:1.05rem;color:#1f2937;margin-bottom:.6rem;">功能页加载失败</div>'
-            .'<div style="font-size:.875rem;line-height:1.7;">'.$message.'</div>'
-            .'</div></body></html>';
+            .'<title>加载失败</title></head><body>'
+            .'<main><h1>功能页加载失败</h1><p>'.$message.'</p></main>'
+            .'</body></html>';
     }
 }

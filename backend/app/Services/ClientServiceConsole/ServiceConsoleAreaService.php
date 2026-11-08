@@ -11,6 +11,9 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Upstream\Contracts\ProvidesLocalConsoleActions;
 use App\Support\SensitiveDataSanitizer;
+use DOMDocument;
+use DOMElement;
+use DOMNode;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -26,7 +29,7 @@ use Illuminate\Support\Str;
  *
  * 本服务把这些能力归一为：
  *   - capabilitiesForUser：下发可用自定义区域（areas）、NAT 能力、监控能力；
- *   - areaTicketForUser：签发短时效 iframe 访问票据（iframe 无法携带 Authorization 头）；
+ *   - areaTicketForUser：签发短时效 iframe 访问票据（由 HttpOnly Cookie 或 Bearer 头承载）；
  *   - areaContentForTicket：抓取并改写上游 HTML（动作地址重写为本地代理）；
  *   - submitAreaActionForTicket：将页面内动作回发上游并原样返回结果。
  */
@@ -34,7 +37,7 @@ class ServiceConsoleAreaService
 {
     private const AREA_TICKET_CACHE_PREFIX = 'service_console:area_ticket:';
 
-    private const AREA_TICKET_TTL_SECONDS = 600;
+    private const AREA_TICKET_TTL_SECONDS = 180;
 
     private const CAPABILITIES_CACHE_TTL_SECONDS = 300;
 
@@ -327,7 +330,7 @@ class ServiceConsoleAreaService
      * 把上游站点内的绝对路径包装成本站的资源反代地址。
      *
      * 供 CSS 内部的相对引用改写使用：CSS 里的 url() 是相对 **CSS 自身 URL** 解析的，
-     * 必须写成根相对；写成 HTML 里那种相对地址（asset?ticket=…&path=…）会被解析到
+     * 必须写成根相对；写成 HTML 里那种相对地址（asset?path=…）会被解析到
      * 反代端点所在目录下，反而更错。
      *
      * 路径前缀与 routes/v2-client.php 的 console-area/asset 路由一致。该路由未具名，
@@ -336,8 +339,7 @@ class ServiceConsoleAreaService
     private function assetProxyUrl(int $serviceId, string $ticket, string $upstreamPath): string
     {
         return '/api/v2/client/services/'.$serviceId
-            .'/console-area/asset?ticket='.rawurlencode($ticket)
-            .'&path='.rawurlencode($upstreamPath);
+            .'/console-area/asset?path='.rawurlencode($upstreamPath);
     }
 
     /**
@@ -692,7 +694,8 @@ class ServiceConsoleAreaService
      * 将上游 HTML 中的自定义动作地址改写为本地代理地址。
      * 上游页面通过 {$MODULE_CUSTOM_API} 注入动作地址，渲染后通常为
      * https://上游域名/provision/custom/{hostId}；统一改写成相对路径
-     * 「actions?ticket=…」（相对内容页所在目录），浏览器在 iframe 内可同源回发。
+     * 「actions」（相对内容页所在目录），浏览器在 iframe 内可同源回发；
+     * 票据由路径限定的 HttpOnly cookie 或 Authorization Bearer 头提供。
      *
      * 改写完成后还有两步，顺序固定：
      *   1. 剥离上游渲染进片段的转售 API 凭据（片段会原样下发给终端用户）；
@@ -700,7 +703,7 @@ class ServiceConsoleAreaService
      */
     private function rewriteModulePage(string $html, int $hostId, Supplier $supplier, string $ticket): string
     {
-        $relativeActionUrl = 'actions?ticket='.rawurlencode($ticket);
+        $relativeActionUrl = 'actions';
         $rootUrl = rtrim($this->detailService->resolveSupplierRootUrl($supplier), '/');
 
         // 已知的完整动作地址。上游端点有两种协议：
@@ -731,14 +734,213 @@ class ServiceConsoleAreaService
         $selectFilterStylesheet = $this->resolveSelectFilterStylesheet($html, $supplier, $ticket);
 
         // 面板自带的 CSS/JS 写的是上游绝对地址，直接下发等于把上游暴露给终端用户，
-        // 统一改写成经本系统反代（asset?ticket=…&path=…）。
+        // 统一改写成经本系统反代（asset?path=…），访问凭证不进入 URL。
         $html = $this->proxyUpstreamAssetUrls($html, $supplier, $ticket);
 
         // 上游把我们的转售 API 凭据（now_jwt）渲染进了片段自身 ajax() 的请求头，
         // 下发给终端用户即等于交出上游账号；动作地址已改写为本地代理，浏览器侧不需要该头。
         $html = $this->stripEmbeddedCredentials($html);
 
+        // 上游 HTML 只允许作为被动界面内容下发：脚本由本地运行时提供，事件属性、危险
+        // URL 和可执行容器全部通过 DOM 白名单清除，避免同源 iframe 把上游内容升级成本站脚本。
+        $html = $this->sanitizeModulePage($html);
+
         return $this->wrapInRuntimeDocument($html, $selectFilterStylesheet);
+    }
+
+    /**
+     * 用 DOM 白名单清理上游面板 HTML。
+     *
+     * 不能用正则剥离 script：畸形标签可以在清理后重新组合成可执行节点。这里先由
+     * libxml 解析，再删除 script/style/iframe 等可执行容器、on* 事件属性和危险 URL；
+     * 解析失败时转义整段输入，绝不回退原文。
+     */
+    private function sanitizeModulePage(string $html): string
+    {
+        if (trim($html) === '') {
+            return '';
+        }
+
+        $dom = new DOMDocument('1.0', 'UTF-8');
+        $dom->resolveExternals = false;
+        $dom->substituteEntities = false;
+        $dom->preserveWhiteSpace = true;
+
+        $isFullDocument = preg_match('~<!doctype\s+html|<html[\s>]~i', $html) === 1;
+        $source = $isFullDocument
+            ? $html
+            : '<!DOCTYPE html><html><head></head><body>'.$html.'</body></html>';
+
+        $previous = libxml_use_internal_errors(true);
+        $loaded = $dom->loadHTML('<?xml encoding="UTF-8">'.$source, LIBXML_NONET | LIBXML_NOERROR | LIBXML_NOWARNING);
+        libxml_clear_errors();
+        libxml_use_internal_errors($previous);
+
+        if ($loaded === false || ! $dom->documentElement instanceof DOMElement) {
+            return htmlspecialchars($html, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+
+        $root = $dom->documentElement;
+        foreach (iterator_to_array($root->attributes ?? []) as $attribute) {
+            $this->sanitizeModuleAttribute(
+                $root,
+                strtolower($root->tagName),
+                (string) $attribute->nodeName,
+                (string) $attribute->nodeValue
+            );
+        }
+        $this->sanitizeModuleNode($root);
+
+        $output = (string) $dom->saveHTML($dom->documentElement);
+        if ($output === '') {
+            return htmlspecialchars($html, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        }
+
+        return "<!DOCTYPE html>\n".$output;
+    }
+
+    /** @var list<string> */
+    private const MODULE_DROP_TAGS = [
+        'base', 'embed', 'iframe', 'meta', 'object', 'script', 'style', 'svg',
+    ];
+
+    /** @var list<string> */
+    private const MODULE_ALLOWED_TAGS = [
+        'a', 'abbr', 'article', 'aside', 'b', 'blockquote', 'body', 'br', 'button',
+        'caption', 'code', 'col', 'colgroup', 'dd', 'del', 'details', 'div', 'dl',
+        'dt', 'em', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2',
+        'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'img', 'input', 'label',
+        'legend', 'li', 'link', 'main', 'ol', 'option', 'p', 'picture', 'pre', 'select',
+        'small', 'source', 'span', 'strong', 'sub', 'summary', 'sup', 'table', 'tbody',
+        'td', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'ul',
+    ];
+
+    /** @var list<string> */
+    private const MODULE_ALLOWED_ATTRS = [
+        'accept', 'alt', 'aria-label', 'aria-labelledby', 'autocomplete', 'checked', 'class',
+        'cols', 'colspan', 'contenteditable', 'data-*', 'decoding', 'disabled', 'for',
+        'action', 'cite', 'formaction', 'height', 'href', 'id', 'lang', 'max', 'maxlength',
+        'method', 'min', 'multiple', 'name', 'placeholder', 'poster', 'readonly', 'rel',
+        'required', 'role', 'rows', 'selected', 'size', 'src', 'tabindex', 'target', 'title',
+        'type', 'value', 'width',
+    ];
+
+    /** @var list<string> */
+    private const MODULE_URI_ATTRS = [
+        'action', 'cite', 'formaction', 'href', 'poster', 'src', 'xlink:href',
+    ];
+
+    private function sanitizeModuleNode(DOMNode $node): void
+    {
+        foreach (iterator_to_array($node->childNodes) as $child) {
+            if (! $child instanceof DOMElement) {
+                if ($child->nodeType !== XML_TEXT_NODE) {
+                    $child->parentNode?->removeChild($child);
+                }
+
+                continue;
+            }
+
+            $tagName = strtolower($child->tagName);
+            if (in_array($tagName, self::MODULE_DROP_TAGS, true)) {
+                $child->parentNode?->removeChild($child);
+
+                continue;
+            }
+
+            if (! in_array($tagName, self::MODULE_ALLOWED_TAGS, true)) {
+                // 先清理未知容器里的后代，再把容器本身解包；否则
+                // `<unknown><script>...</script></unknown>` 会在解包后留下脚本节点。
+                $this->sanitizeModuleNode($child);
+                $this->unwrapModuleElement($child);
+
+                continue;
+            }
+
+            foreach (iterator_to_array($child->attributes ?? []) as $attribute) {
+                $this->sanitizeModuleAttribute(
+                    $child,
+                    $tagName,
+                    (string) $attribute->nodeName,
+                    (string) $attribute->nodeValue
+                );
+            }
+
+            $this->sanitizeModuleNode($child);
+        }
+    }
+
+    private function sanitizeModuleAttribute(DOMElement $element, string $tagName, string $rawName, string $value): void
+    {
+        $name = strtolower($rawName);
+
+        // 事件和 style 属性不能进入同源 iframe；后者也会被 style-src-attr 明确禁止。
+        if (str_starts_with($name, 'on') || $name === 'style' || $name === 'srcset' || $name === 'http-equiv') {
+            $element->removeAttribute($rawName);
+
+            return;
+        }
+
+        $allowed = in_array($name, self::MODULE_ALLOWED_ATTRS, true)
+            || (str_starts_with($name, 'data-') && strlen($name) > 5)
+            || (str_starts_with($name, 'aria-') && strlen($name) > 5);
+        if (! $allowed) {
+            $element->removeAttribute($rawName);
+
+            return;
+        }
+
+        if (in_array($name, self::MODULE_URI_ATTRS, true) && ! $this->isSafeModuleUrl($value, $tagName, $name)) {
+            $element->removeAttribute($rawName);
+
+            return;
+        }
+
+        if ($name === 'rel') {
+            $tokens = preg_split('/\s+/', strtolower(trim($value))) ?: [];
+            $tokens = array_values(array_filter($tokens, static fn (string $token): bool => in_array($token, [
+                'alternate', 'external', 'help', 'license', 'next', 'nofollow', 'noopener',
+                'noreferrer', 'prev', 'search', 'stylesheet', 'tag', 'ugc',
+            ], true)));
+            if ($tokens === []) {
+                $element->removeAttribute($rawName);
+            } else {
+                $element->setAttribute($rawName, implode(' ', $tokens));
+            }
+        }
+    }
+
+    private function isSafeModuleUrl(string $value, string $tagName, string $attribute): bool
+    {
+        $url = preg_replace('/[\x00-\x20\x7F\s]+/u', '', trim(html_entity_decode($value, ENT_QUOTES | ENT_HTML5, 'UTF-8'))) ?? '';
+        if ($url === '' || str_starts_with($url, '//') || preg_match('/^(?:javascript|vbscript|data|file):/i', $url) === 1) {
+            return false;
+        }
+
+        $isResource = in_array($attribute, ['src', 'poster', 'xlink:href'], true)
+            || ($tagName === 'link' && $attribute === 'href');
+        if ($isResource) {
+            return ! preg_match('/^[a-z][a-z0-9+.-]*:/i', $url);
+        }
+
+        if ($attribute === 'action' || $attribute === 'formaction') {
+            return ! preg_match('/^[a-z][a-z0-9+.-]*:/i', $url);
+        }
+
+        return true;
+    }
+
+    private function unwrapModuleElement(DOMElement $element): void
+    {
+        $parent = $element->parentNode;
+        if (! $parent instanceof DOMNode) {
+            return;
+        }
+
+        foreach (iterator_to_array($element->childNodes) as $child) {
+            $parent->insertBefore($child, $element);
+        }
+        $parent->removeChild($element);
     }
 
     /**
@@ -775,7 +977,7 @@ class ServiceConsoleAreaService
             return '';
         }
 
-        return '<link rel="stylesheet" href="asset?ticket='.rawurlencode($ticket).'&path='.rawurlencode($cssPath).'">';
+        return '<link rel="stylesheet" href="asset?path='.rawurlencode($cssPath).'">';
     }
 
     /**
@@ -795,7 +997,7 @@ class ServiceConsoleAreaService
 
         $port = parse_url($rootUrl, PHP_URL_PORT);
         $authority = preg_quote($host, '~').(is_int($port) ? ':'.$port : '');
-        $prefix = 'asset?ticket='.rawurlencode($ticket).'&path=';
+        $prefix = 'asset?path=';
 
         $rewritten = preg_replace_callback(
             '~(?:https?:)?//'.$authority.'(?<path>/[^"\'\s<>()\\\\]*)~i',
@@ -838,7 +1040,8 @@ class ServiceConsoleAreaService
      *   2. 上游直接给完整文档（如 CDN 的「管理面板」）：它甚至把自带的 Bootstrap `<link>`
      *      注释掉了，同样指望父页面提供样式 —— 不补运行时就是**一条样式都没有**。
      *
-     * 运行时脚本务必排在片段内联脚本之前，Bootstrap CSS 务必排在片段自带 CSS 之前。
+     * 上游脚本已在前置净化阶段删除，运行时脚本只从本站静态资源加载；Bootstrap CSS
+     * 务必排在片段自带 CSS 之前。
      *
      * @param  string  $headAssets  额外注入 <head> 的资源标签（如补上的 selectFilter.css），空串不注入
      */
@@ -876,13 +1079,13 @@ class ServiceConsoleAreaService
                 .'<script src="'.$runtimeBase.'/jquery.min.js"></script>'."\n"
                 .'<script src="'.$runtimeBase.'/bootstrap.bundle.min.js"></script>'."\n"
                 .'<script src="'.$runtimeBase.'/sweetalert2.all.min.js"></script>'."\n"
-                .'<script>'.$this->sweetalertCompatShim().'</script>'."\n";
+                .'<script src="'.$runtimeBase.'/panel-runtime.js"></script>'."\n";
         }
 
-        // 弹窗桥接必须无条件注入：上游面板（CDN 的「跳转到面板」）用 window.open 打第三方面板，
-        // 而 iframe 内属于跨域上下文，浏览器会把它判为无用户手势的跨源弹窗直接拦掉，
-        // 表现就是「点了没反应」。这里改为把地址交给父页面代开。
-        $runtimeHead .= '<script>'.$this->popupBridgeScript().'</script>'."\n";
+        // 兼容垫片与弹窗桥接均放在同源静态脚本中，面板 CSP 无需 unsafe-inline。
+        if ($skipScripts) {
+            $runtimeHead .= '<script src="'.$runtimeBase.'/panel-runtime.js"></script>'."\n";
+        }
 
         $runtimeHead .= $headAssets !== '' ? $headAssets."\n" : '';
 
@@ -908,7 +1111,7 @@ class ServiceConsoleAreaService
      * 把运行时插到上游自带文档的 <head> 开头。
      *
      * 优先插在 charset 之后：既不把 charset 挤到文档前 1KB 之外，又保证 Bootstrap CSS
-     * 仍排在片段自带 CSS 之前、脚本仍先于片段内联脚本执行。
+     * 仍排在片段自带 CSS 之前。
      */
     private function injectRuntimeHead(string $html, string $runtimeHead): string
     {
@@ -921,109 +1124,6 @@ class ServiceConsoleAreaService
         }
 
         return $runtimeHead.$html;
-    }
-
-    /**
-     * SweetAlert2 v11 已不收旧版的 type: 参数（只 console.warn，图标静默丢失），
-     * 而上游面板大量使用 type: 'question' / 'success' / 'error'，这里映射成 icon。
-     * 三参写法 Swal.fire(title, msg, type) 在 v11 里第三参已是 icon，无需处理。
-     */
-    private function sweetalertCompatShim(): string
-    {
-        return <<<'JS'
-        // 面板使用 SweetAlert2 v8 时代的 type: 参数，v11 只认 icon，这里做一次映射
-        (function () {
-          if (!window.Swal || typeof window.Swal.fire !== 'function') { return; }
-          var raw = window.Swal.fire.bind(window.Swal);
-          var icons = ['success', 'error', 'warning', 'info', 'question'];
-          window.Swal.fire = function () {
-            var args = Array.prototype.slice.call(arguments);
-            if (args.length === 1 && args[0] && typeof args[0] === 'object' && args[0].type) {
-              if (!args[0].icon && icons.indexOf(args[0].type) !== -1) {
-                args[0].icon = args[0].type;
-              }
-              delete args[0].type;
-            }
-            return raw.apply(null, args);
-          };
-        })();
-        JS;
-    }
-
-    /**
-     * 弹窗桥接：把 iframe 内被拦截的 window.open 转交父页面执行。
-     *
-     * 背景：面板片段跑在 iframe 里，而 iframe 文档的源与控制台页面不同源。
-     * 跨源 iframe 调 window.open 打开第三方地址时，Chrome / Edge 会按
-     * 「无用户手势的跨源弹窗」处理，直接静默拦掉 —— 页面上表现为按钮点了没反应。
-     * 这里在注入运行时里提前包装 window.open：
-     *   - 同源父页面存在 → postMessage 把地址交给父页面开（父页面有真实用户手势，可正常弹出）；
-     *   - 父页面未监听或超时未回执 → 回退到原生 window.open，保证不彻底失效。
-     *
-     * 只放行 http/https 绝对地址，data: / blob: / javascript: 一律拒绝。
-     */
-    private function popupBridgeScript(): string
-    {
-        return <<<'JS'
-        (function () {
-          if (window.__turaPopupBridge) { return; }
-          window.__turaPopupBridge = true;
-
-          var EVENT = 'tura:open-url';
-          var nativeOpen = window.open.bind(window);
-          var seq = 0;
-
-          function isHttpUrl(value) {
-            try {
-              var protocol = new URL(String(value), window.location.href).protocol;
-              return protocol === 'http:' || protocol === 'https:';
-            } catch (e) {
-              return false;
-            }
-          }
-
-          window.open = function (url, target, features) {
-            var href = String(url == null ? '' : url);
-            // 不接管空地址（约等于新开空白页）与非 http(s) 协议
-            if (!href || !isHttpUrl(href)) {
-              return nativeOpen(url, target, features);
-            }
-            // 已经在顶层窗口里（如 _top / _parent）说明脚本本身就想替换当前页
-            if (target === '_top' || target === '_parent' || target === 'top' || target === 'parent') {
-              return nativeOpen(url, target, features);
-            }
-
-            try {
-              if (window.parent && window.parent !== window) {
-                seq += 1;
-                var id = 'tura-open-' + seq;
-                var acked = false;
-
-                // 父页面若在 1.2s 内没回执（未监听该消息），退回原生打开
-                var timer = window.setTimeout(function () {
-                  if (!acked) { nativeOpen(href, '_blank', 'noopener,noreferrer'); }
-                }, 1200);
-
-                window.addEventListener('message', function handler(event) {
-                  if (acked || !event.data || event.data.type !== EVENT + ':ack' || event.data.id !== id) {
-                    return;
-                  }
-                  acked = true;
-                  window.clearTimeout(timer);
-                  window.removeEventListener('message', handler);
-                });
-
-                window.parent.postMessage({ type: EVENT, id: id, url: href }, '*');
-                return null;
-              }
-            } catch (e) {
-              // postMessage 失败（如被 CSP 限制）时走下面的原生兜底
-            }
-
-            return nativeOpen(url, target, features);
-          };
-        })();
-        JS;
     }
 
     private function buildCapabilitiesCacheKey(Service $service): string

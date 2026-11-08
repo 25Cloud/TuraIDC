@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 2e06393b03e23d045a10ddfe6e2b2a4f297ce856cc73ddb43f88653fe79daeba
+sourceHash: 32da4bd4335e542987f53598afbd0297a959eebb080749f7b31790d5763847d4
 translatedAt: 2026-10-26
 ---
 
@@ -55,25 +55,25 @@ cp .env.example .env
 vim .env
 ```
 
-| Config option                                                      | Required | Description                                                                                                                                                                                                                                                                                      |
-| ------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | Yes      | The four public addresses: distinct from each other, same protocol, no path; in the form `https://api.example.com`                                                                                                                                                                               |
-| `CLIENT_SESSION_COOKIE_DOMAIN`                                     | No       | Fill in the parent domain such as `.example.com` when the site and console share login state across subdomains; leave empty for a single domain                                                                                                                                                  |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | No       | Image registry address, defaults to `ghcr.io` / `25cloud` / `latest`, consistent with the CI push target                                                                                                                                                                                         |
-| `APP_KEY`                                                          | No       | **Do not set it in this file.** It is generated at container startup and written to `backend/.env`. If you set an empty value here, Docker env_file injects it as a container environment variable, and Dotenv does not override existing environment variables, so the generated key is ignored |
-| `INSTALL_ADMIN_PASSWORD`                                           | Yes      | Password of the default administrator `cerbo` on first initialization, at least 12 characters of a strong password, takes effect only once on an empty database                                                                                                                                  |
-| `SESSION_SECURE_COOKIE`                                            | Yes      | `true` in HTTPS environments, `false` in plain HTTP environments                                                                                                                                                                                                                                 |
-| `DB_HOST` / `DB_PORT`                                              | No       | Database source: leave empty to use the mysql container in the stack (default); fill in a remote address and the local mysql is neither pulled nor started, app connects directly to the remote database, port defaults to 3306                                                                  |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | Yes      | Database name and accounts; used by both the mysql container and the app container (remote mode still requires them so app can connect)                                                                                                                                                          |
-| `REDIS_HOST` / `REDIS_PORT`                                        | No       | Redis source: leave empty to use the redis container in the stack (default); fill in a remote address and the local redis is neither pulled nor started, app connects directly to the remote one, port defaults to 6379                                                                          |
-| `REDIS_PASSWORD`                                                   | No       | Redis password; empty by default. Never expose 6379 on the public network; in remote mode it must match the remote instance                                                                                                                                                                      |
-| `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT`            | No       | Host-mapped ports, defaults to 8080/8081/8082/8083                                                                                                                                                                                                                                               |
-| `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | No       | Consistent with live production conventions: redis / database / file, usually no change needed                                                                                                                                                                                                   |
-| `SENTRY_LARAVEL_DSN`                                               | No       | Sentry DSN, leave empty to disable                                                                                                                                                                                                                                                               |
-| `MAIL_FROM_ADDRESS`                                                | No       | Default sender address; SMTP credentials are configured through the admin panel's "mail plugin"                                                                                                                                                                                                  |
-| `SEO_SITE_URL`                                                     | No       | Public site address used for canonical / sitemap / JSON-LD; defaults to `APP_URL`, explicitly set the site domain for multi-domain deployments                                                                                                                                                   |
-| `SEO_FRONTEND_SHELL_URL`                                           | No       | Site index.html template address, defaults to `http://frontends:8081/index.html` (internal compose network, usually no configuration needed)                                                                                                                                                     |
-| `SEO_SHELL_CACHE_TTL` / `SEO_CACHE_TTL`                            | No       | Cache seconds for the shell template / page render results, defaults to 600 / 300; after a frontend rebuild it takes up to that long to take effect                                                                                                                                              |
+| Config option                                                      | Required | Description                                                                                                                                                                                                                                           |
+| ------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | Yes      | The four public addresses: distinct from each other, same protocol, no path; in the form `https://api.example.com`                                                                                                                                    |
+| `CLIENT_SESSION_COOKIE_DOMAIN`                                     | No       | Fill in the parent domain such as `.example.com` when the site and console share login state across subdomains; leave empty for a single domain                                                                                                       |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | No       | Image registry address, defaults to `ghcr.io` / `25cloud` / `latest`, consistent with the CI push target                                                                                                                                              |
+| `APP_KEY`                                                          | Yes      | Production deployments must set and persist it explicitly. From the repository root, run `php artisan key:generate --show` in `backend` to create the `base64:...` value; container rebuilds never rotate it, and entrypoint exits when it is missing |
+| `INSTALL_ADMIN_PASSWORD`                                           | Yes      | Password of the default administrator `cerbo` on first initialization, at least 12 characters of a strong password, takes effect only once on an empty database                                                                                       |
+| `SESSION_SECURE_COOKIE`                                            | Yes      | `true` in HTTPS environments, `false` in plain HTTP environments                                                                                                                                                                                      |
+| `DB_HOST` / `DB_PORT`                                              | No       | Database source: leave empty to use the mysql container in the stack (default); fill in a remote address and the local mysql is neither pulled nor started, app connects directly to the remote database, port defaults to 3306                       |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | Yes      | Database name and accounts; used by both the mysql container and the app container (remote mode still requires them so app can connect)                                                                                                               |
+| `REDIS_HOST` / `REDIS_PORT`                                        | No       | Redis source: leave empty to use the redis container in the stack (default); fill in a remote address and the local redis is neither pulled nor started, app connects directly to the remote one, port defaults to 6379                               |
+| `REDIS_PASSWORD`                                                   | No       | Redis password; empty by default. Never expose 6379 on the public network; in remote mode it must match the remote instance                                                                                                                           |
+| `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT`            | No       | Host-mapped ports, defaults to 8080/8081/8082/8083                                                                                                                                                                                                    |
+| `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | No       | Consistent with live production conventions: redis / database / file, usually no change needed                                                                                                                                                        |
+| `SENTRY_LARAVEL_DSN`                                               | No       | Sentry DSN, leave empty to disable                                                                                                                                                                                                                    |
+| `MAIL_FROM_ADDRESS`                                                | No       | Default sender address; SMTP credentials are configured through the admin panel's "mail plugin"                                                                                                                                                       |
+| `SEO_SITE_URL`                                                     | No       | Public site address used for canonical / sitemap / JSON-LD; defaults to `APP_URL`, explicitly set the site domain for multi-domain deployments                                                                                                        |
+| `SEO_FRONTEND_SHELL_URL`                                           | No       | Site index.html template address, defaults to `http://frontends:8081/index.html` (internal compose network, usually no configuration needed)                                                                                                          |
+| `SEO_SHELL_CACHE_TTL` / `SEO_CACHE_TTL`                            | No       | Cache seconds for the shell template / page render results, defaults to 600 / 300; after a frontend rebuild it takes up to that long to take effect                                                                                                   |
 
 > Constraint: password and address values must not contain double quotes `"` or backslashes `\`, otherwise `.env` parsing breaks. `.env` is excluded by `.dockerignore`, so it never enters the image or the repository.
 >
@@ -134,7 +134,7 @@ git clone <你的仓库地址> /opt/turaidc && cd /opt/turaidc
 ```bash
 cd deploy/docker
 cp .env.example .env
-vim .env            # 填写四个地址、密码等
+vim .env            # 填写四个地址、APP_KEY、密码等
 
 # 拉取 CI 推送的镜像并启动（推荐）
 docker compose pull && docker compose up -d
@@ -142,7 +142,7 @@ docker compose pull && docker compose up -d
 docker compose up -d --build
 ```
 
-On first startup (empty database) `install_db.py` runs automatically: it imports the schema baseline, runs incremental migrations, writes the default configuration, and creates the administrator `cerbo`.
+Before production startup, set the `APP_KEY` saved with the matching database backup in `.env`. On first startup (empty database) `install_db.py` runs automatically: it imports the schema baseline, runs incremental migrations, writes the default configuration, and creates the administrator `cerbo`. In non-production, an empty install state may generate `APP_KEY` once; existing data with a missing key makes entrypoint exit.
 
 ### 5.3 Verification
 
@@ -365,7 +365,7 @@ Confirm that `install_db.py` completed on the first startup with an empty databa
 
 - Check `docker compose logs app`: when php-fpm is not started by supervisor, or MySQL is not ready and the entrypoint gets stuck, the symptom is 502
 - Confirm the `mysql` container healthcheck passes (shows healthy in `docker compose ps`)
-- A missing `APP_KEY` causes Laravel 500: confirm that `docker compose exec app sh -c 'grep ^APP_KEY= .env'` returns a value
+- A missing `APP_KEY` makes entrypoint exit: set the key saved with the matching database backup in the host `deploy/docker/.env`, then run `docker compose up -d --force-recreate app`. Do not run `php artisan key:generate` to replace an existing production key, or historical ciphertext cannot be decrypted.
 
 ### 11.3 Pulling images returns 401 / cannot pull
 

@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Service;
 use App\Models\User;
 use App\Services\Ticket\TicketUpstreamCallbackToken;
+use App\Services\ZjmfUpstream\ZjmfSyncSignature;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -21,6 +22,7 @@ use Tests\TestCase;
  * 协议对齐魔方 app/zjmf.php pushHostInfo + createSign：
  *   - 验签：strtoupper(md5(json_encode(ksort(['id','token','rand_str'], SORT_STRING))))，
  *     兼容 id 的 int/string 两种 json 形式；
+ *   - v2：HMAC-SHA256 + timestamp + nonce，nonce 持久化一次性消费；
  *   - 载荷镜像上游权威状态（domainstatus/nextduedate/连接信息/IP/OS）。
  */
 final class ZjmfDownstreamHostSyncTest extends TestCase
@@ -38,6 +40,7 @@ final class ZjmfDownstreamHostSyncTest extends TestCase
 
     protected function tearDown(): void
     {
+        DB::connection()->table('zjmf_host_sync_events')->whereIn('service_id', $this->serviceIds)->delete();
         DB::connection()->table('services')->whereIn('id', $this->serviceIds)->delete();
         DB::connection()->table('products')->whereIn('id', $this->productIds)->delete();
         DB::connection()->table('users')->whereIn('id', $this->userIds)->delete();
@@ -83,6 +86,111 @@ final class ZjmfDownstreamHostSyncTest extends TestCase
         $this->postJson('/api/host/sync', $payload)
             ->assertOk()
             ->assertJsonPath('status', 200);
+    }
+
+    #[Test]
+    public function host_sync_v2_signature_accepts_once_and_rejects_nonce_replay(): void
+    {
+        $service = $this->makeService();
+        $token = TicketUpstreamCallbackToken::forServiceId((int) $service->id);
+        $payload = $this->basePayload((int) $service->id);
+        $payload = array_merge($payload, ZjmfSyncSignature::signV2($payload, $token));
+
+        $this->postJson('/api/host/sync', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('duplicate', false);
+
+        $this->postJson('/api/host/sync', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        $this->assertSame(
+            1,
+            DB::table('zjmf_host_sync_events')->where('service_id', (int) $service->id)->count()
+        );
+    }
+
+    #[Test]
+    public function host_sync_v2_distinct_nonce_with_same_business_payload_is_idempotent(): void
+    {
+        $service = $this->makeService();
+        $token = TicketUpstreamCallbackToken::forServiceId((int) $service->id);
+        $payload = $this->basePayload((int) $service->id);
+
+        $first = array_merge($payload, ZjmfSyncSignature::signV2($payload, $token));
+        $second = array_merge($payload, ZjmfSyncSignature::signV2($payload, $token));
+
+        $this->postJson('/api/host/sync', $first)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('duplicate', false);
+
+        $this->postJson('/api/host/sync', $second)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('duplicate', true);
+
+        $this->assertSame(
+            1,
+            DB::table('zjmf_host_sync_events')->where('service_id', (int) $service->id)->count()
+        );
+    }
+
+    #[Test]
+    public function host_sync_v2_rejects_stale_timestamp_and_tampered_payload(): void
+    {
+        $service = $this->makeService();
+        $token = TicketUpstreamCallbackToken::forServiceId((int) $service->id);
+        $payload = $this->basePayload((int) $service->id);
+
+        $stale = array_merge($payload, ZjmfSyncSignature::signV2($payload, $token));
+        $stale['timestamp'] = now()->subMinutes(10)->timestamp;
+        $stale['signature'] = strtoupper(hash_hmac(
+            'sha256',
+            ZjmfSyncSignature::canonicalPayload($stale),
+            $token
+        ));
+        $this->postJson('/api/host/sync', $stale)
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        $valid = array_merge($payload, ZjmfSyncSignature::signV2($payload, $token));
+        $valid['domain'] = 'tampered.example.test';
+        $this->postJson('/api/host/sync', $valid)
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        $this->assertSame(
+            0,
+            DB::table('zjmf_host_sync_events')->where('service_id', (int) $service->id)->count()
+        );
+    }
+
+    #[Test]
+    public function host_sync_legacy_repeated_payload_isolated_and_idempotent(): void
+    {
+        $service = $this->makeService();
+        $payload = $this->basePayload((int) $service->id);
+        $payload['signature'] = $this->legacySignature($payload, (int) $service->id, intId: true);
+
+        $this->postJson('/api/host/sync', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('duplicate', false);
+
+        $this->postJson('/api/host/sync', $payload)
+            ->assertOk()
+            ->assertJsonPath('status', 200)
+            ->assertJsonPath('duplicate', true);
+
+        $this->assertSame(
+            1,
+            DB::table('zjmf_host_sync_events')
+                ->where('service_id', (int) $service->id)
+                ->where('signature_version', 'legacy')
+                ->count()
+        );
     }
 
     #[Test]

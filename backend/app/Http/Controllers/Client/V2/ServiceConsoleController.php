@@ -486,14 +486,14 @@ class ServiceConsoleController extends Controller
     }
 
     /**
-     * VNC 兑换端点 Origin 纵深校验：请求带 Origin 且不在本站白名单（console/api/admin 域）时拒绝。
-     * 同源请求或非浏览器客户端不带 Origin 时放行，避免误伤。
+     * VNC 兑换端点 Origin 纵深校验：公开启动 token 只能由受信任的控制台页面兑换。
+     * noVNC 的跨站请求会带 Origin；缺失 Origin 的 curl、图片探针和日志回放一律拒绝。
      */
     private function assertVncTokenOriginAllowed(Request $request): void
     {
         $origin = trim((string) $request->headers->get('Origin', ''));
         if ($origin === '') {
-            return;
+            throw new BusinessException('VNC 兑换请求缺少来源', 40300, 403);
         }
 
         $allowed = array_values(array_filter([

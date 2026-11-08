@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 2e06393b03e23d045a10ddfe6e2b2a4f297ce856cc73ddb43f88653fe79daeba
+sourceHash: 32da4bd4335e542987f53598afbd0297a959eebb080749f7b31790d5763847d4
 generated: zh-hk
 ---
 
@@ -60,8 +60,8 @@ vim .env
 | ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四個公開地址，互不相同、同一協議、無路徑；`https://api.example.com` 形式                                                                                            |
 | `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官網/控制台跨子域共享登錄態時填父域如 `.example.com`；單域留空                                                                                                      |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 鏡像倉庫地址，默認 `ghcr.io` / `25cloud` / `latest`，與 CI 推送目標一致                                                                                             |
-| `APP_KEY`                                                          | 否   | **不要在此文件設置**。容器啟動時自動生成並寫入 `backend/.env`。若在此設空值，Docker env_file 會注入容器環境變量，Dotenv 不覆蓋已存在環境變量，導致生成的 key 被忽略 |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 鏡像倉庫地址；生產應改用已掃描的不可變 SHA tag 或完整 digest，避免 `latest` 漂移                                                                     |
+| `APP_KEY`                                                          | 是   | 生產部署必須顯式填寫並持久化保存。可在倉庫根目錄的 `backend` 目錄執行 `php artisan key:generate --show` 生成 `base64:...` 值；容器重建不會隨機換鑰，缺失時 entrypoint 直接退出 |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默認管理員 `cerbo` 的密碼，至少 12 位強密碼，僅空庫首次生效                                                                                               |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 環境 `true`，純 HTTP 環境 `false`                                                                                                                             |
 | `DB_HOST` / `DB_PORT`                                              | 否   | 數據庫來源：留空使用編排內 mysql 容器（默認）；填寫遠程地址則本地 mysql 不拉取不啟動，app 直連遠程庫，端口默認 3306                                                 |
@@ -135,7 +135,7 @@ git clone <你的仓库地址> /opt/turaidc && cd /opt/turaidc
 ```bash
 cd deploy/docker
 cp .env.example .env
-vim .env            # 填写四个地址、密码等
+vim .env            # 填写四个地址、APP_KEY、密码等
 
 # 拉取 CI 推送的镜像并启动（推荐）
 docker compose pull && docker compose up -d
@@ -143,7 +143,7 @@ docker compose pull && docker compose up -d
 docker compose up -d --build
 ```
 
-首次啟動（空庫）自動執行 `install_db.py`：導入 schema baseline、執行增量遷移、寫入默認配置、創建管理員 `cerbo`。
+生產環境啟動前必須先在 `.env` 配置與數據庫備份同批次保存的 `APP_KEY`。首次啟動（空庫）自動執行 `install_db.py`：導入 schema baseline、執行增量遷移、寫入默認配置、創建管理員 `cerbo`。非生產環境空庫安裝態缺少 `APP_KEY` 時入口腳本只生成一次；已有數據缺失密鑰會直接退出。
 
 ### 5.3 驗證
 
@@ -366,7 +366,7 @@ docker compose restart app               # 重启后端
 
 - 查看 `docker compose logs app`：php-fpm 未隨 supervisor 拉起、或 MySQL 未就緒導致 entrypoint 卡住時表現為 502
 - 確認 `mysql` 容器 healthcheck 通過（`docker compose ps` 中 healthy）
-- `APP_KEY` 缺失會導致 Laravel 500：確認 `docker compose exec app sh -c 'grep ^APP_KEY= .env'` 有值
+- `APP_KEY` 缺失時 entrypoint 會拒絕啟動：確認宿主機 `deploy/docker/.env` 中已設置與數據庫同批次保存的密鑰，再執行 `docker compose up -d --force-recreate app`。不要執行 `php artisan key:generate` 替換已有生產密鑰，否則歷史密文將無法解密。
 
 ### 11.3 拉取鏡像 401 / 拉不下來
 

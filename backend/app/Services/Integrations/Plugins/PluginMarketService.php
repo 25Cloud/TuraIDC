@@ -16,9 +16,9 @@ use ZipArchive;
 /**
  * 插件市场：拉取索引、按 slug 定位条目、下载审核锁定版本的插件包并安装。
  *
- * 分发全部依赖 GitHub：索引是 raw 上的 plugins.json，插件代码是 GitHub archive
- * （仅下载索引条目里 tag / sha 固定引用的版本，防止审核后内容被替换），
- * 国内访问可通过配置的加速镜像前缀（config/plugins.php）解决。
+ * 分发默认依赖 GitHub：索引是 raw 上的 plugins.json，插件代码是 GitHub archive。
+ * 所有请求先经过 config/plugins.php 的可信主机 allowlist；包清单只接受 JSON，
+ * 不在安装流程执行不可信的 config.php。
  */
 class PluginMarketService
 {
@@ -44,9 +44,11 @@ class PluginMarketService
             return (array) Cache::get(self::INDEX_CACHE_KEY);
         }
 
-        $url = (string) config('plugins.market.index_url');
+        $url = trim((string) config('plugins.market.index_url'));
         $mirror = (string) config('plugins.market.raw_mirror', '');
-        $response = Http::timeout($this->timeout())->get($mirror.$url);
+        $this->assertTrustedUrl($url, '插件市场索引');
+        $requestUrl = $this->withMirror($mirror, $url, '索引下载镜像');
+        $response = Http::timeout($this->timeout())->get($requestUrl);
         $response->throw();
 
         $payload = $response->json();
@@ -92,7 +94,7 @@ class PluginMarketService
     /**
      * 安装市场插件。
      *
-     * - 未传 $zipPath：从索引条目下载 tag/sha 固定引用的 archive 安装；
+     * - 未传 $zipPath：从索引条目下载 commit sha 固定引用且经 SHA-256 校验的 archive 安装；
      * - 传 $zipPath：手动加载本地插件包（zip），slug 取包内 manifest 并与参数比对。
      *
      * @return array{plugin: array<string, mixed>, entry: array<string, mixed>|null}
@@ -148,8 +150,8 @@ class PluginMarketService
      * 下载插件代码 archive。
      *
      * 两种条目形态（见索引仓库 README）：
-     * - **独立仓库**：`repo` + `tag`（或 `sha`），archive 顶层就是插件目录；
-     * - **monorepo**：`repo` + `path` + `ref`（可与 `sha` 叠加做审核锁定），
+     * - **独立仓库**：`repo` + `sha`（tag 仅作展示），archive 顶层就是插件目录；
+     * - **monorepo**：`repo` + `path` + `sha`（ref 仅作展示），
      *   archive 顶层是仓库快照，插件在同名的 `path` 子目录里。
      *
      * 下载内容体量按形态差很多：独立仓库通常几百 KB，monorepo 是整仓快照
@@ -160,16 +162,23 @@ class PluginMarketService
     private function downloadArchive(array $entry, string $slug, string $workDir): string
     {
         $repo = trim((string) ($entry['repo'] ?? ''));
-        if ($repo === '' || ! str_contains($repo, '/')) {
+        if ($repo === '' || preg_match('/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/', $repo) !== 1) {
             throw new BusinessException("插件条目缺少合法的 repo：{$slug}", 42200);
         }
 
         // ref 的语义是「monorepo 的分支」，必须和 path 一起用：只写 ref 不写 path，
-        // 下载到的是整仓快照，而 locatePluginRoot 会退回「最浅 config.php」去猜，
+        // 下载到的是整仓快照，而 locatePluginRoot 会退回「最浅 manifest」去猜，
         // 结果可能装成仓库里的另一个插件。宁可直接拒绝。
         if (trim((string) ($entry['ref'] ?? '')) !== '' && trim((string) ($entry['path'] ?? '')) === '') {
             throw new BusinessException("插件条目 ref 必须与 path 一起使用：{$slug}", 42200);
         }
+
+        $commit = trim((string) ($entry['sha'] ?? ''));
+        if (preg_match('/^[a-f0-9]{40}$/i', $commit) !== 1) {
+            throw new BusinessException("插件条目缺少合法的 commit sha：{$slug}", 42200);
+        }
+
+        $this->assertTrustedRepository($repo, $slug);
 
         $ref = $this->archiveRef($entry, $slug);
         $url = str_replace(
@@ -183,11 +192,25 @@ class PluginMarketService
             ? max($this->timeout(), (int) config('plugins.market.monorepo_timeout', 120))
             : $this->timeout();
 
-        $response = Http::timeout($timeout)->get($mirror.$url);
+        $sourceUrl = trim($url);
+        $this->assertTrustedUrl($sourceUrl, '插件 archive');
+        $requestUrl = $this->withMirror($mirror, $sourceUrl, '代码下载镜像');
+        $response = Http::timeout($timeout)->get($requestUrl);
         $response->throw();
 
         $zipPath = $workDir.DIRECTORY_SEPARATOR.$slug.'-'.preg_replace('/[^A-Za-z0-9._-]/', '-', $ref).'.zip';
-        file_put_contents($zipPath, $response->body());
+        if (file_put_contents($zipPath, $response->body()) === false) {
+            throw new BusinessException("无法保存插件包：{$slug}", 42200);
+        }
+
+        try {
+            $expectedDigest = (string) ($entry['sha256'] ?? $entry['archive_sha256'] ?? $entry['checksum_sha256'] ?? $entry['digest'] ?? '');
+            $this->assertArchiveDigest($zipPath, $expectedDigest, $slug);
+        } catch (\Throwable $exception) {
+            @unlink($zipPath);
+
+            throw $exception;
+        }
 
         return $zipPath;
     }
@@ -298,10 +321,10 @@ class PluginMarketService
     }
 
     /**
-     * 定位插件根目录（含 `config.php` 的那一层）。
+     * 定位插件根目录（含 `plugin.json` 或 legacy `config.php` 的那一层）。
      *
-     * - 独立仓库形态：archive 顶层就是插件目录，取「深度最小的 config.php 所在目录」；
-     * - monorepo 形态：archive 是整仓快照，里面每个插件都有自己的 config.php 且**深度相同**，
+     * - 独立仓库形态：archive 顶层就是插件目录，取「深度最小的 manifest 所在目录」；
+     * - monorepo 形态：archive 是整仓快照，里面每个插件都有自己的 manifest 且**深度相同**，
      *   靠深度排序会随机挑中另一个插件。所以这种情况必须按条目声明的 `path` 精确落位。
      */
     private function locatePluginRoot(string $extractDir, string $path = ''): string
@@ -319,14 +342,14 @@ class PluginMarketService
 
         foreach ($iterator as $file) {
             /** @var SplFileInfo $file */
-            if ($file->getFilename() !== 'config.php') {
+            if (! in_array($file->getFilename(), ['config.php', 'plugin.json'], true)) {
                 continue;
             }
             $candidates[] = $file->getPath();
         }
 
         if ($candidates === []) {
-            throw new BusinessException('插件包缺少 config.php，不是有效的插件包', 42200);
+            throw new BusinessException('插件包缺少 plugin.json 清单，不是有效的插件包', 42200);
         }
 
         // 深度最小者作为插件根目录（GitHub archive 顶层为 {repo}-{ref}）。
@@ -357,7 +380,7 @@ class PluginMarketService
         }
 
         $candidate = $top.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $normalized);
-        if (! is_file($candidate.DIRECTORY_SEPARATOR.'config.php')) {
+        if (! $this->hasManifestFile($candidate)) {
             throw new BusinessException("插件包内不存在条目声明的 path：{$path}", 42200);
         }
 
@@ -384,13 +407,41 @@ class PluginMarketService
         return $normalized;
     }
 
+    private function hasManifestFile(string $pluginRoot): bool
+    {
+        return is_file($pluginRoot.DIRECTORY_SEPARATOR.'plugin.json')
+            || is_file($pluginRoot.DIRECTORY_SEPARATOR.'config.php');
+    }
+
     /**
      * @return array{domain: string, info: array<string, mixed>}
      */
     private function readManifest(string $pluginRoot, string $slug): array
     {
-        $manifest = require $pluginRoot.DIRECTORY_SEPARATOR.'config.php';
-        $info = is_array($manifest['info'] ?? null) ? $manifest['info'] : [];
+        $configPath = $pluginRoot.DIRECTORY_SEPARATOR.'config.php';
+        $jsonPath = $pluginRoot.DIRECTORY_SEPARATOR.'plugin.json';
+
+        // 市场包来自远端，config.php 是可执行 PHP，不能在校验阶段 require。
+        // 同时存在 config.php 会让后续旧扫描链再次执行它，因此直接拒绝，
+        // 市场包必须使用纯数据的 plugin.json。
+        if (is_file($configPath)) {
+            throw new BusinessException('插件市场包禁止使用可执行 config.php，请改用 plugin.json', 42200);
+        }
+        if (! is_file($jsonPath)) {
+            throw new BusinessException('插件市场包缺少 plugin.json 纯数据清单', 42200);
+        }
+
+        try {
+            $manifest = json_decode((string) file_get_contents($jsonPath), true, 512, JSON_THROW_ON_ERROR);
+        } catch (\Throwable) {
+            throw new BusinessException('插件市场包 plugin.json 格式非法', 42200);
+        }
+
+        if (! is_array($manifest)) {
+            throw new BusinessException('插件市场包 plugin.json 必须是 JSON 对象', 42200);
+        }
+
+        $info = is_array($manifest['info'] ?? null) ? $manifest['info'] : $manifest;
         $domain = trim((string) ($info['domain'] ?? ''));
         $manifestSlug = trim((string) ($info['slug'] ?? ''));
 
@@ -458,6 +509,11 @@ class PluginMarketService
                 'repo' => (string) ($entry['repo'] ?? ''),
                 'tag' => (string) ($entry['tag'] ?? ''),
                 'sha' => (string) ($entry['sha'] ?? ''),
+                // zip 包摘要；兼容索引中的 archive_sha256 / checksum_sha256 / digest 别名。
+                'sha256' => strtolower(trim((string) ($entry['sha256'] ?? $entry['archive_sha256'] ?? $entry['checksum_sha256'] ?? $entry['digest'] ?? ''))),
+                // 保留签名元数据，供后续 Ed25519/minisign 校验扩展，不把它们丢出规范化结果。
+                'signature' => (string) ($entry['signature'] ?? ''),
+                'signature_key_id' => (string) ($entry['signature_key_id'] ?? $entry['key_id'] ?? ''),
                 // monorepo 形态：插件在仓库内的子目录 + 所在分支/tag
                 'path' => trim((string) ($entry['path'] ?? '')),
                 'ref' => trim((string) ($entry['ref'] ?? '')),
@@ -480,6 +536,82 @@ class PluginMarketService
     private function timeout(): int
     {
         return max(5, (int) config('plugins.market.timeout', 30));
+    }
+
+    /**
+     * 将镜像前缀与原始地址拼接，并在请求前校验最终主机。
+     */
+    private function withMirror(string $mirror, string $url, string $what): string
+    {
+        $mirror = trim($mirror);
+        if ($mirror === '') {
+            return $url;
+        }
+
+        $this->assertTrustedUrl($mirror, $what);
+
+        return rtrim($mirror, '/').'/'.ltrim($url, '/');
+    }
+
+    private function assertTrustedUrl(string $url, string $what): void
+    {
+        $parts = parse_url($url);
+        if (! is_array($parts)) {
+            throw new BusinessException("{$what} URL 格式非法", 42200);
+        }
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = strtolower(trim((string) ($parts['host'] ?? '')));
+        if ($scheme !== 'https' || $host === '') {
+            throw new BusinessException("{$what}必须使用 HTTPS 可信地址", 42200);
+        }
+
+        $trustedHosts = config('plugins.market.trusted_hosts', []);
+        if (is_string($trustedHosts)) {
+            $trustedHosts = explode(',', $trustedHosts);
+        }
+        $trustedHosts = array_values(array_filter(array_map(
+            static fn (mixed $value): string => strtolower(trim((string) $value)),
+            is_array($trustedHosts) ? $trustedHosts : []
+        )));
+        if (! in_array($host, $trustedHosts, true)) {
+            throw new BusinessException("{$what}不在可信源 allowlist 内：{$host}", 42200);
+        }
+
+        if (isset($parts['user']) || isset($parts['pass']) || isset($parts['fragment'])) {
+            throw new BusinessException("{$what}包含非法 URL 部件", 42200);
+        }
+    }
+
+    private function assertTrustedRepository(string $repo, string $slug): void
+    {
+        $trustedRepositories = config('plugins.market.trusted_repositories', []);
+        if (is_string($trustedRepositories)) {
+            $trustedRepositories = explode(',', $trustedRepositories);
+        }
+        $trustedRepositories = array_values(array_filter(array_map(
+            static fn (mixed $value): string => strtolower(trim((string) $value)),
+            is_array($trustedRepositories) ? $trustedRepositories : []
+        )));
+
+        if ($trustedRepositories === [] || ! in_array(strtolower($repo), $trustedRepositories, true)) {
+            throw new BusinessException("插件来源仓库不在可信源 allowlist 内：{$slug}", 42200);
+        }
+    }
+
+    private function assertArchiveDigest(string $archivePath, string $expectedDigest, string $slug): void
+    {
+        $expectedDigest = strtolower(trim($expectedDigest));
+        if ($expectedDigest === '') {
+            throw new BusinessException("插件条目缺少 SHA-256 摘要，已拒绝安装：{$slug}", 42200);
+        }
+        if (preg_match('/^[a-f0-9]{64}$/', $expectedDigest) !== 1) {
+            throw new BusinessException("插件包 SHA-256 摘要格式非法：{$slug}", 42200);
+        }
+
+        $actualDigest = hash_file('sha256', $archivePath);
+        if (! is_string($actualDigest) || ! hash_equals($expectedDigest, strtolower($actualDigest))) {
+            throw new BusinessException("插件包 SHA-256 摘要不匹配，已拒绝安装：{$slug}", 42200);
+        }
     }
 
     private function ensureDirectory(string $dir): void

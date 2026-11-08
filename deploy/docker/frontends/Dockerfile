@@ -7,7 +7,8 @@
 # ============================================================================
 
 # ---------- 构建阶段 ----------
-FROM node:22-slim AS builder
+# Node 与 Nginx 基础镜像使用 digest 固定；安全更新需显式刷新并重新扫描 digest。
+FROM node:22-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d AS builder
 
 # 跳过 husky 的 prepare（容器内无 .git）
 ENV HUSKY=0
@@ -56,7 +57,7 @@ COPY frontend-user-v4-console ./frontend-user-v4-console
 RUN pnpm --config.verify-deps-before-run=false run build:frontends
 
 # ---------- 运行时：三端合一（三端口） ----------
-FROM nginx:1.27-alpine
+FROM nginx:1.27-alpine@sha256:62223d644fa234c3a1cc785ee14242ec47a77364226f1c811d2f669f96dc2ac8
 
 # 三个 dist 分别放置，nginx 按端口路由
 COPY --from=builder /app/frontend-user-v3-www/dist     /usr/share/nginx/html/www

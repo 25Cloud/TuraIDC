@@ -330,6 +330,7 @@ export const userApi = {
   createConsoleAreaTicket: (id: number | string, serviceId: number | string) =>
     request.post<{ ticket?: string; expires_at?: string }>({
       url: `/v2/admin/users/${id}/services/${serviceId}/console/tickets`,
+      withCredentials: true,
     }),
   serviceConsoleAreaContentUrl: (
     id: number | string,
@@ -340,9 +341,7 @@ export const userApi = {
     const apiBase = String(import.meta.env.VITE_API_BASE_URL || '')
       .trim()
       .replace(/\/+$/, '');
-    return `${apiBase}/v2/client/services/${serviceId}/console-area/content?ticket=${encodeURIComponent(
-      ticket,
-    )}&module=${encodeURIComponent(moduleKey)}`;
+    return `${apiBase}/v2/client/services/${serviceId}/console-area/content?module=${encodeURIComponent(moduleKey)}`;
   },
   serviceModuleStatus: (id: number | string, serviceId: number | string, params?: PageParams) =>
     request.get<Record<string, unknown>>(

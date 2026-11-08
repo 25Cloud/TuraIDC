@@ -149,7 +149,7 @@ final class ZjmfSyncSignature
      */
     public static function isV2(array $params): bool
     {
-        return (string) ($params['signature_version'] ?? '') === self::VERSION_V2;
+        return trim((string) ($params['signature_version'] ?? '')) === self::VERSION_V2;
     }
 
     /**

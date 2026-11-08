@@ -396,14 +396,12 @@ class ServiceVncService
         $cacheKey = CacheKey::vncToken($token);
         $params = Cache::store('redis_volatile')->get($cacheKey);
 
-        if (! is_array($params) || empty($params)) {
+        if (! is_array($params) || empty($params) || ($params['token_scope'] ?? '') !== 'relay') {
             throw new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404);
         }
 
-        // 兑换接口必须是幂等的：noVNC 页面在刷新、重连、多页签/多设备打开时都会
-        // 再次兑换同一个公开 token。此前这里把缓存 pull 掉，第一个请求之后的连接全部 404，
-        // 表现为「打开就灰屏」。改由 VNC_TOKEN_TTL_SECONDS 的短有效期兜底，
-        // Origin 白名单与 relay token 的独立短 TTL 继续承担安全边界。
+        // WebSocket relay 只能消费短 TTL 的 relay token；公开启动 token 必须先
+        // 经 HTTP 兑换并在兑换时消费，避免把 URL bearer 直接当作上游连接凭据。
         return $params;
     }
 
@@ -418,8 +416,11 @@ class ServiceVncService
             throw new BusinessException('VNC 链接已过期或无效，请重新获取', 40400, 404);
         }
 
-        // 与 loadVncTokenParams 同理：兑换必须幂等，否则页面刷新/重连时
-        // 第一个请求之后的兑换全部 404，表现为「打开就灰屏」。
+        // 公开启动 token 只负责启动一次 relay 会话。兑换后立即消费，避免
+        // URL 中的 bearer token 在有效期内被重复兑换；页面重连会重新走认证
+        // 的「获取 VNC 链接」接口申请新的启动 token，relay token 自身保留短 TTL。
+        Cache::store('redis_volatile')->forget($cacheKey);
+
         return $params;
     }
 

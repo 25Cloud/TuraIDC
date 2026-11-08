@@ -1,6 +1,6 @@
 ---
 source: develop/api/catalog-navigation.md
-sourceHash: b99feef6fcccf934b514c0181eb883fe38548c4627c958f16e491ab95f11a1b1
+sourceHash: c2f1a4a5ee44943f2b6e97b6eaa19f2b4491a2ff274dab7f96e34a08ecb8fedb
 generated: zh-tw
 ---
 
@@ -129,12 +129,12 @@ generated: zh-tw
 | 步驟                   | 介面                                                                      |
 | ---------------------- | ------------------------------------------------------------------------- |
 | 查詢可用 tab / 能力    | `GET /api/v2/client/services/{id}/console/capabilities`                   |
-| 換取短時效票據         | `POST /api/v2/client/services/{id}/console/tickets`                       |
-| 取模組頁 HTML          | `GET /api/v2/client/services/{id}/console-area/content?ticket=…&module=…` |
-| 反代上游靜態資源與圖片 | `GET /api/v2/client/services/{id}/console-area/asset?ticket=…&path=…`     |
-| 回發模組動作           | `POST /api/v2/client/services/{id}/console-area/actions?ticket=…`         |
+| 換取短時效票據         | `POST /api/v2/client/services/{id}/console/tickets`（寫入 HttpOnly Cookie） |
+| 取模組頁 HTML          | `GET /api/v2/client/services/{id}/console-area/content?module=…`        |
+| 反代上游靜態資源與圖片 | `GET /api/v2/client/services/{id}/console-area/asset?path=…`            |
+| 回發模組動作           | `POST /api/v2/client/services/{id}/console-area/actions`                |
 
-`asset` 端點只接受以 `/` 開頭的路徑，目標主機由服務繫結的供應商推導，因此不能被當成任意 URL 的開放反代。該端點返回 CSS 時，會把檔案內部的相對 `url()` 改寫成同一端點的根相對地址：跨源反代換掉了相對引用的解析基準（瀏覽器按反代後的 URL 解析），原樣透傳會讓 CSS 裡的圖片請求到本站一個不存在的路徑。改寫只作用於 CSS —— JS 裡的相對路徑沒有可靜態解析的形態。
+`content`、`asset`、`actions` 的票據由按服務路徑限定的短時效 HttpOnly Cookie 承載，非 iframe 呼叫方也可使用 `Authorization: Bearer`。這些 URL 不承載票據，響應均禁止快取並設定 `Referrer-Policy: no-referrer`。`asset` 端點只接受以 `/` 開頭的路徑，目標主機由服務繫結的供應商推導，因此不能被當成任意 URL 的開放反代。該端點返回 CSS 時，會把檔案內部的相對 `url()` 改寫成同一端點的根相對地址：跨源反代換掉了相對引用的解析基準（瀏覽器按反代後的 URL 解析），原樣透傳會讓 CSS 裡的圖片請求到本站一個不存在的路徑。改寫只作用於 CSS —— JS 裡的相對路徑沒有可靜態解析的形態。
 
 `capabilities` 返回的 `area_preload_all` 表示是否在首屏預熱全部自定義面板區域（預設按開啟處理）。面板內容介面是 `no-store`，瀏覽器快取複用不了，所以面板只能靠 iframe 常駐來預熱：開啟時每個自定義區域各掛一個例項，切換 tab 不再等待，也不必來回切換重複回源上游。它由後臺設定 `system.console_area_preload_all_enabled`（管理端「整合外掛 → 上游 → 面板區域首屏預熱」）控制，且刻意不寫進能力快取 —— 管理員改完設定立即生效，不必等 300 秒的能力快取過期。
 

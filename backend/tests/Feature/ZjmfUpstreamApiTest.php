@@ -17,6 +17,7 @@ use App\Services\ClientServiceConsole\ServicePowerService;
 use App\Services\Provisioning\ProvisionService;
 use App\Services\ZjmfUpstream\DcimService;
 use App\Services\ZjmfUpstream\UpstreamProvisionService;
+use App\Support\UpstreamJwt;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
@@ -47,6 +48,21 @@ class ZjmfUpstreamApiTest extends TestCase
 
     /** @var list<int> */
     private array $userIds = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // 测试环境不加载生产 .env，使用进程内派生值覆盖 APP_KEY，避免既有上游回归
+        // 因缺少部署密钥而全部落入 fail-closed 分支。
+        config([
+            'app.key' => 'base64:'.base64_encode(hash('sha256', self::class, true)),
+            'services.zjmf_upstream.jwt_issuer' => 'http://api.example.test',
+            'services.zjmf_upstream.jwt_audience' => 'zjmf-upstream',
+            'services.zjmf_upstream.jwt_ttl' => 7200,
+            'services.zjmf_upstream.jwt_clock_skew' => 60,
+        ]);
+    }
 
     /**
      * 共享测试库上的既有列表类断言按索引取值，残留行会污染它们。
@@ -129,6 +145,48 @@ class ZjmfUpstreamApiTest extends TestCase
     public function business_request_with_invalid_jwt_returns_405(): void
     {
         $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer invalid.token.value'])
+            ->assertOk()
+            ->assertJsonPath('status', 405);
+    }
+
+    #[Test]
+    public function missing_app_key_rejects_login_and_already_issued_jwt(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+
+        config(['app.key' => '']);
+        $this->postJson('/api/v2/zjmf/zjmf_api_login', [
+            'username' => 'zjmfapi_'.$suffix,
+            'password' => 'ZjmfApi@123456',
+        ])
+            ->assertOk()
+            ->assertJsonPath('status', 400);
+
+        config(['app.key' => 'base64:'.base64_encode(hash('sha256', self::class, true))]);
+        $jwt = $this->apiJwt($suffix);
+        config(['app.key' => '']);
+        $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer '.$jwt])
+            ->assertOk()
+            ->assertJsonPath('status', 405);
+    }
+
+    #[Test]
+    public function jwt_without_required_claims_is_rejected(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $user = $this->createApiUser($suffix, ['status' => 1, 'api_open' => 1]);
+        $now = time();
+        $jwt = UpstreamJwt::encode([
+            'uid' => (int) $user->id,
+            'is_api' => 1,
+            'iat' => $now,
+            'exp' => $now + 600,
+            'aud' => 'zjmf-upstream',
+            // 缺少 iss，不能仅凭 uid 放行。
+        ], (string) config('app.key'));
+
+        $this->getJson('/api/v2/zjmf/user_info', ['Authorization' => 'Bearer '.$jwt])
             ->assertOk()
             ->assertJsonPath('status', 405);
     }

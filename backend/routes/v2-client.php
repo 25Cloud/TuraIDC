@@ -45,11 +45,12 @@ Route::post('/payment/alipay/notify', [PaymentCallbackController::class, 'alipay
 Route::match(['GET', 'POST'], '/payment/notify/{gateway}', [PaymentCallbackController::class, 'notify'])
     ->middleware(['throttle:60,1,client-payment-notify', 'verify.payment.callback']);
 Route::get('/vnc-tokens/{token}', [ServiceConsoleController::class, 'vncToken'])->middleware('throttle:30,1,client-vnc-token');
-// 服务自定义功能面板（iframe 隔离渲染）：不能携带 Authorization 头，凭短时效票据访问
-Route::get('/services/{service}/console-area/content', [ServiceConsoleAreaController::class, 'content'])->middleware('throttle:120,1,client-service-area-content');
-// 面板内引用的上游静态资源：反代 + 缓存，避免把上游域名暴露给终端用户
-Route::get('/services/{service}/console-area/asset', [ServiceConsoleAreaController::class, 'asset'])->middleware('throttle:600,1,client-service-area-asset');
-Route::post('/services/{service}/console-area/actions', [ServiceConsoleAreaController::class, 'actions'])->middleware('throttle:30,1,client-service-area-action');
+// 服务自定义功能面板（iframe 隔离渲染）：通过路径限定的短时效 HttpOnly Cookie
+// 或 Authorization Bearer 票据访问，URL 不承载票据。
+Route::get('/services/{service}/console-area/content', [ServiceConsoleAreaController::class, 'content'])->middleware('throttle:30,1,client-service-area-content');
+// 面板内引用的上游静态资源：反代，避免把上游域名暴露给终端用户
+Route::get('/services/{service}/console-area/asset', [ServiceConsoleAreaController::class, 'asset'])->middleware('throttle:120,1,client-service-area-asset');
+Route::post('/services/{service}/console-area/actions', [ServiceConsoleAreaController::class, 'actions'])->middleware('throttle:12,1,client-service-area-action');
 Route::post('/tickets/upstream/replies', [TicketUpstreamCallbackController::class, 'reply'])
     ->middleware(['throttle:60,1,ticket-upstream-callback', 'verify.ticket.upstream.callback']);
 
@@ -149,7 +150,7 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::get('/services', [ServiceConsoleController::class, 'index']);
     Route::get('/services/grouped-overview', [ServiceConsoleController::class, 'groupedOverview']);
     Route::get('/services/{id}/console/capabilities', [ServiceConsoleAreaController::class, 'capabilities']);
-    Route::post('/services/{id}/console/tickets', [ServiceConsoleAreaController::class, 'createTicket'])->middleware('throttle:20,1,client-service-area-ticket');
+    Route::post('/services/{id}/console/tickets', [ServiceConsoleAreaController::class, 'createTicket'])->middleware('throttle:6,1,client-service-area-ticket');
     Route::get('/services/{id}/config', [ServiceConsoleController::class, 'config']);
     Route::put('/services/{id}/name', [ServiceConsoleController::class, 'updateName']);
     Route::put('/services/{id}/remark', [ServiceConsoleController::class, 'updateRemark']);

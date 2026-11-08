@@ -12,13 +12,17 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# PR 与推送任务默认只读仓库；需要写包权限的发布任务必须单独声明。
+permissions:
+  contents: read
+
 jobs:
   backend:
     name: Backend (Laravel)
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.0@sha256:62fb722c78b24245ddff1796a0fcee4a49cc5b87e0aaaf20c92d1da9e0a2497b
         env:
           MYSQL_DATABASE: finance
           MYSQL_ROOT_PASSWORD: root
@@ -66,7 +70,10 @@ jobs:
             composer-${{ runner.os }}-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
+
+      - name: Audit Composer production dependencies
+        run: composer audit --locked --no-dev --format=table
 
       - name: Generate APP key
         run: echo "APP_KEY=base64:$(openssl rand -base64 32)" >> $GITHUB_ENV
@@ -82,7 +89,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       mysql:
-        image: mysql:8.0
+        image: mysql:8.0@sha256:62fb722c78b24245ddff1796a0fcee4a49cc5b87e0aaaf20c92d1da9e0a2497b
         env:
           MYSQL_DATABASE: finance
           MYSQL_ROOT_PASSWORD: root
@@ -97,7 +104,7 @@ jobs:
       # 本机没装扩展时它们靠「找不到类」的路径侥幸通过，CI 一旦装上就 Connection refused。
       # 与其把扩展去掉掩盖依赖，不如按真实环境起一个 Redis。
       redis:
-        image: redis:7-alpine
+        image: redis:7-alpine@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b
         ports:
           - 6379:6379
         options: >-
@@ -139,7 +146,7 @@ jobs:
             composer-${{ runner.os }}-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-progress
+        run: composer install --no-interaction --prefer-dist --no-progress --no-scripts
 
       # 测试库不是空库跑 migrate：本仓的安装基线是 database/schema/mysql-schema.sql，
       # 迁移只叠加增量（docs/develop/testing.md 第 173 行记的就是这套）。
@@ -152,13 +159,16 @@ jobs:
           mkdir -p backend/storage/app/public backend/storage/framework/cache/data \
                    backend/storage/framework/sessions backend/storage/framework/views \
                    backend/storage/logs backend/bootstrap/cache
-          chmod -R 777 backend/storage backend/bootstrap/cache
+          chmod -R u+rwX,g+rX,o-rwx backend/storage backend/bootstrap/cache
           mysql -h127.0.0.1 -P3306 -uroot -proot \
             -e "CREATE DATABASE IF NOT EXISTS idc_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
           mysql -h127.0.0.1 -P3306 -uroot -proot idc_test < backend/database/schema/mysql-schema.sql
 
       - name: Migrate test database
         run: php artisan migrate --force
+
+      - name: Discover Laravel packages
+        run: php artisan package:discover --ansi
 
       # 路由权限审计：api/v2/admin 每条路由都必须挂 CheckPermission（白名单只放登录与
       # 「管理员本人」自服务端点）。缺权限或未知权限码时命令退出码为 1。
@@ -201,6 +211,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Audit production dependencies
+        run: pnpm audit --prod --audit-level=high
+
       - name: Lint
         run: pnpm run lint:frontends
 
@@ -215,3 +228,46 @@ jobs:
           CLIENT_CONSOLE_URL: https://console.example.com
           ADMIN_URL: https://admin.example.com
           CLIENT_SESSION_COOKIE_DOMAIN: .example.com
+
+  frontend-e2e:
+    name: Frontend E2E
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.13.1
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium webkit
+
+      - name: Run admin E2E
+        run: pnpm test:admin-v3
+
+      - name: Run website E2E
+        run: pnpm test:e2e:www
+
+      - name: Run console E2E
+        run: pnpm test:e2e:console
+
+      - name: Upload Playwright artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-artifacts
+          path: |
+            frontend-admin-v3/test-results
+            frontend-user-v3-www/test-results
+            frontend-user-v4-console/test-results
+          if-no-files-found: ignore

@@ -15,7 +15,7 @@ use ReflectionClass;
 use ReflectionMethod;
 
 /**
- * 自定义面板 HTML 改写的两条安全/兼容契约回归。
+ * 自定义面板 HTML 改写的安全/兼容契约回归。
  *
  * 背景：上游 provision/custom/content 返回的是「半页」HTML 片段，它有两个问题：
  *   1. 片段自身的 ajax() 里嵌着我们传进去的 now_jwt（转售 API 凭据，约 2 小时有效），
@@ -23,9 +23,9 @@ use ReflectionMethod;
  *   2. 片段假定父页面提供 jQuery / Bootstrap 4 / SweetAlert2，我们的 iframe 复不到，
  *      缺运行时就会刷 "jQuery is not defined" / "$ is not defined"。
  *
- * 这里锁定 rewriteModulePage() 两步改写的口径（只测私有实现的输入输出，不连上游）：
- *   - 完整删掉 Authorization 请求头语句，其余 ajax 逻辑不受影响；
- *   - 注入本地运行时并包成完整文档，且运行时必须在片段内联脚本之前。
+ * 这里锁定 rewriteModulePage() 的输入输出口径（只测私有实现的输入输出，不连上游）：
+ *   - 完整删掉 Authorization 请求头和上游脚本，避免同源 iframe 执行供应商内容；
+ *   - 删除上游可执行内容并注入同源本地运行时，CSP 可关闭 inline/eval。
  *
  * 继承裸 PHPUnit TestCase：不启动 Laravel、不连数据库，可在任何环境安全执行。
  */
@@ -68,7 +68,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
     }
 
     #[Test]
-    public function embedded_reseller_credentials_are_removed_but_ajax_logic_survives(): void
+    public function embedded_reseller_credentials_and_upstream_scripts_are_removed(): void
     {
         $out = $this->rewrite($this->panelFragment());
 
@@ -80,21 +80,15 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             '只允许保留 content-type 头，Authorization 一律不得存在'
         );
 
-        // 剥离只针对凭据，动作回发逻辑必须保持可用
-        $this->assertStringContainsString('xhr.open("post", options.url)', $out);
-        $this->assertStringContainsString('content-type', $out);
-        $this->assertStringContainsString('xhr.send(str)', $out);
-        // URL 改写（同一次调用里先执行）仍要正常：模板变量与上游绝对地址都换成票据代理地址
+        $this->assertStringNotContainsString('selectFilter.js', $out, '上游脚本资源不得继续下发');
+        $this->assertStringNotContainsString('alert(', $out, '上游脚本正文不能残留');
+        $this->assertStringContainsString('mountingISO', $out, '非可执行面板内容应保留');
+        // 动作地址仍在服务端改写后再被脚本净化，不应泄露未改写的上游模板变量。
         $this->assertStringNotContainsString('{$MODULE_CUSTOM_API}', $out);
-        $this->assertSame(
-            2,
-            preg_match_all('~url:\s*"actions\?ticket=TESTTICKET"~', $out),
-            '两处面板动作地址都应改写成本地票据代理地址'
-        );
     }
 
     #[Test]
-    public function panel_fragment_is_wrapped_with_local_runtime_before_inline_scripts(): void
+    public function panel_fragment_is_wrapped_with_local_runtime_without_inline_scripts(): void
     {
         $out = $this->rewrite($this->panelFragment());
 
@@ -103,6 +97,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             'bootstrap.min.css',
             'bootstrap.bundle.min.js',
             'sweetalert2.all.min.js',
+            'panel-runtime.js',
         ] as $asset) {
             $this->assertStringContainsString(
                 '/media/console-panel/'.$asset,
@@ -115,16 +110,8 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
         $this->assertStringContainsString('<body>', $out);
         $this->assertStringContainsString('</html>', $out);
 
-        // 运行时脚本必须排在片段内联脚本之前，否则仍会报 $ is not defined
-        $this->assertLessThan(
-            strpos($out, 'function ajax(options)'),
-            strpos($out, 'sweetalert2.all.min.js'),
-            '运行时脚本必须先于片段内联脚本解析'
-        );
-
-        // SweetAlert2 v11 不收旧版 type: 参数，垫片把 type 映射成 icon
-        $this->assertStringContainsString('window.Swal.fire = function', $out);
-        $this->assertStringContainsString('args[0].icon = args[0].type', $out);
+        $this->assertDoesNotMatchRegularExpression('~<script(?![^>]+\bsrc=)[^>]*>~i', $out);
+        $this->assertStringNotContainsString('window.Swal.fire = function', $out);
     }
 
     /**
@@ -149,6 +136,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             'jquery.min.js',
             'bootstrap.bundle.min.js',
             'sweetalert2.all.min.js',
+            'panel-runtime.js',
         ] as $asset) {
             $path = $assetDir.'/'.$asset;
 
@@ -167,14 +155,13 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             $out,
             '下发给终端用户的面板 HTML 不得出现上游域名（否则用户可直接扒出上游地址）'
         );
+        $this->assertStringNotContainsString('selectFilter.js', $out, '上游脚本标签必须在净化阶段删除');
 
         foreach ([
             '/vendor/dcimcloud/css/01setting.css',
-            '/vendor/dcimcloud/js/selectFilter.js',
-            '/vendor/dcimcloud/js/selectFilter-2.js',
         ] as $path) {
             $this->assertStringContainsString(
-                'asset?ticket=TESTTICKET&path='.rawurlencode($path),
+                'asset?path='.rawurlencode($path),
                 $out,
                 '上游静态资源应改走本系统反代：'.$path
             );
@@ -199,7 +186,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
 
             try {
                 $this->assertSafeAssetPath($unsafe);
-            } catch (BusinessException) {
+            } catch (BusinessException $exception) {
                 $rejected = true;
             }
 
@@ -212,11 +199,104 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
     }
 
     #[Test]
+    public function upstream_asset_targets_reject_non_http_and_non_public_addresses(): void
+    {
+        foreach ([
+            'file:///etc/passwd',
+            'ftp://8.8.8.8/resource.css',
+            'http://127.0.0.1/resource.css',
+            'http://10.0.0.1/resource.css',
+            'http://169.254.169.254/latest/meta-data/',
+            'http://localhost/resource.css',
+            'https://[::1]/resource.css',
+            'https://[::ffff:127.0.0.1]/resource.css',
+            'https://[fe80::1]/resource.css',
+            'https://[fc00::1]/resource.css',
+            'https://[ff02::1]/resource.css',
+            'https://[2001:3::1]/resource.css',
+            'https://[2001:4:112::1]/resource.css',
+            'https://[2001:db8::1]/resource.css',
+            'https://8.8.8.8:0/resource.css',
+            'https://8.8.8.8:65536/resource.css',
+        ] as $unsafe) {
+            $rejected = false;
+
+            try {
+                $this->assertSafeUpstreamUrl($unsafe);
+            } catch (BusinessException $exception) {
+                $rejected = true;
+            }
+
+            $this->assertTrue($rejected, '上游资源目标必须拒绝：'.$unsafe);
+        }
+
+        $safe = $this->assertSafeUpstreamUrl('https://8.8.8.8:8443/resource.css');
+        $this->assertSame(8443, $safe['port']);
+        $this->assertSame('8.8.8.8', $safe['ip']);
+        $this->assertTrue($safe['is_ip']);
+
+        $safeV6 = $this->assertSafeUpstreamUrl('https://[2001:4860:4860::8888]/resource.css');
+        $this->assertSame('2001:4860:4860::8888', $safeV6['ip']);
+        $this->assertSame(443, $safeV6['port']);
+    }
+
+    #[Test]
+    public function redirect_locations_are_resolved_without_leaving_the_validated_origin_unnoticed(): void
+    {
+        $base = 'https://assets.example.com/vendor/css/select.css';
+
+        $this->assertSame(
+            'https://assets.example.com/vendor/img/icon.png',
+            $this->resolveRedirectUrl($base, '../img/icon.png')
+        );
+        $this->assertSame(
+            'https://cdn.example.com/icon.png',
+            $this->resolveRedirectUrl($base, '//cdn.example.com/icon.png')
+        );
+        $this->assertSame(
+            'https://assets.example.com/vendor/css/select.css?v=2',
+            $this->resolveRedirectUrl($base, '?v=2')
+        );
+        $this->assertSame($base, $this->resolveRedirectUrl($base, '#icon'));
+
+        $this->assertSame(
+            'http://127.0.0.1/private',
+            $this->resolveRedirectUrl($base, 'http://127.0.0.1/private')
+        );
+
+        $rejected = false;
+        try {
+            $this->assertSafeUpstreamUrl($this->resolveRedirectUrl($base, 'http://127.0.0.1/private'), 'assets.example.com', 'https');
+        } catch (BusinessException $exception) {
+            $rejected = true;
+        }
+        $this->assertTrue($rejected, '重定向目标必须经过同样的公网地址校验');
+
+        foreach ([
+            ['https://cdn.example.com/icon.png', '跨主机跳转'],
+            ['http://assets.example.com/icon.png', 'HTTPS 降级跳转'],
+            ['https://assets.example.com:8443/icon.png', '端口变更跳转'],
+        ] as [$redirect, $label]) {
+            $rejected = false;
+            try {
+                $this->assertSafeUpstreamUrl($redirect, 'assets.example.com', 'https', 443);
+            } catch (BusinessException $exception) {
+                $rejected = true;
+            }
+            $this->assertTrue($rejected, $label.'必须拒绝');
+        }
+
+        $upgrade = $this->assertSafeUpstreamUrl('https://8.8.8.8/icon.png', '8.8.8.8', 'http', 80);
+        $this->assertSame('8.8.8.8', $upgrade['host']);
+        $this->assertSame(443, $upgrade['port']);
+    }
+
+    #[Test]
     public function select_filter_stylesheet_is_injected_through_the_proxy(): void
     {
         $out = $this->rewrite($this->panelFragment());
 
-        $expected = 'asset?ticket=TESTTICKET&path='.rawurlencode('/vendor/dcimcloud/css/selectFilter.css');
+        $expected = 'asset?path='.rawurlencode('/vendor/dcimcloud/css/selectFilter.css');
 
         $this->assertStringContainsString(
             $expected,
@@ -284,17 +364,14 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
     }
 
     #[Test]
-    public function full_document_with_its_own_jquery_keeps_our_script_bundle_out(): void
+    public function full_document_external_scripts_are_removed_and_local_bundle_is_used(): void
     {
         $out = $this->rewrite($this->fullDocumentFragment(
             '    <script src="https://cdn.example.com/jquery-3.6.0.min.js"></script>'."\n"
         ));
 
-        $this->assertStringNotContainsString(
-            '/media/console-panel/jquery.min.js',
-            $out,
-            '片段自带 jQuery 时不能再注入一份，否则会冲掉前一份的插件注册'
-        );
+        $this->assertStringContainsString('/media/console-panel/jquery.min.js', $out, '外部脚本被清理后必须使用本站运行时');
+        $this->assertStringNotContainsString('cdn.example.com/jquery', $out, '任意外部脚本不得进入面板');
         $this->assertStringContainsString('/media/console-panel/bootstrap.min.css', $out, '样式仍然要补');
     }
 
@@ -401,7 +478,7 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
             $url,
             '反代地址前缀必须与 routes/v2-client.php 的 console-area/asset 路由一致'
         );
-        $this->assertStringContainsString('ticket=TICKET%2B1', $url, '票据必须编码，不能拼出额外参数');
+        $this->assertStringNotContainsString('ticket=', $url, '票据不得进入资源代理 URL');
         $this->assertStringContainsString(
             'path='.rawurlencode('/vendor/dcimcloud/img/icon_arrow_down.png'),
             $url
@@ -448,6 +525,27 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
         $method->setAccessible(true);
 
         return (string) $method->invoke(new ServiceConsoleAssetService, $path);
+    }
+
+    /** 直接驱动每跳回源地址校验，不发起网络请求。 */
+    private function assertSafeUpstreamUrl(string $url, string $expectedHost = '', string $expectedScheme = '', int $expectedPort = 0): array
+    {
+        $method = new ReflectionMethod(ServiceConsoleAssetService::class, 'assertSafeUpstreamUrl');
+        $method->setAccessible(true);
+
+        /** @var array{host: string, port: int, ip: string, is_ip: bool} $target */
+        $target = $method->invoke(new ServiceConsoleAssetService, $url, $expectedHost, $expectedScheme, $expectedPort);
+
+        return $target;
+    }
+
+    /** 直接驱动跳转地址解析，不发起网络请求。 */
+    private function resolveRedirectUrl(string $baseUrl, string $location): string
+    {
+        $method = new ReflectionMethod(ServiceConsoleAssetService::class, 'resolveRedirectUrl');
+        $method->setAccessible(true);
+
+        return (string) $method->invoke(new ServiceConsoleAssetService, $baseUrl, $location);
     }
 
     /**

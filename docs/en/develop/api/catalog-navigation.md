@@ -1,6 +1,6 @@
 ---
 source: develop/api/catalog-navigation.md
-sourceHash: b99feef6fcccf934b514c0181eb883fe38548c4627c958f16e491ab95f11a1b1
+sourceHash: c2f1a4a5ee44943f2b6e97b6eaa19f2b4491a2ff274dab7f96e34a08ecb8fedb
 translatedAt: 2026-10-26
 ---
 

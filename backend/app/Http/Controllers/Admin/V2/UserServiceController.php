@@ -50,6 +50,8 @@ use Illuminate\Support\Facades\Cache;
 
 class UserServiceController extends Controller
 {
+    private const AREA_TICKET_COOKIE_PREFIX = 'tura_console_area_ticket_';
+
     public function __construct(
         private readonly UserService $users,
     ) {}
@@ -161,10 +163,19 @@ class UserServiceController extends Controller
 
     public function createAreaTicket(ShowUserServiceRequest $request, User $user, int $service): JsonResponse
     {
-        return $this->success(
-            $this->users->createServiceConsoleAreaTicket($user, $service),
-            '已生成访问凭证'
-        );
+        $payload = $this->users->createServiceConsoleAreaTicket($user, $service);
+
+        return $this->success($payload, '已生成访问凭证')->withCookie(cookie(
+            self::AREA_TICKET_COOKIE_PREFIX.$service,
+            trim((string) ($payload['ticket'] ?? '')),
+            (int) ($payload['expires_in'] ?? 180),
+            '/api/v2/client/services/'.$service.'/console-area',
+            null,
+            $request->isSecure() || app()->environment('production'),
+            true,
+            true,
+            'lax'
+        ));
     }
 
     public function moduleStatus(ShowServiceModuleStatusRequest $request, User $user, int $service): JsonResponse

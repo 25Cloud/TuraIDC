@@ -18,7 +18,7 @@ name: turaidc
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0@sha256:62fb722c78b24245ddff1796a0fcee4a49cc5b87e0aaaf20c92d1da9e0a2497b
     container_name: turaidc-mysql
     restart: unless-stopped
     # DB_HOST 留空 -> 插值展开为空，服务照常启动；
@@ -45,7 +45,7 @@ services:
       start_period: 300s
 
   redis:
-    image: redis:7-alpine
+    image: redis:7-alpine@sha256:c5d34a98396a4775e223c74e929162c35c5a2182901ba26b50ade939941ce14b
     container_name: turaidc-redis
     restart: unless-stopped
     # 同 mysql：REDIS_HOST 填了远程地址时不拉取不启动本地 redis
