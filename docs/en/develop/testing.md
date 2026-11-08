@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/testing.md
-sourceHash: 7efc90174aa2e903fd810dddaf6d085440192978d603a13ffa2aef27a4f61de6
+sourceHash: 10c8bb00c260244f926c3ed3dd4b05ba37cdc5ae446a77132b767c6815492615
 translatedAt: 2026-10-26
 ---
 
@@ -161,17 +161,28 @@ cd backend
 php artisan test --list-tests
 ```
 
-**Speeding up local development on Windows** (measured 2026-09): on Windows, `php artisan test` forwards output through a Symfony Process wrapper, and a single minimal test class can stall for minutes; running `vendor/bin/phpunit` directly on the same file takes only about 0.6 seconds (same `phpunit.xml.dist`, with `APP_ENV=testing` and the test database configuration taking effect identically). For incremental regression after local changes:
+**Incremental verification on a local machine** (measured 2026-11-08): the slow part is the entry point, not the tests. `php artisan test` connects to the development database from `.env`, and that connection takes tens of seconds, so the same 7-test file takes 48.1 s via `php artisan test` and 5.2 s via `vendor/bin/phpunit`; `phpstan` behaves the same way, 90.3 s for a single file without an environment and 6.3 s with `APP_ENV=testing` (`checkModelProperties` reads the database, and when it cannot, every column is treated as a string and produces false errors such as the one on `paid_at`). The root cause is that `phpunit.xml.dist` uses `APP_ENV=testing` and the local test database, while artisan and phpstan default to `.env`.
+
+One command runs exactly what a change affects:
+
+```bash
+pnpm run verify:changed
+pnpm run verify:changed -- --dry-run
+pnpm run verify:changed -- --only=test
+pnpm run verify:changed -- --base=origin/main
+TURAIDC_PHP=e:/php83/php.exe pnpm run verify:changed
+```
+
+When running the underlying commands by hand, keep this shape:
 
 ```bash
 cd backend
-# 单文件（最快，不扫描其余测试）
-php vendor/bin/phpunit tests/Feature/目标测试.php
-# 少量相关类（--filter 仍会扫描全部测试文件，文件多时明显慢于传路径）
-php vendor/bin/phpunit --filter="测试类A|测试类B"
-# 全量回归可加 opcache 降低框架编译开销（phpunit.xml 的 <ini> 对 opcache 无效，必须启动时 -d）
-php -d opcache.enable_cli=1 vendor/bin/phpunit
+php vendor/bin/phpunit tests/Feature/TargetTest.php
+php vendor/bin/phpunit --filter="TestClassA|TestClassB"
+APP_ENV=testing php vendor/bin/phpstan analyse app/...
 ```
+
+Local database settings also drive the full-suite time (measured 2026-11-08: a 64-test subset went from 31.8 s to 28.0 s): keep `innodb_buffer_pool_size` above 64M and set `innodb_flush_log_at_trx_commit=2` (a test database can afford one less flush). The full suite of 2400+ tests takes about 7.5 minutes locally and is a pre-release step, not something to run after every edit.
 
 Test dependencies: the `idc_test` test database (import the baseline `database/schema/mysql-schema.sql`, then run `php artisan migrate --env=testing --force`); when the local machine has no Redis, `phpunit.xml.dist` already switches the `redis_volatile` store to `array` (`CACHE_VOLATILE_DRIVER`), so no real Redis is needed.
 

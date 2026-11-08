@@ -39,6 +39,10 @@ return [
             ProvidesSupplierBalance::class,
             ProvidesUpstreamQuoting::class,
             ProvidesRenewableCycleFiltering::class,
+            // 字符串能力名（不是契约接口）：配置项升级与流量包。
+            // 对外声明在清单里，下游/编排层读的是这份，驱动类里的同名常量要保持一致。
+            'host_upgrade',
+            'flow_packet',
         ],
     ],
     'config' => [

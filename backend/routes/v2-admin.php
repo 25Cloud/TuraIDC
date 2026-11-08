@@ -315,6 +315,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
 
     Route::middleware(['permission:'.AdminPermissions::PRODUCT_SYNC])->group(function (): void {
         Route::post('/products/traffic-package-pulls', [ProductController::class, 'pullTrafficPackageCatalog']);
+        // 一键拉取已改异步：提交只拿 task_id，进度与结果由这条查询，避免上游慢把请求挂死
+        Route::get('/products/traffic-package-pulls/{task}', [ProductController::class, 'trafficPackagePullStatus']);
         Route::post('/products/description/sync-batch', [ProductDescriptionSyncController::class, 'syncBatch']);
         Route::post('/products/description/auto-sync', [ProductDescriptionSyncController::class, 'autoSync']);
         Route::get('/products/description/sync-settings', [ProductDescriptionSyncController::class, 'settings']);

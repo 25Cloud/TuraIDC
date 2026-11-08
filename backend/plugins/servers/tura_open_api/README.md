@@ -30,6 +30,8 @@
   卡片与列表一律不回显（含前缀）
 - 续费周期过滤：可续周期由上游 `/open/services/{id}/renewals` 真实返回，上游不可达时回退本地周期
 - 控制台电源/重装透传（上游开放 API 支持的范围内）
+- 配置项升级：预览 → 报价 → 下单（上游开账单 + 供应商余额付款 + 回读实例），见下节
+- 流量包：档位列表 → 下单（同上闭环保单），见下节
 
 已知限制：
 
@@ -42,6 +44,40 @@
 - 不支持暂停/解除暂停与重置密码：开放接口未提供对应端点，命中时会报「当前上游链路不支持该操作」
 - 无采购环检测：互为上下游的配置错误靠上游余额耗尽自然终止，配置时注意
 - 层级越深资金预沉淀越多（每层都要在上游预存余额），开通延迟逐层叠加
+
+## 配置项升级与流量包
+
+TuraIDC 作上游时，开放接口新增五个端点（前缀 `/api/v2/open`），本插件是对应的下游驱动：
+
+| 端点                                       | 鉴权域                | 下游驱动方法                                             |
+| ------------------------------------------ | --------------------- | -------------------------------------------------------- |
+| `GET /services/{id}/upgrades`              | `services,read`       | `getHostUpgradeOptions()`                                |
+| `POST /services/{id}/upgrades/quotes`      | `services,write`+限流 | `previewHostUpgrade()`                                   |
+| `POST /services/{id}/upgrades/orders`      | `services,write`+限流 | `purchaseHostUpgrade()`（内含付款与回读）                |
+| `GET /services/{id}/flow-packages`         | `services,read`       | `getTrafficPackages()` / `getHostUpgradeConfigOptions()` |
+| `POST /services/{id}/flow-packages/orders` | `services,write`+限流 | `purchaseTrafficPackage()`                               |
+
+请求体与用户控制台完全一致，下游不必记第二套参数名：
+
+- 升级报价/下单：`product_id`、`billing_cycle`，可选 `promo_code`
+- 流量包档位：无参数；流量包下单：`target_value`（档位数值）
+- 两个下单端点只返回 `{id, invoice_no, amount}`，**不代扣余额**。付款走既有
+  `POST /orders/{invoice}/pay`，与续费、下单同一条通道。
+
+驱动侧实现要点：
+
+- `purchaseHostUpgrade()` / `purchaseTrafficPackage()` 内部完成「上游开账单 → 供应商余额付款 →
+  回读实例详情」三步，返回 `{upstream_invoice_id, host_detail}`，下游服务类检测到这两个方法
+  可调用时优先走它们，跳过 ZJMF 的 preview→promo→checkout→fund 四段式。
+- `getHostUpgradeConfigOptions()` 是**协议适配**：开放接口没有「升级配置项」概念，这里把
+  `/flow-packages` 的档位合成一个 `field=flow_limit` 的 choice 选项，`sub[].id = target_value`，
+  于是下游算出的 `configoption = [optionId => target_value]` 能被 `purchaseTrafficPackage()`
+  反解成 `target_value`。改这块要同时改两边。
+- 能力名 `host_upgrade`、`flow_packet` 同时登记在驱动 `CAPABILITIES` 与 `config.php` 的
+  插件清单里：编排层读清单（`PluginUpstreamDriver::capabilities()`），`supports()`/`resolve()`
+  读驱动常量，两处必须一致。
+
+API 密钥需要额外具备 `orders:write`（下单后的付款走 `/open/orders/{id}/pay`）。
 
 ## 商品名与展示名
 

@@ -58,6 +58,9 @@ import type {
   ServiceTrafficPackageOrderPayload,
   ServiceTrafficPackagePreview,
   ServiceTrafficPackageQuote,
+  ServiceUpgradeOrderPayload,
+  ServiceUpgradePreview,
+  ServiceUpgradeQuote,
   ServiceVncPayload,
   TicketImageUploadPayload,
   TicketRecord,
@@ -294,6 +297,14 @@ const clientApi = {
     postEnvelope<ServiceTrafficPackageQuote>(`/v2/client/services/${id}/traffic-packages/quote`, data),
   createTrafficPackageOrder: (id: number | string, data: Record<string, unknown>) =>
     postEnvelope<ServiceTrafficPackageOrderPayload>(`/v2/client/services/${id}/traffic-packages/orders`, data),
+  // 配置项升级（补差价）：preview → quotes → orders，对应后端 ServiceConsoleController 的
+  // hostUpgradePreview / quoteHostUpgrade / createHostUpgradeOrder（routes/v2-client.php:159-161）
+  serviceUpgradePreview: (id: number | string) =>
+    getEnvelope<ServiceUpgradePreview>(`/v2/client/services/${id}/upgrades`),
+  quoteServiceUpgrade: (id: number | string, data: Record<string, unknown>) =>
+    postEnvelope<ServiceUpgradeQuote>(`/v2/client/services/${id}/upgrades/quotes`, data),
+  createServiceUpgradeOrder: (id: number | string, data: Record<string, unknown>) =>
+    postEnvelope<ServiceUpgradeOrderPayload>(`/v2/client/services/${id}/upgrades/orders`, data),
   serviceRenewPreview: (id: number | string, params?: QueryParams) =>
     getEnvelope<ServiceRenewPreview>(`/v2/client/services/${id}/renewals`, { params }),
   createRenewOrder: (id: number | string, data: Record<string, unknown>) =>

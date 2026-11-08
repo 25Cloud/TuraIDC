@@ -7,6 +7,7 @@
   <rescue-dialog />
   <renew-dialog />
   <traffic-package-dialog />
+  <upgrade-config-dialog />
   <name-dialog />
   <remark-dialog />
 </template>
@@ -21,4 +22,5 @@ import RescueDialog from './dialogs/RescueDialog.vue';
 import SecurityGroupDialog from './dialogs/SecurityGroupDialog.vue';
 import SecurityRuleDialog from './dialogs/SecurityRuleDialog.vue';
 import TrafficPackageDialog from './dialogs/TrafficPackageDialog.vue';
+import UpgradeConfigDialog from './dialogs/UpgradeConfigDialog.vue';
 </script>

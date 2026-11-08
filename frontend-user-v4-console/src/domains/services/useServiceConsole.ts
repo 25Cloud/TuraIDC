@@ -15,6 +15,7 @@ import { useConsoleRescue } from './console/useConsoleRescue';
 import { useConsoleSecurity } from './console/useConsoleSecurity';
 import { useConsoleTabs } from './console/useConsoleTabs';
 import { useConsoleTrafficPackages } from './console/useConsoleTrafficPackages';
+import { useConsoleUpgrades } from './console/useConsoleUpgrades';
 import { useConsoleVnc } from './console/useConsoleVnc';
 
 export function useServiceConsole() {
@@ -102,6 +103,36 @@ export function useServiceConsole() {
     handleTrafficPackageChange,
     submitTrafficPackageOrder,
   } = useConsoleTrafficPackages({ serviceId });
+
+  // 配置项升级（补差价）
+  const {
+    upgradeVisible,
+    upgradeLoading,
+    upgradeQuoting,
+    upgradeSubmitting,
+    upgradeError,
+    upgradeData,
+    upgradeQuote,
+    upgradeOptions,
+    upgradeForm,
+    upgradeQuoteKind,
+    upgradeQuoteAmount,
+    upgradePayableAmount,
+    upgradeOptionName,
+    upgradeCycleOptions,
+    upgradeEmptyText,
+    currentConfigRows,
+    selectedUpgradeOption,
+    canSubmitUpgrade,
+    upgradeSubmitBlocked,
+    openUpgradeDialog,
+    loadUpgradePreview,
+    quoteUpgrade,
+    handleUpgradeOptionChange,
+    handleUpgradeCycleChange,
+    reapplyUpgradePromoCode,
+    submitUpgradeOrder,
+  } = useConsoleUpgrades({ serviceId, detail });
 
   // Security groups
   const {
@@ -417,6 +448,32 @@ export function useServiceConsole() {
     trafficData,
     trafficQuote,
     trafficForm,
+    upgradeVisible,
+    upgradeLoading,
+    upgradeQuoting,
+    upgradeSubmitting,
+    upgradeError,
+    upgradeData,
+    upgradeQuote,
+    upgradeOptions,
+    upgradeForm,
+    upgradeQuoteKind,
+    upgradeQuoteAmount,
+    upgradePayableAmount,
+    upgradeOptionName,
+    upgradeCycleOptions,
+    upgradeEmptyText,
+    currentConfigRows,
+    selectedUpgradeOption,
+    canSubmitUpgrade,
+    upgradeSubmitBlocked,
+    openUpgradeDialog,
+    loadUpgradePreview,
+    quoteUpgrade,
+    handleUpgradeOptionChange,
+    handleUpgradeCycleChange,
+    reapplyUpgradePromoCode,
+    submitUpgradeOrder,
     nameVisible,
     nameSubmitting,
     nameForm,

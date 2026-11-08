@@ -96,7 +96,11 @@ class ServiceUpgradeService
 
         $quote = $this->quoteForUser($user, $serviceId, $selection);
         $quotePayload = is_array($quote['quote'] ?? null) ? $quote['quote'] : [];
-        $amount = number_format((float) ($quotePayload['amount_total'] ?? 0), 2, '.', '');
+        $rawAmount = (float) ($quotePayload['amount_total'] ?? 0);
+        // 差价是负数意味着目标配置更便宜：上游不退差价，账面上也不该出现负金额账单
+        // （负金额会被支付链路算成「无需支付」并直接置为已付，等于白送一次降配）
+        throw_if($rawAmount < 0, new BusinessException('目标配置低于当前配置，升级不支持退还差价；降级请联系客服处理'));
+        $amount = number_format($rawAmount, 2, '.', '');
         $productId = (int) $quote['product_id'];
         $billingCycle = (string) $quote['billing_cycle'];
         $promoCode = trim((string) ($selection['promo_code'] ?? ''));

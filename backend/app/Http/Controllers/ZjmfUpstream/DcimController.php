@@ -139,7 +139,15 @@ class DcimController extends Controller
 
     public function buyFlowPacket(Request $request): JsonResponse
     {
-        return response()->json($this->dcim->buyFlowPacket(), 200);
+        return response()->json($this->dcim->buyFlowPacket($this->user($request), $request->all()), 200);
+    }
+
+    public function flowPacketOrderStatus(Request $request): JsonResponse
+    {
+        return response()->json($this->dcim->flowPacketOrderStatus(
+            $this->user($request),
+            (int) ($request->input('invoiceid') ?? $request->input('invoice_id', 0)),
+        ), 200);
     }
 
     private function id(Request $request): int

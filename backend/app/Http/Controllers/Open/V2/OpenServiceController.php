@@ -7,9 +7,12 @@ namespace App\Http\Controllers\Open\V2;
 use App\Constants\InvoiceStatus;
 use App\Http\Controllers\Controller;
 use App\Models\ApiKey;
+use App\Models\Invoice;
 use App\Models\Service;
 use App\Services\ClientServiceConsole\ServiceDetailService;
 use App\Services\ClientServiceConsole\ServicePowerService;
+use App\Services\ClientServiceConsole\ServiceTrafficPackageService;
+use App\Services\ClientServiceConsole\ServiceUpgradeService;
 use App\Services\Finance\PaymentService;
 use App\Services\Provisioning\ServiceRenewService;
 use Illuminate\Http\JsonResponse;
@@ -28,6 +31,8 @@ class OpenServiceController extends Controller
         private readonly ServicePowerService $power,
         private readonly ServiceRenewService $renew,
         private readonly PaymentService $payments,
+        private readonly ServiceUpgradeService $upgrades,
+        private readonly ServiceTrafficPackageService $trafficPackages,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -108,6 +113,78 @@ class OpenServiceController extends Controller
         return $this->success($result, '重装已提交');
     }
 
+    /**
+     * GET /services/{service}/upgrades
+     *
+     * 配置项升级预览：直接回放 ServiceUpgradeService 的预览结果（选项结构由上游驱动决定），
+     * 下游 tura_open_api 驱动把它映射成自己的控制台选项。
+     */
+    public function upgrades(Request $request, int $service): JsonResponse
+    {
+        $user = $request->attributes->get('api_key_user');
+
+        return $this->success($this->upgrades->previewForUser($user, $service));
+    }
+
+    /**
+     * POST /services/{service}/upgrades/quotes
+     *
+     * 升级报价：字段与用户控制台 QuoteHostUpgradeRequest 完全一致（product_id + billing_cycle
+     * + 可选 promo_code），下游不用为开放接口再记一套参数名。
+     */
+    public function quoteUpgrade(Request $request, int $service): JsonResponse
+    {
+        $user = $request->attributes->get('api_key_user');
+        $data = $request->validate($this->upgradeSelectionRules());
+
+        return $this->success($this->upgrades->quoteForUser($user, $service, $data));
+    }
+
+    /**
+     * POST /services/{service}/upgrades/orders
+     *
+     * 生成升级账单：只落账单，不扣余额也不代付——付款走既有的
+     * `POST /orders/{invoice}/pay`，与续费、下单两条链路同口径。
+     */
+    public function createUpgradeOrder(Request $request, int $service): JsonResponse
+    {
+        $user = $request->attributes->get('api_key_user');
+        $data = $request->validate($this->upgradeSelectionRules());
+        $invoice = $this->upgrades->createInvoiceForUser($user, $service, $data, $this->context($request));
+
+        return $this->success($this->presentInvoice($invoice), '产品升降级账单创建成功');
+    }
+
+    /**
+     * GET /services/{service}/flow-packages
+     *
+     * 可售流量包档位：`supported=false` 时 message 说明原因（服务不支持/后台未开流量包），
+     * 与用户控制台同一份数据，下游据此决定是否展示购买入口。
+     */
+    public function flowPackages(Request $request, int $service): JsonResponse
+    {
+        $user = $request->attributes->get('api_key_user');
+
+        return $this->success($this->trafficPackages->previewForUser($user, $service));
+    }
+
+    /**
+     * POST /services/{service}/flow-packages/orders
+     *
+     * 生成流量包账单：selection 只需 `target_value`（档位数值），与用户控制台
+     * CreateTrafficPackageOrderRequest 一致；付款同样走既有 pay 端点。
+     */
+    public function createFlowPackageOrder(Request $request, int $service): JsonResponse
+    {
+        $user = $request->attributes->get('api_key_user');
+        $data = $request->validate([
+            'target_value' => ['required', 'integer', 'min:1'],
+        ]);
+        $invoice = $this->trafficPackages->createInvoiceForUser($user, $service, $data, $this->context($request));
+
+        return $this->success($this->presentInvoice($invoice), '流量包账单创建成功');
+    }
+
     public function selfKey(Request $request): JsonResponse
     {
         $key = $request->attributes->get('api_key');
@@ -133,6 +210,34 @@ class OpenServiceController extends Controller
         return [
             'trace_id' => 'open:'.$request->attributes->get('api_key')->key_prefix,
             'ip_address' => (string) $request->ip(),
+        ];
+    }
+
+    /**
+     * 升级选择参数：与用户控制台 QuoteHostUpgradeRequest / CreateHostUpgradeOrderRequest 同约束。
+     *
+     * @return array<string, array<int, string>>
+     */
+    private function upgradeSelectionRules(): array
+    {
+        return [
+            'product_id' => ['required', 'integer', 'min:1'],
+            'billing_cycle' => ['required', 'string', 'max:30'],
+            'promo_code' => ['nullable', 'string', 'max:100'],
+        ];
+    }
+
+    /**
+     * 账单投影：开放接口只需要「哪张单、多少钱」，其余明细走 GET /orders/{invoice}。
+     *
+     * @return array{id: int, invoice_no: string, amount: string}
+     */
+    private function presentInvoice(Invoice $invoice): array
+    {
+        return [
+            'id' => (int) $invoice->id,
+            'invoice_no' => (string) $invoice->invoice_no,
+            'amount' => number_format((float) $invoice->amount, 2, '.', ''),
         ];
     }
 

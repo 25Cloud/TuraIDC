@@ -263,6 +263,56 @@ export interface ServiceTrafficPackageOrderPayload {
 }
 
 /**
+ * 「配置项升级（补差价）」。
+ *
+ * 后端 `ServiceUpgradeService::previewForUser()`（backend/app/Services/ClientServiceConsole/ServiceUpgradeService.php:48-63）
+ * 把上游 `GET /v1/hosts/{hostId}/actions/upgrade` 的 `data` **原样**放进 `options`，核心不做归一化；
+ * 因此 `options` 的容器与字段名按上游版本浮动，前端在 `useConsoleUpgrades` 里按别名容错解析。
+ * quote 的 `quote.amount_total` 是后端真正用于生成账单的金额（同文件 :94-100）。
+ */
+export interface ServiceUpgradeOption {
+  /** 目标上游商品 id：后端把它原样透传给上游的 `product_id`（ServiceUpgradeService.php:70-75） */
+  product_id?: number | string;
+  name?: string;
+  /** 该目标可选周期：解析自上游 pricing/cycles 等字段，解析不到时退回当前实例周期 */
+  billing_cycles?: string[];
+  price?: number | string;
+  [key: string]: unknown;
+}
+
+export interface ServiceUpgradePreview {
+  service_id?: number;
+  service_name?: string;
+  upstream_host_id?: number | string;
+  /** 上游原样透传的升级选项，形状不稳定 */
+  options?: unknown;
+  [key: string]: unknown;
+}
+
+export interface ServiceUpgradeQuote {
+  service_id?: number;
+  service_name?: string;
+  upstream_host_id?: number | string;
+  product_id?: number;
+  billing_cycle?: string;
+  quote?: {
+    name?: string;
+    amount_total?: number | string;
+    billingcycle?: string;
+    promo_code?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
+export interface ServiceUpgradeOrderPayload {
+  id?: number;
+  invoice_no?: string;
+  service_id?: number;
+  [key: string]: unknown;
+}
+
+/**
  * 面板访问信息（CDN / 虚拟主机等面板型产品）
  *
  * 各家上游摆放面板信息的位置差异很大（配置项键值对、host_data 字段、自定义区域 HTML），

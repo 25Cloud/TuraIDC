@@ -183,6 +183,7 @@ const {
   openPasswordDialog,
   openReinstallDialog,
   openRescueDialog,
+  openUpgradeDialog,
   copyText,
 } = useServiceConsoleContext();
 
@@ -237,6 +238,12 @@ function handleMoreCommand(command: string) {
 
   if (command === 'rescue') {
     openRescueDialog();
+    return;
+  }
+
+  if (command === 'upgrade') {
+    // 配置项升级（补差价）：打开对话框后再拉 preview
+    void openUpgradeDialog();
     return;
   }
 

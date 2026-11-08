@@ -71,6 +71,74 @@ class ServiceTrafficPackageService
         ];
     }
 
+    /**
+     * 可售流量包档位（只读本地目录，绝不访问上游）。
+     *
+     * 上游通道（魔方财务把我们当上游）每次打开主机页都会拉 /host/header，
+     * 那条路径上不能碰供应商接口：一个慢上游会把下游整个主机页拖死。
+     * 所以这里只回本地后台配置好的流量包目录，价格就是最终售价。
+     *
+     * `id` 直接复用流量值（GB）：魔方财务下游的 fid 只能传整数，而流量值
+     * 在同一个商品分类内唯一，档位调整时也不会串到别的包上。
+     *
+     * @return array<int, array{id:int,name:string,label:string,capacity:int,price:string,leave:int,billing_mode:string,long_term_valid:int}>
+     */
+    public function sellablePackagesForService(Service $service, int $currentLimit = 0): array
+    {
+        $config = $this->settingService->getTrafficPackageConfig();
+        if (! (bool) ($config['enabled'] ?? true)) {
+            return [];
+        }
+
+        $service->loadMissing('product');
+        $categoryId = $this->effectiveProductGroupId($service);
+        if ($categoryId <= 0) {
+            return [];
+        }
+
+        // 商品类型读值按一级分组派生，这里统一按 Product 模型取，别直接读关系上的未类型化属性
+        $product = $service->product;
+        $productType = $product instanceof Product ? (string) $product->product_type : '';
+
+        $configured = $this->settingService->getTrafficPackageCatalogForCategory(
+            $categoryId,
+            $productType,
+            (int) $service->product_id
+        );
+
+        $limit = max($currentLimit, 0);
+
+        return collect($configured)
+            ->filter(fn ($item) => is_array($item) && (int) ($item['enabled'] ?? 1) === 1)
+            ->map(function (array $item) use ($limit) {
+                $targetValue = max((int) ($item['target_value'] ?? 0), 0);
+                if ($targetValue <= 0 || ($limit > 0 && $targetValue <= $limit)) {
+                    return null;
+                }
+
+                $label = trim((string) ($item['label'] ?? ''));
+                if ($label === '') {
+                    $label = $this->formatTrafficAmount($targetValue);
+                }
+
+                return [
+                    'id' => $targetValue,
+                    'name' => $label.' 流量包',
+                    'label' => $label,
+                    'capacity' => $targetValue,
+                    'price' => number_format(max((float) ($item['price'] ?? 0), 0), 2, '.', ''),
+                    'leave' => 1,
+                    // 魔方财务 3.8.0 起按计费方式渲染，一次性流量包给 one_time
+                    'billing_mode' => 'one_time',
+                    'long_term_valid' => 0,
+                ];
+            })
+            ->filter(fn ($item) => is_array($item))
+            ->sortBy('capacity')
+            ->values()
+            ->all();
+    }
+
     public function quoteForUser(User $user, int $serviceId, array $selection): array
     {
         $service = $this->findManagedService($user, $serviceId);
@@ -1528,15 +1596,15 @@ class ServiceTrafficPackageService
         }
     }
 
-    /**
-     * 尝试从上游 /servicedetail?action=flowpacket HTML 页面抓取流量包档位。
-     * 抓取失败或解析为空时返回空数组，不抛异常，以便上层回退到其他数据源。
-     */
     private function effectiveProductGroupId(Service $service): int
     {
         return (int) ($service->product?->product_group_id ?? 0);
     }
 
+    /**
+     * 尝试从上游 /servicedetail?action=flowpacket HTML 页面抓取流量包档位。
+     * 抓取失败或解析为空时返回空数组，不抛异常，以便上层回退到其他数据源。
+     */
     private function tryPullFlowPacketFromHtml(Supplier $supplier, int $hostId, string $jwt): array
     {
         try {

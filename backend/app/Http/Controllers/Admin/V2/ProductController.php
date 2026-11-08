@@ -29,11 +29,13 @@ use App\Http\Resources\Admin\V2\AdminProductOperationPayloadResource;
 use App\Http\Resources\Admin\V2\AdminProductOwnerPageResource;
 use App\Http\Resources\Admin\V2\AdminProductSummaryResource;
 use App\Http\Resources\Admin\V2\AdminProductSummaryStatsResource;
+use App\Jobs\PullTrafficPackageCatalogJob;
 use App\Models\Product;
 use App\Services\Admin\V2\AdminCatalogActionV2Service;
 use App\Services\ProductCatalog\ProductPricingSyncService;
 use App\Services\ProductCatalog\ProductV2QueryService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Str;
 
 class ProductController extends Controller
 {
@@ -220,11 +222,101 @@ class ProductController extends Controller
         );
     }
 
+    /**
+     * 一键对接：拉取上游流量包档位。
+     *
+     * 上游拉取会串行访问 HTTP、最坏几分钟，同步等会把请求挂死，所以改成「提交任务 + 轮询」：
+     * - 有后台队列：立即返回 `pending` 任务，前端按 task_id 轮询；
+     * - `QUEUE_CONNECTION=sync`（本地与测试环境没有 worker）：就地执行，返回 `done` 与完整结果，
+     *   行为与改造前一致，老前端读 `data.source/traffic/packages` 仍然拿得到。
+     */
     public function pullTrafficPackageCatalog(ProductPullTrafficPackageCatalogRequest $request): JsonResponse
     {
-        return $this->success(
-            AdminProductOperationPayloadResource::make($this->actions->pullTrafficPackageCatalog($request->validated()))->resolve(),
-            '流量包配置拉取成功'
-        );
+        $payload = $request->validated();
+        $taskId = (string) Str::uuid();
+        $state = PullTrafficPackageCatalogJob::seedState($taskId);
+
+        if ($this->shouldRunPullInline()) {
+            try {
+                PullTrafficPackageCatalogJob::dispatchSync($taskId, $payload);
+            } catch (\Throwable $exception) {
+                // 任务体会先把失败原因写进任务状态再抛；这里据此回统一的业务错误信封（带 task_id，前端可重试/查询）。
+                // 状态没落盘说明是框架级异常，原样抛出交给全局处理器，别把 500 伪装成业务错误。
+                $state = PullTrafficPackageCatalogJob::readState($taskId) ?? $state;
+
+                if (($state['status'] ?? '') !== PullTrafficPackageCatalogJob::STATUS_FAILED) {
+                    throw $exception;
+                }
+            }
+
+            $state = PullTrafficPackageCatalogJob::readState($taskId) ?? $state;
+
+            // 同步执行失败时保持改造前的契约：回 422 业务错误信封，前端照旧弹原始原因；
+            // 任务状态同时留在 Cache 里，轮询接口也能读到 failed。
+            if (($state['status'] ?? '') === PullTrafficPackageCatalogJob::STATUS_FAILED) {
+                return $this->error(
+                    42200,
+                    (string) ($state['error'] ?? '流量包配置拉取失败'),
+                    $this->trafficPackagePullPayload($state)
+                );
+            }
+
+            return $this->success($this->trafficPackagePullPayload($state), '流量包配置拉取成功');
+        }
+
+        PullTrafficPackageCatalogJob::dispatch($taskId, $payload);
+
+        return $this->success($this->trafficPackagePullPayload($state), '流量包拉取任务已提交，正在后台执行');
+    }
+
+    /**
+     * 查询一键拉取任务的进度。与提交接口返回同一份数据形状。
+     */
+    public function trafficPackagePullStatus(string $task): JsonResponse
+    {
+        $state = PullTrafficPackageCatalogJob::readState($task);
+
+        if ($state === null) {
+            return $this->error(40400, '拉取任务不存在或已过期，请重新发起一键拉取');
+        }
+
+        return $this->success($this->trafficPackagePullPayload($state));
+    }
+
+    /**
+     * 没有后台 worker 时（sync/空队列连接）同步执行，否则任务会一直停在 pending。
+     */
+    private function shouldRunPullInline(): bool
+    {
+        $connection = trim((string) config('queue.default', 'sync'));
+
+        return $connection === '' || $connection === 'sync';
+    }
+
+    /**
+     * 响应数据：老字段（source/traffic/packages 以及结果里的其它键）平铺在顶层保证老前端可用，
+     * 新字段（task_id/status/progress/step/result/error/时间戳）并列追加。
+     *
+     * @param  array<string, mixed>  $state
+     * @return array<string, mixed>
+     */
+    private function trafficPackagePullPayload(array $state): array
+    {
+        $result = is_array($state['result'] ?? null) ? $state['result'] : [];
+
+        // 沿用既有下发净化：上游结果里的 token / api_key 等敏感键一律不下发（老接口就是这么做的）
+        return AdminProductOperationPayloadResource::make(array_merge($result, [
+            'source' => $result['source'] ?? null,
+            'traffic' => $result['traffic'] ?? null,
+            'packages' => is_array($result['packages'] ?? null) ? $result['packages'] : [],
+            'task_id' => (string) ($state['task_id'] ?? ''),
+            'status' => (string) ($state['status'] ?? PullTrafficPackageCatalogJob::STATUS_PENDING),
+            'progress' => (int) ($state['progress'] ?? 0),
+            'step' => (string) ($state['step'] ?? ''),
+            'result' => is_array($state['result'] ?? null) ? $state['result'] : null,
+            'error' => $state['error'] ?? null,
+            'started_at' => $state['started_at'] ?? null,
+            'finished_at' => $state['finished_at'] ?? null,
+        ]))->resolve();
     }
 }

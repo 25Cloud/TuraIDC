@@ -11,9 +11,15 @@
 - **批量商品配置合并请求**：`prodetail` 支持一次带多个 `pids`，价格/配置项/库存同步从「每商品一次请求」变成「每批一次请求」
 - **同步推送签名 v2**：新增 `ZjmfSyncSignature`（3.8.0 的 HMAC-SHA256 规范化载荷算法）；本系统作为上游向下游推送 `api/host/sync` 时先发 v2，下游回「签名验证失败」再自动回退 legacy；作为下游接收 `api/host/sync`、`api/ticket_reply/sync` 时两代签名都收，v2 额外校验时间戳（±300 秒）与 32 位 nonce 并做重放拦截
 - **流量包加价**：目录项新增 `cost_price`（上游成本价）、`markup_type`（不加价 / 按比例 / 固定）、`markup_value`，售价一律由「成本 + 加价」算出（`SettingService::applyTrafficPackageMarkup`，与后台前端同一套算法）；一键对接从上游拉档位时按当前分组规则直接生成售价，老数据缺省不加价、原价不动
+- **上游侧流量包通道**：本系统作为上游时，魔方财务可以在站内买流量包——`/host/header` 下发 `data.dcim.flowpacket` 档位（`id` 复用流量值 GB），`/dcim/buy_flow_packet` 按档位建账单并按 `idempotency_key` 幂等，付款仍走 `/apply_credit`，支付后复用站内同一套链路向供应商真实采购；3.8.0 额外支持 `GET /dcim/flow_packet_order_status` 的 `Unpaid/Pending/Paid` 三态
+- **一键对接拉流量包改异步**：`POST /products/traffic-package-pulls` 立即返回任务号，`GET /products/traffic-package-pulls/{task}` 轮询进度（阶段文案 + 百分比），管理端改成进度条轮询；`QUEUE_CONNECTION=sync` 时仍就地执行并保留原来的 `source/traffic/packages` 平铺结构
+- **存量流量包目录回填命令**：`php artisan traffic:backfill-catalog` 按商品分类跑一遍与一键对接相同的拉取逻辑写入目录（成本价 + 加价，上游没报价的档位写 `enabled=0`），`--repair-config` 只补空串与「两种模式都关」的坏配置，不动总开关
+- **控制台「配置项升级」入口**：服务控制台头部「更多 → 规格升级」原来点了没反应，现在打开对话框展示当前配置、可选目标与补差价，确认后生成升级账单并跳转支付；上游没有可用配置时给空态提示
 
 ### 优化
 
+- **本地增量验证脚本**：新增 `pnpm run verify:changed`——按改动文件跑语法检查、只分析改动文件的 phpstan、命中相关测试、改动到的前端才构建、文档改动才校验；同一批改动从「全量十几分钟」降到约 105 秒
+- **本地验证入口口径修正**：`php artisan test` 与 `phpstan` 会按 `.env` 连开发库（本机那个连接 40 秒级），同一个 7 条测试的文件 artisan 48.1 秒 / `vendor/bin/phpunit` 5.2 秒，phpstan 单文件 90.3 秒 / 带 `APP_ENV=testing` 6.3 秒；文档已改成正确口径
 - **账单余额支付走全版本通道**：`/apply_credit`（3.7.6 → 3.8.0 都在）优先、`/v1/invoices/{id}/fund`（仅老版本）兜底；上游回「账单已处理」归一成 `already_paid` 成功，幂等重试不再被判失败
 - **`/v1/user` 降级**：3.8.0+ 没有 `/v1/user` 时改用 `/cart/credit` 拼等价结构，供应商卡片与余额同步照常
 - **`/v1` 明确的报错**：升级配置/升级套餐这类只有 `/v1` 才有入口的操作，在关闭 `/v1` 或实测 404 后直接给出「请到供应商后台手工操作，或把接口版本设为 3.7.6」的提示，不再抛「供应商接口返回异常页面（HTTP 404）」
@@ -21,6 +27,7 @@
 ### 修复
 
 - **供应商升级到 3.8.0 后整批商品开不出来**：3.8.0 删除了 openapi 的整套 `/v1/*`，并把 `cart/get_product_config` 挂上「仅下游 API 账号可用」的 `UpstreamApiCheck`（部分商家直接删掉该路由），导致商品配置读不到、库存同步静默失败、付完款的订单开不出来
+- **降级会建出负金额账单**：配置升级的差价直接取上游 `amount_total`，负数会被支付链路算成「无需支付」并直接置为已付，等于白送一次降配；现在 `amount_total < 0` 直接回业务错误并提示走人工
 
 ## [v0.4.5] - 2026-11-07
 

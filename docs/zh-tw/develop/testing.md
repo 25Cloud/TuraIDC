@@ -3,7 +3,7 @@ status: current
 updated: 2026-09-13
 owner: backend-platform
 source: develop/testing.md
-sourceHash: 7efc90174aa2e903fd810dddaf6d085440192978d603a13ffa2aef27a4f61de6
+sourceHash: 10c8bb00c260244f926c3ed3dd4b05ba37cdc5ae446a77132b767c6815492615
 generated: zh-tw
 ---
 
@@ -162,17 +162,28 @@ cd backend
 php artisan test --list-tests
 ```
 
-**Windows 本機開發提速**（2026-09 實測）：`php artisan test` 在 Windows 下經 Symfony Process 包裝轉發輸出，單個最小測試類可卡到分鐘級；`vendor/bin/phpunit` 直跑同一檔案僅約 0.6 秒（同一份 `phpunit.xml.dist`，`APP_ENV=testing` 與測試庫配置一致生效）。本機改動後的增量回歸建議：
+**本機增量驗證（2026-11-08 實測）**：慢的不是測試，是入口。`php artisan test` 啟動時按 `.env` 連開發庫，而開發庫一次連線要 40 秒級，所以同樣 7 條測試的檔案：`php artisan test` 48.1 秒、`vendor/bin/phpunit` 5.2 秒；`phpstan` 同理，單個檔案不指定環境 90.3 秒、帶上 `APP_ENV=testing` 6.3 秒（`checkModelProperties` 要讀庫，讀不到還會把列型別全當字串，報出 `paid_at` 之類的假錯）。根因是 `phpunit.xml.dist` 用 `APP_ENV=testing` 連本地測試庫，而 artisan / phpstan 預設吃 `.env`。
+
+改完程式碼一條命令跑「該跑的」：
+
+```bash
+pnpm run verify:changed
+pnpm run verify:changed -- --dry-run
+pnpm run verify:changed -- --only=test
+pnpm run verify:changed -- --base=origin/main
+TURAIDC_PHP=e:/php83/php.exe pnpm run verify:changed
+```
+
+需要手跑底層命令時按這個口徑：
 
 ```bash
 cd backend
-# 单文件（最快，不扫描其余测试）
-php vendor/bin/phpunit tests/Feature/目标测试.php
-# 少量相关类（--filter 仍会扫描全部测试文件，文件多时明显慢于传路径）
-php vendor/bin/phpunit --filter="测试类A|测试类B"
-# 全量回归可加 opcache 降低框架编译开销（phpunit.xml 的 <ini> 对 opcache 无效，必须启动时 -d）
-php -d opcache.enable_cli=1 vendor/bin/phpunit
+php vendor/bin/phpunit tests/Feature/TargetTest.php
+php vendor/bin/phpunit --filter="TestClassA|TestClassB"
+APP_ENV=testing php vendor/bin/phpstan analyse app/...
 ```
+
+本機測試庫引數也直接決定全量速度（2026-11-08 實測，64 條用例的子集 31.8 秒 → 28.0 秒）：`innodb_buffer_pool_size` 別停在 64M、`innodb_flush_log_at_trx_commit=2`（測試庫可以少一次落盤）。全量 2400+ 條在本機約 7.5 分鐘，屬於釋出前動作，不必每次改動都跑。
 
 測試依賴：`idc_test` 測試庫（基線 `database/schema/mysql-schema.sql` 匯入後補跑 `php artisan migrate --env=testing --force`）；本機無 Redis 時 `phpunit.xml.dist` 已把 `redis_volatile` store 切為 `array`（`CACHE_VOLATILE_DRIVER`），無需真實 Redis。
 

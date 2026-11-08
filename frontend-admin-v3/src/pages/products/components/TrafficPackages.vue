@@ -28,6 +28,21 @@
       </div>
     </div>
 
+    <!-- 一键拉取改异步后的进度条：后端返回 task_id 后前端每 2 秒轮询，最多等 10 分钟 -->
+    <div v-if="trafficPullTask" class="traffic-pull-status">
+      <t-progress
+        class="traffic-pull-progress"
+        theme="line"
+        :percentage="trafficPullTask.progress"
+        :label="false"
+        :status="trafficPullStatusTheme"
+      />
+      <span class="traffic-pull-step">{{ trafficPullTask.step }}</span>
+      <span class="traffic-pull-elapsed">
+        {{ $t('products.trafficPackages.pullTaskElapsed', { seconds: trafficPullElapsed }) }}
+      </span>
+    </div>
+
     <div class="traffic-editor">
       <aside class="traffic-group-list">
         <article
@@ -189,6 +204,7 @@ import { adminApi } from '@/api/admin';
 import { productApi } from '@/api/product';
 import ProductBindingTreeSelect from '@/components/product-binding-tree-select/index.vue';
 import { t } from '@/locales';
+import { request } from '@/utils/request';
 
 import { errorMessage, normalizeProductIds } from '../composables/useProductShared';
 
@@ -232,10 +248,39 @@ interface TrafficPackageItem {
   sort_order: number;
 }
 
+/** 一键拉取任务：后端提交后立刻返回 task_id，真正访问上游发生在队列任务里 */
+interface TrafficPullTaskState {
+  task_id: string;
+  status: 'pending' | 'running' | 'done' | 'failed';
+  progress: number;
+  step: string;
+  started_at: string | null;
+  finished_at: string | null;
+  error: string | null;
+}
+
+/** 轮询间隔 2 秒：任务本身在跑上游，再密只是白压后端 */
+const TRAFFIC_PULL_POLL_INTERVAL_MS = 2000;
+/** 最多等 10 分钟，与后端任务 $timeout=600 对齐 */
+const TRAFFIC_PULL_POLL_TIMEOUT_MS = 10 * 60 * 1000;
+
 // --- State ---
 const trafficLoading = ref(false);
 const trafficSaving = ref(false);
 const trafficPulling = ref(false);
+/** 异步拉取任务的进度快照；为 null 表示当前没有在跑的任务 */
+const trafficPullTask = ref<TrafficPullTaskState | null>(null);
+/** 已经等了多久（秒），进度条旁边显示，长任务靠它判断上游是不是卡住了 */
+const trafficPullElapsed = ref(0);
+/** 计时器句柄：组件卸载或任务结束必须清掉，否则会一直往后跳秒 */
+let trafficPullElapsedTimer: number | null = null;
+/** 进度条配色：完成绿、失败红，其余按进行中 */
+const trafficPullStatusTheme = computed<'success' | 'error' | 'active'>(() => {
+  const status = trafficPullTask.value?.status;
+  if (status === 'done') return 'success';
+  if (status === 'failed') return 'error';
+  return 'active';
+});
 const trafficGroupDialogVisible = ref(false);
 const trafficGroupSubmitting = ref(false);
 const trafficGroupEditingId = ref('');
@@ -530,6 +575,14 @@ async function saveTrafficPackages() {
   }
 }
 
+/**
+ * 一键对接拉取流量包档位。
+ *
+ * 上游拉取可能要跑几分钟，所以后端改成「提交任务 + 轮询」：
+ * - 有队列：后端返回 pending，这里每 2 秒查一次进度，最多等 10 分钟；
+ * - 没有队列（本地/测试 `QUEUE_CONNECTION=sync`）：后端就地执行并直接返回 done + 完整结果，
+ *   这里按返回的 status 判断，走同一套填充逻辑。
+ */
 async function pullTrafficPackages() {
   const group = selectedTrafficGroup.value;
   if (!group) {
@@ -543,32 +596,133 @@ async function pullTrafficPackages() {
   }
 
   trafficPulling.value = true;
+  trafficPullTask.value = null;
+  trafficPullElapsed.value = 0;
+
   try {
     const response = (await productApi.pullTrafficPackages({
       ...categoryPayload,
       product_type: group.product_type,
       source_product_id: group.product_ids[0] || undefined,
     })) as Record<string, unknown>;
-    const packages = Array.isArray(response.packages) ? response.packages : [];
-    // 上游给的价格是成本价：一键对接时按当前分组的加价规则直接算出售价
-    trafficRows.value = packages.map((item, index) => {
-      const record = item as Record<string, unknown>;
-      return createTrafficRow(
-        {
-          ...record,
-          cost_price: Number(record.cost_price ?? record.price ?? 0) || 0,
-          markup_type: group.markup_type,
-          markup_value: group.markup_value,
-          sort_order: index + 1,
-        },
-        group,
-      );
-    });
-    MessagePlugin.success(t('products.trafficPackages.pulledFromUpstream'));
+
+    const status = String(response.status || '');
+
+    // 同步降级：没有后台 worker 时接口已经把结果算完了
+    if (status !== 'pending' && status !== 'running') {
+      applyPulledTrafficPackages(response);
+      MessagePlugin.success(t('products.trafficPackages.pulledFromUpstream'));
+      return;
+    }
+
+    const taskId = String(response.task_id || '');
+    if (!taskId) {
+      applyPulledTrafficPackages(response);
+      MessagePlugin.success(t('products.trafficPackages.pulledFromUpstream'));
+      return;
+    }
+
+    await pollTrafficPullTask(taskId, response);
   } catch (error) {
     MessagePlugin.error(errorMessage(error, t('products.trafficPackages.pullFailed')));
   } finally {
+    stopTrafficPullElapsed();
     trafficPulling.value = false;
+  }
+}
+
+/** 轮询任务进度直到终态；超时或失败都给可读提示，管理员可以直接再点一次重试 */
+async function pollTrafficPullTask(taskId: string, initial: Record<string, unknown>) {
+  applyTrafficPullSnapshot(initial);
+  startTrafficPullElapsed();
+
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < TRAFFIC_PULL_POLL_TIMEOUT_MS) {
+    await waitTrafficPullTick();
+
+    const payload = await request.get<Record<string, unknown>>({
+      url: `/v2/admin/products/traffic-package-pulls/${taskId}`,
+    });
+
+    applyTrafficPullSnapshot(payload);
+
+    if (String(payload.status || '') === 'done') {
+      applyPulledTrafficPackages(payload);
+      MessagePlugin.success(t('products.trafficPackages.pulledFromUpstream'));
+      return;
+    }
+
+    if (String(payload.status || '') === 'failed') {
+      MessagePlugin.error(
+        t('products.trafficPackages.pullTaskFailed', {
+          message: String(payload.error || t('products.trafficPackages.pullFailed')),
+        }),
+      );
+      return;
+    }
+  }
+
+  MessagePlugin.warning(t('products.trafficPackages.pullTaskTimeout'));
+}
+
+/** 把接口返回的任务状态收敛成组件里用的形状（后端字段缺失时也不炸） */
+function applyTrafficPullSnapshot(payload: Record<string, unknown>) {
+  trafficPullTask.value = {
+    task_id: String(payload.task_id || ''),
+    status: String(payload.status || 'pending') as TrafficPullTaskState['status'],
+    progress: Math.max(0, Math.min(100, Number(payload.progress || 0) || 0)),
+    step: String(payload.step || ''),
+    started_at: payload.started_at ? String(payload.started_at) : null,
+    finished_at: payload.finished_at ? String(payload.finished_at) : null,
+    error: payload.error ? String(payload.error) : null,
+  };
+}
+
+/** 用拉取结果填充表格行：新接口把结果放在 result 里，老接口直接平铺在顶层 */
+function applyPulledTrafficPackages(payload: Record<string, unknown>) {
+  const group = selectedTrafficGroup.value;
+  if (!group) return;
+
+  const result =
+    payload.result && typeof payload.result === 'object' ? (payload.result as Record<string, unknown>) : payload;
+  const packages = Array.isArray(result.packages) ? result.packages : [];
+
+  // 上游给的价格是成本价：一键对接时按当前分组的加价规则直接算出售价
+  trafficRows.value = packages.map((item, index) => {
+    const record = item as Record<string, unknown>;
+    return createTrafficRow(
+      {
+        ...record,
+        cost_price: Number(record.cost_price ?? record.price ?? 0) || 0,
+        markup_type: group.markup_type,
+        markup_value: group.markup_value,
+        sort_order: index + 1,
+      },
+      group,
+    );
+  });
+}
+
+function waitTrafficPullTick() {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, TRAFFIC_PULL_POLL_INTERVAL_MS);
+  });
+}
+
+function startTrafficPullElapsed() {
+  stopTrafficPullElapsed();
+  const startedAt = Date.now();
+  trafficPullElapsed.value = 0;
+  trafficPullElapsedTimer = window.setInterval(() => {
+    trafficPullElapsed.value = Math.floor((Date.now() - startedAt) / 1000);
+  }, 1000);
+}
+
+function stopTrafficPullElapsed() {
+  if (trafficPullElapsedTimer !== null) {
+    window.clearInterval(trafficPullElapsedTimer);
+    trafficPullElapsedTimer = null;
   }
 }
 

@@ -62,6 +62,7 @@
     "format": "prettier --write \"**/*.{js,ts,vue,json,css,scss,md}\"",
     "format:check": "prettier --check \"**/*.{js,ts,vue,json,css,scss,md}\"",
     "verify:frontends": "pnpm lint:frontends && pnpm typecheck:frontends && pnpm build:frontends && pnpm --filter turaidc-user-v3-www verify:refactor && pnpm --filter turaidc-user-v4-console verify:refactor",
+    "verify:changed": "node backend/scripts/verify_changed.mjs",
     "prepare": "husky"
   },
   "commitlint": {
