@@ -296,6 +296,198 @@ class MofangCloudDcimsOperationsTest extends TestCase
         $this->operations()->power('off', 88);
     }
 
+    public function test_provision_posts_auto_assign_then_installs_system(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/auto_assign' => Http::response([
+                'status' => 200,
+                'msg' => 'ok',
+                'data' => ['id' => 501, 'username' => 'root'],
+            ]),
+            self::BASE_URL.'/api/v1/server/501/reinstall' => Http::response(['status' => 200, 'msg' => '已下发']),
+        ]);
+
+        $result = $this->operations()->provision([
+            'product_id' => 12,
+            'hostname' => 'web-01',
+            'password' => '',
+            'os_id' => 7,
+            'area_id' => 3,
+            'cpu' => 4,
+            'memory' => 8192,
+            'disk' => 100,
+            'bandwidth' => 50,
+            'flow' => 1000,
+            'ip_num' => 2,
+            'ipv6_num' => 0,
+            'billing_cycle' => 'monthly',
+            'quantity' => 1,
+            'config_options' => ['server_group_id' => 9],
+        ]);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(501, $result['host_id']);
+        $this->assertStringContainsString('系统安装', $result['message']);
+        $this->assertArrayHasKey('auto_assign', $result['raw']);
+        $this->assertArrayHasKey('reinstall', $result['raw']);
+
+        /** @var array<int, array{0: Request, 1: mixed}> $recorded */
+        $recorded = Http::recorded();
+        $this->assertCount(2, $recorded, '开通后必须追加一次 reinstall');
+
+        [$assign, $install] = [$recorded[0][0], $recorded[1][0]];
+
+        $this->assertSame('POST', $assign->method());
+        $this->assertSame(self::BASE_URL.'/api/v1/server/auto_assign', $assign->url());
+
+        $payload = json_decode($assign->body(), true);
+        $this->assertIsArray($payload);
+        $this->assertSame(9, $payload['server_group_id'] ?? null);
+        $this->assertSame(7, $payload['mirror_os_id'] ?? null);
+        $this->assertSame(12, $payload['product_id'] ?? null);
+        $this->assertSame(50, $payload['in_bw'] ?? null);
+        $this->assertSame(50, $payload['out_bw'] ?? null);
+        $this->assertSame(1000, $payload['limit_flow'] ?? null);
+        $this->assertSame([['ip_group_id' => 0, 'num' => 2]], $payload['ip'] ?? null);
+
+        // 新版接口不认的键（以及值为 0 的 ipv6_num）一律不进报文
+        foreach (['cpu', 'memory', 'disk', 'hostname', 'billing_cycle', 'quantity', 'ipv6_num', 'client', 'traffic_reset'] as $absent) {
+            $this->assertArrayNotHasKey($absent, $payload);
+        }
+
+        $this->assertSame('POST', $install->method());
+        $this->assertSame(self::BASE_URL.'/api/v1/server/501/reinstall', $install->url());
+
+        $installPayload = json_decode($install->body(), true);
+        $this->assertIsArray($installPayload);
+        $this->assertSame('501', $installPayload['id'] ?? null);
+        $this->assertSame(501, $installPayload['product_id'] ?? null);
+        $this->assertSame(7, $installPayload['mirror_os_id'] ?? null);
+        $this->assertSame(22, $installPayload['remote_port'] ?? null);
+        $this->assertSame('bios', $installPayload['boot_mode'] ?? null);
+        $this->assertSame('default', $installPayload['partition_mode'] ?? null);
+        $this->assertSame('full', $installPayload['format_type'] ?? null);
+        // 下单没给密码、上游也没回：必须兜底生成一个，否则实例装完无法登录
+        $this->assertNotSame('', (string) ($installPayload['os_password'] ?? ''));
+    }
+
+    public function test_provision_keeps_ok_when_system_install_fails(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/auto_assign' => Http::response([
+                'status' => 200,
+                'data' => ['id' => 502],
+            ]),
+            self::BASE_URL.'/api/v1/server/502/reinstall' => Http::response([
+                'status' => 500,
+                'msg' => '镜像不可用',
+            ]),
+        ]);
+
+        $result = $this->operations()->provision([
+            'os_id' => 7,
+            'area_id' => 3,
+            'password' => 'Passw0rd!',
+        ]);
+
+        $this->assertTrue($result['ok'], '补装失败不改变开通结论');
+        $this->assertSame(502, $result['host_id']);
+        $this->assertStringContainsString('补装系统失败', $result['message']);
+        $this->assertStringContainsString('镜像不可用', $result['message']);
+    }
+
+    public function test_provision_requires_server_group_and_image_without_sending_requests(): void
+    {
+        Http::fake();
+
+        $operations = $this->operations();
+
+        try {
+            $operations->provision(['os_id' => 7]);
+            $this->fail('缺少服务器分组时必须报错');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('服务器分组', $exception->getMessage());
+        }
+
+        try {
+            $operations->provision(['area_id' => 3]);
+            $this->fail('缺少镜像时必须报错');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('操作系统镜像', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_buy_flow_packet_posts_permanent_package(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/88/traffic/package' => Http::response(['status' => 200, 'msg' => '已加量']),
+        ]);
+
+        $result = $this->operations()->buyFlowPacket(88, 200);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('已加量', $result['message']);
+
+        Http::assertSent(function (Request $request): bool {
+            $payload = json_decode($request->body(), true);
+
+            return $request->method() === 'POST'
+                && $request->url() === self::BASE_URL.'/api/v1/server/88/traffic/package'
+                && is_array($payload)
+                && ($payload['id'] ?? null) === '88'
+                && ($payload['product_id'] ?? null) === 88
+                && ($payload['quota_gb'] ?? null) === 200
+                && ($payload['expiry_type'] ?? null) === 'permanent';
+        });
+
+        // 0 GB 的流量包没有意义，直接拒绝且不发请求
+        try {
+            $this->operations()->buyFlowPacket(88, 0);
+            $this->fail('0 GB 必须报错');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('大于 0', $exception->getMessage());
+        }
+
+        $this->assertCount(1, Http::recorded());
+    }
+
+    public function test_provision_sends_client_ownership_block(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/auto_assign' => Http::response(['status' => 200, 'data' => ['id' => 503]]),
+            self::BASE_URL.'/api/v1/server/503/reinstall' => Http::response(['status' => 200]),
+        ]);
+
+        $operations = $this->operations();
+
+        $operations->provision([
+            'os_id' => 7,
+            'area_id' => 3,
+            'client_username' => 'pre9',
+            'client_user_id' => 42,
+        ]);
+
+        $payload = json_decode(Http::recorded()[0][0]->body(), true);
+        $this->assertIsArray($payload);
+        $this->assertSame('pre9', $payload['client']['username'] ?? null);
+        $this->assertSame(42, $payload['client']['rel_user_id'] ?? null);
+        $this->assertSame('finance', $payload['client']['from_channel'] ?? null);
+
+        // client_username 为空：整块省略，不用空串占位（只有 client_user_id 也不写）
+        $operations->provision([
+            'os_id' => 7,
+            'area_id' => 3,
+            'client_username' => '',
+            'client_user_id' => 42,
+        ]);
+
+        $second = json_decode(Http::recorded()[2][0]->body(), true);
+        $this->assertIsArray($second);
+        $this->assertArrayNotHasKey('client', $second);
+    }
+
     private function operations(): DcimsCloudOperations
     {
         return new DcimsCloudOperations(new DcimsCloudClient(new CloudCredentials(

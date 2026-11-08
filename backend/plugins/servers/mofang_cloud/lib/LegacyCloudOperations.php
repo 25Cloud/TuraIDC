@@ -517,7 +517,315 @@ final class LegacyCloudOperations implements CloudOperations
         ];
     }
 
+    /* ------------------------------ 开通 / 流量包 ------------------------------ */
+
+    public function provision(array $params): array
+    {
+        // 老接口开通必须带 `client`（上游客户 ID）：先确保客户存在，再组装报文
+        $clientId = $this->ensureUpstreamClient($params);
+
+        $body = $this->client->request('POST', '/clouds', $this->provisionPayload($params, $clientId));
+        $this->assertStrictSuccess($body, '开通失败：上游未返回成功标志');
+
+        // 开通成功的唯一凭据就是上游回的新主机 ID（契约 §7 取回流程）
+        $hostId = (int) ($body['data']['id'] ?? 0);
+        if ($hostId <= 0) {
+            throw new CloudApiException('开通失败：上游未返回云主机 ID', null, CloudApiMode::Legacy);
+        }
+
+        return [
+            'ok' => true,
+            'host_id' => $hostId,
+            'message' => '开通成功',
+            'raw' => $body,
+        ];
+    }
+
+    public function buyFlowPacket(int $hostId, int $trafficGb): array
+    {
+        if ($trafficGb <= 0) {
+            throw new CloudApiException('购买流量包失败：流量必须是正整数（GB）', null, CloudApiMode::Legacy);
+        }
+
+        // 老接口的「流量包」= 给实例加临时流量，单位 GB、整数增量（契约 §3.11）
+        $body = $this->client->request('PUT', '/clouds/'.$hostId.'/temp_traffic', ['traffic' => $trafficGb]);
+        $this->assertStrictSuccess($body, '流量包附加失败');
+
+        return [
+            'ok' => true,
+            'message' => '流量包已附加到实例',
+            'raw' => $body,
+        ];
+    }
+
     /* ------------------------------- 内部辅助 ------------------------------- */
+
+    /**
+     * 确保实例归属的上游客户存在，返回其 `client`（上游用户 ID）。
+     *
+     * 取 ID 的顺序：
+     * 1. `config_options.client` / `client_id` 已给出 → 直接用（平台侧已经建过客户）；
+     * 2. `client_username` 查上游已存在 → 复用 `data.id`；
+     * 3. 不存在则 `POST /user` 建档，再回查一次拿 ID（契约 §3.3：建档接口不回 ID，
+     *    魔方财务也是「建档 → `/user/check` 取 id」两步）；
+     * 4. `client_username` 为空且配置项也没有 → 抛异常，绝不盲发。
+     *
+     * `rid`（资源包）只有代理商账号（`account_type=agent`）的建档才需要，取不到就跳过。
+     *
+     * @param  array<string, mixed>  $params
+     */
+    private function ensureUpstreamClient(array $params): int
+    {
+        $config = is_array($params['config_options'] ?? null) ? $params['config_options'] : [];
+
+        $explicit = (int) ($config['client'] ?? $config['client_id'] ?? 0);
+        if ($explicit > 0) {
+            return $explicit;
+        }
+
+        $username = $this->string($params['client_username'] ?? '');
+        if ($username === '') {
+            throw new CloudApiException(
+                '无法确定实例归属的上游客户：缺少 client_username，配置项里也没有 client',
+                null,
+                CloudApiMode::Legacy
+            );
+        }
+
+        $existing = $this->findUpstreamClientId($username);
+        if ($existing > 0) {
+            return $existing;
+        }
+
+        // email / real_name 平台入参里没有，留空由上游接受，不编造
+        $payload = [
+            'username' => $username,
+            'email' => '',
+            'status' => 1,
+            'real_name' => '',
+            'password' => bin2hex(random_bytes(6)),
+        ];
+
+        if ($this->client->credentials()->agentAccount) {
+            $rid = (int) ($config['rid'] ?? $config['resource_package'] ?? 0);
+            if ($rid > 0) {
+                $payload['rid'] = $rid;
+            }
+        }
+
+        $this->client->request('POST', '/user', $payload);
+
+        $created = $this->findUpstreamClientId($username);
+        if ($created <= 0) {
+            throw new CloudApiException(
+                '上游客户建档后仍查不到 ID（username='.$username.'）',
+                null,
+                CloudApiMode::Legacy
+            );
+        }
+
+        return $created;
+    }
+
+    /**
+     * 按用户名查上游客户 ID；查不到返回 0。
+     *
+     * 契约（`DcimCloud.php:2596`）用的是 `POST /user/check` 表单；同款接口在部分版本上只接受
+     * GET query，所以仅对 404/405 回退一次 GET，其它错误照抛，不做无差别重试。
+     */
+    private function findUpstreamClientId(string $username): int
+    {
+        try {
+            $body = $this->client->request('POST', '/user/check', ['username' => $username]);
+        } catch (CloudApiException $exception) {
+            if (! in_array($exception->httpCode(), [404, 405], true)) {
+                throw $exception;
+            }
+
+            $body = $this->client->request('GET', '/user/check', [], ['username' => $username]);
+        }
+
+        return (int) ($body['data']['id'] ?? 0);
+    }
+
+    /**
+     * 按契约 §7 组装 `POST /clouds` 表单。
+     *
+     * 入参键是固定的（见 `CloudOperations::provision()` 的 docblock），这里只做两件事：
+     * 1. 平台键 → 上游字段名：`os_id`→`os`、`disk`→`system_disk_size`、`bandwidth`→`in_bw`/`out_bw`、
+     *    `flow`→`traffic_quota`、`password`→`rootpass`、`area_id`→`area`；
+     * 2. 「值为 null / '' / 0 视为未指定」，未指定的键一个都不提交，剩下的交给上游默认值。
+     *
+     * §7 里平台没有对应入参的字段（`node`、`node_group`、`ip_group`、`network_type`、
+     * `nat_acl_limit`、`snap_num`、`backup_num`、I/O 限速、`vpc` 等）只从 `config_options` 原样取，
+     * 取不到就不发——契约里没有的字段绝不拼。
+     *
+     * `client`（上游客户 ID）不在这里推导：由 {@see ensureUpstreamClient()} 先算好再传进来，
+     * 因为它是必填项，不能像可选字段那样「没有就不发」。
+     *
+     * @param  array<string, mixed>  $params
+     * @param  int  $clientId  已确保存在的上游客户 ID
+     * @return array<string, mixed>
+     */
+    private function provisionPayload(array $params, int $clientId): array
+    {
+        $config = is_array($params['config_options'] ?? null) ? $params['config_options'] : [];
+
+        // 平台入参 → 契约 §7 字段名（bandwidth 同时写进/出带宽，与魔方财务开通同款）
+        $payload = [
+            'client' => $clientId,
+            'hostname' => $this->string($params['hostname'] ?? ''),
+            'rootpass' => $this->string($params['password'] ?? ''),
+            'os' => $this->string($params['os_id'] ?? ''),
+            'area' => $this->string($params['area_id'] ?? ''),
+            'cpu' => (int) ($params['cpu'] ?? 0),
+            'memory' => (int) ($params['memory'] ?? 0),
+            'system_disk_size' => (int) ($params['disk'] ?? 0),
+            'in_bw' => (int) ($params['bandwidth'] ?? 0),
+            'out_bw' => (int) ($params['bandwidth'] ?? 0),
+            'traffic_quota' => (int) ($params['flow'] ?? 0),
+            'ip_num' => (int) ($params['ip_num'] ?? 0),
+            'ipv6_num' => (int) ($params['ipv6_num'] ?? 0),
+        ];
+
+        foreach ([
+            'node' => 'string', 'node_group' => 'string',
+            'ip_group' => 'string', 'node_priority' => 'string', 'network_type' => 'string',
+            'type' => 'string', 'nat_acl_limit' => 'int', 'nat_web_limit' => 'int',
+            'snap_num' => 'int', 'backup_num' => 'int', 'gpu_num' => 'int',
+            'advanced_cpu' => 'int', 'advanced_bw' => 'int', 'link_clone' => 'int',
+            'cpu_limit' => 'int', 'cpu_model' => 'int', 'bind_mac' => 'int',
+            'store' => 'int', 'port' => 'string', 'reset_flow_day' => 'int',
+            'rid' => 'int', 'niccard' => 'int', 'vpc_name' => 'string',
+        ] as $key => $kind) {
+            if (! array_key_exists($key, $config)) {
+                continue;
+            }
+
+            $value = $config[$key];
+            if ($value === null || $value === '' || $value === 0) {
+                continue;
+            }
+
+            if ($kind === 'int') {
+                if (! is_numeric($value)) {
+                    continue;
+                }
+                $payload[$key] = (int) $value;
+
+                continue;
+            }
+
+            $payload[$key] = $this->string($value);
+        }
+
+        // 网卡型号只接受 1/2/3（契约 §7），其它值不发
+        if (isset($payload['niccard']) && ! in_array((int) $payload['niccard'], [1, 2, 3], true)) {
+            unset($payload['niccard']);
+        }
+
+        // 数据盘：契约形状（`[{size,store}]`）可原样给，否则用 data_disk_size 数值
+        if (is_array($config['other_data_disk'] ?? null)) {
+            $payload['other_data_disk'] = $config['other_data_disk'];
+        } elseif ((int) ($config['data_disk_size'] ?? 0) > 0) {
+            $payload['other_data_disk'] = [['size' => (int) $config['data_disk_size']]];
+        }
+
+        // 磁盘 IO 限速：四段逗号串（契约 §7）
+        $this->applyDiskIoLimits($payload, 'system', $this->string($config['system_disk_io_limit'] ?? ''));
+        $this->applyDiskIoLimits($payload, 'data', $this->string($config['data_disk_io_limit'] ?? ''));
+
+        // 流量计费方向：显式 traffic_type 优先，其次 flow_way（in/out/all）
+        if (isset($config['traffic_type']) && is_numeric($config['traffic_type'])) {
+            $payload['traffic_type'] = (int) $config['traffic_type'];
+        } elseif (isset($config['flow_way'])) {
+            $payload['traffic_type'] = $this->trafficType($config['flow_way']);
+        }
+
+        // VPC：已经指定 vpc / vpc_name 就不查；否则挑一个挂载最少的网络（契约 §7）
+        $networkType = $this->string($payload['network_type'] ?? '');
+        $hasVpc = isset($config['vpc']) && $config['vpc'] !== '';
+        if ($networkType === 'vpc' && ! $hasVpc && ! isset($payload['vpc_name']) && isset($payload['client'])) {
+            $payload += $this->resolveVpc((int) $payload['client'], $payload);
+        } elseif ($hasVpc) {
+            $payload['vpc'] = $config['vpc'];
+        }
+
+        // 统一剔除「未指定」项：null / 空串 / 0 / 空数组都不提交
+        return array_filter(
+            $payload,
+            static fn (mixed $value): bool => ! ($value === null || $value === '' || $value === 0 || $value === [])
+        );
+    }
+
+    /**
+     * `system_disk_io_limit` / `data_disk_io_limit` 是「读字节,写字节,读IOPS,写IOPS」四段逗号串
+     * （契约 §7）。任一段为 0/空都按 0（不限）发送。
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function applyDiskIoLimits(array &$payload, string $scope, string $value): void
+    {
+        if (trim($value) === '') {
+            return;
+        }
+
+        $parts = array_map(static fn (string $part): int => max((int) trim($part), 0), explode(',', $value));
+
+        $payload[$scope.'_read_bytes_sec'] = $parts[0] ?? 0;
+        $payload[$scope.'_write_bytes_sec'] = $parts[1] ?? 0;
+        $payload[$scope.'_read_iops_sec'] = $parts[2] ?? 0;
+        $payload[$scope.'_write_iops_sec'] = $parts[3] ?? 0;
+    }
+
+    /**
+     * VPC 网络选择（契约 §7）：挑「挂载实例最少且 ≤250」的 VPC；都没有就让上游新建。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{vpc?: mixed, vpc_name?: string}
+     */
+    private function resolveVpc(int $client, array $payload): array
+    {
+        $query = ['user' => $client, 'sort' => 'desc', 'per_page' => 40, 'page' => 1];
+
+        if ($this->string($payload['node'] ?? '') !== '') {
+            $query['node'] = $payload['node'];
+        } elseif ($this->string($payload['node_group'] ?? '') !== '') {
+            $query['node_group'] = $payload['node_group'];
+        } else {
+            $query['area'] = $payload['area'] ?? '';
+        }
+
+        $body = $this->client->request('GET', '/vpc_networks', [], $query);
+
+        $candidates = [];
+        foreach ($this->rows($body) as $item) {
+            $hosts = is_array($item['host'] ?? null) ? count($item['host']) : 0;
+            if ($hosts <= 250) {
+                $candidates[] = ['id' => $item['id'] ?? 0, 'hosts' => $hosts];
+            }
+        }
+
+        if ($candidates === []) {
+            return ['vpc_name' => 'VPC-'.bin2hex(random_bytes(4))];
+        }
+
+        usort($candidates, static fn (array $a, array $b): int => $a['hosts'] <=> $b['hosts']);
+
+        return ['vpc' => $candidates[0]['id']];
+    }
+
+    /**
+     * `flow_way` → 上游 `traffic_type`：in=1、out=2、all=3（契约 §7）。
+     */
+    private function trafficType(mixed $flowWay): int
+    {
+        return match ($this->string($flowWay)) {
+            'in' => 1,
+            'out' => 2,
+            default => 3,
+        };
+    }
 
     /**
      * `GET /image` 的镜像列表（列表在 `data` 里）。

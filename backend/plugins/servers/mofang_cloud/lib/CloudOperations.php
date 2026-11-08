@@ -213,4 +213,26 @@ interface CloudOperations
      * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
      */
     public function deleteNatRule(int $hostId, int $ruleId): array;
+
+    /**
+     * 开通实例。入参由 `MofangCloudAdapter::provisionOrder()` 归一后传入，键固定为：
+     *
+     * `product_id`(int 上游商品 id)、`hostname`、`password`、`os_id`、`area_id`(int)、
+     * `cpu`(int)、`memory`(int MB)、`disk`(int GB)、`bandwidth`(int Mbps)、`flow`(int GB)、
+     * `ip_num`(int)、`ipv6_num`(int)、`billing_cycle`、`quantity`(int)、`config_options`(array 原始配置项)、
+     * `client_username`(该实例归属的上游客户用户名 = 配置前缀 + 本地用户 id)、`client_user_id`(本地用户 id)。
+     *
+     * 值为 `null` / `''` / `0` 的键一律视为「未指定」，实现不得提交。
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed> `['ok' => bool, 'host_id' => int|string, 'message' => string, 'raw' => array]`
+     */
+    public function provision(array $params): array;
+
+    /**
+     * 购买流量包（按 GB 加量）。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function buyFlowPacket(int $hostId, int $trafficGb): array;
 }

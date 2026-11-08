@@ -477,6 +477,76 @@ final class DcimsCloudOperations implements CloudOperations
     }
 
     /**
+     * {@inheritDoc}
+     *
+     * 新接口没有「下单」概念，只有 `POST /server/auto_assign`（分配一台可售实例）+ 补装系统两步：
+     * 契约 §6.1 的报文只认服务器分组、镜像、带宽、流量上限与 IP 分组，
+     * CPU/内存/磁盘这些规格由上游套餐决定，本平台传入也不会生效（见 §6.1 字段表）。
+     */
+    public function provision(array $params): array
+    {
+        $body = $this->client->request('POST', '/server/auto_assign', $this->provisionPayload($params));
+
+        if (! DcimsCloudClient::isSuccess($body)) {
+            throw new CloudApiException(
+                '开通实例失败：'.DcimsCloudClient::messageOf($body),
+                null,
+                CloudApiMode::Dcims
+            );
+        }
+
+        $data = is_array($body['data'] ?? null) ? $body['data'] : [];
+        $hostId = (int) ($data['id'] ?? $data['server_id'] ?? 0);
+        if ($hostId <= 0) {
+            throw new CloudApiException('开通实例失败：上游没有返回实例 id', null, CloudApiMode::Dcims);
+        }
+
+        // 契约 §6.2：auto_assign 只分配资源，系统要另发一次重装；失败不改变开通结论，只写进 message
+        $reinstallBody = $this->client->request(
+            'POST',
+            '/server/'.$hostId.'/reinstall',
+            $this->installPayload($hostId, $params, $data)
+        );
+
+        $message = '实例已创建';
+        if (DcimsCloudClient::isSuccess($reinstallBody)) {
+            $message .= '，已提交系统安装';
+        } else {
+            $message .= '，但补装系统失败：'.DcimsCloudClient::messageOf($reinstallBody).'（请到魔方云面板手动重装）';
+        }
+
+        return [
+            'ok' => true,
+            'host_id' => $hostId,
+            'message' => $message,
+            'raw' => [
+                'auto_assign' => $body,
+                'reinstall' => $reinstallBody,
+            ],
+        ];
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 契约 §4.3：流量包购买固定永久有效（`expiry_type=permanent`），按周期过期的包要传 `cycle`，
+     * 本平台没有「随实例到期」的语义，因此这里只买永久包。
+     */
+    public function buyFlowPacket(int $hostId, int $trafficGb): array
+    {
+        if ($trafficGb <= 0) {
+            throw new CloudApiException('流量包大小必须大于 0', null, CloudApiMode::Dcims);
+        }
+
+        $body = $this->client->request('POST', '/server/'.$hostId.'/traffic/package', $this->body($hostId, [
+            'quota_gb' => $trafficGb,
+            'expiry_type' => 'permanent',
+        ]));
+
+        return $this->ok($body, '流量包已购买');
+    }
+
+    /**
      * 写操作的统一报文：`id` 与 `product_id` 永远由这里补齐。
      *
      * 契约 §5.6 明确要求「每个 POST/PUT 的路径与 JSON body 都要带 id」——
@@ -509,6 +579,212 @@ final class DcimsCloudOperations implements CloudOperations
     private function productId(int $hostId): int
     {
         return $hostId;
+    }
+
+    /**
+     * 开通报文：把平台归一参数翻译成契约 §6.1 的 `POST /server/auto_assign` 字段。
+     *
+     * 只提交上游认得的字段，并且**值为 null / '' / 0 的入参一律不下发**（接口 docblock 的硬约束）；
+     * CPU/内存/磁盘/IPv6/数量/主机名/计费周期在 auto_assign 报文里没有对应字段——
+     * 实例规格由上游套餐与服务器分组决定，这些键直接忽略，塞进去只会被上游当未知字段丢弃。
+     *
+     * 客户归属走 `client` 块（`client_username` / `client_user_id` → username / rel_user_id）；
+     * `client_username` 为空时整块省略，不用空串占位。
+     *
+     * 服务器分组（`server_group_id`）是 auto_assign 的必填项，按 `config_options → area_id` 顺序取，
+     * 一个都取不到就地报错，避免发一个必然被拒的请求。
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed>
+     */
+    private function provisionPayload(array $params): array
+    {
+        $config = is_array($params['config_options'] ?? null) ? $params['config_options'] : [];
+
+        $serverGroupId = (int) ($this->firstValue($params, ['server_group_id'], 0)
+            ?: $this->firstValue($config, ['server_group_id', 'server_group'], 0)
+            ?: $this->firstValue($params, ['area_id'], 0));
+
+        if ($serverGroupId <= 0) {
+            throw new CloudApiException(
+                '开通实例失败：未指定服务器分组（server_group_id），请先在魔方云面板确认可用的服务器分组',
+                null,
+                CloudApiMode::Dcims
+            );
+        }
+
+        $osId = (int) ($params['os_id'] ?? 0);
+        if ($osId <= 0) {
+            throw new CloudApiException('开通实例失败：未选择操作系统镜像', null, CloudApiMode::Dcims);
+        }
+
+        $payload = [
+            'server_group_id' => $serverGroupId,
+            'mirror_os_id' => $osId,
+        ];
+
+        $productId = (int) ($params['product_id'] ?? 0);
+        if ($productId > 0) {
+            $payload['product_id'] = $productId;
+        }
+
+        // 客户归属：契约 §6.1 的 client 块。上游要的是「前缀+本地用户 id」的登录名，
+        // 用户名由适配层拼好传进来；为空说明这单没有用户归属，宁可不写也不要造空串
+        $clientUsername = trim($this->stringOf($params['client_username'] ?? ''));
+        if ($clientUsername !== '') {
+            $payload['client'] = [
+                'username' => $clientUsername,
+                'rel_user_id' => (int) ($params['client_user_id'] ?? 0),
+                // 我们扮演的就是财务/业务系统，上游只认这个来源枚举
+                'from_channel' => 'finance',
+            ];
+        }
+
+        $bandwidth = (int) ($params['bandwidth'] ?? 0);
+        if ($bandwidth > 0) {
+            $payload['in_bw'] = $bandwidth;
+            $payload['out_bw'] = $bandwidth;
+        }
+
+        $flow = (int) ($params['flow'] ?? 0);
+        if ($flow > 0) {
+            $payload['limit_flow'] = $flow;
+        }
+
+        $ipGroups = $this->provisionIpGroups($params, $config);
+        if ($ipGroups !== []) {
+            $payload['ip'] = $ipGroups;
+        }
+
+        $trafficReset = $this->trafficResetPayload($config['traffic_reset'] ?? null);
+        if ($trafficReset !== null) {
+            $payload['traffic_reset'] = $trafficReset;
+        }
+
+        // 生效/到期时间：平台归一参数里没有这两个键，只有 config_options 明确给出时才下发，
+        // 由后续 sync 流程补正，不在这里按计费周期推算日期（推错会把实例直接算过期）
+        $activeTime = $this->queryTimestamp($config['active_time'] ?? $config['created_at'] ?? null);
+        if ($activeTime > 0) {
+            $payload['active_time'] = $activeTime;
+        }
+
+        $dueTime = $this->queryTimestamp($config['due_time'] ?? $config['expire_at'] ?? null);
+        if ($dueTime > 0) {
+            $payload['due_time'] = $dueTime;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * 补装系统报文（契约 §6.2）：`auto_assign` 只分配资源，装系统要另发一次重装。
+     *
+     * 密码优先用下单参数，其次用上游分配结果，都没有就随机生成一个（否则实例装完无法登录）。
+     *
+     * @param  array<string, mixed>  $params
+     * @param  array<string, mixed>  $data  上游 auto_assign 的 data
+     * @return array<string, mixed>
+     */
+    private function installPayload(int $hostId, array $params, array $data): array
+    {
+        $config = is_array($params['config_options'] ?? null) ? $params['config_options'] : [];
+
+        $password = trim($this->stringOf($params['password'] ?? ''));
+        if ($password === '') {
+            $password = trim($this->stringOf($data['password'] ?? ''));
+        }
+        if ($password === '') {
+            $password = $this->randomPassword();
+        }
+
+        $port = (int) ($this->firstValue($config, ['port', 'remote_port'], 0) ?: $this->firstValue($params, ['port'], 0));
+        if ($port < 1 || $port > 65535) {
+            $port = 22;
+        }
+
+        return $this->body($hostId, [
+            'mirror_os_id' => (int) ($params['os_id'] ?? 0),
+            'os_password' => $password,
+            'remote_port' => $port,
+            // 契约 §5.4 的默认值：不指定分区方案时按整盘格式化
+            'boot_mode' => 'bios',
+            'partition_mode' => 'default',
+            'format_type' => 'full',
+        ]);
+    }
+
+    /**
+     * IPv4 分组 → `[['ip_group_id'=>, 'num'=>]]`（契约 §6.1 的 `ip` 字段）。
+     *
+     * 支持两种入参：`config_options.ip_group` 给分组映射（`{组id: 数量}`），
+     * 或只给 `ip_num`（此时分组号取 `config_options.ip_group` 的标量值，缺省 0 = 默认分组）。
+     *
+     * @param  array<string, mixed>  $params
+     * @param  array<string, mixed>  $config
+     * @return array<int, array{ip_group_id: int, num: int}>
+     */
+    private function provisionIpGroups(array $params, array $config): array
+    {
+        $groups = [];
+        $ipGroup = $config['ip_group'] ?? null;
+
+        if (is_array($ipGroup)) {
+            foreach ($ipGroup as $groupId => $num) {
+                $num = (int) $num;
+                if ($num > 0) {
+                    $groups[] = ['ip_group_id' => (int) $groupId, 'num' => $num];
+                }
+            }
+
+            return $groups;
+        }
+
+        $ipNum = (int) ($params['ip_num'] ?? 0);
+        if ($ipNum > 0) {
+            $groups[] = [
+                'ip_group_id' => is_numeric($ipGroup) ? (int) $ipGroup : 0,
+                'num' => $ipNum,
+            ];
+        }
+
+        return $groups;
+    }
+
+    /**
+     * 流量重置计划（契约 §5.6 的三字段校验：日 1..28 或 99，时 0..23，分 0..59）。
+     *
+     * @return array{reset_day: int, reset_hour: int, reset_minute: int}|null
+     */
+    private function trafficResetPayload(mixed $value): ?array
+    {
+        if (! is_array($value)) {
+            return null;
+        }
+
+        foreach (['reset_day', 'reset_hour', 'reset_minute'] as $field) {
+            if (! isset($value[$field]) || ! is_numeric($value[$field])) {
+                return null;
+            }
+        }
+
+        $day = (int) $value['reset_day'];
+        $hour = (int) $value['reset_hour'];
+        $minute = (int) $value['reset_minute'];
+
+        $dayValid = ($day >= 1 && $day <= 28) || $day === 99;
+        if (! $dayValid || $hour < 0 || $hour > 23 || $minute < 0 || $minute > 59) {
+            return null;
+        }
+
+        return ['reset_day' => $day, 'reset_hour' => $hour, 'reset_minute' => $minute];
+    }
+
+    /**
+     * 随机初始密码：16 位十六进制，只在「下单没给、上游也不回」时兜底。
+     */
+    private function randomPassword(): string
+    {
+        return bin2hex(random_bytes(8));
     }
 
     /**

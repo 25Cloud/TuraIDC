@@ -9,6 +9,7 @@ use App\Services\Integrations\Plugins\PluginInstaller;
 use App\Services\Integrations\Plugins\PluginRuntimeRegistry;
 use App\Services\Integrations\Plugins\PluginScanner;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\ProviderRegistry;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
@@ -60,8 +61,10 @@ class MofangCloudProviderWiringTest extends TestCase
 
         $this->assertNotNull($driver);
         $this->assertTrue($driver->supports(ProvidesConsoleRuntime::class));
-        // 开通能力本轮不声明：声明了平台就会去调，而两代魔方云开通参数还没接完。
-        $this->assertFalse($driver->supports(ProvidesProvisioning::class));
+        // 开通能力必须声明：编排层以 ProvidesProvisioning 作为门槛，漏声明会导致
+        // 订单付了钱却不进自动开通，只能人工补开。
+        $this->assertTrue($driver->supports(ProvidesProvisioning::class));
+        $this->assertTrue($driver->supports(ProvidesOrderProvisioning::class));
 
         $resolved = $driver->resolve(ProvidesConsoleRuntime::class);
         $this->assertInstanceOf(MofangCloudAdapter::class, $resolved);

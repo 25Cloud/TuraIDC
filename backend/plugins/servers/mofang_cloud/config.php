@@ -6,6 +6,8 @@ use App\Services\Upstream\Contracts\ProvidesConsoleAccess;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesHostSuspension;
 use App\Services\Upstream\Contracts\ProvidesHostTermination;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
+use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use TuraIDC\Plugins\Servers\MofangCloud\Logic\MofangCloud;
 
@@ -28,6 +30,10 @@ return [
             ProvidesConsoleRuntime::class,
             ProvidesHostSuspension::class,
             ProvidesHostTermination::class,
+            // 编排层以 ProvidesProvisioning/ProvidesRenewal 作为能力门槛，子接口虽然通过
+            // 继承满足 instanceof，supports() 需要显式列出才会命中。
+            ProvidesProvisioning::class,
+            ProvidesOrderProvisioning::class,
             ProvidesStatusSync::class,
         ],
         'extra' => [],

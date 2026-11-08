@@ -363,6 +363,189 @@ class MofangCloudLegacyOperationsTest extends TestCase
         $this->operations()->power('off', 88);
     }
 
+    public function test_provision_posts_cloud_payload_and_returns_upstream_host_id(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds' => ['status' => 'success', 'msg' => '开通成功', 'data' => ['id' => 4321]],
+        ]);
+
+        $result = $this->operations()->provision([
+            'product_id' => 51,
+            'hostname' => 'prov.example.test',
+            'password' => 'Root1234',
+            'os_id' => 7,
+            'area_id' => 3,
+            'cpu' => 2,
+            'memory' => 2048,
+            'disk' => 40,
+            'bandwidth' => 100,
+            'flow' => 500,
+            'ip_num' => 2,
+            'ipv6_num' => 1,
+            'billing_cycle' => 'monthly',
+            'quantity' => 1,
+            'config_options' => ['type' => 'host', 'network_type' => 'normal', 'client' => 12],
+        ]);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(4321, $result['host_id']);
+
+        // 平台键 → 契约 §7 字段名；billing_cycle / quantity / product_id 契约里没有，不能发
+        Http::assertSent(function ($request): bool {
+            $body = $request->data();
+
+            return $request->method() === 'POST'
+                && str_ends_with($request->url(), '/v1/clouds')
+                && ($body['hostname'] ?? '') === 'prov.example.test'
+                && ($body['rootpass'] ?? '') === 'Root1234'
+                && (string) ($body['os'] ?? '') === '7'
+                && (string) ($body['area'] ?? '') === '3'
+                && (string) ($body['cpu'] ?? '') === '2'
+                && (string) ($body['memory'] ?? '') === '2048'
+                && (string) ($body['system_disk_size'] ?? '') === '40'
+                && (string) ($body['in_bw'] ?? '') === '100'
+                && (string) ($body['out_bw'] ?? '') === '100'
+                && (string) ($body['traffic_quota'] ?? '') === '500'
+                && (string) ($body['ip_num'] ?? '') === '2'
+                && (string) ($body['ipv6_num'] ?? '') === '1'
+                && (string) ($body['client'] ?? '') === '12'
+                && ($body['type'] ?? '') === 'host'
+                && ! array_key_exists('billing_cycle', $body)
+                && ! array_key_exists('quantity', $body)
+                && ! array_key_exists('product_id', $body);
+        });
+    }
+
+    public function test_provision_omits_unspecified_fields_and_fails_without_host_id(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds' => ['status' => 'success', 'data' => []],
+        ]);
+
+        // 上游没给 data.id 时必须判失败，不能返回 host_id=0 的半成品
+        try {
+            $this->operations()->provision($this->provisionParams([
+                'hostname' => 'only.example.test',
+                'password' => 'p',
+                // 0 视为未指定：cpu / memory / disk 都不该出现在报文里
+                'cpu' => 0,
+                'memory' => 0,
+                'disk' => 0,
+                'config_options' => ['client' => 12],
+            ]));
+            $this->fail('缺少上游主机 ID 必须抛异常');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('未返回云主机 ID', $exception->getMessage());
+        }
+
+        // null / '' / 0 一律不提交
+        Http::assertSent(fn ($request): bool => ! array_key_exists('cpu', $request->data())
+            && ! array_key_exists('memory', $request->data())
+            && ! array_key_exists('system_disk_size', $request->data()));
+    }
+
+    public function test_provision_reuses_existing_upstream_client_by_username(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/user/check' => ['data' => ['id' => 77]],
+            '/v1/clouds' => ['status' => 'success', 'data' => ['id' => 9001]],
+        ]);
+
+        $result = $this->operations()->provision($this->provisionParams(['client_username' => 'pfx1001']));
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(9001, $result['host_id']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/clouds')
+            && (string) ($request->data()['client'] ?? '') === '77');
+
+        // 上游已有该客户时不能再建档
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/user'));
+    }
+
+    public function test_provision_creates_upstream_client_when_missing(): void
+    {
+        $this->seedToken();
+        $checks = 0;
+
+        $this->fakeUpstream([
+            // 第一次查不到 → 建档 → 第二次查到 id
+            '/v1/user/check' => function () use (&$checks): array {
+                $checks++;
+
+                return $checks === 1 ? ['data' => []] : ['data' => ['id' => 88]];
+            },
+            '/v1/user' => ['status' => 'success'],
+            '/v1/clouds' => ['status' => 'success', 'data' => ['id' => 9002]],
+        ]);
+
+        $result = $this->operations()->provision($this->provisionParams(['client_username' => 'pfx1002']));
+
+        $this->assertSame(9002, $result['host_id']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/user')
+            && (string) ($request->data()['username'] ?? '') === 'pfx1002'
+            && (string) ($request->data()['status'] ?? '') === '1');
+
+        Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/v1/clouds')
+            && (string) ($request->data()['client'] ?? '') === '88');
+    }
+
+    public function test_provision_without_client_username_throws_before_any_request(): void
+    {
+        try {
+            $this->operations()->provision($this->provisionParams([]));
+            $this->fail('没有 client_username 也没有 client 时必须直接拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('无法确定实例归属的上游客户', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_buy_flow_packet_puts_temp_traffic(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/temp_traffic' => ['status' => 'success', 'msg' => 'ok'],
+        ]);
+
+        $result = $this->operations()->buyFlowPacket(88, 200);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('流量包已附加到实例', $result['message']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/clouds/88/temp_traffic')
+            && (string) ($request->data()['traffic'] ?? '') === '200');
+    }
+
+    public function test_buy_flow_packet_rejects_empty_traffic_and_upstream_failure(): void
+    {
+        try {
+            $this->operations()->buyFlowPacket(88, 0);
+            $this->fail('流量为 0 必须直接拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('必须是正整数', $exception->getMessage());
+        }
+
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/temp_traffic' => ['status' => 'error', 'msg' => '实例处于锁定状态'],
+        ]);
+
+        $this->expectException(CloudApiException::class);
+        $this->expectExceptionMessage('实例处于锁定状态');
+
+        $this->operations()->buyFlowPacket(88, 100);
+    }
+
     /* --------------------------------- 夹具 --------------------------------- */
 
     /**
@@ -383,6 +566,32 @@ class MofangCloudLegacyOperationsTest extends TestCase
         ] as $file) {
             require_once $dir.'/'.$file;
         }
+    }
+
+    /**
+     * 开通用例的基准入参；`$overrides` 覆盖同名顶层键。
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function provisionParams(array $overrides = []): array
+    {
+        return array_merge([
+            'product_id' => 51,
+            'hostname' => 'prov.example.test',
+            'password' => 'Root1234',
+            'os_id' => 7,
+            'area_id' => 3,
+            'cpu' => 2,
+            'memory' => 2048,
+            'disk' => 40,
+            'bandwidth' => 100,
+            'flow' => 500,
+            'ip_num' => 2,
+            'ipv6_num' => 1,
+            'billing_cycle' => 'monthly',
+            'quantity' => 1,
+        ], $overrides);
     }
 
     private function credentials(): CloudCredentials
@@ -418,6 +627,7 @@ class MofangCloudLegacyOperationsTest extends TestCase
      * - 字符串直接当响应体（登录接口返回带引号 token 原文）
      * - 关联数组当 JSON 响应体
      * - `[状态码, 响应体]` 形式表达非 2xx（如删除实例返回 404）
+     * - 闭包按调用次数动态出响应（如「先查不到、建档后才查到」）
      *
      * @param  array<string, mixed>  $routes
      */
@@ -436,6 +646,10 @@ class MofangCloudLegacyOperationsTest extends TestCase
         foreach ($this->routes as $fragment => $response) {
             if (! str_contains($url, (string) $fragment)) {
                 continue;
+            }
+
+            if ($response instanceof \Closure) {
+                return Http::response($response($request), 200);
             }
 
             if (is_array($response) && array_is_list($response) && count($response) === 2 && is_int($response[0])) {

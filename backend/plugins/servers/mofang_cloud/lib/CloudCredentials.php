@@ -25,6 +25,13 @@ final class CloudCredentials
         public readonly string $secret,
         public readonly CloudApiMode $mode,
         public readonly bool $agentAccount = false,
+        /**
+         * 上游客户用户名前缀。
+         *
+         * 与魔方财务的 accesshash `user_prefix` 同义：同一个魔方云面板被多个系统共用时，
+         * 用它把各自的本地用户 id 命名空间隔开，避免不同系统抢同一个上游客户。
+         */
+        public readonly string $userPrefix = '',
     ) {}
 
     public function withMode(CloudApiMode $mode): self
@@ -36,6 +43,7 @@ final class CloudCredentials
             secret: $this->secret,
             mode: $mode,
             agentAccount: $this->agentAccount,
+            userPrefix: $this->userPrefix,
         );
     }
 

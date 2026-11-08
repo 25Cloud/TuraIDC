@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace TuraIDC\Plugins\Servers\MofangCloud\Lib;
 
 use App\Exceptions\BusinessException;
+use App\Models\Order;
+use App\Models\Product;
+use App\Models\ProductUpstreamBinding;
+use App\Models\Service;
 use App\Models\Supplier;
+use App\Models\SupplierPluginBinding;
 use App\Services\Upstream\Contracts\ProvidesConsoleAccess;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
 use App\Services\Upstream\Contracts\ProvidesHostSuspension;
 use App\Services\Upstream\Contracts\ProvidesHostTermination;
+use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
 use Throwable;
 
@@ -20,7 +26,7 @@ use Throwable;
  * 一切代际差异（老版 `/v1` 与新版的字段、状态串、错误语义）都收敛在
  * `CloudOperations` 的两套实现里，本类不出现任何分支判断路径/字段。
  */
-final class MofangCloudAdapter implements ProvidesConsoleAccess, ProvidesConsoleRuntime, ProvidesHostSuspension, ProvidesHostTermination, ProvidesStatusSync
+final class MofangCloudAdapter implements ProvidesConsoleAccess, ProvidesConsoleRuntime, ProvidesHostSuspension, ProvidesHostTermination, ProvidesOrderProvisioning, ProvidesStatusSync
 {
     /**
      * @var array<int, CloudOperations>
@@ -278,9 +284,188 @@ final class MofangCloudAdapter implements ProvidesConsoleAccess, ProvidesConsole
         ]);
     }
 
-    private function client(Supplier $supplier): CloudApiClient
+    /**
+     * 下单开通：驱动内完成「上游建实例 → 回读详情」，编排层只调这一个方法。
+     *
+     * @param  ?Service  $existingService  本地既有实例，用于幂等回查
+     * @return array<string, mixed>
+     */
+    public function provisionOrder(Order $order, Supplier $supplier, ?Service $existingService = null): array
     {
-        return $this->clients->make($supplier);
+        $product = $order->product;
+        if (! $product instanceof Product) {
+            throw new BusinessException('商品信息不存在，无法自动开通', 42200);
+        }
+
+        $operations = $this->operations($supplier);
+
+        // 幂等：本地已经绑定过上游实例时只核实其存在，绝不重复下单。
+        $existingHostId = (int) ($existingService?->provision_data['upstream_host_id'] ?? 0);
+        if ($existingService instanceof Service && $existingHostId <= 0) {
+            $existingHostId = (int) ($existingService->upstreamBinding?->upstream_service_id ?? 0);
+        }
+
+        if ($existingHostId > 0) {
+            $detail = $operations->hostDetail($existingHostId);
+
+            return [
+                'requested_host' => (string) (($existingService?->provision_data['requested_host'] ?? '') ?: ''),
+                'upstream_host_ids' => [$existingHostId],
+                'upstream_host_id' => $existingHostId,
+                'host_detail' => $detail,
+            ];
+        }
+
+        $params = $this->buildProvisionParams($order, $product, $supplier);
+
+        $result = $operations->provision($params);
+        if (($result['ok'] ?? false) !== true) {
+            throw new BusinessException($this->messageOf($result), 42200);
+        }
+
+        $hostId = $result['host_id'] ?? 0;
+        if ((string) $hostId === '' || (int) $hostId <= 0) {
+            throw new BusinessException('上游未返回实例 ID，开通结果无法确认', 42200);
+        }
+
+        $hostId = (int) $hostId;
+        $detail = [];
+
+        try {
+            // 刚开通的实例可能还在装系统，详情读不到不影响开通结果。
+            $detail = $operations->hostDetail($hostId);
+        } catch (Throwable) {
+            $detail = [];
+        }
+
+        return [
+            'requested_host' => (string) ($params['hostname'] ?? ''),
+            'upstream_host_ids' => [$hostId],
+            'upstream_host_id' => $hostId,
+            'host_detail' => $detail,
+        ];
+    }
+
+    /**
+     * 魔方云没有「主机名生成规则」这种上游配置，返回空载荷让平台回退本地规则。
+     *
+     * @return array<string, mixed>
+     */
+    public function getProductProvisionConfig(Supplier $supplier, int $productId): array
+    {
+        return ['status' => 200, 'msg' => 'ok', 'data' => []];
+    }
+
+    /**
+     * 流量包购买：魔方云是「上游直接加量」，不产生上游账单，因此账单号恒为 0。
+     *
+     * @param  array<string, mixed>  $configOption
+     * @return array<string, mixed>
+     */
+    public function purchaseTrafficPackage(
+        Supplier $supplier,
+        int $hostId,
+        string $mode = 'flowpacket',
+        array $configOption = [],
+        int $flowPacketId = 0,
+        string $rootUrl = '',
+        ?string $jwt = null,
+    ): array {
+        $operations = $this->operations($supplier);
+        $this->ok($operations->buyFlowPacket($hostId, $flowPacketId));
+
+        $detail = [];
+        try {
+            $detail = $operations->hostDetail($hostId);
+        } catch (Throwable) {
+            $detail = [];
+        }
+
+        return [
+            'upstream_invoice_id' => 0,
+            'host_detail' => $detail,
+        ];
+    }
+
+    /**
+     * 开通入参归一：把订单快照里的配置翻译成两代实现共用的键集合。
+     *
+     * 值缺失一律不传（`null` / `''` / `0` 视为未指定），避免把默认值当成用户选择发给上游。
+     *
+     * @return array<string, mixed>
+     */
+    private function buildProvisionParams(Order $order, Product $product, Supplier $supplier): array
+    {
+        $snapshot = is_array($order->config_snapshot ?? null) ? (array) $order->config_snapshot : [];
+        $userId = (int) ($order->user_id ?? 0);
+        $prefix = $this->client($supplier)->credentials()->userPrefix;
+
+        return array_filter([
+            'product_id' => $this->resolveUpstreamProductId($product, $supplier),
+            'hostname' => $this->stringValue($snapshot, ['hostname', 'host', 'domain']),
+            'password' => $this->stringValue($snapshot, ['password', 'root_password', 'rootpass']),
+            'os_id' => $this->stringValue($snapshot, ['os_id', 'os', 'image', 'mirror_os_id']),
+            'area_id' => $this->intValue($snapshot, ['area_id', 'area', 'house_id']),
+            'cpu' => $this->intValue($snapshot, ['cpu', 'cpu_num', 'cores']),
+            'memory' => $this->intValue($snapshot, ['memory', 'memory_mb', 'ram']),
+            'disk' => $this->intValue($snapshot, ['disk', 'disk_size', 'system_disk']),
+            'bandwidth' => $this->intValue($snapshot, ['bandwidth', 'bwlimit', 'bw']),
+            'flow' => $this->intValue($snapshot, ['flow', 'traffic', 'traffic_quota']),
+            'ip_num' => $this->intValue($snapshot, ['ip_num', 'ipnum']),
+            'ipv6_num' => $this->intValue($snapshot, ['ipv6_num', 'ipv6num']),
+            'billing_cycle' => (string) ($order->billing_cycle ?? ''),
+            'quantity' => max(1, (int) ($order->quantity ?? 1)),
+            'client_username' => $userId > 0 ? $prefix.$userId : '',
+            'client_user_id' => $userId,
+            'config_options' => $snapshot,
+        ], static fn (mixed $value): bool => $value !== null && $value !== '' && $value !== 0 && $value !== []);
+    }
+
+    private function resolveUpstreamProductId(Product $product, Supplier $supplier): int
+    {
+        $query = ProductUpstreamBinding::query()->where('product_id', (int) $product->id);
+        $bindingIds = SupplierPluginBinding::query()
+            ->where('supplier_id', (int) $supplier->id)
+            ->pluck('id')
+            ->all();
+
+        if ($bindingIds !== []) {
+            $query->whereIn('supplier_plugin_binding_id', $bindingIds);
+        }
+
+        return (int) ($query->orderByDesc('id')->value('upstream_product_id') ?? 0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @param  array<int, string>  $keys
+     */
+    private function stringValue(array $snapshot, array $keys): string
+    {
+        foreach ($keys as $key) {
+            $value = $snapshot[$key] ?? null;
+            if (is_scalar($value) && trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @param  array<string, mixed>  $snapshot
+     * @param  array<int, string>  $keys
+     */
+    private function intValue(array $snapshot, array $keys): int
+    {
+        foreach ($keys as $key) {
+            $value = $snapshot[$key] ?? null;
+            if (is_numeric($value) && (int) $value > 0) {
+                return (int) $value;
+            }
+        }
+
+        return 0;
     }
 
     private function operations(Supplier $supplier): CloudOperations
@@ -334,5 +519,10 @@ final class MofangCloudAdapter implements ProvidesConsoleAccess, ProvidesConsole
         $message = trim((string) ($data['message'] ?? ''));
 
         return $message !== '' ? $message : '魔方云操作失败';
+    }
+
+    private function client(Supplier $supplier): CloudApiClient
+    {
+        return $this->clients->make($supplier);
     }
 }

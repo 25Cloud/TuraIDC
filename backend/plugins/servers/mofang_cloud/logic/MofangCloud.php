@@ -137,6 +137,14 @@ final class MofangCloud
                     ],
                     'description' => '仅老版本接口有效：代理账号走 index.php?path=… 取 token。新版本接口忽略此项。',
                 ],
+                [
+                    'key' => 'user_prefix',
+                    'label' => '上游客户名前缀',
+                    'type' => 'text',
+                    'default' => 'turaidc_',
+                    'description' => '开通时上游客户用户名 = 该前缀 + 本地用户 ID（与魔方财务的 user_prefix 同义）。'
+                        .'同一个魔方云面板被多个系统共用时靠它隔离命名空间，留空则直接用本地用户 ID。',
+                ],
             ],
         ];
     }

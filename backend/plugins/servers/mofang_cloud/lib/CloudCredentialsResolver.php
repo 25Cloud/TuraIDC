@@ -54,6 +54,7 @@ final class CloudCredentialsResolver
             secret: $secret,
             mode: CloudApiMode::tryFromConfig($config['api_mode'] ?? null) ?? CloudApiMode::Legacy,
             agentAccount: strtolower(trim((string) ($config['account_type'] ?? ''))) === 'agent',
+            userPrefix: trim((string) ($config['user_prefix'] ?? '')),
         );
     }
 
