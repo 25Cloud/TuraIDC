@@ -1842,12 +1842,19 @@
 
 .traffic-row {
   display: grid;
-  grid-template-columns: minmax(160px, 1.4fr) minmax(120px, 1fr) minmax(120px, 1fr) auto auto;
+  grid-template-columns: minmax(150px, 1.3fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) minmax(110px, 0.8fr) auto auto;
   gap: var(--td-comp-margin-s);
   align-items: center;
   min-width: 0;
   border-bottom: 1px solid var(--td-component-border);
   padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+}
+
+.traffic-markup-hint {
+  margin: var(--td-comp-margin-s) 0 0;
+  color: var(--td-text-color-placeholder);
+  font-size: var(--td-font-size-body-small);
+  line-height: 1.5;
 }
 
 .traffic-row:last-child {

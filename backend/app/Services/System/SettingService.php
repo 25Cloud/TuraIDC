@@ -433,6 +433,30 @@ class SettingService
             ->all();
     }
 
+    /**
+     * 流量包加价方式：none 不加价 / percent 按成本比例 / fixed 每个固定加价金额。
+     *
+     * 流量包不走上游的代理折扣，上游给我们的价格就是成本，所以售价 = 成本 + 加价。
+     * 上游价（cost_price）与加价规则都存进目录项，售价（price）始终是算出来的最终值，
+     * 这样「一键对接」拉一次就是可直接卖的价，不用手工再改一遍。
+     */
+    public static function applyTrafficPackageMarkup(float $cost, string $markupType, float $markupValue): float
+    {
+        $cost = max($cost, 0.0);
+
+        if ($cost <= 0) {
+            return 0.0;
+        }
+
+        $markupValue = max($markupValue, 0.0);
+
+        return round(match ($markupType) {
+            'percent' => $cost * (1 + $markupValue / 100),
+            'fixed' => $cost + $markupValue,
+            default => $cost,
+        }, 2);
+    }
+
     public function getTrafficPackageCatalogForCategory(int $categoryId, string $productType = '', int $productId = 0): array
     {
         $normalizedType = trim($productType);
@@ -919,9 +943,18 @@ class SettingService
     {
         $categoryId = max((int) ($item['category_id'] ?? 0), 0);
         $targetValue = max((int) ($item['target_value'] ?? 0), 0);
-        $price = is_numeric($item['price'] ?? null)
-            ? number_format(max((float) $item['price'], 0), 2, '.', '')
-            : '0.00';
+        $costPrice = is_numeric($item['cost_price'] ?? null) ? max((float) $item['cost_price'], 0) : 0.0;
+        $markupType = in_array(trim((string) ($item['markup_type'] ?? '')), ['percent', 'fixed'], true)
+            ? trim((string) $item['markup_type'])
+            : 'none';
+        $markupValue = is_numeric($item['markup_value'] ?? null) ? max((float) $item['markup_value'], 0) : 0.0;
+
+        // 有成本价且设了加价规则时以成本价重算售价：规则是权威值，避免手工售价与规则互相打架
+        $priceValue = $costPrice > 0 && $markupType !== 'none'
+            ? self::applyTrafficPackageMarkup($costPrice, $markupType, $markupValue)
+            : (is_numeric($item['price'] ?? null) ? max((float) $item['price'], 0) : 0.0);
+
+        $price = number_format($priceValue, 2, '.', '');
         $sortOrder = max((int) ($item['sort_order'] ?? 0), 0);
         $label = trim((string) ($item['label'] ?? ''));
 
@@ -942,6 +975,9 @@ class SettingService
                 ->all(),
             'label' => $label,
             'target_value' => $targetValue,
+            'cost_price' => number_format($costPrice, 2, '.', ''),
+            'markup_type' => $markupType,
+            'markup_value' => $markupValue,
             'price' => $price,
             'enabled' => in_array($item['enabled'] ?? 1, [true, 1, '1', 'true', 'on'], true) ? 1 : 0,
             'sort_order' => $sortOrder,

@@ -97,9 +97,17 @@
                 :placeholder="$t('products.trafficPackages.targetGb')"
               />
               <t-input-number
+                v-model="row.cost_price"
+                :min="0"
+                :decimal-places="2"
+                :placeholder="$t('products.trafficPackages.costPrice')"
+                @change="() => recalculateRowPrice(row)"
+              />
+              <t-input-number
                 v-model="row.price"
                 :min="0"
                 :decimal-places="2"
+                :disabled="row.markup_type !== 'none' && row.cost_price > 0"
                 :placeholder="$t('products.trafficPackages.price')"
               />
               <t-switch v-model="row.enabled" />
@@ -144,7 +152,32 @@
           @change="handleTrafficBindingsChange"
         />
       </t-form-item>
+      <t-form-item :label="$t('products.trafficPackages.markupType')" name="markup_type">
+        <t-select v-model="trafficGroupForm.markup_type" :placeholder="$t('products.trafficPackages.markupNone')">
+          <t-option :label="$t('products.trafficPackages.markupNone')" value="none" />
+          <t-option :label="$t('products.trafficPackages.markupPercent')" value="percent" />
+          <t-option :label="$t('products.trafficPackages.markupFixed')" value="fixed" />
+        </t-select>
+      </t-form-item>
+      <t-form-item
+        v-if="trafficGroupForm.markup_type !== 'none'"
+        :label="$t('products.trafficPackages.markupValue')"
+        name="markup_value"
+      >
+        <t-input-number
+          v-model="trafficGroupForm.markup_value"
+          :min="0"
+          :decimal-places="2"
+          style="width: 100%"
+          :placeholder="
+            trafficGroupForm.markup_type === 'percent'
+              ? $t('products.trafficPackages.markupPercentHint')
+              : $t('products.trafficPackages.markupFixedHint')
+          "
+        />
+      </t-form-item>
     </t-form>
+    <p class="traffic-markup-hint">{{ $t('products.trafficPackages.markupHint') }}</p>
   </t-dialog>
 </template>
 <script setup lang="ts">
@@ -170,8 +203,13 @@ interface TrafficPackageGroup {
   effective_product_group_id: number;
   product_group_label: string;
   product_ids: number[];
+  markup_type: TrafficMarkupType;
+  markup_value: number;
   sort_order: number;
 }
+
+/** 流量包加价方式：流量包不走上游代理折扣，售价 = 成本 + 加价 */
+type TrafficMarkupType = 'none' | 'percent' | 'fixed';
 
 interface TrafficPackageItem {
   _rowKey: string;
@@ -186,6 +224,9 @@ interface TrafficPackageItem {
   product_ids: number[];
   label: string;
   target_value: number;
+  cost_price: number;
+  markup_type: TrafficMarkupType;
+  markup_value: number;
   price: number;
   enabled: boolean;
   sort_order: number;
@@ -208,6 +249,8 @@ const trafficGroupForm = reactive({
   third_product_group_id: null as number | null,
   effective_product_group_id: 0,
   product_group_label: '' as string,
+  markup_type: 'none' as TrafficMarkupType,
+  markup_value: 0,
 });
 
 const trafficGroupItems = ref<TrafficPackageGroup[]>([]);
@@ -237,6 +280,8 @@ function resetTrafficGroupForm() {
     third_product_group_id: null,
     effective_product_group_id: 0,
     product_group_label: '',
+    markup_type: 'none' as TrafficMarkupType,
+    markup_value: 0,
   });
 }
 
@@ -253,6 +298,8 @@ function openTrafficGroupDialog(group?: TrafficPackageGroup | null) {
     third_product_group_id: group?.third_product_group_id ?? null,
     effective_product_group_id: group?.effective_product_group_id || 0,
     product_group_label: group?.product_group_label || '',
+    markup_type: group?.markup_type || 'none',
+    markup_value: group?.markup_value || 0,
   });
   trafficGroupDialogVisible.value = true;
 }
@@ -340,6 +387,8 @@ async function submitTrafficGroup() {
       t('products.trafficPackages.categoryWithId', { id: categoryId });
     const groupId = trafficGroupEditingId.value || generateTrafficGroupId(productType, categoryId);
     const previous = trafficGroupItems.value.find((group) => group.id === groupId);
+    const markupType = normalizeTrafficMarkupType(trafficGroupForm.markup_type);
+    const markupValue = markupType === 'none' ? 0 : Math.max(Number(trafficGroupForm.markup_value) || 0, 0);
     const nextGroup: TrafficPackageGroup = {
       id: groupId,
       name,
@@ -351,6 +400,8 @@ async function submitTrafficGroup() {
       effective_product_group_id: categoryId,
       product_group_label: categoryLabel,
       product_ids: productIds,
+      markup_type: markupType,
+      markup_value: markupValue,
       sort_order: Number(previous?.sort_order || trafficGroupItems.value.length + 1),
     };
     const nextGroups = trafficGroupItems.value.some((group) => group.id === groupId)
@@ -499,9 +550,20 @@ async function pullTrafficPackages() {
       source_product_id: group.product_ids[0] || undefined,
     })) as Record<string, unknown>;
     const packages = Array.isArray(response.packages) ? response.packages : [];
-    trafficRows.value = packages.map((item, index) =>
-      createTrafficRow({ ...(item as Record<string, unknown>), sort_order: index + 1 }, group),
-    );
+    // 上游给的价格是成本价：一键对接时按当前分组的加价规则直接算出售价
+    trafficRows.value = packages.map((item, index) => {
+      const record = item as Record<string, unknown>;
+      return createTrafficRow(
+        {
+          ...record,
+          cost_price: Number(record.cost_price ?? record.price ?? 0) || 0,
+          markup_type: group.markup_type,
+          markup_value: group.markup_value,
+          sort_order: index + 1,
+        },
+        group,
+      );
+    });
     MessagePlugin.success(t('products.trafficPackages.pulledFromUpstream'));
   } catch (error) {
     MessagePlugin.error(errorMessage(error, t('products.trafficPackages.pullFailed')));
@@ -564,6 +626,15 @@ function createTrafficRow(item: Record<string, unknown> = {}, group = selectedTr
     item.category_id,
     group?.effective_product_group_id,
   );
+  const markupType = normalizeTrafficMarkupType(item.markup_type ?? group?.markup_type);
+  const markupValue = Number(item.markup_value ?? group?.markup_value ?? 0) || 0;
+  const costPrice = Number(item.cost_price || 0) || 0;
+  // 设了加价规则且填了成本价时，售价一律由规则算出，避免手填价与规则打架
+  const price =
+    markupType !== 'none' && costPrice > 0
+      ? applyTrafficMarkup(costPrice, markupType, markupValue)
+      : Number(item.price || 0);
+
   return {
     _rowKey: String(item._rowKey || `traffic-package-${Date.now()}-${Math.random().toString(36).slice(2)}`),
     traffic_group_id: stringFrom(item.traffic_group_id, item.group_id, group?.id),
@@ -577,10 +648,32 @@ function createTrafficRow(item: Record<string, unknown> = {}, group = selectedTr
     product_ids: normalizeProductIds(item.product_ids || group?.product_ids || []),
     label: String(item.label || ''),
     target_value: Number(item.target_value || 0),
-    price: Number(item.price || 0),
+    cost_price: costPrice,
+    markup_type: markupType,
+    markup_value: markupValue,
+    price,
     enabled: !(item.enabled === false || item.enabled === 0 || item.enabled === '0'),
     sort_order: Number(item.sort_order || 0),
   };
+}
+
+function normalizeTrafficMarkupType(value: unknown): TrafficMarkupType {
+  const normalized = String(value || '').trim();
+  return normalized === 'percent' || normalized === 'fixed' ? normalized : 'none';
+}
+
+/** 与后端 SettingService::applyTrafficPackageMarkup 保持同一套算法 */
+function applyTrafficMarkup(cost: number, markupType: TrafficMarkupType, markupValue: number): number {
+  const base = Math.max(Number(cost) || 0, 0);
+  if (base <= 0) return 0;
+  const delta = Math.max(Number(markupValue) || 0, 0);
+  const value = markupType === 'percent' ? base * (1 + delta / 100) : markupType === 'fixed' ? base + delta : base;
+  return Math.round(value * 100) / 100;
+}
+
+function recalculateRowPrice(row: TrafficPackageItem) {
+  if (row.markup_type === 'none' || row.cost_price <= 0) return;
+  row.price = applyTrafficMarkup(row.cost_price, row.markup_type, row.markup_value);
 }
 
 function normalizeTrafficPackageItems(items: unknown[]): TrafficPackageItem[] {
@@ -607,6 +700,8 @@ function normalizeTrafficPackageGroups(groups: unknown[]): TrafficPackageGroup[]
         effective_product_group_id: effectiveProductGroupId,
         product_group_label: stringFrom(item.product_group_label, item.category_label),
         product_ids: normalizeProductIds(item.product_ids || []),
+        markup_type: normalizeTrafficMarkupType(item.markup_type),
+        markup_value: Number(item.markup_value || 0) || 0,
         sort_order: Number(item.sort_order || 0),
       };
     })
@@ -633,6 +728,8 @@ function createTrafficGroupsFromItems(items: TrafficPackageItem[]): TrafficPacka
       effective_product_group_id: item.effective_product_group_id,
       product_group_label: item.product_group_label,
       product_ids: item.product_ids,
+      markup_type: item.markup_type,
+      markup_value: item.markup_value,
       sort_order: map.size + 1,
     });
   });
@@ -687,6 +784,9 @@ function validateTrafficRows() {
     if (!label) throw new Error(t('products.trafficPackages.nameRequired'));
     if (!Number.isFinite(target) || target <= 0) throw new Error(t('products.trafficPackages.targetRequired'));
     if (seenTargets.has(target)) throw new Error(t('products.trafficPackages.targetDuplicated'));
+    if (row.markup_type !== 'none' && Number(row.cost_price || 0) <= 0) {
+      throw new Error(t('products.trafficPackages.costPriceRequired'));
+    }
     if (!Number.isFinite(price) || price < 0) throw new Error(t('products.trafficPackages.priceInvalid'));
     seenTargets.add(target);
   });
@@ -729,6 +829,9 @@ function serializeTrafficItems(items: TrafficPackageItem[]) {
     product_ids: normalizeProductIds(item.product_ids),
     label: String(item.label || '').trim(),
     target_value: Number(item.target_value || 0),
+    cost_price: Number(item.cost_price || 0).toFixed(2),
+    markup_type: normalizeTrafficMarkupType(item.markup_type),
+    markup_value: Number(item.markup_value || 0) || 0,
     price: Number(item.price || 0).toFixed(2),
     enabled: item.enabled ? 1 : 0,
     sort_order: Number(item.sort_order || 0),
@@ -749,6 +852,8 @@ function serializeTrafficGroups(groups: TrafficPackageGroup[]) {
     effective_product_group_id: Number(group.effective_product_group_id || 0),
     product_group_label: group.product_group_label,
     product_ids: normalizeProductIds(group.product_ids),
+    markup_type: normalizeTrafficMarkupType(group.markup_type),
+    markup_value: Number(group.markup_value || 0) || 0,
     sort_order: Number(group.sort_order || 0),
   }));
 }
