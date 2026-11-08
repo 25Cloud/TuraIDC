@@ -326,6 +326,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "internal/designs/backend/mofang-cloud-upstream.md",
+      "status": "active",
+      "summary": "魔方云（DCIMS）直连上游：老版 /v1 与新版 /api/v1 两代接口的代际分辨、两套客户端与能力归一。",
+      "review_by": "2027-02-08"
+    },
+    {
       "path": "internal/designs/backend/plugin-standard-v2-2026-10-27.md",
       "status": "current",
       "summary": "插件标准 v2：清单字段、生命周期接口、数据边界、路由约束与插件索引 schema。"
