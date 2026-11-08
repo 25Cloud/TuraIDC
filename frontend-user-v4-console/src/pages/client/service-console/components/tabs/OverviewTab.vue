@@ -31,12 +31,9 @@
           <span>{{ $t('serviceConsole.os') }}</span>
           <div class="detail-cell-value os-cell__value">
             <strong class="os-cell__name">{{ serviceOs }}</strong>
-            <div v-if="canReinstall || canResetPassword" class="os-cell__actions">
+            <div v-if="canReinstall" class="os-cell__actions">
               <t-button v-if="canReinstall" size="small" variant="text" theme="primary" @click="openReinstallDialog()">
-                {{ $t('serviceConsole.osActionsReinstall') }}
-              </t-button>
-              <t-button v-if="canResetPassword" size="small" variant="text" theme="primary" @click="openPasswordDialog">
-                {{ $t('serviceConsole.osActionsResetPassword') }}
+                {{ $t('serviceConsole.osReinstall') }}
               </t-button>
             </div>
           </div>
@@ -168,6 +165,17 @@
                 <copy-icon size="1.125rem" />
               </button>
             </t-tooltip>
+            <!-- 重置密码紧贴密码值与复制按钮，与操作系统行的「重装系统」保持同一套按钮样式 -->
+            <t-button
+              v-if="canResetPassword"
+              class="credential-reset-button"
+              size="small"
+              variant="text"
+              theme="primary"
+              @click="openPasswordDialog"
+            >
+              {{ $t('serviceConsole.credentialResetPassword') }}
+            </t-button>
           </div>
         </div>
         <info-cell

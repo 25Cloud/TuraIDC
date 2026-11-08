@@ -1666,8 +1666,8 @@
             "remarkPlaceholder": "Optional"
         },
         "trafficUsagePercent": "Traffic used {percent}%",
-        "osActionsReinstall": "Reinstall OS",
-        "osActionsResetPassword": "Reset password",
+        "osReinstall": "Reinstall OS",
+        "credentialResetPassword": "Reset password",
         "traffic": {
             "cancel": "Cancel",
             "createInvoice": "Create Invoice",

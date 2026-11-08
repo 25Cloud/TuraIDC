@@ -1666,8 +1666,8 @@
             "remarkPlaceholder": "選填"
         },
         "trafficUsagePercent": "流量已用 {percent}%",
-        "osActionsReinstall": "重灌系統",
-        "osActionsResetPassword": "重置密碼",
+        "osReinstall": "重灌系統",
+        "credentialResetPassword": "重置密碼",
         "traffic": {
             "cancel": "取消",
             "createInvoice": "建立賬單",

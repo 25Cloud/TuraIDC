@@ -8,7 +8,8 @@ import { expect, test } from '@playwright/test';
  * - `connection.port = 0`：上游 host.port 为空，前端兜底显示 22（前提是有登录用户名）
  * - `upstream.os = "97"`：这是上游的系统 **ID**，真实系统名在 `specs` 里 `key === 'os'` 的 value
  * - `traffic.usage_percent = 57.7`：进度条百分比
- * - `actions.reinstall / password_reset`：操作系统行右侧两个入口的开关
+ * - `actions.reinstall`：操作系统行「重装系统」入口的开关
+ * - `actions.password_reset`：登录密码行「重置密码」入口的开关
  *
  * 本用例只验证只读展示：点击重装 / 重置只允许打开对话框，不得下发任何写操作（下面用请求记录断言）。
  */
@@ -161,16 +162,23 @@ test.describe('服务控制台 · 实例概览（真机 3993 样本）', () => {
     await expect(osCellValue(page)).not.toContainText('97');
   });
 
-  test('操作系统行右侧的重装 / 重置只打开对话框，不下发任何写操作', async ({ page }) => {
+  test('重装系统在操作系统行、重置密码在密码行，点开都只有对话框、不下发任何写操作', async ({ page }) => {
     const mock = await mockClientApi(page);
     await page.goto(`/client/services/${SERVICE_ID}`, { waitUntil: 'domcontentloaded' });
 
+    // 重装系统：操作系统那一行
     const osCell = page.locator('.os-cell');
     const reinstallButton = osCell.getByRole('button', { name: '重装系统' });
-    const resetButton = osCell.getByRole('button', { name: '重置密码' });
-
     await expect(reinstallButton).toBeVisible();
+
+    // 重置密码：登录密码那一行（紧贴密码值与复制按钮）
+    const passwordCell = page.locator('.credential-password-value');
+    const resetButton = passwordCell.getByRole('button', { name: '重置密码' });
     await expect(resetButton).toBeVisible();
+
+    // 两个入口不串行：OS 行不再有「重置密码」，密码行也不该有「重装系统」
+    await expect(osCell.getByRole('button', { name: '重置密码' })).toHaveCount(0);
+    await expect(passwordCell.getByRole('button', { name: '重装系统' })).toHaveCount(0);
 
     await reinstallButton.click();
     const reinstallDialog = page.locator('.t-dialog', { hasText: '重装系统' });
