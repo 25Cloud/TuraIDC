@@ -453,7 +453,7 @@ class ServiceDetailService
             'hostname' => ServiceHostname::resolveConnectionHostname($service, $currentProvisionData, $cachedConnection, $host),
             'username' => trim((string) ($host['username'] ?? ($cachedConnection['username'] ?? ''))),
             'password' => $this->resolveConnectionPasswordFromHost($host, $cachedConnection),
-            'port' => (int) (($host['port'] ?? ($cachedConnection['port'] ?? 0)) ?: 0),
+            'port' => $this->resolveConnectionPort($service, $host, $cachedConnection),
             'internal_ip' => trim((string) ($host['internalip'] ?? $host['privateip'] ?? ($cachedConnection['internal_ip'] ?? ''))),
         ];
 
@@ -1715,6 +1715,31 @@ class ServiceDetailService
         return $isMasked
             ? trim((string) ($cachedConnection['password'] ?? ''))
             : $remotePassword;
+    }
+
+    /**
+     * 连接端口。
+     *
+     * 魔方财务对 KVM/云服务器这类实例根本不下发 host.port，上游面板自己也不填，于是
+     * 我们这边整条链路都是 0，实例页只能显示 `--`。这类机器的 SSH 端口就是 22，
+     * 所以只对机器类产品兜底；面板型产品（cPanel/宝塔等）上游会明确给端口，
+     * 一律兜成 22 会把用户引到错误的端口上。
+     */
+    private function resolveConnectionPort(Service $service, array $host, array $cachedConnection): int
+    {
+        $port = (int) (($host['port'] ?? ($cachedConnection['port'] ?? 0)) ?: 0);
+        if ($port > 0) {
+            return $port;
+        }
+
+        $product = $service->product;
+        $serviceTypeCode = $product instanceof Product ? trim((string) $product->service_type_code) : '';
+        $productType = $product instanceof Product ? trim((string) $product->product_type) : '';
+
+        $isMachine = in_array($serviceTypeCode, [ProductType::VPS, 'dcim', 'dcimcloud'], true)
+            || in_array($productType, [ProductType::CLOUD_SERVER, 'dcim', 'dcimcloud'], true);
+
+        return $isMachine ? 22 : 0;
     }
 
     private function extractModuleProgress(array $payload, string $status = '', string $description = ''): ?int

@@ -1665,6 +1665,9 @@
             "ipPlaceholder": "例如 0.0.0.0/0",
             "remarkPlaceholder": "選填"
         },
+        "trafficUsagePercent": "流量已用 {percent}%",
+        "osActionsReinstall": "重裝系統",
+        "osActionsResetPassword": "重置密碼",
         "traffic": {
             "cancel": "取消",
             "createInvoice": "創建賬單",

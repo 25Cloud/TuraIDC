@@ -352,6 +352,49 @@
     flex: none;
   }
 
+  /* ---- 概览：流量进度条 + 操作系统行系统操作入口 ---- */
+  // 流量：文字在上、进度条在下，撑满整格，避免被 .detail-cell-value 的 nowrap 挤成一条线
+  .detail-cell .traffic-cell__value {
+    flex-flow: column wrap;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  .traffic-cell__progress {
+    width: 100%;
+  }
+
+  .traffic-cell__caption {
+    color: var(--td-text-color-placeholder);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  // 操作系统：名字在左，重装/重置两个入口贴在右侧
+  .detail-cell .os-cell__value {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .detail-cell .os-cell__value .os-cell__name {
+    flex: 1 1 6rem;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .os-cell__actions {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
   .connection-ip-cell {
     align-items: flex-start;
   }

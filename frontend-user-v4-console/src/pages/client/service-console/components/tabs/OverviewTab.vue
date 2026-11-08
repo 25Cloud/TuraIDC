@@ -27,7 +27,20 @@
           copyable
           @copy="copyText"
         />
-        <info-cell :label="$t('serviceConsole.os')" :value="serviceOs" strong />
+        <div class="detail-cell os-cell">
+          <span>{{ $t('serviceConsole.os') }}</span>
+          <div class="detail-cell-value os-cell__value">
+            <strong class="os-cell__name">{{ serviceOs }}</strong>
+            <div v-if="canReinstall || canResetPassword" class="os-cell__actions">
+              <t-button v-if="canReinstall" size="small" variant="text" theme="primary" @click="openReinstallDialog()">
+                {{ $t('serviceConsole.osActionsReinstall') }}
+              </t-button>
+              <t-button v-if="canResetPassword" size="small" variant="text" theme="primary" @click="openPasswordDialog">
+                {{ $t('serviceConsole.osActionsResetPassword') }}
+              </t-button>
+            </div>
+          </div>
+        </div>
         <info-cell :label="$t('serviceConsole.createdAt')" :value="detail.created_at || '--'" strong />
         <div class="detail-cell">
           <span>{{ $t('serviceConsole.instanceStatus') }}</span>
@@ -49,15 +62,25 @@
         </t-button>
       </template>
       <div class="detail-grid detail-grid--config">
-        <info-cell
-          :label="$t('serviceConsole.trafficLabel')"
-          :value="
-            detail.traffic?.limited
-              ? `${detail.traffic.usage_label || '0G'} / ${detail.traffic.limit_label || $t('serviceConsole.traffic.unlimited')}`
-              : $t('serviceConsole.traffic.unlimited')
-          "
-          strong
-        />
+        <div class="detail-cell traffic-cell">
+          <span>{{ $t('serviceConsole.trafficLabel') }}</span>
+          <div class="detail-cell-value traffic-cell__value">
+            <strong>{{ trafficText }}</strong>
+            <template v-if="trafficPercent !== null">
+              <t-progress
+                class="traffic-cell__progress"
+                theme="line"
+                :percentage="trafficPercent"
+                :status="trafficProgressStatus"
+                :label="false"
+                :aria-label="$t('serviceConsole.trafficUsagePercent', { percent: trafficPercentText })"
+              />
+              <span class="traffic-cell__caption">{{
+                $t('serviceConsole.trafficUsagePercent', { percent: trafficPercentText })
+              }}</span>
+            </template>
+          </div>
+        </div>
         <info-cell :label="$t('serviceConsole.regionLabel')" :value="serviceRegion" strong />
         <info-cell label="CPU" :value="findSpecValue(['CPU', '核心'])" strong />
         <info-cell :label="$t('serviceConsole.memoryLabel')" :value="findSpecValue(['内存', 'RAM'])" strong />
@@ -145,14 +168,6 @@
                 <copy-icon size="1.125rem" />
               </button>
             </t-tooltip>
-            <t-button
-              v-if="detail.actions?.password_reset"
-              size="small"
-              variant="text"
-              theme="primary"
-              @click="openPasswordDialog"
-              >{{ $t('serviceConsole.reset') }}</t-button
-            >
           </div>
         </div>
         <info-cell
@@ -244,6 +259,12 @@ const {
   primaryConnectionText,
   connectionEndpointText,
   connectionPortText,
+  trafficText,
+  trafficPercent,
+  trafficPercentText,
+  trafficProgressStatus,
+  canReinstall,
+  canResetPassword,
   instanceStatusText,
   instanceStatusTheme,
   serviceIpCount,
@@ -254,6 +275,7 @@ const {
   openRenewDialog,
   openTrafficPackageDialog,
   openPasswordDialog,
+  openReinstallDialog,
   copyText,
   trafficLoading,
 } = useServiceConsoleContext();

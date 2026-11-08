@@ -10,8 +10,16 @@ use App\Services\ClientServiceConsole\ServiceNatService;
 use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\System\OperationLogService;
 use PHPUnit\Framework\Attributes\Test;
-use PHPUnit\Framework\TestCase;
+use Tests\TestCase;
 
+/**
+ * 缓存键隔离：不同本地服务的 NAT 上下文键不能串。
+ *
+ * 必须继承框架的 TestCase 而不是 PHPUnit 的裸 TestCase：`new Service` 会触发
+ * Service::booted() → DatabaseSchema 解析列信息，那一步要 config()，没有容器就会
+ * 抛 "Class config does not exist"。以前这份用例靠「同进程更早的测试先 boot 过」
+ * 蒙对，单独跑或换顺序必红。
+ */
 class ServiceNatCacheIsolationTest extends TestCase
 {
     #[Test]

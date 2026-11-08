@@ -1665,6 +1665,9 @@
             "ipPlaceholder": "e.g. 0.0.0.0/0",
             "remarkPlaceholder": "Optional"
         },
+        "trafficUsagePercent": "Traffic used {percent}%",
+        "osActionsReinstall": "Reinstall OS",
+        "osActionsResetPassword": "Reset password",
         "traffic": {
             "cancel": "Cancel",
             "createInvoice": "Create Invoice",
