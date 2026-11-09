@@ -128,7 +128,7 @@ export function installDemoTransport(instance: AxiosInstance, options: DemoTrans
 
   // 原生 fetch 的漏网之鱼（AI 端点客户端只用 fetch，不走 axios 实例）：同一个匹配器接到窗口上，
   // 否则演示站会真的去请求 demo 域名的 /api。
-  installFetchBridge(options.app, () => routers, diagnostics);
+  installFetchBridge(options.app, () => routers, diagnostics, ensureFixtures);
 
   if (!options.silent) {
     installDemoBadge(options.badgeText ?? '演示环境 · 数据为示例，操作不会生效');
@@ -145,6 +145,7 @@ function installFetchBridge(
   app: DemoApp,
   getRouters: () => { routes: CompiledRoute[]; refusals: CompiledRefusal[] },
   diagnostics: DemoDiagnostics,
+  ensureFixtures: () => Promise<void>,
 ): void {
   if (typeof window === 'undefined' || typeof window.fetch !== 'function') {
     return;
@@ -159,6 +160,10 @@ function installFetchBridge(
     if (!path) {
       return originalFetch(input, init);
     }
+
+    // 必须有：fixture 是懒加载的，首个请求常常来自这里（用户端首页的 LCP 预热、
+    // 控制台的 AI bootstrap）。不等加载完就匹配，会把这条请求误记成 miss 并返回空数据。
+    await ensureFixtures();
 
     const method = String(init?.method ?? (typeof input === 'object' && 'method' in input ? input.method : 'GET')).toUpperCase();
     const segments = splitPath(path);

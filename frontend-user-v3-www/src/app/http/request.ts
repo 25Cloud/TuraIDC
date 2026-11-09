@@ -11,7 +11,7 @@ import {
   retrySafeRequest,
 } from "@turaidc/shared/runtime";
 import { toUserMessage } from "@/utils/userMessage";
-import { getClientToken, setClientToken } from "@/app/runtime/session";
+import { getClientToken } from "@/app/runtime/session";
 import { installDemoTransport } from "@turaidc/shared/demo";
 
 const DEFAULT_TIMEOUT = 18000;
@@ -115,12 +115,12 @@ const request = axios.create({
 });
 
 // 演示站构建：请求不出网，全部由打包进来的示例数据应答（见 docs/internal/designs/frontend/demo-site-design.md）
+// 不预置 token：访客从「登录」走一遍流程（登录页已填好演示凭据），比莫名处于登录态更明白。
 if (import.meta.env.VITE_DEMO_MODE === "true") {
   installDemoTransport(request, {
     app: "user",
     loadFixtures: () => import("@demo-fixtures/user.json"),
   });
-  setClientToken("demo-token");
 }
 
 request.interceptors.request.use(

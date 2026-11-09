@@ -12,6 +12,24 @@
       <t-tab-panel value="code" :label="$t('auth.byCode')" />
     </t-tabs>
 
+    <!-- 演示站：账号密码直接写出来，省得访客猜；演示环境任意账号密码也能进 -->
+    <div
+      v-if="DEMO_MODE"
+      class="client-auth-demo"
+      style="
+        margin: 0 0 16px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: rgba(0, 82, 217, 0.08);
+        border: 1px solid rgba(0, 82, 217, 0.24);
+        font-size: 13px;
+        line-height: 1.6;
+      "
+    >
+      演示环境：账号 <b>{{ DEMO_ACCOUNT.username }}</b> / 密码 <b>{{ DEMO_ACCOUNT.password }}</b
+      >（已自动填好，直接点登录）
+    </div>
+
     <!-- 密码登录 -->
     <t-form
       v-if="loginMode === 'password'"
@@ -186,6 +204,10 @@ interface RuntimeCodeSendError {
 const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
+
+/** 演示站：把演示凭据直接写进表单，访客点一下「登录」就能进控制台 */
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+const DEMO_ACCOUNT = { username: 'demo@example.com', password: 'demo123456' };
 const formRef = ref<FormInstanceFunctions<LoginForm>>();
 const loading = ref(false);
 const showPassword = ref(false);
@@ -209,8 +231,8 @@ const {
 });
 
 const form = reactive<LoginForm>({
-  account: '',
-  password: '',
+  account: DEMO_MODE ? DEMO_ACCOUNT.username : '',
+  password: DEMO_MODE ? DEMO_ACCOUNT.password : '',
 });
 
 const loginMode = ref<'password' | 'code'>('password');
@@ -476,6 +498,12 @@ async function submitCodeForm() {
 }
 
 onMounted(() => {
+  // 演示站：挂载后再写一次，确保表单真的是填好的（任何初始化逻辑都不会把它清空）
+  if (DEMO_MODE) {
+    form.account = DEMO_ACCOUNT.username;
+    form.password = DEMO_ACCOUNT.password;
+  }
+
   if (typeof route.query.account === 'string') {
     form.account = route.query.account;
   }

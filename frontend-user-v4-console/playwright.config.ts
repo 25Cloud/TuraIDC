@@ -2,6 +2,8 @@ import { defineConfig, devices } from '@playwright/test';
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // 演示站冒烟单独一套配置（跑在构建产物上，需要 demo/dist），默认套件不掺进来
+  testIgnore: ['**/demo/**'],
   outputDir: './test-results',
   // 该套件共享一个 Vite 服务，测试之间保持串行，避免首屏模块编译竞争。
   fullyParallel: false,

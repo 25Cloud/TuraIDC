@@ -13,7 +13,7 @@ import type { AxiosRequestConfig, InternalAxiosRequestConfig } from 'axios';
 import axios from 'axios';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 
-import { getClientToken, removeClientToken, setClientToken } from '@/app/runtime/session';
+import { getClientToken, removeClientToken } from '@/app/runtime/session';
 import { i18n } from '@/locales';
 import router from '@/router';
 import type { ClientAccountPolicyItem } from '@/types/client';
@@ -206,7 +206,7 @@ if (import.meta.env.VITE_DEMO_MODE === 'true') {
     app: 'console',
     loadFixtures: () => import('@demo-fixtures/console.json'),
   });
-  setClientToken('demo-token');
+  // 不预置 token：让访客走一遍登录（登录页已填好演示凭据），比「莫名已在登录态」更明白
 }
 
 httpClient.interceptors.request.use(
