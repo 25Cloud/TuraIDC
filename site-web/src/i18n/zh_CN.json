@@ -22,7 +22,8 @@
     "licensing": "许可说明",
     "commercial": "商业授权",
     "viewDocs": "文档",
-    "demo": "在线演示"
+    "demo": "在线演示",
+    "demoSite": "界面演示"
   },
   "theme": {
     "label": "主题",

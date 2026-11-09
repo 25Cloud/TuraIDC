@@ -22,7 +22,8 @@
     "licensing": "License",
     "commercial": "Commercial license",
     "viewDocs": "Docs",
-    "demo": "Live demo"
+    "demo": "Live demo",
+    "demoSite": "Interactive demo"
   },
   "theme": {
     "label": "Theme",

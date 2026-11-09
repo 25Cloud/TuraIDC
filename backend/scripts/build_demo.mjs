@@ -140,29 +140,44 @@ async function buildApplication(name, application) {
   console.log(`  → demo/dist/${name}`);
 }
 
-/** 首页：优先用 site-web 的真实产物；没有依赖时退化成一个演示入口页，保证产物可用 */
+/**
+ * 首页：优先用 site-web 的真实产物。
+ *
+ * site-web 不在 pnpm workspace 里（自带 package-lock.json、用 npm），所以这里自己兜一次
+ * `npm ci`，让 EdgeOne 上的安装命令只需要管 workspace 依赖；装不上或构建失败都退回
+ * 演示入口页，首页挂掉不该把整个演示站带翻。
+ */
 async function buildSite() {
   const siteRoot = path.join(repositoryRoot, 'site-web');
-  const hasDependencies = existsSync(path.join(siteRoot, 'node_modules'));
   const output = path.join(siteRoot, 'dist');
   const target = path.join(distRoot, 'index.html');
+  const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
-  if (hasDependencies) {
-    console.log('\n构建首页（site-web）...');
-    await run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['--prefix', siteRoot, 'run', 'build'], process.env, repositoryRoot);
-
-    if (existsSync(output)) {
-      // site-web 是多页产物（四语言），整目录铺到 demo/dist 根
-      await rm(distRoot, { recursive: true, force: true });
-      await cp(output, distRoot, { recursive: true });
-      console.log('  → demo/dist（site-web 首页四语言）');
-      return;
+  try {
+    if (!existsSync(path.join(siteRoot, 'node_modules'))) {
+      console.log('\n安装首页依赖（site-web：npm ci）...');
+      await run(npm, ['--prefix', siteRoot, 'ci'], process.env, repositoryRoot);
     }
+
+    console.log('\n构建首页（site-web）...');
+    await run(npm, ['--prefix', siteRoot, 'run', 'build'], process.env, repositoryRoot);
+
+    if (!existsSync(output)) {
+      throw new Error('site-web 构建完成但没有 dist 产物');
+    }
+
+    // site-web 是多页产物（四语言），整目录铺到 demo/dist 根
+    await rm(distRoot, { recursive: true, force: true });
+    await cp(output, distRoot, { recursive: true });
+    console.log('  → demo/dist（site-web 首页四语言）');
+    return;
+  } catch (error) {
+    console.warn(`首页构建失败，改用演示入口页兜底：${error instanceof Error ? error.message : error}`);
   }
 
-  console.log('\nsite-web 未构建（缺依赖或缺产物），使用演示入口页兜底。');
+  await mkdir(distRoot, { recursive: true });
   const landing = await readFile(path.join(repositoryRoot, 'demo', 'landing', 'index.html'), 'utf8');
-  await writeFile(target, landing.replaceAll('{{ORIGIN}}', DEMO_ORIGIN), 'utf8');
+  await writeFile(target, landing, 'utf8');
 }
 
 const options = parseArguments(process.argv.slice(2));

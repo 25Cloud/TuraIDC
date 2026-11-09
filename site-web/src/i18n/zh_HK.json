@@ -22,7 +22,8 @@
     "licensing": "許可説明",
     "commercial": "商業授權",
     "viewDocs": "文檔",
-    "demo": "在線演示"
+    "demo": "在線演示",
+    "demoSite": "介面示範"
   },
   "theme": {
     "label": "主題",

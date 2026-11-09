@@ -81,7 +81,23 @@ demo/fixtures/               # 各端示例数据生成器
 
 `demo/dist` 结构：`index.html`（site-web 首页四语言整套）、`user/`、`console/`、`admin/`。
 
-构建参数：`VITE_DEMO_MODE=true`、`VITE_API_BASE_URL=https://demo.invalid/api`（永远不会被真正访问，但保留以便漏配时不打到真实域名）、三个 `VITE_BASE_URL` 分别为 `/user/`、`/console/`、`/admin/`。
+### EdgeOne Pages 项目配置
+
+平台口径（[构建指南](https://pages.edgeone.ai/zh/document/build-guide)）：**根目录就是执行构建命令的路径**，输出目录相对根目录，构建命令在 Bash 里跑，镜像预装 pnpm（6–11）与 Node 22.11.0。
+
+| 控制台字段 | 取值 |
+| --- | --- |
+| Preset framework | `Other` |
+| Root directory | `demo/` |
+| Build output directory | `dist` |
+| Install command | `cd .. && HUSKY=0 pnpm install --frozen-lockfile` |
+| Build command | `cd .. && node backend/scripts/build_demo.mjs` |
+
+同一份取值也写在 `demo/edgeone.json` 里，控制台与配置文件保持一致，避免两处漂移。
+
+`site-web` 不在 pnpm workspace（自带 `package-lock.json`、用 npm），所以它的 `npm ci` 由 `build_demo.mjs` 自己兜，安装命令只管 workspace 依赖；首页装不上或构建失败会退回演示入口页，不让首页把整个演示站带翻。
+
+构建参数：`VITE_DEMO_MODE=true`、`VITE_API_BASE_URL=https://demo.turaidc.com/api`（演示域名口径，永远不会被真正访问，但漏配时也不会打到真实接口）、三个 `VITE_BASE_URL` 分别为 `/user/`、`/console/`、`/admin/`。
 
 ## 6. 安全与合规
 

@@ -49,6 +49,14 @@ const TITLE_PARTS = [
             <LogoGithubIcon size="16px" aria-hidden="true" />
             {{ messages.actions.github }}
           </a>
+          <a
+            class="btn btn-outline"
+            :href="LINKS.demoSite"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ messages.actions.demoSite }}
+          </a>
         </div>
 
         <div class="hero-links anim" style="--d: 270ms">
