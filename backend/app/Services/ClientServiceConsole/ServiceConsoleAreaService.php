@@ -801,7 +801,7 @@ class ServiceConsoleAreaService
 
     /** @var list<string> */
     private const MODULE_DROP_TAGS = [
-        'base', 'embed', 'iframe', 'meta', 'object', 'script', 'style', 'svg',
+        'base', 'embed', 'iframe', 'meta', 'object', 'script', 'svg',
     ];
 
     /** @var list<string> */
@@ -810,8 +810,8 @@ class ServiceConsoleAreaService
         'caption', 'code', 'col', 'colgroup', 'dd', 'del', 'details', 'div', 'dl',
         'dt', 'em', 'fieldset', 'figcaption', 'figure', 'footer', 'form', 'h1', 'h2',
         'h3', 'h4', 'h5', 'h6', 'head', 'header', 'hr', 'html', 'img', 'input', 'label',
-        'legend', 'li', 'link', 'main', 'ol', 'option', 'p', 'picture', 'pre', 'select',
-        'small', 'source', 'span', 'strong', 'sub', 'summary', 'sup', 'table', 'tbody',
+        'legend', 'li', 'link', 'main', 'ol', 'option', 'output', 'p', 'picture', 'pre', 'select',
+        'small', 'source', 'span', 'strong', 'style', 'sub', 'summary', 'sup', 'table', 'tbody',
         'td', 'textarea', 'tfoot', 'th', 'thead', 'title', 'tr', 'ul',
     ];
 
@@ -844,6 +844,12 @@ class ServiceConsoleAreaService
             $tagName = strtolower($child->tagName);
             if (in_array($tagName, self::MODULE_DROP_TAGS, true)) {
                 $child->parentNode?->removeChild($child);
+
+                continue;
+            }
+
+            if ($tagName === 'style') {
+                $this->sanitizeModuleStyle($child);
 
                 continue;
             }
@@ -908,6 +914,30 @@ class ServiceConsoleAreaService
                 $element->setAttribute($rawName, implode(' ', $tokens));
             }
         }
+    }
+
+    /**
+     * 保留必要的面板 CSS，但删除会引入外部资源或执行浏览器脚本的声明。
+     * 内容响应会把清理后的 style 块加入 CSP hash，仍不放开任意 inline style。
+     */
+    private function sanitizeModuleStyle(DOMElement $element): void
+    {
+        $css = (string) $element->textContent;
+        $css = (string) preg_replace('~@import\s+[^;]+;?~i', '', $css);
+        $css = (string) preg_replace('~url\(\s*["\']?\s*(?:https?:|//|data:|file:|javascript:)[^)]*\)~i', 'none', $css);
+        $css = (string) preg_replace('~(?:expression\s*\([^)]*\)|-moz-binding\s*:[^;}]*)~i', '', $css);
+        $css = (string) preg_replace('~\bbehavior\s*:[^;}]*(?:;|})~i', '', $css);
+
+        if (trim($css) === '') {
+            $element->parentNode?->removeChild($element);
+
+            return;
+        }
+
+        while ($element->firstChild !== null) {
+            $element->removeChild($element->firstChild);
+        }
+        $element->appendChild($element->ownerDocument->createTextNode($css));
     }
 
     private function isSafeModuleUrl(string $value, string $tagName, string $attribute): bool

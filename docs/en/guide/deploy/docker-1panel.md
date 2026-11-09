@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 32da4bd4335e542987f53598afbd0297a959eebb080749f7b31790d5763847d4
+sourceHash: 6595fa43badd8738e78701650b6ba06bad2bb14ad4a005ce9e60196927b2425a
 translatedAt: 2026-10-26
 ---
 
@@ -59,7 +59,7 @@ vim .env
 | ------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | Yes      | The four public addresses: distinct from each other, same protocol, no path; in the form `https://api.example.com`                                                                                                                                    |
 | `CLIENT_SESSION_COOKIE_DOMAIN`                                     | No       | Fill in the parent domain such as `.example.com` when the site and console share login state across subdomains; leave empty for a single domain                                                                                                       |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | No       | Image registry address, defaults to `ghcr.io` / `25cloud` / `latest`, consistent with the CI push target                                                                                                                                              |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | No       | Image registry address, defaults to `ghcr.io` / `25cloud` / `latest`; Compose appends `:${IMAGE_TAG}`, so production should use a scanned immutable tag such as a commit SHA or release tag, not a full digest in `IMAGE_TAG` or `latest`             |
 | `APP_KEY`                                                          | Yes      | Production deployments must set and persist it explicitly. From the repository root, run `php artisan key:generate --show` in `backend` to create the `base64:...` value; container rebuilds never rotate it, and entrypoint exits when it is missing |
 | `INSTALL_ADMIN_PASSWORD`                                           | Yes      | Password of the default administrator `cerbo` on first initialization, at least 12 characters of a strong password, takes effect only once on an empty database                                                                                       |
 | `SESSION_SECURE_COOKIE`                                            | Yes      | `true` in HTTPS environments, `false` in plain HTTP environments                                                                                                                                                                                      |
@@ -142,7 +142,7 @@ docker compose pull && docker compose up -d
 docker compose up -d --build
 ```
 
-Before production startup, set the `APP_KEY` saved with the matching database backup in `.env`. On first startup (empty database) `install_db.py` runs automatically: it imports the schema baseline, runs incremental migrations, writes the default configuration, and creates the administrator `cerbo`. In non-production, an empty install state may generate `APP_KEY` once; existing data with a missing key makes entrypoint exit.
+Before production startup, set the `APP_KEY` saved with the matching database backup in `.env`. On first startup (empty database) `install_db.py` runs automatically: it imports the schema baseline, runs incremental migrations, writes the default configuration, and creates the administrator `cerbo`. In non-production, an empty install state may generate `APP_KEY` once and persist it in the `app-storage` volume; existing data with a missing key makes entrypoint exit.
 
 ### 5.3 Verification
 

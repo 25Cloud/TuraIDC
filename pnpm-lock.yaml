@@ -318,7 +318,7 @@ importers:
         specifier: ^14.4.0
         version: 14.4.0(vue@3.5.45(typescript@5.9.3))
       axios:
-        specifier: ^1.19.0
+        specifier: ^1.21.0
         version: 1.21.0
       dayjs:
         specifier: ^1.11.23
@@ -327,7 +327,7 @@ importers:
         specifier: ^6.1.0
         version: 6.1.0
       markdown-it:
-        specifier: ^15.0.0
+        specifier: ^15.0.3
         version: 15.0.3
       nprogress:
         specifier: ^0.2.0
@@ -342,7 +342,7 @@ importers:
         specifier: ^3.10.0
         version: 3.10.0(vue@3.5.45(typescript@5.9.3))
       qs:
-        specifier: ^6.15.3
+        specifier: ^6.17.1
         version: 6.17.1
       tdesign-icons-vue-next:
         specifier: ^0.4.10
@@ -354,10 +354,10 @@ importers:
         specifier: ^1.6.0
         version: 1.6.0
       vue:
-        specifier: ^3.5.41
+        specifier: ^3.5.45
         version: 3.5.45(typescript@5.9.3)
       vue-i18n:
-        specifier: ^11.4.8
+        specifier: ^11.4.18
         version: 11.4.18(vue@3.5.45(typescript@5.9.3))
       vue-router:
         specifier: ^5.2.0
@@ -451,7 +451,7 @@ importers:
         specifier: ^32.1.0
         version: 32.1.0(rolldown@1.2.16)(rollup@4.62.4)(vite@8.3.6(@types/node@26.2.0)(jiti@2.6.1)(less@4.9.0)(sass@1.103.0)(stylus@0.57.0)(yaml@2.9.0))(vue@3.5.45(typescript@5.9.3))
       vite:
-        specifier: ^8.2.2
+        specifier: ^8.3.6
         version: 8.3.6(@types/node@26.2.0)(jiti@2.6.1)(less@4.9.0)(sass@1.103.0)(stylus@0.57.0)(yaml@2.9.0)
       vite-svg-loader:
         specifier: ^5.1.1

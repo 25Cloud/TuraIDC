@@ -109,6 +109,18 @@ class ServiceVncTokenSecurityTest extends TestCase
             'Origin' => 'https://evil.example.com',
         ])->assertForbidden();
 
+        Cache::store('redis_volatile')->put('vnc_token:referer-token', [
+            'service_id' => 12,
+            'username' => 'root',
+            'target' => '10.0.0.8:5900',
+            'token_scope' => 'public',
+        ], now()->addMinutes(5));
+
+        // 同源 GET 可能没有 Origin，但 Referer 仍能可靠确认控制台来源，应允许兑换。
+        $this->getJson('/api/v2/client/vnc-tokens/referer-token', [
+            'Referer' => 'http://console.example.test/vnc/vnc.html',
+        ])->assertOk();
+
         // 缺少 Origin 的非浏览器回放请求必须在读取 token 前拒绝。
         $this->getJson('/api/v2/client/vnc-tokens/test-token')
             ->assertForbidden();

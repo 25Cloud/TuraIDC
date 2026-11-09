@@ -95,6 +95,9 @@ services:
     command: >-
       bash -euxc '
         set -e
+        apt-get update
+        apt-get install -y --no-install-recommends git ca-certificates
+        rm -rf /var/lib/apt/lists/*
         git config --global --add safe.directory /repo
         mkdir -p /ci && git -C /repo archive HEAD | tar -x -C /ci
         cd /ci

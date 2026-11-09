@@ -43,7 +43,7 @@ class ServiceConsoleAreaController extends Controller
         return $this->success($payload, '已生成访问凭证')->withCookie(cookie(
             self::ticketCookieName((int) $service),
             $ticket,
-            (int) ($payload['expires_in'] ?? 180),
+            max(1, (int) ceil(((int) ($payload['expires_in'] ?? 180)) / 60)),
             self::ticketCookiePath((int) $service),
             null,
             $request->isSecure() || app()->environment('production'),
@@ -66,7 +66,7 @@ class ServiceConsoleAreaController extends Controller
                 throw new BusinessException('该功能页暂无可展示内容', 42200);
             }
 
-            return response($html, 200, $this->panelResponseHeaders());
+            return response($html, 200, $this->panelResponseHeaders($html));
         } catch (\Throwable $exception) {
             Log::warning('[服务控制台] 自定义区域内容加载失败', [
                 'service_id' => (int) $service,
@@ -159,9 +159,16 @@ class ServiceConsoleAreaController extends Controller
      *
      * @return array<string, string>
      */
-    private function panelResponseHeaders(): array
+    private function panelResponseHeaders(?string $html = null): array
     {
         $ancestors = ["'self'"];
+        $styleSources = ["'self'"];
+
+        if (is_string($html) && preg_match_all('~<style[^>]*>(?<css>.*?)</style>~is', $html, $matches) > 0) {
+            foreach ($matches['css'] as $css) {
+                $styleSources[] = "'sha256-".base64_encode(hash('sha256', (string) $css, true))."'";
+            }
+        }
 
         foreach ((array) config('cors.allowed_origins', []) as $origin) {
             $origin = trim((string) $origin);
@@ -183,7 +190,7 @@ class ServiceConsoleAreaController extends Controller
                 "base-uri 'none'",
                 "script-src 'self'",
                 "script-src-attr 'none'",
-                "style-src 'self'",
+                'style-src '.implode(' ', array_unique($styleSources)),
                 "style-src-attr 'none'",
                 "img-src 'self'",
                 "font-src 'self'",

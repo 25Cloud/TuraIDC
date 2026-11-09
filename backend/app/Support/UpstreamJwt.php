@@ -174,7 +174,10 @@ final class UpstreamJwt
 
         if (str_starts_with($key, 'base64:')) {
             $decoded = base64_decode(substr($key, 7), true);
-            if ($decoded === false || strlen($decoded) < self::MIN_KEY_BYTES || $decoded === str_repeat("\0", strlen($decoded))) {
+            if ($decoded === false
+                || strlen($decoded) < self::MIN_KEY_BYTES
+                || $decoded === str_repeat("\0", strlen($decoded))
+                || self::isExampleKey($decoded)) {
                 return null;
             }
         } elseif (strlen($key) < self::MIN_KEY_BYTES) {

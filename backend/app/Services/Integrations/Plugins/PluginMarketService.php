@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Integrations\Plugins;
 
 use App\Exceptions\BusinessException;
+use GuzzleHttp\Psr7\Uri;
+use GuzzleHttp\Psr7\UriResolver;
+use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use InvalidArgumentException;
@@ -29,6 +32,9 @@ class PluginMarketService
     /** 插件包解压后总大小上限（zip 炸弹防护）。 */
     private const MAX_EXTRACTED_BYTES = 100 * 1024 * 1024;
 
+    /** 每一跳重定向都必须重新通过可信源校验。 */
+    private const MAX_REDIRECTS = 3;
+
     public function __construct(
         private readonly IntegrationPluginService $pluginService,
     ) {}
@@ -48,8 +54,7 @@ class PluginMarketService
         $mirror = (string) config('plugins.market.raw_mirror', '');
         $this->assertTrustedUrl($url, '插件市场索引');
         $requestUrl = $this->withMirror($mirror, $url, '索引下载镜像');
-        $response = Http::timeout($this->timeout())->get($requestUrl);
-        $response->throw();
+        $response = $this->getTrustedResponse($requestUrl, $this->timeout(), '插件市场索引');
 
         $payload = $response->json();
         if (! is_array($payload) || ($payload['schema'] ?? null) !== 1 || ! is_array($payload['plugins'] ?? null)) {
@@ -180,7 +185,8 @@ class PluginMarketService
 
         $this->assertTrustedRepository($repo, $slug);
 
-        $ref = $this->archiveRef($entry, $slug);
+        // 远程条目只允许使用审核锁定的 commit；tag/ref 仅保留在索引中作展示或定位元数据。
+        $ref = $commit;
         $url = str_replace(
             ['{repo}', '{ref}'],
             [$repo, $ref],
@@ -195,8 +201,7 @@ class PluginMarketService
         $sourceUrl = trim($url);
         $this->assertTrustedUrl($sourceUrl, '插件 archive');
         $requestUrl = $this->withMirror($mirror, $sourceUrl, '代码下载镜像');
-        $response = Http::timeout($timeout)->get($requestUrl);
-        $response->throw();
+        $response = $this->getTrustedResponse($requestUrl, $timeout, '插件 archive');
 
         $zipPath = $workDir.DIRECTORY_SEPARATOR.$slug.'-'.preg_replace('/[^A-Za-z0-9._-]/', '-', $ref).'.zip';
         if (file_put_contents($zipPath, $response->body()) === false) {
@@ -213,35 +218,6 @@ class PluginMarketService
         }
 
         return $zipPath;
-    }
-
-    /**
-     * 解析 archive 的 {ref} 段：sha 优先（审核锁定），其次 tag，最后 monorepo 的 ref。
-     *
-     * @param  array<string, mixed>  $entry
-     */
-    private function archiveRef(array $entry, string $slug): string
-    {
-        $sha = trim((string) ($entry['sha'] ?? ''));
-        if ($sha !== '') {
-            return $sha;
-        }
-
-        $tag = trim((string) ($entry['tag'] ?? ''));
-        if ($tag !== '') {
-            return 'refs/tags/'.$tag;
-        }
-
-        $ref = trim((string) ($entry['ref'] ?? ''));
-        if ($ref !== '') {
-            // 允许条目直接写 refs/heads/x 或 refs/tags/x，裸分支名按分支处理
-            return str_starts_with($ref, 'refs/') ? $ref : 'refs/heads/'.$ref;
-        }
-
-        throw new BusinessException(
-            "插件条目缺少 tag/sha/ref：{$slug}（独立仓库填 tag 或 sha；monorepo 填 path + ref）",
-            42200
-        );
     }
 
     /**
@@ -514,7 +490,7 @@ class PluginMarketService
                 // 保留签名元数据，供后续 Ed25519/minisign 校验扩展，不把它们丢出规范化结果。
                 'signature' => (string) ($entry['signature'] ?? ''),
                 'signature_key_id' => (string) ($entry['signature_key_id'] ?? $entry['key_id'] ?? ''),
-                // monorepo 形态：插件在仓库内的子目录 + 所在分支/tag
+                // monorepo 形态：插件在仓库内的子目录；ref 仅作索引展示元数据
                 'path' => trim((string) ($entry['path'] ?? '')),
                 'ref' => trim((string) ($entry['ref'] ?? '')),
                 'released_at' => (string) ($entry['released_at'] ?? ''),
@@ -551,6 +527,46 @@ class PluginMarketService
         $this->assertTrustedUrl($mirror, $what);
 
         return rtrim($mirror, '/').'/'.ltrim($url, '/');
+    }
+
+    /**
+     * 手动跟随 HTTPS allowlist 内的重定向。
+     *
+     * Guzzle 默认会自动跟随重定向，无法在下一跳发出前复用供应链 allowlist；
+     * 这里关闭自动跟随，解析 Location 后逐跳校验，避免索引或 archive 被带到
+     * 未授权主机、内网地址或 HTTP 降级地址。
+     */
+    private function getTrustedResponse(string $url, int $timeout, string $what): Response
+    {
+        $currentUrl = trim($url);
+
+        for ($redirects = 0; ; $redirects++) {
+            $this->assertTrustedUrl($currentUrl, $what);
+            $response = Http::timeout($timeout)
+                ->withOptions(['allow_redirects' => false])
+                ->get($currentUrl);
+
+            if (! $response->redirect()) {
+                $response->throw();
+
+                return $response;
+            }
+
+            if ($redirects >= self::MAX_REDIRECTS) {
+                throw new BusinessException("{$what}重定向次数超过限制", 42200);
+            }
+
+            $location = trim((string) $response->header('Location'));
+            if ($location === '') {
+                throw new BusinessException("{$what}重定向缺少 Location", 42200);
+            }
+
+            try {
+                $currentUrl = (string) UriResolver::resolve(new Uri($currentUrl), new Uri($location));
+            } catch (\Throwable) {
+                throw new BusinessException("{$what}重定向地址非法", 42200);
+            }
+        }
     }
 
     private function assertTrustedUrl(string $url, string $what): void

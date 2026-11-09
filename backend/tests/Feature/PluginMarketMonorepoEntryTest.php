@@ -17,11 +17,11 @@ use Tests\TestCase;
  *
  * 背景：索引规范里写着一插件随主仓发布就用 `repo + path + ref`，但安装器此前只读
  * `repo` / `tag` / `sha`，这类条目执行 `plugin:market:install` 直接报「缺少 tag/sha」。
- * 更要紧的是下一层：monorepo 存档里**每个插件都有自己的 `config.php`，而且深度相同**，
- * 原来的「取深度最小的 config.php」会随手挑中另一个插件 —— 用 A 插件的代码装成 B 插件。
+ * 更要紧的是下一层：monorepo 市场包里**每个插件都有自己的 `plugin.json`，而且深度相同**，
+ * 原来的「取深度最小的 manifest」会随手挑中另一个插件 —— 用 A 插件的代码装成 B 插件。
  * 所以这里锁三件事：
  *   1. 索引条目的 `path` / `ref` 会被保留（不被 normalize 丢掉）；
- *   2. `{ref}` 解析优先级 sha → tag → ref，都没有就报可读错误；
+ *   2. 远程下载只接受审核锁定的 sha，tag/ref 不能成为动态下载回退；
  *   3. 带 `path` 时按 path 精确落位，且拒绝 `..` 之类的越界路径。
  */
 class PluginMarketMonorepoEntryTest extends TestCase
@@ -33,6 +33,10 @@ class PluginMarketMonorepoEntryTest extends TestCase
         parent::setUp();
 
         Cache::flush();
+        config([
+            'plugins.market.trusted_hosts' => ['raw.githubusercontent.com', 'github.com', 'codeload.github.com'],
+            'plugins.market.trusted_repositories' => ['25Cloud/TuraIDC', '25Cloud/example-plugin'],
+        ]);
         $this->tmp = sys_get_temp_dir().DIRECTORY_SEPARATOR.'plugin-market-test-'.bin2hex(random_bytes(4));
         File::ensureDirectoryExists($this->tmp);
     }
@@ -67,44 +71,47 @@ class PluginMarketMonorepoEntryTest extends TestCase
         $this->assertSame('main', $entry['ref']);
     }
 
-    public function test_archive_ref_prefers_sha_then_tag_then_ref(): void
+    public function test_remote_archive_uses_only_the_locked_sha(): void
     {
         $service = app(PluginMarketService::class);
 
-        $this->assertSame('deadsbeef', $this->archiveRef($service, [
-            'sha' => 'deadsbeef',
-            'tag' => 'v1.0.0',
-            'ref' => 'main',
-        ]));
-        $this->assertSame('refs/tags/v1.0.0', $this->archiveRef($service, [
-            'tag' => 'v1.0.0',
-            'ref' => 'main',
-        ]));
-        // monorepo 的裸分支名要转成 refs/heads，GitHub archive 才认
-        $this->assertSame('refs/heads/main', $this->archiveRef($service, ['ref' => 'main']));
-        // 条目自己写全 refs/ 时原样保留
-        $this->assertSame('refs/heads/release/2026', $this->archiveRef($service, ['ref' => 'refs/heads/release/2026']));
+        Http::fake([
+            '*' => Http::response('zip-content', 200),
+        ]);
 
-        $this->expectException(BusinessException::class);
-        $this->expectExceptionMessage('缺少 tag/sha/ref');
-        $this->archiveRef($service, ['repo' => 'a/b']);
+        $download = (new ReflectionClass(PluginMarketService::class))->getMethod('downloadArchive');
+        $download->setAccessible(true);
+        $sha = str_repeat('a', 40);
+        $body = 'zip-content';
+        $path = $download->invoke($service, [
+            'repo' => '25Cloud/example-plugin',
+            'path' => 'backend/plugins/addons/my_plugin',
+            'sha' => $sha,
+            'tag' => 'v1.0.0',
+            'ref' => 'main',
+            'sha256' => hash('sha256', $body),
+        ], 'my_plugin', $this->tmp);
+
+        $this->assertSame($body, (string) file_get_contents($path));
+        Http::assertSent(fn ($request): bool => $request->url() === 'https://github.com/25Cloud/example-plugin/archive/'.$sha.'.zip');
+        @unlink($path);
     }
 
     public function test_monorepo_entry_resolves_the_declared_subdirectory_not_another_plugin(): void
     {
-        // 一个 monorepo 存档：两个插件，config.php 深度完全相同
+        // 一个 monorepo 存档：两个插件，plugin.json 深度完全相同
         $top = $this->tmp.DIRECTORY_SEPARATOR.'TuraIDC-main';
         foreach (['ai_assistant', 'demo_style'] as $slug) {
             $dir = $top.'/backend/plugins/addons/'.$slug;
             File::ensureDirectoryExists($dir);
-            File::put($dir.'/config.php', "<?php return ['info' => ['slug' => '{$slug}']];");
+            File::put($dir.'/plugin.json', json_encode(['info' => ['slug' => $slug]], JSON_THROW_ON_ERROR));
         }
 
         $root = $this->locate($service = app(PluginMarketService::class), $this->tmp, 'backend/plugins/addons/ai_assistant');
 
         $expected = $top.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, 'backend/plugins/addons/ai_assistant');
         $this->assertSame($expected, $root);
-        $manifest = require $root.'/config.php';
+        $manifest = json_decode((string) file_get_contents($root.'/plugin.json'), true, 512, JSON_THROW_ON_ERROR);
         $this->assertSame('ai_assistant', $manifest['info']['slug']);
     }
 
@@ -112,7 +119,7 @@ class PluginMarketMonorepoEntryTest extends TestCase
     {
         $top = $this->tmp.DIRECTORY_SEPARATOR.'repo-main';
         File::ensureDirectoryExists($top.'/backend');
-        File::put($top.'/backend/config.php', "<?php return ['info' => []];");
+        File::put($top.'/backend/plugin.json', '{}');
 
         $service = app(PluginMarketService::class);
 
@@ -129,7 +136,7 @@ class PluginMarketMonorepoEntryTest extends TestCase
     public function test_monorepo_entry_reports_a_missing_subdirectory(): void
     {
         File::ensureDirectoryExists($this->tmp.'/repo-main/backend/plugins/addons/other');
-        File::put($this->tmp.'/repo-main/backend/plugins/addons/other/config.php', "<?php return ['info' => []];");
+        File::put($this->tmp.'/repo-main/backend/plugins/addons/other/plugin.json', '{}');
 
         $this->expectException(BusinessException::class);
         $this->expectExceptionMessage('不存在条目声明的 path');
@@ -140,7 +147,7 @@ class PluginMarketMonorepoEntryTest extends TestCase
     /**
      * 只写 `ref` 不写 `path` 必须直接拒绝。
      *
-     * 这种半填条目下载到的是整仓快照，而定位会退回「最浅 config.php」去猜，
+     * 这种半填条目下载到的是整仓快照，而定位会退回「最浅 manifest」去猜，
      * 结果可能装成仓库里的另一个插件——比报错严重得多。
      */
     public function test_ref_without_path_is_rejected_before_downloading(): void
@@ -170,7 +177,7 @@ class PluginMarketMonorepoEntryTest extends TestCase
     {
         $top = $this->tmp.DIRECTORY_SEPARATOR.'turaidc-plugin-ai-assistant-abc123';
         File::ensureDirectoryExists($top);
-        File::put($top.'/config.php', "<?php return ['info' => ['slug' => 'ai_assistant']];");
+        File::put($top.'/plugin.json', json_encode(['info' => ['slug' => 'ai_assistant']], JSON_THROW_ON_ERROR));
 
         $root = $this->locate(app(PluginMarketService::class), $this->tmp, '');
 
@@ -190,17 +197,6 @@ class PluginMarketMonorepoEntryTest extends TestCase
                 'plugins' => $plugins,
             ]),
         ]);
-    }
-
-    /**
-     * @param  array<string, mixed>  $entry
-     */
-    private function archiveRef(PluginMarketService $service, array $entry): string
-    {
-        $method = (new ReflectionClass($service))->getMethod('archiveRef');
-        $method->setAccessible(true);
-
-        return (string) $method->invoke($service, $entry, 'my_plugin');
     }
 
     private function locate(PluginMarketService $service, string $extractDir, string $path): string

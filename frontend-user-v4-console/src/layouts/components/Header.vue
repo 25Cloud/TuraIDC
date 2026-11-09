@@ -239,7 +239,9 @@ const breadcrumbs = computed(() => {
       // TDesign BreadcrumbItem 只接受字符串或自身的 Route 结构；Vue Router 的
       // RouteLocationRaw 还允许 symbol name 与 query 对象，直接绑定会让 vue-tsc
       // 在升级依赖后拒绝构建。面包屑只需稳定的当前路径文本即可。
-      const to: string = path;
+      const to: string = matchedRoute.name
+        ? router.resolve({ name: matchedRoute.name, params: route.params }).path
+        : path;
       breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
     }
     return breadcrumbArray;

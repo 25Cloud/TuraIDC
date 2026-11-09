@@ -168,7 +168,7 @@ class UserServiceController extends Controller
         return $this->success($payload, '已生成访问凭证')->withCookie(cookie(
             self::AREA_TICKET_COOKIE_PREFIX.$service,
             trim((string) ($payload['ticket'] ?? '')),
-            (int) ($payload['expires_in'] ?? 180),
+            max(1, (int) ceil(((int) ($payload['expires_in'] ?? 180)) / 60)),
             '/api/v2/client/services/'.$service.'/console-area',
             null,
             $request->isSecure() || app()->environment('production'),

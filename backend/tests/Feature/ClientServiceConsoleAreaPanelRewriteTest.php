@@ -36,6 +36,8 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
     {
         return <<<'HTML'
         <link rel="stylesheet" href="https://ww.stay33.cn/vendor/dcimcloud/css/01setting.css">
+        <style>.mountingISO{color:#165dff;background:url("https://evil.example/track.png")}@import url(https://evil.example/x.css);</style>
+        <form action="actions" method="post"><input name="func" value="mountIso"><button type="submit">提交</button><output data-tura-result></output></form>
         <div class="mountingISO"><button id="mountingISOBtn">确定</button></div>
         <script src="https://ww.stay33.cn/vendor/dcimcloud/js/selectFilter.js"></script>
         <script src="//ww.stay33.cn/vendor/dcimcloud/js/selectFilter-2.js"></script>
@@ -85,6 +87,18 @@ class ClientServiceConsoleAreaPanelRewriteTest extends TestCase
         $this->assertStringContainsString('mountingISO', $out, '非可执行面板内容应保留');
         // 动作地址仍在服务端改写后再被脚本净化，不应泄露未改写的上游模板变量。
         $this->assertStringNotContainsString('{$MODULE_CUSTOM_API}', $out);
+    }
+
+    #[Test]
+    public function sanitized_panel_keeps_safe_styles_and_local_form_action_runtime(): void
+    {
+        $out = $this->rewrite($this->panelFragment());
+
+        $this->assertStringContainsString('<style>', $out);
+        $this->assertStringContainsString('mountingISO', $out);
+        $this->assertStringNotContainsString('evil.example', $out);
+        $this->assertStringContainsString('data-tura-result', $out);
+        $this->assertStringContainsString('/media/console-panel/panel-runtime.js', $out);
     }
 
     #[Test]

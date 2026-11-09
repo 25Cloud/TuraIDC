@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: e90764cf26f147a23abbd58bfd60e6f3413fd216a9e681ecc23e5e9484e00f91
+sourceHash: c8a918ccca7ea627d1129ef41cd2fbb1ac7ceea2f264111c7d1584bac0076afa
 generated: zh-hk
 ---
 
@@ -16,13 +16,13 @@ generated: zh-hk
 
 目標形態是**插件市場**：開發者按統一格式創建獨立插件倉庫，用戶通過管理端安裝/升級。分三步走：
 
-| 階段            | 內容                                                                         | 狀態   |
-| --------------- | ---------------------------------------------------------------------------- | ------ |
-| M1 模板與腳手架 | `php artisan plugin:make` 生成骨架 + 獨立模板倉庫 + 本文檔                   | 已落地 |
+| 階段            | 內容                                                                                         | 狀態   |
+| --------------- | -------------------------------------------------------------------------------------------- | ------ |
+| M1 模板與腳手架 | `php artisan plugin:make` 生成骨架 + 獨立模板倉庫 + 本文檔                                   | 已落地 |
 | M2 插件市場     | 可信 GitHub 索引 + 固定引用與 SHA-256 審核鎖定下載 + `plugin:market:install` + 手動 zip 加載 | 已落地 |
-| M3 市場頁與簽名 | 管理端市場頁一鍵安裝/升級、包簽名校驗                                        | 規劃中 |
+| M3 市場頁與簽名 | 管理端市場頁一鍵安裝/升級、包簽名校驗                                                        | 規劃中 |
 
-無論哪一步，**運行期契約不變**：插件仍是 `backend/plugins/{domain-dir}/{slug}/` 下的一組文件，`config.php` 聲明本地插件 manifest，入口類提供 `execute()`。變化的只是「代碼如何進入伺服器」這一層。遠程插件市場包在安裝前不得執行包內 PHP 清單，必須提供純數據 `plugin.json`；安裝器會拒絕帶 `config.php` 的市場包。
+無論哪一步，**運行期契約不變**：插件仍是 `backend/plugins/{domain-dir}/{slug}/` 下的一組文件，`config.php` 聲明本地插件 manifest，入口類提供 `execute()`。變化的只是「代碼如何進入伺服器」這一層。遠程插件市場包在安裝前不得執行包內 PHP 清單，必須提供純數據 `plugin.json`；安裝器會拒絕帶 `config.php` 的市場包。內置插件繼續使用本地 `config.php`，不受市場包規則影響。
 
 ## 2. 快速開始：腳手架
 
@@ -138,6 +138,7 @@ my-sms-plugin/
       "repo": "25Cloud/my-sms-plugin",
       "tag": "v1.2.0",
       "sha": "67cd977fe6a714fe3f78f9a9f58785675ea0492c",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "released_at": "2026-08-29",
       "license": "MIT",
       "homepage": "https://github.com/25Cloud/my-sms-plugin"
@@ -152,7 +153,7 @@ my-sms-plugin/
 
 1. 用模板倉庫（或 `plugin:make`）創建插件獨立倉庫，開發、自測、完成 `README.md` 與 `LICENSE`。
 2. 發版本：打 `vMAJOR.MINOR.PATCH` tag 併發布 GitHub Release（tag 與 `config.php` 的 `info.version` 一致）。
-3. 向 [25Cloud/turaidc-plugin-index](https://github.com/25Cloud/turaidc-plugin-index) 提 PR，在 `plugins.json` 追加條目，附上 tag、固定 commit sha 和下載 archive 的 sha256。
+3. 發佈市場包時生成與本地 `config.php` 等價的 `plugin.json`，並從發行 zip 排除 `config.php`；再向 [25Cloud/turaidc-plugin-index](https://github.com/25Cloud/turaidc-plugin-index) 提 PR，在 `plugins.json` 追加條目，附上 tag、固定 commit sha 和下載 archive 的 sha256。
 4. 平台審核 PR：核對包內容、許可、安全邊界後合入，插件即上架。
 
 **審核鎖定原理**：安裝器只下載索引條目鎖定的版本——
@@ -181,20 +182,27 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 條目可以指向一個**倉庫內的子目錄**，而不是獨立倉庫：
 
 ```json
-{ "repo": "25Cloud/TuraIDC", "path": "backend/plugins/addons/ai_assistant", "ref": "main", "version": "1.1.0" }
+{
+  "repo": "25Cloud/TuraIDC",
+  "path": "backend/plugins/addons/ai_assistant",
+  "sha": "67cd977fe6a714fe3f78f9a9f58785675ea0492c",
+  "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+  "ref": "main",
+  "version": "1.1.0"
+}
 ```
 
 規則：
 
 - **`path` 必填且會被校驗**：逐段只允許 `[A-Za-z0-9._-]`，拒絕 `..`、空段與絕對路徑。索引是遠端數據，絕不能讓它把安裝流程帶出解壓目錄。
-- **定位靠 `path`，不靠猜**：monorepo 存檔裡每個插件都有自己的 `config.php`、而且深度完全相同，按「深度最小」挑會隨手拿到**另一個插件**。帶 `path` 時安裝器直接落到 `{解压根}/{仓库快照目录}/{path}`，不存在就報錯，絕不退化成猜。
-- **固定引用**：市場安裝路徑只接受 40 位 `sha`；內部解析 helper 仍保留 tag/ref 的兼容測試，但缺少 sha 的遠程安裝條目會在發請求前拒絕。
+- **定位靠 `path`，不靠猜**：monorepo 存檔裡每個插件都有自己的 `plugin.json`、而且深度完全相同，按「深度最小」挑會隨手拿到**另一個插件**。帶 `path` 時安裝器直接落到 `{解压根}/{仓库快照目录}/{path}`，不存在就報錯，絕不退化成猜。
+- **固定引用**：市場安裝路徑只接受 40 位 `sha`；`tag` / `ref` 只作展示或目錄元數據，不能作為動態下載回退。缺少 `sha` 的遠程安裝條目會在發請求前拒絕。
 - **只寫 `ref` 不寫 `path` 會被直接拒絕**（「ref 必須與 path 一起使用」），而且是在發請求之前拒。否則下載到整倉快照後會退回「最淺 manifest」去猜，可能裝成倉庫裡的另一個插件——比裝不上嚴重得多。
 - **`sha` 可與 `path` 疊加**，這是最穩的形態：既能精確取子目錄，又保留「審核鎖定 + 頂層目錄名強校驗」的防篡改能力。只寫 `ref: main` 等於跟隨分支漂移，不建議用於已上架條目。
 - **下載體量差一到兩個數量級**：monorepo 下載的是整倉快照（幾十 MB），獨立倉庫通常幾百 KB。超時取 `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`，後者默認 120 秒。
-- **隨主倉內置發佈的插件優先提供獨立發行倉**：條目指向發行倉的 `tag` + `sha`，下載量小、鎖定強、不依賴主倉分支狀態。官方 AI 助手就是這麼做的（主倉 `backend/plugins/addons/ai_assistant` 是唯一真源，發行鏡像倉 [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) 逐字節同步並按版本打 tag）。monorepo 形態留給「不想額外開倉」的場景。
+- **隨主倉內置發佈的插件優先提供獨立發行倉**：條目指向發行倉的固定 `sha`，下載量小、鎖定強、不依賴主倉分支狀態。發行鏡像包必須只帶純數據 `plugin.json`，不得帶可執行 `config.php`；主倉 `backend/plugins/addons/ai_assistant` 仍是唯一真源並保留本地 `config.php`。monorepo 形態留給「不想額外開倉」的場景。
 
-迴歸：`tests/Feature/PluginMarketMonorepoEntryTest.php` 鎖住「path/ref 不被 normalize 丟掉、`{ref}` 優先級、按 path 精確落位而不是挑到別的插件、越界 path 被拒」。
+迴歸：`tests/Feature/PluginMarketMonorepoEntryTest.php` 鎖住「path/ref 不被 normalize 丟掉、archive 只使用鎖定 sha、按 path 精確落位而不是挑到別的插件、越界 path 被拒」。
 
 ## 6. 腳手架與模板的關聯
 

@@ -53,7 +53,7 @@ vim .env
 | ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四个公开地址，互不相同、同一协议、无路径；`https://api.example.com` 形式                                                                                                       |
 | `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官网/控制台跨子域共享登录态时填父域如 `.example.com`；单域留空                                                                                                                 |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 镜像仓库地址；生产应改用已扫描的不可变 SHA tag 或完整 digest，避免 `latest` 漂移                                                                                               |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 镜像仓库地址；Compose 当前按 `:${IMAGE_TAG}` 拼接镜像名，生产应填写已扫描的不可变 tag（如提交 SHA 或版本 tag），不要把完整 digest 填进 `IMAGE_TAG`，也不要使用 `latest`        |
 | `APP_KEY`                                                          | 是   | 生产部署必须显式填写并持久化保存。可在仓库根目录的 `backend` 目录执行 `php artisan key:generate --show` 生成 `base64:...` 值；容器重建不会随机换钥，缺失时 entrypoint 直接退出 |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默认管理员 `cerbo` 的密码，至少 12 位强密码，仅空库首次生效                                                                                                          |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 环境 `true`，纯 HTTP 环境 `false`                                                                                                                                        |
@@ -136,7 +136,7 @@ docker compose pull && docker compose up -d
 docker compose up -d --build
 ```
 
-生产环境启动前必须先在 `.env` 配置与数据库备份同批次保存的 `APP_KEY`。首次启动（空库）自动执行 `install_db.py`：导入 schema baseline、执行增量迁移、写入默认配置、创建管理员 `cerbo`。非生产环境空库安装态缺少 `APP_KEY` 时入口脚本只生成一次；已有数据缺失密钥会直接退出。
+生产环境启动前必须先在 `.env` 配置与数据库备份同批次保存的 `APP_KEY`。首次启动（空库）自动执行 `install_db.py`：导入 schema baseline、执行增量迁移、写入默认配置、创建管理员 `cerbo`。非生产环境空库安装态缺少 `APP_KEY` 时入口脚本只生成一次并写入 `app-storage` 持久化卷；已有数据缺失密钥会直接退出。
 
 ### 5.3 验证
 

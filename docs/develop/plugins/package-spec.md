@@ -15,7 +15,7 @@
 | M2 插件市场     | 可信 GitHub 索引 + 固定引用与 SHA-256 审核锁定下载 + `plugin:market:install` + 手动 zip 加载 | 已落地 |
 | M3 市场页与签名 | 管理端市场页一键安装/升级、包签名校验                                                        | 规划中 |
 
-无论哪一步，**运行期契约不变**：插件仍是 `backend/plugins/{domain-dir}/{slug}/` 下的一组文件，`config.php` 声明本地插件 manifest，入口类提供 `execute()`。变化的只是「代码如何进入服务器」这一层。远程插件市场包在安装前不得执行包内 PHP 清单，必须提供纯数据 `plugin.json`；安装器会拒绝带 `config.php` 的市场包。
+无论哪一步，**运行期契约不变**：插件仍是 `backend/plugins/{domain-dir}/{slug}/` 下的一组文件，`config.php` 声明本地插件 manifest，入口类提供 `execute()`。变化的只是「代码如何进入服务器」这一层。远程插件市场包在安装前不得执行包内 PHP 清单，必须提供纯数据 `plugin.json`；安装器会拒绝带 `config.php` 的市场包。内置插件继续使用本地 `config.php`，不受市场包规则影响。
 
 ## 2. 快速开始：脚手架
 
@@ -131,6 +131,7 @@ my-sms-plugin/
       "repo": "25Cloud/my-sms-plugin",
       "tag": "v1.2.0",
       "sha": "67cd977fe6a714fe3f78f9a9f58785675ea0492c",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "released_at": "2026-08-29",
       "license": "MIT",
       "homepage": "https://github.com/25Cloud/my-sms-plugin"
@@ -145,7 +146,7 @@ my-sms-plugin/
 
 1. 用模板仓库（或 `plugin:make`）创建插件独立仓库，开发、自测、完成 `README.md` 与 `LICENSE`。
 2. 发版本：打 `vMAJOR.MINOR.PATCH` tag 并发布 GitHub Release（tag 与 `config.php` 的 `info.version` 一致）。
-3. 向 [25Cloud/turaidc-plugin-index](https://github.com/25Cloud/turaidc-plugin-index) 提 PR，在 `plugins.json` 追加条目，附上 tag、固定 commit sha 和下载 archive 的 sha256。
+3. 发布市场包时生成与本地 `config.php` 等价的 `plugin.json`，并从发行 zip 排除 `config.php`；再向 [25Cloud/turaidc-plugin-index](https://github.com/25Cloud/turaidc-plugin-index) 提 PR，在 `plugins.json` 追加条目，附上 tag、固定 commit sha 和下载 archive 的 sha256。
 4. 平台审核 PR：核对包内容、许可、安全边界后合入，插件即上架。
 
 **审核锁定原理**：安装器只下载索引条目锁定的版本——
@@ -177,6 +178,8 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 {
   "repo": "25Cloud/TuraIDC",
   "path": "backend/plugins/addons/ai_assistant",
+  "sha": "67cd977fe6a714fe3f78f9a9f58785675ea0492c",
+  "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   "ref": "main",
   "version": "1.1.0"
 }
@@ -185,14 +188,14 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 规则：
 
 - **`path` 必填且会被校验**：逐段只允许 `[A-Za-z0-9._-]`，拒绝 `..`、空段与绝对路径。索引是远端数据，绝不能让它把安装流程带出解压目录。
-- **定位靠 `path`，不靠猜**：monorepo 存档里每个插件都有自己的 `config.php`、而且深度完全相同，按「深度最小」挑会随手拿到**另一个插件**。带 `path` 时安装器直接落到 `{解压根}/{仓库快照目录}/{path}`，不存在就报错，绝不退化成猜。
-- **固定引用**：市场安装路径只接受 40 位 `sha`；内部解析 helper 仍保留 tag/ref 的兼容测试，但缺少 sha 的远程安装条目会在发请求前拒绝。
+- **定位靠 `path`，不靠猜**：monorepo 存档里每个插件都有自己的 `plugin.json`、而且深度完全相同，按「深度最小」挑会随手拿到**另一个插件**。带 `path` 时安装器直接落到 `{解压根}/{仓库快照目录}/{path}`，不存在就报错，绝不退化成猜。
+- **固定引用**：市场安装路径只接受 40 位 `sha`；`tag` / `ref` 只作展示或目录元数据，不能作为动态下载回退。缺少 `sha` 的远程安装条目会在发请求前拒绝。
 - **只写 `ref` 不写 `path` 会被直接拒绝**（「ref 必须与 path 一起使用」），而且是在发请求之前拒。否则下载到整仓快照后会退回「最浅 manifest」去猜，可能装成仓库里的另一个插件——比装不上严重得多。
 - **`sha` 可与 `path` 叠加**，这是最稳的形态：既能精确取子目录，又保留「审核锁定 + 顶层目录名强校验」的防篡改能力。只写 `ref: main` 等于跟随分支漂移，不建议用于已上架条目。
 - **下载体量差一到两个数量级**：monorepo 下载的是整仓快照（几十 MB），独立仓库通常几百 KB。超时取 `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`，后者默认 120 秒。
-- **随主仓内置发布的插件优先提供独立发行仓**：条目指向发行仓的 `tag` + `sha`，下载量小、锁定强、不依赖主仓分支状态。官方 AI 助手就是这么做的（主仓 `backend/plugins/addons/ai_assistant` 是唯一真源，发行镜像仓 [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) 逐字节同步并按版本打 tag）。monorepo 形态留给「不想额外开仓」的场景。
+- **随主仓内置发布的插件优先提供独立发行仓**：条目指向发行仓的固定 `sha`，下载量小、锁定强、不依赖主仓分支状态。发行镜像包必须只带纯数据 `plugin.json`，不得带可执行 `config.php`；主仓 `backend/plugins/addons/ai_assistant` 仍是唯一真源并保留本地 `config.php`。monorepo 形态留给「不想额外开仓」的场景。
 
-回归：`tests/Feature/PluginMarketMonorepoEntryTest.php` 锁住「path/ref 不被 normalize 丢掉、`{ref}` 优先级、按 path 精确落位而不是挑到别的插件、越界 path 被拒」。
+回归：`tests/Feature/PluginMarketMonorepoEntryTest.php` 锁住「path/ref 不被 normalize 丢掉、archive 只使用锁定 sha、按 path 精确落位而不是挑到别的插件、越界 path 被拒」。
 
 ## 6. 脚手架与模板的关联
 

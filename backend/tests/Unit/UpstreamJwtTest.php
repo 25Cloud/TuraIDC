@@ -44,6 +44,7 @@ class UpstreamJwtTest extends TestCase
             'short-key',
             'base64:'.base64_encode('short'),
             'base64:'.base64_encode('SomeRandomString'),
+            'base64:'.base64_encode(str_repeat('SomeRandomString', 2)),
             'base64:'.base64_encode(str_repeat("\0", 32)),
         ] as $invalidKey) {
             $this->assertFalse(UpstreamJwt::isUsableKey($invalidKey));

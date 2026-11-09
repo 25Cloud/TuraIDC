@@ -21,7 +21,7 @@ return [
         // 可信源主机 allowlist。自定义索引、镜像和 archive 地址均必须匹配。
         'trusted_hosts' => array_values(array_filter(array_map(
             static fn (string $host): string => strtolower(trim($host)),
-            explode(',', (string) env('PLUGIN_MARKET_TRUSTED_HOSTS', 'raw.githubusercontent.com,github.com'))
+            explode(',', (string) env('PLUGIN_MARKET_TRUSTED_HOSTS', 'raw.githubusercontent.com,github.com,codeload.github.com'))
         ))),
 
         // 仓库 allowlist；默认只允许主仓与官方 AI 发行镜像，新增插件必须显式追加

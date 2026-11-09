@@ -486,21 +486,30 @@ class ServiceConsoleController extends Controller
     }
 
     /**
-     * VNC 兑换端点 Origin 纵深校验：公开启动 token 只能由受信任的控制台页面兑换。
-     * noVNC 的跨站请求会带 Origin；缺失 Origin 的 curl、图片探针和日志回放一律拒绝。
+     * VNC 兑换端点来源纵深校验：公开启动 token 只能由受信任的控制台页面兑换。
+     * 浏览器 GET 可能没有 Origin，此时仅接受能解析为受信任来源的 Referer。
      */
     private function assertVncTokenOriginAllowed(Request $request): void
     {
         $origin = trim((string) $request->headers->get('Origin', ''));
-        if ($origin === '') {
-            throw new BusinessException('VNC 兑换请求缺少来源', 40300, 403);
-        }
-
         $allowed = array_values(array_filter([
             PublicUrl::console(),
             PublicUrl::api(),
             PublicUrl::admin(),
         ]));
+
+        if ($origin === '') {
+            $referer = trim((string) $request->headers->get('Referer', ''));
+            $parts = $referer !== '' ? parse_url($referer) : false;
+            if (! is_array($parts) || trim((string) ($parts['scheme'] ?? '')) === '' || trim((string) ($parts['host'] ?? '')) === '') {
+                throw new BusinessException('VNC 兑换请求缺少可验证来源', 40300, 403);
+            }
+
+            $origin = strtolower((string) $parts['scheme']).'://'.strtolower((string) $parts['host']);
+            if (isset($parts['port'])) {
+                $origin .= ':'.(int) $parts['port'];
+            }
+        }
 
         foreach ($allowed as $allowedOrigin) {
             if (strcasecmp(rtrim((string) $allowedOrigin, '/'), rtrim($origin, '/')) === 0) {

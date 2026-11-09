@@ -250,7 +250,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
-        run: pnpm exec playwright install --with-deps chromium webkit
+        run: pnpm --filter turaidc-admin-v3 exec playwright install --with-deps chromium webkit
 
       - name: Run admin E2E
         run: pnpm test:admin-v3

@@ -112,7 +112,7 @@ final class ZjmfDownstreamHostSyncTest extends TestCase
     }
 
     #[Test]
-    public function host_sync_v2_distinct_nonce_with_same_business_payload_is_idempotent(): void
+    public function host_sync_v2_distinct_nonce_with_same_business_payload_is_processed_as_distinct_events(): void
     {
         $service = $this->makeService();
         $token = TicketUpstreamCallbackToken::forServiceId((int) $service->id);
@@ -129,10 +129,10 @@ final class ZjmfDownstreamHostSyncTest extends TestCase
         $this->postJson('/api/host/sync', $second)
             ->assertOk()
             ->assertJsonPath('status', 200)
-            ->assertJsonPath('duplicate', true);
+            ->assertJsonPath('duplicate', false);
 
         $this->assertSame(
-            1,
+            2,
             DB::table('zjmf_host_sync_events')->where('service_id', (int) $service->id)->count()
         );
     }

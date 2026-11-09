@@ -75,7 +75,7 @@ class HostSyncPushReceiver
             'upstream_host_id' => (int) ($payload['host_id'] ?? 0),
             'type' => trim((string) ($payload['type'] ?? '')),
             'domainstatus' => strtolower(trim((string) ($payload['domainstatus'] ?? ''))),
-            'duplicate' => (bool) ($response['duplicate'] ?? false),
+            'duplicate' => (bool) $response['duplicate'],
         ]);
 
         return $response;
@@ -125,8 +125,9 @@ class HostSyncPushReceiver
     }
 
     /**
-     * 事件键优先使用上游显式 event_id/request_id；没有稳定事件号时，
-     * 使用去掉验签元数据后的业务载荷指纹。v2 与 legacy 通过版本前缀隔离。
+     * 事件键优先使用上游显式 event_id/request_id；v2 没有事件号时使用 nonce，
+     * legacy 没有 nonce 时才回退到去掉验签元数据后的业务载荷指纹。v2 与 legacy
+     * 通过版本前缀隔离。
      *
      * @param  array<string, mixed>  $payload
      * @return array{event_key: string, signature_version: string, nonce_hash: ?string, payload_hash: string}
@@ -148,9 +149,11 @@ class HostSyncPushReceiver
         );
         $businessHash = hash('sha256', ZjmfSyncSignature::canonicalPayload($businessPayload));
         $payloadHash = hash('sha256', ZjmfSyncSignature::canonicalPayload($payload));
-        $identity = $eventId !== '' ? 'event:'.$eventId : 'payload:'.$businessHash;
-        $eventKey = hash('sha256', 'host-sync|'.$signatureVersion.'|'.$serviceId.'|'.$identity);
         $nonce = strtolower(trim((string) ($payload['nonce'] ?? '')));
+        $identity = $eventId !== ''
+            ? 'event:'.$eventId
+            : ($isV2 && $nonce !== '' ? 'nonce:'.$nonce : 'payload:'.$businessHash);
+        $eventKey = hash('sha256', 'host-sync|'.$signatureVersion.'|'.$serviceId.'|'.$identity);
 
         return [
             'event_key' => $eventKey,

@@ -9,7 +9,7 @@
 cd deploy/docker
 cp .env.example .env
 # 编辑 .env：填四个公开地址、APP_KEY、数据库密码、管理员初始密码、镜像仓库等
-# 生产拉取模式还应把 app/frontends 镜像固定到已扫描的不可变 digest；不要使用 latest。
+# 生产拉取模式还应把 app/frontends 镜像固定到已扫描的不可变 tag（如提交 SHA 或版本 tag）；不要使用 latest。
 
 # 2a. 拉取模式（推荐，CI 已推送镜像到 GHCR）
 docker compose pull && docker compose up -d
@@ -35,7 +35,7 @@ curl http://127.0.0.1:8080/api/ready    # 就绪检查（DB/Cache/Storage/Schedu
 | 用户控制台 | http://127.0.0.1:8082          |
 | 管理端     | http://127.0.0.1:8083          |
 
-生产部署必须在 `.env` 中设置持久化的 `APP_KEY`；容器重建时不会随机生成新密钥，缺失会直接退出。非生产环境的空库首次安装仍可由入口脚本生成一次 `APP_KEY`。首次启动（空库）会自动执行 `install_db.py` 初始化，创建默认管理员 `cerbo`（密码为 `.env` 中 `INSTALL_ADMIN_PASSWORD`，仅首次生效）。
+生产部署必须在 `.env` 中设置持久化的 `APP_KEY`；容器重建时不会随机生成新密钥，缺失会直接退出。非生产环境的空库首次安装缺少 `APP_KEY` 时，入口脚本只生成一次并写入 `app-storage` 持久化卷。首次启动（空库）会自动执行 `install_db.py` 初始化，创建默认管理员 `cerbo`（密码为 `.env` 中 `INSTALL_ADMIN_PASSWORD`，仅首次生效）。
 
 ## 目录结构
 

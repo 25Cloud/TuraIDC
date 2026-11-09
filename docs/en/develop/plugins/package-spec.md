@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: e90764cf26f147a23abbd58bfd60e6f3413fd216a9e681ecc23e5e9484e00f91
+sourceHash: c8a918ccca7ea627d1129ef41cd2fbb1ac7ceea2f264111c7d1584bac0076afa
 translatedAt: 2026-10-26
 ---
 
@@ -15,13 +15,13 @@ The main repository is an AGPL open-source project, and plugins have long been c
 
 The target form is a **plugin marketplace**: developers create standalone plugin repositories in a uniform format, and users install/upgrade them from the admin side. It is delivered in three steps:
 
-| Phase                           | Content                                                                                           | Status    |
-| ------------------------------- | ------------------------------------------------------------------------------------------------- | --------- |
-| M1 Template and scaffolding     | `php artisan plugin:make` generates the skeleton + standalone template repository + this document | Delivered |
-| M2 Plugin marketplace           | GitHub index + tag/sha review-locked download + `plugin:market:install` + manual zip loading      | Delivered |
-| M3 Marketplace page and signing | One-click install/upgrade on the admin marketplace page, package signature verification           | Planned   |
+| Phase                           | Content                                                                                                   | Status    |
+| ------------------------------- | --------------------------------------------------------------------------------------------------------- | --------- |
+| M1 Template and scaffolding     | `php artisan plugin:make` generates the skeleton + standalone template repository + this document         | Delivered |
+| M2 Plugin marketplace           | GitHub index + fixed commit/SHA-256 review-locked download + `plugin:market:install` + manual zip loading | Delivered |
+| M3 Marketplace page and signing | One-click install/upgrade on the admin marketplace page, package signature verification                   | Planned   |
 
-Whatever the step, the **runtime contract stays unchanged**: a plugin is still a set of files under `backend/plugins/{domain-dir}/{slug}/`, `config.php` declares the manifest, and the entry class provides `execute()`. Only the "how the code gets onto the server" layer changes.
+Whatever the step, the **runtime contract stays unchanged**: a plugin is still a set of files under `backend/plugins/{domain-dir}/{slug}/`, `config.php` declares the local manifest, and the entry class provides `execute()`. Only the "how the code gets onto the server" layer changes. A remote marketplace package must provide a data-only `plugin.json` and must not include `config.php`; built-in plugins continue to use their local `config.php`.
 
 ## 2. Quick Start: Scaffolding
 
@@ -132,6 +132,7 @@ The official index repository [25Cloud/turaidc-plugin-index](https://github.com/
       "repo": "25Cloud/my-sms-plugin",
       "tag": "v1.2.0",
       "sha": "67cd977fe6a714fe3f78f9a9f58785675ea0492c",
+      "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "released_at": "2026-08-29",
       "license": "MIT",
       "homepage": "https://github.com/25Cloud/my-sms-plugin"
@@ -140,19 +141,19 @@ The official index repository [25Cloud/turaidc-plugin-index](https://github.com/
 }
 ```
 
-Entry fields: `slug` (globally unique), `domain` (a valid plugin domain), `name`, `description`, `developer`, `repo` (`owner/repo`), `tag` (Git tag, such as `v1.2.0`), `sha` (the commit locked for that version, optional), `released_at`, `license`, `homepage`.
+Entry fields: `slug` (globally unique), `domain` (a valid plugin domain), `name`, `description`, `developer`, `repo` (`owner/repo`), `tag` (Git tag, for display only), `sha` (the required 40-character commit lock), `sha256` (the required 64-character archive digest), `released_at`, `license`, `homepage`.
 
 ### 5.2 Developer Release Flow (PR Review)
 
 1. Create the standalone plugin repository from the template repository (or with `plugin:make`), then develop, self-test, and complete `README.md` and `LICENSE`.
-2. Cut a release: tag `vMAJOR.MINOR.PATCH` and publish a GitHub Release (the tag matches `info.version` in `config.php`).
-3. Open a PR against [25Cloud/turaidc-plugin-index](https://github.com/25Cloud/turaidc-plugin-index), append an entry to `plugins.json`, and include the tag (including the commit sha of that tag is recommended).
+2. Cut a release: tag `vMAJOR.MINOR.PATCH`, generate an equivalent `plugin.json` for the marketplace package, exclude `config.php` from the release zip, and publish a GitHub Release.
+3. Open a PR against [25Cloud/turaidc-plugin-index](https://github.com/25Cloud/turaidc-plugin-index), append an entry to `plugins.json`, and include the display tag, fixed commit sha, and archive sha256.
 4. The platform reviews the PR: after checking package contents, license, and security boundaries it merges, and the plugin goes live.
 
 **Review-lock principle**: the installer downloads only the version locked by the index entry:
 
-- `sha` mode: downloads `https://github.com/{repo}/archive/{sha}.zip` and, after extraction, strictly verifies that the top-level directory name is `{repo-basename}-{sha}` (the GitHub archive naming rule), which guarantees the download is exactly the reviewed commit, so **changing repository contents after review cannot affect a released version**;
-- `tag` mode: downloads `{repo}/archive/refs/tags/{tag}.zip`. If the tag is force-pushed to a new commit, the installed plugin does not automatically upgrade to the new content (only a reinstall updates it); a new version must go through a new PR and be reviewed again.
+- `sha` mode: downloads `https://github.com/{repo}/archive/{sha}.zip` and verifies the archive SHA-256 digest plus the GitHub top-level directory name `{repo-basename}-{sha}`. Missing or invalid `sha`/`sha256` is rejected before installation;
+- `tag` is display metadata only and is never used as a fallback download reference.
 
 ### 5.3 Install Commands in the Main Repository
 
@@ -169,7 +170,7 @@ With `--zip`, the slug is read from the manifest inside the package and compared
 
 ### 5.4 Access from Mainland China
 
-Both the index and the code download URLs accept an acceleration mirror prefix, see `plugins.market` in `config/plugins.php` (`PLUGIN_MARKET_RAW_MIRROR` / `PLUGIN_MARKET_DOWNLOAD_MIRROR`, default `https://ghfast.top/`; leave empty for a direct connection).
+Both the index and the code download URLs accept an optional acceleration mirror prefix, see `plugins.market` in `config/plugins.php` (`PLUGIN_MARKET_RAW_MIRROR` / `PLUGIN_MARKET_DOWNLOAD_MIRROR`). The default is empty for a direct connection; any configured mirror must use HTTPS and match the trusted-host allowlist. Redirect targets are checked against the same allowlist on every hop.
 
 ### 5.5 monorepo entries (plugin shipped inside the main repository)
 
@@ -179,6 +180,8 @@ An entry may point at a **subdirectory of a repository** instead of a standalone
 {
   "repo": "25Cloud/TuraIDC",
   "path": "backend/plugins/addons/ai_assistant",
+  "sha": "67cd977fe6a714fe3f78f9a9f58785675ea0492c",
+  "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   "ref": "main",
   "version": "1.1.0"
 }
@@ -187,12 +190,12 @@ An entry may point at a **subdirectory of a repository** instead of a standalone
 Rules:
 
 - **`path` is required and validated**: each segment may only contain `[A-Za-z0-9._-]`; `..`, empty segments and absolute paths are rejected. The index is remote data, so it must never be able to walk the install flow out of the extraction directory.
-- **Location comes from `path`, never from guessing**: in a monorepo archive every plugin has its own `config.php` and they all sit at the _same depth_, so picking "the shallowest one" can hand you **a different plugin**. With `path` the installer goes straight to `{extract root}/{repo snapshot dir}/{path}` and fails if it is missing — it never degrades into guessing.
-- **`{ref}` resolution order**: `sha` → `refs/tags/{tag}` → `refs/heads/{ref}` (a full `refs/...` value is used verbatim). With none of them present it reports "missing tag/sha/ref".
-- **`ref` without `path` is rejected outright** ("ref must be used together with path"), and rejected before any request is sent. Otherwise the whole-repository snapshot is downloaded and placement falls back to "shallowest config.php", which may install a _different_ plugin from the same repository — far worse than failing to install.
+- **Location comes from `path`, never from guessing**: in a monorepo archive every plugin has its own `plugin.json` and they all sit at the _same depth_, so picking "the shallowest one" can hand you **a different plugin**. With `path` the installer goes straight to `{extract root}/{repo snapshot dir}/{path}` and fails if it is missing — it never degrades into guessing.
+- **Remote entries require a 40-character `sha` and a 64-character `sha256`**. `ref` may remain as display metadata, but it is not a download fallback.
+- **`ref` without `path` is rejected outright** ("ref must be used together with path"), and rejected before any request is sent. Otherwise the whole-repository snapshot is downloaded and placement falls back to "shallowest plugin.json", which may install a _different_ plugin from the same repository — far worse than failing to install.
 - **`sha` may be combined with `path`**, and that is the strongest form: it selects the exact subdirectory _and_ keeps the anti-tampering guarantees (audit pinning plus the top-level directory name check). `ref: main` alone follows a moving branch and is not recommended for an already-listed entry.
 - **Download size differs by one to two orders of magnitude**: a monorepo entry downloads the whole repository snapshot (tens of MB), a standalone repository is usually a few hundred KB. The timeout is `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`, the latter defaulting to 120 seconds.
-- **A plugin shipped inside the main repository should still provide a standalone release repository**: point the entry at that repository's `tag` + `sha` — smaller download, stronger pinning, and no dependency on the main repository's branch state. The official AI assistant does exactly this (the main repository's `backend/plugins/addons/ai_assistant` is the single source of truth, while the release mirror [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) mirrors it byte for byte and tags each version). The monorepo form is there for "I don't want to run a second repository".
+- **A plugin shipped inside the main repository should still provide a standalone release repository**: point the entry at that repository's fixed `sha` — smaller download, stronger pinning, and no dependency on the main repository's branch state. The release mirror must contain only the data-only `plugin.json`, without executable `config.php`; the main repository's `backend/plugins/addons/ai_assistant` remains the single source of truth and keeps its local `config.php`. The monorepo form is there for "I don't want to run a second repository".
 
 Regression: `tests/Feature/PluginMarketMonorepoEntryTest.php` locks down "path/ref survive normalisation, `{ref}` priority, exact placement by path instead of picking another plugin, and out-of-tree paths being rejected".
 
