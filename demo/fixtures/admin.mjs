@@ -161,11 +161,49 @@ const PRODUCT_GROUPS = [
     parent_id: null,
     product_type: 'cloud_server',
     product_type_label: '云服务器',
+    service_type_code: 'cloud_server',
+    first_product_group_code: 'cloud',
+    effective_product_group_id: 4101,
+    effective_product_group_level: 1,
     sort_order: 0,
     status: 1,
     children: [
-      { id: 4111, name: '香港', code: 'cloud-hk', level: 2, parent_id: 4101, sort_order: 0, status: 1, children: [] },
-      { id: 4112, name: '新加坡', code: 'cloud-sg', level: 2, parent_id: 4101, sort_order: 1, status: 1, children: [] },
+      {
+        id: 4111,
+        name: '香港',
+        code: 'cloud-hk',
+        level: 2,
+        parent_id: 4101,
+        product_type: 'cloud_server',
+        product_type_label: '云服务器',
+        service_type_code: 'cloud_server',
+        first_product_group_id: 4101,
+        first_product_group_code: 'cloud',
+        first_product_group_name: '云服务器',
+        effective_product_group_id: 4111,
+        effective_product_group_level: 2,
+        sort_order: 0,
+        status: 1,
+        children: [],
+      },
+      {
+        id: 4112,
+        name: '新加坡',
+        code: 'cloud-sg',
+        level: 2,
+        parent_id: 4101,
+        product_type: 'cloud_server',
+        product_type_label: '云服务器',
+        service_type_code: 'cloud_server',
+        first_product_group_id: 4101,
+        first_product_group_code: 'cloud',
+        first_product_group_name: '云服务器',
+        effective_product_group_id: 4112,
+        effective_product_group_level: 2,
+        sort_order: 1,
+        status: 1,
+        children: [],
+      },
     ],
   },
   {
@@ -176,10 +214,31 @@ const PRODUCT_GROUPS = [
     parent_id: null,
     product_type: 'dedicated',
     product_type_label: '独立服务器',
+    service_type_code: 'dedicated',
+    first_product_group_code: 'dedicated',
+    effective_product_group_id: 4102,
+    effective_product_group_level: 1,
     sort_order: 1,
     status: 1,
     children: [
-      { id: 4121, name: '日本', code: 'dedicated-jp', level: 2, parent_id: 4102, sort_order: 0, status: 1, children: [] },
+      {
+        id: 4121,
+        name: '日本',
+        code: 'dedicated-jp',
+        level: 2,
+        parent_id: 4102,
+        product_type: 'dedicated',
+        product_type_label: '独立服务器',
+        service_type_code: 'dedicated',
+        first_product_group_id: 4102,
+        first_product_group_code: 'dedicated',
+        first_product_group_name: '独立服务器',
+        effective_product_group_id: 4121,
+        effective_product_group_level: 2,
+        sort_order: 0,
+        status: 1,
+        children: [],
+      },
     ],
   },
   {
@@ -190,14 +249,23 @@ const PRODUCT_GROUPS = [
     parent_id: null,
     product_type: 'traffic_package',
     product_type_label: '流量包',
+    service_type_code: 'traffic_package',
+    first_product_group_code: 'value-added',
+    effective_product_group_id: 4103,
+    effective_product_group_level: 1,
     sort_order: 2,
     status: 1,
     children: [],
   },
 ];
 
-/** 商品列表行：V2 摘要形状，管理端列表页读的就是这些键 */
-const DEMO_PRODUCTS = PRODUCTS.map((product, index) => ({
+/** 扁平分组列表：商品页的分类面板按 first/second/third 过滤，扁平表能同时喂饱各级筛选 */
+const FLAT_PRODUCT_GROUPS = PRODUCT_GROUPS.flatMap(({ children, ...group }) => [
+  group,
+  ...children.map(({ children: _ignored, ...child }) => child),
+]);
+
+/** 商品列表行：V2 摘要形状，管理端列表页读的就是这些键 */const DEMO_PRODUCTS = PRODUCTS.map((product, index) => ({
   id: product.id,
   name: product.name,
   display_name: product.display_name,
@@ -927,10 +995,10 @@ export function adminFixtures() {
       },
 
       'GET /v2/admin/product-groups': {
-        list: PRODUCT_GROUPS,
-        total: PRODUCT_GROUPS.length,
+        list: FLAT_PRODUCT_GROUPS,
+        total: FLAT_PRODUCT_GROUPS.length,
         page: 1,
-        page_size: 20,
+        page_size: 50,
       },
 
       'GET /v2/admin/product-types': [
@@ -1377,10 +1445,10 @@ export function adminFixtures() {
       },
       'GET /v2/admin/coupon-product-groups/tree': { tree: PRODUCT_GROUPS, list: PRODUCT_GROUPS },
       'GET /v2/admin/coupon-product-groups': {
-        list: PRODUCT_GROUPS,
-        total: PRODUCT_GROUPS.length,
+        list: FLAT_PRODUCT_GROUPS,
+        total: FLAT_PRODUCT_GROUPS.length,
         page: 1,
-        page_size: 20,
+        page_size: 50,
       },
 
       'GET /v2/admin/agent-groups': { list: AGENT_GROUPS },
@@ -1388,13 +1456,36 @@ export function adminFixtures() {
       'GET /v2/admin/agent-group-discounts': { rows: AGENT_GROUP_DISCOUNTS },
 
       'GET /v2/admin/referral/overview': {
-        invited_users: 3,
-        registered_users: 2,
-        rewarded_orders: 4,
-        reward_total: '86.00',
-        pending_withdrawal: '50.00',
-        withdrawn: '50.00',
-        rate: '5.00',
+        summary: {
+          total_sales_amount: '3268.00',
+          frozen_amount: '6.45',
+          available_amount: '79.55',
+          withdrawn_amount: '50.00',
+        },
+        top_referrers: [
+          {
+            id: 1001,
+            nickname: '演示客户',
+            email: 'demo@example.com',
+            member_level: { id: 2, name: '黄金会员', reward_rate: '2.00' },
+            total_sales_amount: '3268.00',
+            referral_frozen_amount: '6.45',
+            referral_available_amount: '79.55',
+            referral_withdrawing_amount: '0.00',
+            referral_withdrawn_amount: '0.00',
+          },
+          {
+            id: 1002,
+            nickname: '演示客户二',
+            email: 'demo2@example.com',
+            member_level: { id: 1, name: '普通会员', reward_rate: '0.00' },
+            total_sales_amount: '29.00',
+            referral_frozen_amount: '0.00',
+            referral_available_amount: '0.00',
+            referral_withdrawing_amount: '0.00',
+            referral_withdrawn_amount: '50.00',
+          },
+        ],
       },
       'GET /v2/admin/referral/rewards': {
         list: [
