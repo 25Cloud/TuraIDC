@@ -170,6 +170,15 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::delete('/users/{user}/services/{service}/security-groups/{group}/rules/{rule}', [UserServiceController::class, 'deleteSecurityRule'])->middleware('throttle:10,1,admin-service-security-rule-delete');
         Route::delete('/users/{user}/services/{service}/security-groups/{group}', [UserServiceController::class, 'deleteSecurityGroup'])->middleware('throttle:10,1,admin-service-security-group-delete');
         Route::post('/users/{user}/services/{service}/security-groups', [UserServiceController::class, 'createSecurityGroup'])->middleware('throttle:10,1,admin-service-security-group-create');
+        Route::get('/users/{user}/services/{service}/snapshots', [UserServiceController::class, 'snapshots']);
+        Route::post('/users/{user}/services/{service}/snapshots', [UserServiceController::class, 'createSnapshot'])->middleware('throttle:10,1,admin-service-snapshot-create');
+        Route::delete('/users/{user}/services/{service}/snapshots/{snapshot}', [UserServiceController::class, 'deleteSnapshot'])->middleware('throttle:10,1,admin-service-snapshot-delete');
+        Route::post('/users/{user}/services/{service}/snapshots/{snapshot}/restore', [UserServiceController::class, 'restoreSnapshot'])->middleware('throttle:10,1,admin-service-snapshot-restore');
+        Route::get('/users/{user}/services/{service}/iso', [UserServiceController::class, 'isoPanel']);
+        Route::post('/users/{user}/services/{service}/iso', [UserServiceController::class, 'mountIso'])->middleware('throttle:10,1,admin-service-iso-mount');
+        Route::delete('/users/{user}/services/{service}/iso', [UserServiceController::class, 'unmountIso'])->middleware('throttle:10,1,admin-service-iso-unmount');
+        Route::put('/users/{user}/services/{service}/iso/bootorder', [UserServiceController::class, 'setIsoBootOrder'])->middleware('throttle:10,1,admin-service-iso-bootorder');
+        Route::post('/users/{user}/services/{service}/host-config', [UserServiceController::class, 'changeHostConfig'])->middleware('throttle:10,1,admin-service-host-config');
     });
 
     Route::middleware(['permission:'.AdminPermissions::USER_LOGIN_AS])->group(function (): void {

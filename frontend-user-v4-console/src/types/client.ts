@@ -373,6 +373,13 @@ export interface ServiceConsoleCapabilities {
   areas?: ConsoleAreaDescriptor[];
   nat_supported?: boolean;
   monitor_supported?: boolean;
+  /**
+   * 驱动是否具备「快照 / 备份」具名能力（后端 ServiceConsoleAreaService::capabilitiesForUser()）。
+   * 只有 true 才渲染 snapshot tab；旧版本后端不下发时按 false 处理。
+   */
+  snapshot_supported?: boolean;
+  /** 驱动是否具备 ISO 挂载能力，同上：只有 true 才渲染 iso tab */
+  iso_supported?: boolean;
   fetchable?: boolean;
   /**
    * 是否首屏全量预热面板区域（魔方兼容 tab）。缺省按开启处理。
@@ -955,6 +962,75 @@ export interface NatForwardingPayload {
     total?: number;
     [key: string]: unknown;
   } | null;
+  [key: string]: unknown;
+}
+
+/**
+ * 快照 / 备份列表项。
+ *
+ * 后端 `ServiceSnapshotService` 已把上游结构归一成这组字段（id / name / type / disk_name /
+ * size_gb / created_at / status / can_delete / can_restore），前端不再解析上游原始响应。
+ */
+export interface ServiceSnapshotRecord {
+  id: number | string;
+  name?: string;
+  /** snap=快照，backup=备份 */
+  type?: 'snap' | 'backup' | string;
+  disk_id?: number | string;
+  disk_name?: string;
+  size_gb?: number | string;
+  created_at?: string;
+  status?: string;
+  can_delete?: boolean;
+  can_restore?: boolean;
+  [key: string]: unknown;
+}
+
+/** 快照 / 备份面板：supported=false 表示驱动不支持，error 非空表示这次拉取失败 */
+export interface ServiceSnapshotPanel {
+  supported?: boolean;
+  message?: string;
+  error?: string;
+  can_create?: boolean;
+  snapshots?: ServiceSnapshotRecord[];
+  backups?: ServiceSnapshotRecord[];
+  [key: string]: unknown;
+}
+
+/** ISO 面板的镜像选项 */
+export interface ServiceIsoImage {
+  id: string;
+  name?: string;
+  [key: string]: unknown;
+}
+
+/** ISO 面板的启动项选项 */
+export interface ServiceIsoBootOrderOption {
+  value: string;
+  label?: string;
+  [key: string]: unknown;
+}
+
+/** ISO / 启动项面板 */
+export interface ServiceIsoPanel {
+  supported?: boolean;
+  message?: string;
+  error?: string;
+  can_mount?: boolean;
+  can_unmount?: boolean;
+  can_set_bootorder?: boolean;
+  current_iso?: string;
+  current_iso_name?: string;
+  bootorder?: string;
+  bootorder_label?: string;
+  bootorder_options?: ServiceIsoBootOrderOption[];
+  images?: ServiceIsoImage[];
+  [key: string]: unknown;
+}
+
+/** 快照 / ISO 这类写操作后端只回一句人话（data.message），直接 toast */
+export interface ServiceConsoleMessagePayload {
+  message?: string;
   [key: string]: unknown;
 }
 

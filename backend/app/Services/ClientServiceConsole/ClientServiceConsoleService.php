@@ -58,6 +58,9 @@ class ClientServiceConsoleService
         private readonly ServiceNatService $natService,
         private readonly ServiceSecurityGroupService $securityGroupService,
         private readonly ServiceConsoleAreaService $consoleAreaService,
+        private readonly ServiceSnapshotService $snapshotService,
+        private readonly ServiceIsoService $isoService,
+        private readonly ServiceHostConfigService $hostConfigService,
     ) {}
 
     // ══════════════════════════════════════════════════════════════════════
@@ -331,6 +334,63 @@ class ClientServiceConsoleService
     public function deleteSecurityRuleForUser(User $user, int $serviceId, int $groupId, int $ruleId, array $context = []): array
     {
         return $this->securityGroupService->deleteSecurityRuleForUser($user, $serviceId, $groupId, $ruleId, $context);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 快照 / 备份
+    // ══════════════════════════════════════════════════════════════════════
+
+    public function getSnapshotsForUser(User $user, int $serviceId): array
+    {
+        return $this->snapshotService->getSnapshotsForUser($user, $serviceId);
+    }
+
+    public function createSnapshotForUser(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->snapshotService->createSnapshotForUser($user, $serviceId, $data, $context);
+    }
+
+    public function deleteSnapshotForUser(User $user, int $serviceId, int $snapshotId, array $context = []): array
+    {
+        return $this->snapshotService->deleteSnapshotForUser($user, $serviceId, $snapshotId, $context);
+    }
+
+    public function restoreSnapshotForUser(User $user, int $serviceId, int $snapshotId, array $context = []): array
+    {
+        return $this->snapshotService->restoreSnapshotForUser($user, $serviceId, $snapshotId, $context);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // ISO / 启动项
+    // ══════════════════════════════════════════════════════════════════════
+
+    public function getIsoPanelForUser(User $user, int $serviceId): array
+    {
+        return $this->isoService->getIsoPanelForUser($user, $serviceId);
+    }
+
+    public function mountIsoForUser(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->isoService->mountIsoForUser($user, $serviceId, $data, $context);
+    }
+
+    public function unmountIsoForUser(User $user, int $serviceId, array $context = []): array
+    {
+        return $this->isoService->unmountIsoForUser($user, $serviceId, $context);
+    }
+
+    public function setBootOrderForUser(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->isoService->setBootOrderForUser($user, $serviceId, $data, $context);
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    // 改配（仅管理端调用）
+    // ══════════════════════════════════════════════════════════════════════
+
+    public function changeHostConfigForService(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->hostConfigService->changeConfigForService($user, $serviceId, $data, $context);
     }
 
     // ══════════════════════════════════════════════════════════════════════

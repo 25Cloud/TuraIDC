@@ -229,6 +229,11 @@ export function useServiceConsole() {
     natState,
     logsState,
     financeState,
+    snapshotState,
+    snapshotVisible,
+    snapshotForm,
+    isoState,
+    isoForm,
     loadedTabs,
     resetLazyTabs,
     loadMonitor,
@@ -238,6 +243,15 @@ export function useServiceConsole() {
     openNatForwardingDialog,
     submitNatForwarding,
     deleteNatForwarding,
+    loadSnapshots,
+    openSnapshotDialog,
+    submitSnapshot,
+    deleteSnapshot,
+    restoreSnapshot,
+    loadIsoPanel,
+    mountIso,
+    unmountIso,
+    setIsoBootOrder,
     loadLogs,
     loadFinanceLogs,
   } = useConsoleTabs({ serviceId });
@@ -429,7 +443,7 @@ export function useServiceConsole() {
    * 开关开启时这些面板的数据同样在首屏预热，关闭时保持「切到面板再按需加载」。
    * 总览 / VNC 不在此列：总览由页面级 detailLoading 负责，VNC 是点击后才打开的弹窗。
    */
-  const DATA_TAB_KEYS = ['monitor', 'security', 'nat', 'logs', 'finance'] as const;
+  const DATA_TAB_KEYS = ['monitor', 'security', 'nat', 'snapshot', 'iso', 'logs', 'finance'] as const;
   type DataTabKey = (typeof DATA_TAB_KEYS)[number];
 
   function isDataTabKey(key: string): key is DataTabKey {
@@ -449,6 +463,8 @@ export function useServiceConsole() {
     if (key === 'monitor') await loadMonitor();
     else if (key === 'security') await loadSecurityGroups();
     else if (key === 'nat') await loadNatForwardings();
+    else if (key === 'snapshot') await loadSnapshots();
+    else if (key === 'iso') await loadIsoPanel();
     else if (key === 'logs') await loadLogs(silent);
     else if (key === 'finance') await loadFinanceLogs(silent);
   }
@@ -560,6 +576,11 @@ export function useServiceConsole() {
     natState,
     natVisible,
     natForm,
+    snapshotState,
+    snapshotVisible,
+    snapshotForm,
+    isoState,
+    isoForm,
     logsState,
     financeState,
 
@@ -648,6 +669,15 @@ export function useServiceConsole() {
     openNatForwardingDialog,
     submitNatForwarding,
     deleteNatForwarding,
+    loadSnapshots,
+    openSnapshotDialog,
+    submitSnapshot,
+    deleteSnapshot,
+    restoreSnapshot,
+    loadIsoPanel,
+    mountIso,
+    unmountIso,
+    setIsoBootOrder,
     loadLogs,
     loadFinanceLogs,
     handleOpenVnc,

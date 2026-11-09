@@ -85,6 +85,9 @@ class ClientServiceConsoleAreaDependencyAccessTest extends TestCase
             'nat_supported' => false,
             'monitor_supported' => false,
             'fetchable' => false,
+            // 驱动级具名能力：服务未接入可控上游时一律为 false（前端据此隐藏快照/ISO 面板）
+            'snapshot_supported' => false,
+            'iso_supported' => false,
             // 本用例没有应用容器，Setting::getValue 会抛 BindingResolutionException。
             // areaPreloadAllEnabled 必须降级为默认开启 —— capabilitiesForUser 的契约是
             // 「上游挂了也降级返回、不抛错」，settings 表故障同理，不该把能力接口变成 500。

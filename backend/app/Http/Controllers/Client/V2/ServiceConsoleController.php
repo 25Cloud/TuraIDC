@@ -9,15 +9,18 @@ use App\Http\Requests\Client\V2\Service\CreateNatForwardingRequest;
 use App\Http\Requests\Client\V2\Service\CreateRenewOrderRequest;
 use App\Http\Requests\Client\V2\Service\CreateSecurityGroupRequest;
 use App\Http\Requests\Client\V2\Service\CreateSecurityRuleRequest;
+use App\Http\Requests\Client\V2\Service\CreateSnapshotRequest;
 use App\Http\Requests\Client\V2\Service\CreateTrafficPackageOrderRequest;
 use App\Http\Requests\Client\V2\Service\IndexRequest;
 use App\Http\Requests\Client\V2\Service\ListServiceOperationLogsRequest;
 use App\Http\Requests\Client\V2\Service\ModuleStatusRequest;
 use App\Http\Requests\Client\V2\Service\MonitorBatchRequest;
 use App\Http\Requests\Client\V2\Service\MonitorRequest;
+use App\Http\Requests\Client\V2\Service\MountIsoRequest;
 use App\Http\Requests\Client\V2\Service\QuoteHostUpgradeRequest;
 use App\Http\Requests\Client\V2\Service\QuoteTrafficPackageRequest;
 use App\Http\Requests\Client\V2\Service\RenewPreviewRequest;
+use App\Http\Requests\Client\V2\Service\SetBootOrderRequest;
 use App\Http\Requests\Client\V2\Service\UpdateAutoRenewRequest;
 use App\Http\Requests\Client\V2\Service\UpdateNameRequest;
 use App\Http\Requests\Client\V2\Service\UpdateRemarkRequest;
@@ -459,6 +462,133 @@ class ServiceConsoleController extends Controller
                 )
             ),
             '删除成功'
+        );
+    }
+
+    public function snapshots(Request $request, int $id)
+    {
+        return $this->success(
+            $this->clientServiceConsoleService->getSnapshotsForUser($request->user(), $id)
+        );
+    }
+
+    public function createSnapshot(CreateSnapshotRequest $request, int $id)
+    {
+        $data = $request->validated();
+
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $request,
+                $id,
+                'snapshot_create',
+                fn () => $this->clientServiceConsoleService->createSnapshotForUser(
+                    $request->user(),
+                    $id,
+                    $data,
+                    $this->buildOperationContext($request)
+                )
+            ),
+            '提交成功'
+        );
+    }
+
+    public function deleteSnapshot(Request $request, int $id, int $snapshotId)
+    {
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $request,
+                $id,
+                'snapshot_delete_'.$snapshotId,
+                fn () => $this->clientServiceConsoleService->deleteSnapshotForUser(
+                    $request->user(),
+                    $id,
+                    $snapshotId,
+                    $this->buildOperationContext($request)
+                )
+            ),
+            '删除成功'
+        );
+    }
+
+    public function restoreSnapshot(Request $request, int $id, int $snapshotId)
+    {
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $request,
+                $id,
+                'snapshot_restore_'.$snapshotId,
+                fn () => $this->clientServiceConsoleService->restoreSnapshotForUser(
+                    $request->user(),
+                    $id,
+                    $snapshotId,
+                    $this->buildOperationContext($request)
+                )
+            ),
+            '回滚任务已提交'
+        );
+    }
+
+    public function isoPanel(Request $request, int $id)
+    {
+        return $this->success(
+            $this->clientServiceConsoleService->getIsoPanelForUser($request->user(), $id)
+        );
+    }
+
+    public function mountIso(MountIsoRequest $request, int $id)
+    {
+        $data = $request->validated();
+
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $request,
+                $id,
+                'iso_mount',
+                fn () => $this->clientServiceConsoleService->mountIsoForUser(
+                    $request->user(),
+                    $id,
+                    $data,
+                    $this->buildOperationContext($request)
+                )
+            ),
+            '挂载成功'
+        );
+    }
+
+    public function unmountIso(Request $request, int $id)
+    {
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $request,
+                $id,
+                'iso_unmount',
+                fn () => $this->clientServiceConsoleService->unmountIsoForUser(
+                    $request->user(),
+                    $id,
+                    $this->buildOperationContext($request)
+                )
+            ),
+            '卸载成功'
+        );
+    }
+
+    public function setBootOrder(SetBootOrderRequest $request, int $id)
+    {
+        $data = $request->validated();
+
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $request,
+                $id,
+                'iso_bootorder',
+                fn () => $this->clientServiceConsoleService->setBootOrderForUser(
+                    $request->user(),
+                    $id,
+                    $data,
+                    $this->buildOperationContext($request)
+                )
+            ),
+            '启动项已更新'
         );
     }
 

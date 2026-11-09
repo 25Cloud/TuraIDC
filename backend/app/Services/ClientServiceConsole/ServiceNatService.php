@@ -103,23 +103,40 @@ class ServiceNatService
         [$runtime, $supplier, $hostId, $jwt, $natContext] = $this->resolveNatAclContext($service, true);
         $protocol = trim((string) ($data['protocol'] ?? ''));
         $this->assertNatProtocolAllowed((array) ($natContext['protocols'] ?? []), $protocol);
-        $payload = [
-            'func' => 'addNatAcl',
-            'name' => trim((string) ($data['name'] ?? '')),
-            'ext_port' => trim((string) ($data['ext_port'] ?? '')),
-            'int_port' => trim((string) ($data['int_port'] ?? '')),
-            'select-protocol' => $protocol,
-        ];
-        $response = is_callable([$runtime, 'submitCustomModuleAction'])
-            ? $runtime->submitCustomModuleAction($supplier, $natContext['endpoint'], $payload, $jwt)
-            : $runtime->post(
-                $supplier,
-                $natContext['endpoint'],
-                $payload,
-                $jwt,
-                ['content-type: application/x-www-form-urlencoded']
+
+        if ($this->isNativeNatContext($natContext)) {
+            // 原生通道：驱动没实现 createNatRule 时按能力缺口拒绝，不落到空 endpoint 的 HTML 提交。
+            throw_if(
+                ! is_callable([$runtime, 'createNatRule']),
+                new BusinessException('当前上游仅支持 NAT 转发列表', 42200)
             );
-        $this->detailService->assertSuccess($response, '创建端口转发');
+
+            $response = $runtime->createNatRule($supplier, $hostId, [
+                'name' => trim((string) ($data['name'] ?? '')),
+                'ext_port' => trim((string) ($data['ext_port'] ?? '')),
+                'int_port' => trim((string) ($data['int_port'] ?? '')),
+                'protocol' => $protocol,
+            ], $jwt);
+            $this->detailService->assertSuccess($response, '创建端口转发');
+        } else {
+            $payload = [
+                'func' => 'addNatAcl',
+                'name' => trim((string) ($data['name'] ?? '')),
+                'ext_port' => trim((string) ($data['ext_port'] ?? '')),
+                'int_port' => trim((string) ($data['int_port'] ?? '')),
+                'select-protocol' => $protocol,
+            ];
+            $response = is_callable([$runtime, 'submitCustomModuleAction'])
+                ? $runtime->submitCustomModuleAction($supplier, $natContext['endpoint'], $payload, $jwt)
+                : $runtime->post(
+                    $supplier,
+                    $natContext['endpoint'],
+                    $payload,
+                    $jwt,
+                    ['content-type: application/x-www-form-urlencoded']
+                );
+            $this->detailService->assertSuccess($response, '创建端口转发');
+        }
         $this->forgetNatAclContextCache($service);
 
         $message = trim((string) ($response['msg'] ?? '')) ?: '端口转发创建成功';
@@ -150,17 +167,28 @@ class ServiceNatService
         ]);
 
         [$runtime, $supplier, $hostId, $jwt, $natContext] = $this->resolveNatAclContext($service, true);
-        $payload = ['func' => 'delNatAcl', 'id' => $forwardingId];
-        $response = is_callable([$runtime, 'submitCustomModuleAction'])
-            ? $runtime->submitCustomModuleAction($supplier, $natContext['endpoint'], $payload, $jwt)
-            : $runtime->post(
-                $supplier,
-                $natContext['endpoint'],
-                $payload,
-                $jwt,
-                ['content-type: application/x-www-form-urlencoded']
+
+        if ($this->isNativeNatContext($natContext)) {
+            throw_if(
+                ! is_callable([$runtime, 'deleteNatRule']),
+                new BusinessException('当前上游仅支持 NAT 转发列表', 42200)
             );
-        $this->detailService->assertSuccess($response, '删除端口转发');
+
+            $response = $runtime->deleteNatRule($supplier, $hostId, (int) $forwardingId, $jwt);
+            $this->detailService->assertSuccess($response, '删除端口转发');
+        } else {
+            $payload = ['func' => 'delNatAcl', 'id' => $forwardingId];
+            $response = is_callable([$runtime, 'submitCustomModuleAction'])
+                ? $runtime->submitCustomModuleAction($supplier, $natContext['endpoint'], $payload, $jwt)
+                : $runtime->post(
+                    $supplier,
+                    $natContext['endpoint'],
+                    $payload,
+                    $jwt,
+                    ['content-type: application/x-www-form-urlencoded']
+                );
+            $this->detailService->assertSuccess($response, '删除端口转发');
+        }
         $this->forgetNatAclContextCache($service);
 
         $message = trim((string) ($response['msg'] ?? '')) ?: '端口转发删除成功';
@@ -185,14 +213,21 @@ class ServiceNatService
         throw_if(! $this->transformService->canManageService($service), new BusinessException('当前服务暂不支持 NAT 转发', 42200));
 
         [$supplier, $hostId] = $this->detailService->resolveManagedSupplierAndHost($service);
+        $runtime = $this->detailService->resolveRuntimeCapabilityForSupplier($supplier);
+
+        // 能力驱动：驱动实现了 getNatRules 就走原生 API，否则沿用 HTML 自定义模块通道。
+        // 判据只看驱动有没有这个方法，不看上游此刻有没有规则——空规则集不代表不支持。
+        if (is_callable([$runtime, 'getNatRules'])) {
+            return $this->resolveNativeNatContext($service, $runtime, $supplier, $hostId, $fresh);
+        }
+
         $cacheKey = $this->buildNatAclContextCacheKey($service);
 
         $cached = ! $fresh ? Cache::get($cacheKey) : null;
         if (! $fresh && is_array($cached)) {
-            return [$this->detailService->resolveRuntimeCapabilityForSupplier($supplier), $supplier, $hostId, '', $cached];
+            return [$runtime, $supplier, $hostId, '', $cached];
         }
 
-        $runtime = $this->detailService->resolveRuntimeCapabilityForSupplier($supplier);
         $jwt = $runtime->login($supplier);
         $modules = $this->detailService->fetchSupportedModules($supplier, $hostId, $jwt);
         $module = collect($modules)->first(fn ($item) => is_array($item) && $this->isNatAclModule($item));
@@ -227,6 +262,96 @@ class ServiceNatService
         return [$runtime, $supplier, $hostId, $jwt, $context];
     }
 
+    /**
+     * 原生 NAT 上下文：驱动已按控制台口径把规则归一，这里只做形状兜底。
+     *
+     * 缓存键与 HTML 通道分开：「原生上下文没有 endpoint、有 mode」，
+     * 共用同一个键会让另一种模式的载荷被错模式命中。
+     *
+     * @return array{0: object, 1: Supplier, 2: int, 3: string, 4: array<string, mixed>}
+     */
+    private function resolveNativeNatContext(Service $service, object $runtime, Supplier $supplier, int $hostId, bool $fresh): array
+    {
+        $cacheKey = $this->buildNativeNatContextCacheKey($service);
+
+        if (! $fresh && is_array($cached = Cache::get($cacheKey))) {
+            return [$runtime, $supplier, $hostId, '', $cached];
+        }
+
+        $jwt = $runtime->login($supplier);
+        $response = $runtime->getNatRules($supplier, $hostId, $jwt);
+        $this->detailService->assertSuccess($response, '读取端口转发');
+        $payload = $this->detailService->extractPayload($response);
+
+        $context = [
+            'mode' => 'native',
+            'module_key' => 'nat_acl',
+            'module_name' => 'NAT 转发',
+            // 用户端不提交该地址；原生通道根本没有页面地址，同样置空。
+            'endpoint' => '',
+            'protocols' => $this->normalizeNativeNatProtocols($payload['protocols'] ?? []),
+            'can_create' => (bool) ($payload['can_create'] ?? false),
+            'list' => $this->normalizeNativeNatRules($payload['list'] ?? []),
+        ];
+
+        Cache::put($cacheKey, $context, now()->addSeconds(self::NAT_ACL_CONTEXT_CACHE_TTL_SECONDS));
+
+        return [$runtime, $supplier, $hostId, $jwt, $context];
+    }
+
+    /**
+     * 原生规则项按控制台字段名重排：值类型收敛（id 为 int、开关为 bool），
+     * 字段集合与 HTML 解析出来的一致，前端不用区分两种来源。
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function normalizeNativeNatRules(mixed $rules): array
+    {
+        if (! is_array($rules)) {
+            return [];
+        }
+
+        return collect($rules)
+            ->filter(fn ($item): bool => is_array($item))
+            ->map(fn (array $item): array => [
+                'id' => (int) ($item['id'] ?? 0),
+                'name' => trim((string) ($item['name'] ?? '')),
+                'external_address' => trim((string) ($item['external_address'] ?? '')),
+                'external_host' => trim((string) ($item['external_host'] ?? '')),
+                'external_port' => trim((string) ($item['external_port'] ?? '')),
+                'internal_port' => trim((string) ($item['internal_port'] ?? '')),
+                'protocol' => trim((string) ($item['protocol'] ?? '')),
+                'protocol_label' => trim((string) ($item['protocol_label'] ?? '')),
+                'can_delete' => in_array($item['can_delete'] ?? false, [true, 1, '1', 'true', 'yes'], true),
+                'is_default' => in_array($item['is_default'] ?? false, [true, 1, '1', 'true', 'yes'], true),
+            ])
+            ->values()
+            ->all();
+    }
+
+    /**
+     * 原生协议白名单：与 HTML 下拉同形状（value/label），
+     * 于是 assertNatProtocolAllowed() 与 resolveSelectOptionLabel() 都能直接复用。
+     *
+     * @return array<int, array{value: string, label: string}>
+     */
+    private function normalizeNativeNatProtocols(mixed $protocols): array
+    {
+        if (! is_array($protocols)) {
+            return [];
+        }
+
+        return collect($protocols)
+            ->filter(fn ($item): bool => is_array($item))
+            ->map(fn (array $item): array => [
+                'value' => trim((string) ($item['value'] ?? '')),
+                'label' => trim((string) ($item['label'] ?? '')),
+            ])
+            ->filter(fn (array $item): bool => $item['value'] !== '')
+            ->values()
+            ->all();
+    }
+
     public function forgetNatAclContextCache(Service $service): void
     {
         if ((int) ($service->id ?? 0) <= 0) {
@@ -234,6 +359,13 @@ class ServiceNatService
         }
 
         Cache::forget($this->buildNatAclContextCacheKey($service));
+        // 原生上下文单独一份缓存，写操作后一并失效，避免回到列表时读到旧规则。
+        Cache::forget($this->buildNativeNatContextCacheKey($service));
+    }
+
+    private function isNativeNatContext(array $context): bool
+    {
+        return ($context['mode'] ?? '') === 'native';
     }
 
     private function assertNatProtocolAllowed(array $options, string $protocol): void
@@ -519,6 +651,14 @@ class ServiceNatService
     private function buildNatAclContextCacheKey(Service $service): string
     {
         return 'nat_acl_ctx:service:'.(int) $service->id;
+    }
+
+    /**
+     * 原生上下文单独一把键：与 HTML 上下文互不覆盖（两者字段不同，不能互相命中）。
+     */
+    private function buildNativeNatContextCacheKey(Service $service): string
+    {
+        return 'nat_acl_ctx_native:service:'.(int) $service->id;
     }
 
     private function buildCustomModuleContentUnavailableCacheKey(int $supplierId, int $hostId, string $moduleKey): string

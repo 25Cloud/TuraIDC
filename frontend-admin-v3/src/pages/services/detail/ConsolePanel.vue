@@ -66,6 +66,10 @@
                 @click="openReinstallDialog"
                 >{{ $t('services.console.reinstallOs') }}</t-button
               >
+              <!-- 改配：与重装/救援同一套「能对上游下控制指令」判定（actions.reinstall = canExecuteConsoleActions） -->
+              <t-button v-if="canChangeHostConfig" theme="default" size="small" @click="hostConfigVisible = true">{{
+                $t('services.hostConfig.entry')
+              }}</t-button>
               <t-button
                 v-if="canSuspendService"
                 theme="warning"
@@ -267,6 +271,13 @@
       </t-form>
     </t-dialog>
 
+    <host-config-dialog
+      v-model:visible="hostConfigVisible"
+      :user-id="props.userId"
+      :service-id="Number(detail.id || 0)"
+      @success="handleHostConfigSuccess"
+    />
+
     <t-dialog
       v-model:visible="suspendVisible"
       :header="$t('services.console.suspendInstance')"
@@ -308,6 +319,7 @@ import { required } from '@/utils/formRules';
 import { isSlowResponseError } from '@/utils/request';
 import { errorMessage } from '@/utils/userMessage';
 
+import HostConfigDialog from './components/HostConfigDialog.vue';
 import ServiceHeaderPanel from './components/ServiceHeaderPanel.vue';
 import ConsoleAlerts from './console/ConsoleAlerts.vue';
 import ConsoleDialogs from './console/ConsoleDialogs.vue';
@@ -402,8 +414,24 @@ const canRefundService = computed(() => {
   return !Array.isArray(available) || available.includes('refund');
 });
 
+/**
+ * 改配入口的显隐：沿用「能对上游下控制指令」这一档判定。
+ *
+ * 后端 `ServiceTransformService::buildConsoleActions()` 里 `reinstall` / `rescue` 都取自
+ * `canExecuteConsoleActions`（服务由可控上游提供 + 状态允许 + 上游运行态正常，面板型产品一律 false），
+ * 改配同样只在服务可控上游时才有意义，所以直接复用同一个 flag，不新增判断字段。
+ */
+const canChangeHostConfig = computed(() => Boolean(detail.value.actions?.reinstall));
+
 // ==================== 管理端专属操作 ====================
 const adminActionLoading = ref('');
+
+// 实例改配：上游规格变了就重拉一次控制台详情（复用既有 loadDetailBase，不另建拉取链路）
+const hostConfigVisible = ref(false);
+
+async function handleHostConfigSuccess() {
+  await loadDetailBase();
+}
 
 const upstreamProvisionVisible = ref(false);
 const upstreamProvisionForm = reactive({ force: false, remark: '' });

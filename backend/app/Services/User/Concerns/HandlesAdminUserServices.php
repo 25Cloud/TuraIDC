@@ -774,6 +774,81 @@ trait HandlesAdminUserServices
     }
 
     /**
+     * 快照 / 备份列表
+     */
+    public function serviceSnapshots(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->getSnapshotsForUser($user, $serviceId);
+    }
+
+    /**
+     * 创建快照 / 备份
+     */
+    public function createServiceSnapshot(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->createSnapshotForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 删除快照 / 备份
+     */
+    public function deleteServiceSnapshot(User $user, int $serviceId, int $snapshotId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->deleteSnapshotForUser($user, $serviceId, $snapshotId, $context);
+    }
+
+    /**
+     * 用快照 / 备份回滚实例
+     */
+    public function restoreServiceSnapshot(User $user, int $serviceId, int $snapshotId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->restoreSnapshotForUser($user, $serviceId, $snapshotId, $context);
+    }
+
+    /**
+     * ISO 面板（可选镜像 + 当前挂载 + 启动项）
+     */
+    public function serviceIsoPanel(User $user, int $serviceId): array
+    {
+        return $this->clientServiceConsoleService->getIsoPanelForUser($user, $serviceId);
+    }
+
+    /**
+     * 挂载 ISO
+     */
+    public function mountServiceIso(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->mountIsoForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 卸载 ISO
+     */
+    public function unmountServiceIso(User $user, int $serviceId, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->unmountIsoForUser($user, $serviceId, $context);
+    }
+
+    /**
+     * 设置启动项
+     */
+    public function setServiceIsoBootOrder(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->setBootOrderForUser($user, $serviceId, $data, $context);
+    }
+
+    /**
+     * 变更实例规格（改配）
+     *
+     * 只在管理端开放：改配会改变上游资源占用，但本平台没有「按配置项补差价」的订单模型，
+     * 计费口径由运营在订单侧自行处理，不放进用户控制台。
+     */
+    public function changeServiceHostConfig(User $user, int $serviceId, array $data, array $context = []): array
+    {
+        return $this->clientServiceConsoleService->changeHostConfigForService($user, $serviceId, $data, $context);
+    }
+
+    /**
      * 获取 VNC 控制台链接（管理端复用）
      */
     public function serviceVnc(User $user, int $serviceId, array $context = []): array

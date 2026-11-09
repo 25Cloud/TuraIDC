@@ -492,6 +492,71 @@
     flex: none;
   }
 
+  /* ---- 快照/备份 与 ISO 挂载面板 ---- */
+  .snapshot-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    & + & {
+      padding-top: 1.25rem;
+      margin-top: 1.25rem;
+      border-top: 0.0625rem solid var(--td-component-stroke);
+    }
+  }
+
+  .snapshot-section__header {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+
+    h4 {
+      margin: 0;
+      font: var(--td-font-title-small);
+      color: var(--td-text-color-primary);
+    }
+  }
+
+  .snapshot-section__count {
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+  }
+
+  .snapshot-section__empty {
+    margin: 0;
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+  }
+
+  .iso-current {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    background: var(--td-bg-color-container-hover);
+    border-radius: var(--td-radius-medium);
+  }
+
+  .iso-current__label {
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+  }
+
+  .iso-current__name {
+    color: var(--td-text-color-primary);
+    font: var(--td-font-body-medium);
+  }
+
+  .iso-form__row {
+    flex-wrap: wrap;
+  }
+
+  .iso-form__select {
+    min-width: 16rem;
+  }
+
   .credential-icon-button .t-icon,
   .copy-link .t-icon {
     font-size: 1.125rem;

@@ -106,6 +106,39 @@ export interface RefundPayload {
   remark: string;
 }
 
+/**
+ * 实例改配入参（管理端手工改规格）。
+ *
+ * 与后端 `ServiceHostConfigService::FIELD_RULES` 白名单一一对应，**只传要改的项**：
+ * `undefined` 与空串都会被后端剔除，「不传」= 不改；传 0 也不是清零，而是「不动这一项」。
+ */
+export interface ServiceHostConfigPayload {
+  cpu?: number;
+  memory?: number;
+  in_bw?: number;
+  out_bw?: number;
+  flow?: number;
+  ip_num?: number;
+  ip_group?: string;
+  ipv6_num?: number;
+  disk_size?: number;
+  disk_id?: number;
+  snap_num?: number;
+  backup_num?: number;
+}
+
+/**
+ * 改配响应。
+ *
+ * `message` 是上游回包原文（成功提示原样弹给运营）；`applied` 是上游回报的已生效字段；
+ * `detail` 是上游 `host_detail` 摘要，不做页面状态，页面刷新仍走控制台既有的详情接口。
+ */
+export interface ServiceHostConfigResult {
+  message?: string;
+  applied?: string[];
+  detail?: Record<string, unknown>;
+}
+
 interface UserServiceV2DetailPayload {
   service?: Record<string, unknown> | null;
 }
@@ -301,6 +334,13 @@ export const userApi = {
   serviceUnsuspend: (id: number | string, serviceId: number | string) =>
     request.post<{ message?: string; detail?: Record<string, unknown> }>({
       url: `/v2/admin/users/${id}/services/${serviceId}/unsuspend`,
+    }),
+  // 实例改配：直接透传上游 changeHostConfig，可能触发上游重建/迁移，耗时按上游同步放宽
+  changeServiceHostConfig: (id: number | string, serviceId: number | string, data: ServiceHostConfigPayload) =>
+    request.post<ServiceHostConfigResult>({
+      url: `/v2/admin/users/${id}/services/${serviceId}/host-config`,
+      data,
+      timeout: UPSTREAM_SYNC_TIMEOUT,
     }),
   serviceReinstallOptions: (id: number | string, serviceId: number | string) =>
     request.get<{

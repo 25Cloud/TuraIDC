@@ -13,6 +13,16 @@ export const securityColumns: PrimaryTableCol[] = [
   { colKey: 'operation', title: t('common.action'), width: 96 },
 ];
 
+/** 快照 / 备份两段列表共用一套列（两段的记录结构一致，只是 type 不同） */
+export const snapshotColumns: PrimaryTableCol[] = [
+  { colKey: 'name', title: t('serviceConsole.tables.snapshotName'), minWidth: '10rem' },
+  { colKey: 'disk_name', title: t('serviceConsole.tables.snapshotDisk'), minWidth: '8rem' },
+  { colKey: 'size_gb', title: t('serviceConsole.tables.snapshotSize'), width: 100 },
+  { colKey: 'created_at', title: t('serviceConsole.tables.snapshotCreatedAt'), minWidth: '10rem' },
+  { colKey: 'status', title: t('serviceConsole.tables.snapshotStatus'), width: 110 },
+  { colKey: 'operation', title: t('common.action'), width: 140 },
+];
+
 export const natColumns: PrimaryTableCol[] = [
   { colKey: 'name', title: t('serviceConsole.nat.nameLabel') },
   { colKey: 'external_address', title: t('serviceConsole.nat.publicAddress') },
