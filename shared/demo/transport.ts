@@ -101,7 +101,7 @@ export function installDemoTransport(instance: AxiosInstance, options: DemoTrans
     await ensureFixtures();
 
     const method = String(config.method ?? 'get').toUpperCase();
-    const path = normalizeRequestPath(String(config.url ?? ''));
+    const path = normalizeMatchPath(String(config.url ?? ''));
     const key = `${method} ${path}`;
     const segments = splitPath(path);
 
@@ -197,6 +197,18 @@ function normalizeApiPath(rawUrl: string): string | null {
   }
 
   return path.slice('/api'.length);
+}
+
+/**
+ * 匹配用的路径：去掉 `/api` 前缀。
+ *
+ * 三端拼 URL 的方式不一样——控制台把 `/api` 放在 baseURL 里，管理端的 urlPrefix 会写进
+ * `config.url`——不归一的话同一份 fixture 在两个端要写两种键。
+ */
+function normalizeMatchPath(rawUrl: string): string {
+  const path = normalizeRequestPath(rawUrl);
+
+  return path.startsWith('/api/') ? path.slice('/api'.length) : path;
 }
 
 function resolveFixtureFile(module: DemoFixtureFile | { default: DemoFixtureFile }): DemoFixtureFile {

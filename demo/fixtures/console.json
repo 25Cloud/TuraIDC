@@ -1,5 +1,13 @@
 {
-  "endpoints": {},
+  "endpoints": {
+    "GET /v2/site/config": {
+      "site_name": "TuraIDC 演示站",
+      "site_logo": "",
+      "site_favicon": "",
+      "brand_primary_color": "#0052d9",
+      "brand_radius": "6px"
+    }
+  },
   "refused": {
     "DELETE /v2/client/services/:id": {
       "message": "演示环境不执行删除实例"

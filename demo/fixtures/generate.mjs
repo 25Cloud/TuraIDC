@@ -34,6 +34,32 @@ const CUSTOMER = {
   created_at: '2025-11-18 10:24:11',
 };
 
+/** 站点公开配置：三端首屏都会拉，品牌色与站点名统一走这里 */
+const SITE_CONFIG = {
+  site_name: 'TuraIDC 演示站',
+  site_logo: '',
+  site_favicon: '',
+  brand_primary_color: '#0052d9',
+  brand_radius: '6px',
+};
+
+/** 管理端会话：全权限（`*`），可选功能（AI / 自助退款）关掉，免得演示站里点进空页面 */
+const ADMIN_SESSION = {
+  admin: {
+    id: 1,
+    username: 'admin',
+    nickname: '演示管理员',
+    email: 'admin@example.com',
+    role: '超级管理员',
+    permissions: ['*'],
+    avatar: '',
+  },
+  features: {
+    ai_assistant: false,
+    auto_refund: false,
+  },
+};
+
 const SERVICES = [
   {
     id: 5101,
@@ -153,7 +179,9 @@ const TICKETS = [
 /** 控制台（用户中心） */
 function consoleFixtures() {
   return {
-    endpoints: {},
+    endpoints: {
+      'GET /v2/site/config': SITE_CONFIG,
+    },
     /**
      * 演示站不执行的动作：命中即返回业务错误，让页面走自己的错误提示链路，
      * 比「假装成功」更接近真实系统，也避免访客以为真删掉了什么。
@@ -170,7 +198,41 @@ function consoleFixtures() {
 /** 管理端 */
 function adminFixtures() {
   return {
-    endpoints: {},
+    endpoints: {
+      'GET /v2/site/config': SITE_CONFIG,
+      'GET /v2/admin/auth/info': ADMIN_SESSION,
+      'GET /v2/admin/dashboard/stats': {
+        today: { income: 1288.5, new_invoices: 6, new_users: 3 },
+        month: { income: 42880.36, new_invoices: 128, new_users: 41 },
+        counts: { active_services: 286, total_invoices: 1420, open_tickets: 4, total_users: 512 },
+      },
+      'GET /v2/admin/dashboard/monthly-revenue': {
+        month_label: '2026-11',
+        revenue_by_product: [
+          { label: '香港轻量云', income: 18240.5 },
+          { label: '日本独立服务器', income: 13420 },
+          { label: '新加坡云服务器', income: 6320.86 },
+          { label: '流量包', income: 4899 },
+        ],
+        daily_trend: [
+          { date: '2026-11-03', income: 980 },
+          { date: '2026-11-04', income: 1460 },
+          { date: '2026-11-05', income: 1120 },
+          { date: '2026-11-06', income: 2380 },
+          { date: '2026-11-07', income: 1890 },
+          { date: '2026-11-08', income: 2640 },
+          { date: '2026-11-09', income: 1288.5 },
+        ],
+      },
+      'GET /v2/admin/dashboard/recent-invoices': {
+        recent_invoices: [
+          { id: 9101, invoice_no: 'DEMO202611090001', amount: '68.00', status: 0, created_at: '2026-11-09 09:12:00' },
+          { id: 9103, invoice_no: 'DEMO202611080007', amount: '899.00', status: 1, created_at: '2026-11-08 16:40:00' },
+          { id: 9104, invoice_no: 'DEMO202611080003', amount: '29.00', status: 1, created_at: '2026-11-08 11:05:00' },
+          { id: 9102, invoice_no: 'DEMO202610250002', amount: '500.00', status: 1, created_at: '2026-10-25 21:01:52' },
+        ],
+      },
+    },
     refused: {
       'DELETE /v2/admin/users/:id': { message: '演示环境不执行删除用户' },
       'POST /v2/admin/services/:id/refunds': { message: '演示环境不执行退款' },
@@ -181,7 +243,9 @@ function adminFixtures() {
 /** 用户端（官网 / 下单） */
 function userFixtures() {
   return {
-    endpoints: {},
+    endpoints: {
+      'GET /v2/site/config': SITE_CONFIG,
+    },
     refused: {
       'POST /v2/client/orders': { message: '演示环境不执行下单' },
     },

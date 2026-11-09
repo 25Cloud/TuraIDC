@@ -3,11 +3,17 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>TuraIDC 演示环境</title>
+    <title>TuraIDC 演示环境 · 三个界面随便点</title>
+    <meta name="description" content="TuraIDC 在线演示：用户端、控制台、管理端三套真实界面，纯静态运行、示例数据、无需登录。" />
     <meta name="robots" content="noindex" />
+    <link rel="icon" href="data:," />
     <style>
       :root {
         color-scheme: dark;
+        --brand: #38bdf8;
+        --line: rgba(148, 163, 184, 0.18);
+        --card: rgba(15, 23, 42, 0.62);
+        --muted: #94a3b8;
       }
 
       * {
@@ -17,128 +23,266 @@
       body {
         margin: 0;
         min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 48px 24px;
+        padding: 56px 24px 64px;
         background:
-          radial-gradient(1200px 600px at 15% -10%, rgba(56, 189, 248, 0.18), transparent 60%),
-          radial-gradient(900px 500px at 90% 110%, rgba(129, 140, 248, 0.16), transparent 60%), #0b1220;
+          radial-gradient(1100px 560px at 12% -12%, rgba(56, 189, 248, 0.2), transparent 62%),
+          radial-gradient(900px 520px at 92% 108%, rgba(129, 140, 248, 0.18), transparent 62%), #0a1120;
         color: #e2e8f0;
         font-family:
           'Inter', 'PingFang SC', 'Microsoft YaHei', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        line-height: 1.7;
       }
 
       main {
-        width: min(960px, 100%);
+        width: min(1080px, 100%);
+        margin: 0 auto;
+      }
+
+      .top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+        margin-bottom: 34px;
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 14px;
+        border-radius: 999px;
+        border: 1px solid rgba(56, 189, 248, 0.35);
+        background: rgba(56, 189, 248, 0.1);
+        color: var(--brand);
+        font-size: 13px;
+        letter-spacing: 0.02em;
+      }
+
+      .top a {
+        color: var(--muted);
+        font-size: 14px;
+        text-decoration: none;
+      }
+
+      .top a:hover {
+        color: var(--brand);
       }
 
       h1 {
-        margin: 0 0 12px;
-        font-size: clamp(28px, 4vw, 40px);
+        margin: 0 0 14px;
+        font-size: clamp(28px, 4.2vw, 42px);
+        line-height: 1.25;
         letter-spacing: -0.02em;
       }
 
-      p.lead {
-        margin: 0 0 36px;
-        color: #94a3b8;
-        line-height: 1.7;
-        max-width: 62ch;
+      .lead {
+        margin: 0 0 40px;
+        max-width: 68ch;
+        color: var(--muted);
+        font-size: 16px;
       }
 
-      ul {
+      .lead strong {
+        color: #e2e8f0;
+        font-weight: 600;
+      }
+
+      .grid {
         display: grid;
-        gap: 16px;
-        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-        margin: 0;
+        gap: 18px;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        margin: 0 0 44px;
         padding: 0;
         list-style: none;
       }
 
-      a.card {
-        display: block;
+      .card {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
         height: 100%;
-        padding: 22px 24px;
-        border-radius: 16px;
-        border: 1px solid rgba(148, 163, 184, 0.18);
-        background: rgba(15, 23, 42, 0.6);
-        color: inherit;
+        padding: 24px;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--card);
         text-decoration: none;
+        color: inherit;
         transition:
           transform 0.16s ease,
           border-color 0.16s ease,
           background 0.16s ease;
       }
 
-      a.card:hover,
-      a.card:focus-visible {
-        transform: translateY(-2px);
+      .card:hover,
+      .card:focus-visible {
+        transform: translateY(-3px);
         border-color: rgba(56, 189, 248, 0.55);
-        background: rgba(15, 23, 42, 0.85);
+        background: rgba(15, 23, 42, 0.88);
         outline: none;
       }
 
-      .card h2 {
-        margin: 0 0 8px;
-        font-size: 18px;
+      .card-head {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
       }
 
-      .card span {
-        color: #94a3b8;
+      .card h2 {
+        margin: 0;
+        font-size: 19px;
+      }
+
+      .path {
+        color: var(--brand);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12.5px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 14.5px;
+      }
+
+      .card ul {
+        margin: 4px 0 0;
+        padding-left: 18px;
+        color: var(--muted);
         font-size: 14px;
-        line-height: 1.6;
+      }
+
+      .card li + li {
+        margin-top: 4px;
+      }
+
+      .enter {
+        margin-top: auto;
+        padding-top: 8px;
+        color: var(--brand);
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .notes {
+        border-top: 1px solid var(--line);
+        padding-top: 28px;
+      }
+
+      .notes h3 {
+        margin: 0 0 12px;
+        font-size: 15px;
+        color: #e2e8f0;
+      }
+
+      .notes ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--muted);
+        font-size: 14.5px;
+      }
+
+      .notes li + li {
+        margin-top: 6px;
+      }
+
+      .notes a {
+        color: var(--brand);
+        text-decoration: none;
       }
 
       footer {
-        margin-top: 40px;
-        font-size: 13px;
+        margin-top: 44px;
         color: #64748b;
-        line-height: 1.8;
+        font-size: 13px;
       }
 
       footer a {
-        color: #38bdf8;
+        color: var(--brand);
         text-decoration: none;
       }
     </style>
   </head>
   <body>
     <main>
-      <h1>TuraIDC 演示环境</h1>
+      <div class="top">
+        <span class="badge">演示环境 · 无需登录</span>
+        <a href="https://www.turaidc.com/">返回官网 →</a>
+      </div>
+
+      <h1>三个界面，随便点</h1>
       <p class="lead">
-        三个界面都是真实构建产物，数据为示例数据，所有请求在浏览器内本地应答，不会触达任何后端。可以随便点，不会产生任何真实操作。
+        这里是 TuraIDC 的在线演示：<strong>用户端、控制台、管理端</strong>都是真实构建的前端产物，跑在浏览器里，
+        后面没有任何后端。数据是编好的示例数据，所以你可以一路点到底，不会动到任何真实资源。
       </p>
 
-      <ul>
+      <ul class="grid">
         <li>
-          <a class="card" href="/user/">
-            <h2>用户端</h2>
-            <span>商品浏览、配置选购、下单与账户中心</span>
+          <a class="card" href="/">
+            <div class="card-head">
+              <h2>用户端</h2>
+              <span class="path">/</span>
+            </div>
+            <p>客户看到的站点：逛商品、选配置、下单、看公告与帮助。</p>
+            <ul>
+              <li>首页与商品目录</li>
+              <li>商品详情与配置选购</li>
+              <li>下单结算流程</li>
+            </ul>
+            <span class="enter">进入用户端 →</span>
           </a>
         </li>
+
         <li>
-          <a class="card" href="/console/">
-            <h2>用户控制台</h2>
-            <span>实例概览、开关机、快照与 ISO、账单与工单</span>
+          <a class="card" href="/console/#/client/dashboard">
+            <div class="card-head">
+              <h2>用户控制台</h2>
+              <span class="path">/console/</span>
+            </div>
+            <p>客户买到机器之后每天用的地方：开关机、看用量、续费、提工单。</p>
+            <ul>
+              <li>概览、我的服务、实例详情</li>
+              <li>快照 / ISO / 安全组面板</li>
+              <li>账单、充值、工单、账户设置</li>
+            </ul>
+            <span class="enter">进入控制台 →</span>
           </a>
         </li>
+
         <li>
-          <a class="card" href="/admin/">
-            <h2>管理端</h2>
-            <span>经营看板、商品与订单、用户、财务、系统设置</span>
-          </a>
-        </li>
-        <li>
-          <a class="card" href="https://www.turaidc.com/">
-            <h2>项目官网</h2>
-            <span>功能、部署方式与开源仓库</span>
+          <a class="card" href="/admin/#/admin/dashboard">
+            <div class="card-head">
+              <h2>管理端</h2>
+              <span class="path">/admin/</span>
+            </div>
+            <p>站长视角：经营看板、商品与订单、用户与财务、系统设置与插件。</p>
+            <ul>
+              <li>经营看板与订单台账</li>
+              <li>商品、用户、财务、工单</li>
+              <li>插件与系统设置</li>
+            </ul>
+            <span class="enter">进入管理端 →</span>
           </a>
         </li>
       </ul>
 
+      <div class="notes">
+        <h3>几点说明</h3>
+        <ul>
+          <li>数据全部是示例数据（客户、实例、账单、工单都在 <code>demo/fixtures</code> 里写死），刷新页面即回到初始状态。</li>
+          <li>删除实例、退款、重置密码这类动作<strong>不会执行</strong>，会返回「演示环境不执行该操作」——这是刻意的，避免你以为真删了什么。</li>
+          <li>接口请求不出浏览器，所以没有后端、没有延迟、也不会跳去真实站点。</li>
+          <li>想自己跑一套：<a href="https://docs.turaidc.com/quick-start">看部署文档</a>，或 <a href="https://github.com/25Cloud/TuraIDC">拉源码</a>。</li>
+        </ul>
+      </div>
+
       <footer>
-        演示环境固定使用示例数据，操作不会生效；要完整体验请
-        <a href="https://github.com/25Cloud/TuraIDC">自建实例</a>。
+        TuraIDC · AGPL-3.0-or-later 开源 ·
+        <a href="https://www.turaidc.com/">官网</a> ·
+        <a href="https://docs.turaidc.com">文档</a> ·
+        <a href="https://github.com/25Cloud/TuraIDC">GitHub</a>
       </footer>
     </main>
   </body>

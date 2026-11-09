@@ -27,32 +27,37 @@ const distRoot = path.join(repositoryRoot, 'demo', 'dist');
 const DEMO_ORIGIN = 'https://demo.turaidc.com';
 
 const applications = {
+  // 用户端就是系统首页：真实部署里 FRONTEND_URL 就是站点根，演示站照抄这个形态
   user: {
     workspace: 'turaidc-user-v3-www',
     directory: 'frontend-user-v3-www',
     assetVariable: 'VITE_WWW_ASSET_BASE_URL',
-    base: '/user/',
+    base: '/',
+    target: '',
+    publicRoot: true,
   },
   console: {
     workspace: 'turaidc-user-v4-console',
     directory: 'frontend-user-v4-console',
     assetVariable: 'VITE_CONSOLE_ASSET_BASE_URL',
     base: '/console/',
+    target: 'console',
   },
   admin: {
     workspace: 'turaidc-admin-v3',
     directory: 'frontend-admin-v3',
     assetVariable: 'VITE_ADMIN_ASSET_BASE_URL',
     base: '/admin/',
+    target: 'admin',
   },
 };
 
 function parseArguments(argv) {
-  const options = { target: 'all', skipSite: false };
+  const options = { target: 'all', withSite: false };
 
   for (const argument of argv) {
-    if (argument === '--skip-site') {
-      options.skipSite = true;
+    if (argument === '--with-site') {
+      options.withSite = true;
       continue;
     }
 
@@ -133,69 +138,136 @@ async function buildApplication(name, application) {
   );
 
   const source = path.join(repositoryRoot, application.directory, 'dist');
-  const target = path.join(distRoot, name);
+  const target = application.target ? path.join(distRoot, application.target) : distRoot;
 
-  await rm(target, { recursive: true, force: true });
+  if (application.publicRoot) {
+    // 用户端铺在站点根：先清空根目录（入口页会在这之后再写回去），
+    // 并把 public/ 里的静态资源（branding / img / favicon）一并放到根，
+    // 因为前端引用的是绝对路径 `/branding/logo.png`。
+    await rm(distRoot, { recursive: true, force: true });
+    await mkdir(target, { recursive: true });
+  } else {
+    await rm(target, { recursive: true, force: true });
+  }
+
   await cp(source, target, { recursive: true });
-  console.log(`  → demo/dist/${name}`);
+
+  if (application.publicRoot) {
+    const assets = path.join(repositoryRoot, application.directory, 'public');
+
+    if (existsSync(assets)) {
+      await cp(assets, target, { recursive: true });
+    }
+
+    await patchEarlyApiFetch(target);
+  }
+
+  console.log(`  → demo/dist/${application.target || ''}`);
 }
 
 /**
- * 首页：优先用 site-web 的真实产物。
- *
- * site-web 不在 pnpm workspace 里（自带 package-lock.json、用 npm），所以这里自己兜一次
- * `npm ci`，让 EdgeOne 上的安装命令只需要管 workspace 依赖；装不上或构建失败都退回
- * 演示入口页，首页挂掉不该把整个演示站带翻。
+ * 用户端的 `index.html` 里有一段内联脚本，会在 JS 加载前预取 `/v2/site/home` 抢 LCP。
+ * 它比我们的传输层先执行，所以演示站里会真的去打 `https://demo.turaidc.com/api/...`
+ * （浏览器报 CORS 失败）。这里在 `<head>` 之后插一段极小的兜底，把 `/api/` 的 fetch 直接
+ * 应答成空信封；真正的示例数据仍由 `shared/demo` 的传输层接管。
  */
-async function buildSite() {
+async function patchEarlyApiFetch(distDirectory) {
+  const indexPath = path.join(distDirectory, 'index.html');
+
+  if (!existsSync(indexPath)) {
+    return;
+  }
+
+  const html = await readFile(indexPath, 'utf8');
+
+  if (html.includes('__DEMO_EARLY_FETCH__')) {
+    return;
+  }
+
+  const stub = [
+    '<script id="__DEMO_EARLY_FETCH__">',
+    '(function(){var real=window.fetch;window.fetch=function(i,o){',
+    "var u=typeof i==='string'?i:(i&&i.url)||'';",
+    "if(u.indexOf('/api/')<0){return real.apply(window,arguments);}",
+    "return Promise.resolve(new Response(JSON.stringify({code:0,message:'success',data:null}),",
+    "{status:200,headers:{'content-type':'application/json'}}));};})();",
+    '</script>',
+  ].join('');
+
+  const patched = html.replace(/<head(\s[^>]*)?>/i, (match) => `${match}${stub}`);
+
+  if (patched === html) {
+    console.warn('  ! 用户端 index.html 没找到 <head>，跳过预热请求兜底');
+    return;
+  }
+
+  await writeFile(indexPath, patched, 'utf8');
+}
+
+/**
+ * 演示说明页：`/start/`，给官网「在线演示」CTA 落地用。
+ *
+ * 站点根 `/` 必须是**系统首页**（用户端），跟真实部署一致；
+ * 这份说明页只解释「三端各是什么、数据是示例」，不再顶替根路径。
+ */
+async function buildLanding() {
+  const target = path.join(distRoot, 'start');
+  await mkdir(target, { recursive: true });
+  const landing = await readFile(path.join(repositoryRoot, 'demo', 'landing', 'index.html'), 'utf8');
+  await writeFile(path.join(target, 'index.html'), landing, 'utf8');
+  console.log('\n演示说明页 → demo/dist/start/index.html');
+}
+
+/** 可选：把 site-web 首页放进 `/site/`，默认不产出 */
+async function buildSiteCopy() {
   const siteRoot = path.join(repositoryRoot, 'site-web');
   const output = path.join(siteRoot, 'dist');
-  const target = path.join(distRoot, 'index.html');
   const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
 
   try {
     if (!existsSync(path.join(siteRoot, 'node_modules'))) {
-      console.log('\n安装首页依赖（site-web：npm ci）...');
+      console.log('\n安装官网依赖（site-web：npm ci）...');
       await run(npm, ['--prefix', siteRoot, 'ci'], process.env, repositoryRoot);
     }
 
-    console.log('\n构建首页（site-web）...');
+    console.log('\n构建官网副本（site-web）...');
     await run(npm, ['--prefix', siteRoot, 'run', 'build'], process.env, repositoryRoot);
 
     if (!existsSync(output)) {
       throw new Error('site-web 构建完成但没有 dist 产物');
     }
 
-    // site-web 是多页产物（四语言），整目录铺到 demo/dist 根
-    await rm(distRoot, { recursive: true, force: true });
-    await cp(output, distRoot, { recursive: true });
-    console.log('  → demo/dist（site-web 首页四语言）');
-    return;
+    const target = path.join(distRoot, 'site');
+    await rm(target, { recursive: true, force: true });
+    await cp(output, target, { recursive: true });
+    console.log('  → demo/dist/site（site-web 首页四语言）');
   } catch (error) {
-    console.warn(`首页构建失败，改用演示入口页兜底：${error instanceof Error ? error.message : error}`);
+    console.warn(`官网副本构建失败，跳过：${error instanceof Error ? error.message : error}`);
   }
-
-  await mkdir(distRoot, { recursive: true });
-  const landing = await readFile(path.join(repositoryRoot, 'demo', 'landing', 'index.html'), 'utf8');
-  await writeFile(target, landing, 'utf8');
 }
 
 const options = parseArguments(process.argv.slice(2));
 
-await mkdir(distRoot, { recursive: true });
-
-if (!options.skipSite) {
-  await buildSite();
-}
-
+// 用户端铺在站点根，构建时会重置 demo/dist，所以必须排在第一位；
+// 说明页 `/start/` 写在最后，免得被根目录重置带走。
 const selected = options.target === 'all'
   ? Object.entries(applications)
   : [[options.target, applications[options.target]]];
+
+if (options.target === 'all') {
+  await rm(distRoot, { recursive: true, force: true });
+}
 
 for (const [name, application] of selected) {
   await buildApplication(name, application);
 }
 
+await buildLanding();
+
+if (options.withSite) {
+  await buildSiteCopy();
+}
+
 const size = await directorySize(distRoot);
 console.log(`\n演示站产物就绪：demo/dist（${(size / 1024 / 1024).toFixed(1)} MB）`);
-console.log(`本地预览：npx serve demo/dist，或 node backend/scripts/serve_demo.mjs`);
+console.log(`本地预览：node backend/scripts/serve_demo.mjs`);
