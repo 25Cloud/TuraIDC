@@ -4478,7 +4478,8 @@
     "passwordRequired": "Enter the password",
     "loginSuccess": "Signed in successfully",
     "loginFailed": "Login failed. Please check your account and password",
-    "captchaRetry": "Captcha failed to load, click to retry"
+    "captchaRetry": "Captcha failed to load, click to retry",
+    "demoHint": "Demo environment: account {account} / password {password} (pre-filled, just click sign in)"
   },
   "orders": {
     "index": {

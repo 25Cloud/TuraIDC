@@ -18,8 +18,7 @@
           line-height: 1.6;
         "
       >
-        演示环境：账号 <b>{{ DEMO_ACCOUNT.username }}</b> / 密码 <b>{{ DEMO_ACCOUNT.password }}</b
-        >（已自动填好，直接点登录）
+        {{ $t('login.demoHint', { account: DEMO_ACCOUNT.username, password: DEMO_ACCOUNT.password }) }}
       </div>
       <t-form ref="formRef" :data="formData" :rules="formRules" label-align="top" @submit="handleLogin">
         <t-form-item :label="$t('login.account')" name="account">
