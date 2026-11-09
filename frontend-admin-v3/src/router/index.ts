@@ -1,6 +1,6 @@
 import { isObject, uniq } from 'lodash-es';
 import type { RouteRecordRaw } from 'vue-router';
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router';
 
 const env = import.meta.env.MODE || 'development';
 
@@ -92,7 +92,12 @@ export const getActive = (maxLevel = 3): string => {
 };
 
 const router = createRouter({
-  history: createWebHistory(env === 'site' ? '/starter/vue-next/' : '/'),
+  // 演示站用 hash 路由。管理端路由本身带 /admin 前缀，所以 base 仍是 '/'，
+  // 静态资源前缀由 Vite base（VITE_BASE_URL=/admin/）负责，两者互不牵连。
+  history:
+    import.meta.env.VITE_DEMO_MODE === 'true'
+      ? createWebHashHistory('/')
+      : createWebHistory(env === 'site' ? '/starter/vue-next/' : '/'),
   routes: allRoutes,
   scrollBehavior() {
     return {

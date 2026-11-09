@@ -18,7 +18,8 @@
       "@/*": ["./src/*"],
       "@shared/*": ["../shared/*"],
       "@turaidc/shared": ["../shared/index.ts"],
-      "@turaidc/shared/*": ["../shared/*"]
+      "@turaidc/shared/*": ["../shared/*"],
+      "@demo-fixtures/*": ["../demo/fixtures/*"]
     },
     "noImplicitAny": true,
     "strictFunctionTypes": true,

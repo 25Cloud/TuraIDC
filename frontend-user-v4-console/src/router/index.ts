@@ -1,5 +1,5 @@
 import type { RouteRecordRaw } from 'vue-router';
-import { createRouter, createWebHistory } from 'vue-router';
+import { createRouter, createWebHashHistory, createWebHistory } from 'vue-router';
 
 const env = import.meta.env.MODE || 'development';
 
@@ -88,7 +88,11 @@ export const getActive = (maxLevel = 3): string => {
 };
 
 const router = createRouter({
-  history: createWebHistory(env === 'site' ? '/starter/vue-next/' : import.meta.env.VITE_BASE_URL),
+  // 演示站用 hash 路由：静态托管下四个应用共用一个域名，deep link 不能依赖服务端回退
+  history:
+    import.meta.env.VITE_DEMO_MODE === 'true'
+      ? createWebHashHistory(import.meta.env.VITE_BASE_URL)
+      : createWebHistory(env === 'site' ? '/starter/vue-next/' : import.meta.env.VITE_BASE_URL),
   routes: allRoutes,
   scrollBehavior() {
     return {

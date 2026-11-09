@@ -1,8 +1,9 @@
 // axios配置  可自行根据项目进行更改，只需更改该文件即可，其他文件可以不动
+import { installDemoTransport } from '@turaidc/shared/demo';
 import type { AxiosInstance } from 'axios';
 import { isString, merge } from 'lodash-es';
 
-import { getAdminToken, removeAdminToken } from '@/app/runtime/session';
+import { getAdminToken, removeAdminToken, setAdminToken } from '@/app/runtime/session';
 import { ContentTypeEnum } from '@/constants';
 import { t } from '@/locales';
 import router from '@/router';
@@ -255,6 +256,15 @@ function createAxios(opt?: Partial<CreateAxiosOptions>) {
   );
 }
 export const request = createAxios();
+
+// 演示站构建：请求不出网，全部由打包进来的示例数据应答（见 docs/internal/designs/frontend/demo-site-design.md）
+if (import.meta.env.VITE_DEMO_MODE === 'true') {
+  installDemoTransport(request.getAxios(), {
+    app: 'admin',
+    loadFixtures: () => import('@demo-fixtures/admin.json'),
+  });
+  setAdminToken('demo-token');
+}
 
 /**
  * 上游同步类请求专用超时（毫秒）。

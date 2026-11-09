@@ -206,6 +206,8 @@ export default ({ mode }: ConfigEnv): UserConfig => {
         '@': path.resolve(__dirname, './src'),
         '@shared': path.resolve(__dirname, '../shared'),
         '@turaidc/shared': path.resolve(__dirname, '../shared'),
+        // 演示站示例数据（demo/fixtures）：只在 VITE_DEMO_MODE 下被动态 import
+        '@demo-fixtures': path.resolve(__dirname, '../demo/fixtures'),
       },
       dedupe: ['vue'],
     },

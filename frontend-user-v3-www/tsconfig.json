@@ -12,6 +12,12 @@
       ],
       "@turaidc/shared": [
         "../shared/index.ts"
+      ],
+      "@turaidc/shared/*": [
+        "../shared/*"
+      ],
+      "@demo-fixtures/*": [
+        "../demo/fixtures/*"
       ]
     },
     "types": [

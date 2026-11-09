@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd .. && pnpm install --frozen-lockfile && npm --prefix site-web ci",
+  "buildCommand": "cd .. && node backend/scripts/build_demo.mjs",
+  "outputDirectory": "dist",
+  "nodeVersion": "22.11.0"
+}

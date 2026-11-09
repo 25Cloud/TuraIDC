@@ -1,0 +1,11 @@
+{
+  "endpoints": {},
+  "refused": {
+    "DELETE /v2/admin/users/:id": {
+      "message": "演示环境不执行删除用户"
+    },
+    "POST /v2/admin/services/:id/refunds": {
+      "message": "演示环境不执行退款"
+    }
+  }
+}

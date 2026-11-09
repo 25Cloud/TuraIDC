@@ -242,6 +242,8 @@ export default defineConfig(({ mode, command }) => {
         '@': path.resolve(__dirname, 'src'),
         '@shared': path.resolve(__dirname, '../shared'),
         '@turaidc/shared': path.resolve(__dirname, '../shared'),
+        // 演示站示例数据（demo/fixtures）：只在 VITE_DEMO_MODE 下被动态 import
+        '@demo-fixtures': path.resolve(__dirname, '../demo/fixtures'),
         // 指向本包自己的 node_modules（pnpm 严格隔离下仓库根无 hoist）
         'element-plus': path.resolve(__dirname, 'node_modules/element-plus'),
       },

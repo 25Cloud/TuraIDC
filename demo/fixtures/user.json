@@ -1,0 +1,8 @@
+{
+  "endpoints": {},
+  "refused": {
+    "POST /v2/client/orders": {
+      "message": "演示环境不执行下单"
+    }
+  }
+}

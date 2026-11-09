@@ -1,0 +1,17 @@
+{
+  "endpoints": {},
+  "refused": {
+    "DELETE /v2/client/services/:id": {
+      "message": "演示环境不执行删除实例"
+    },
+    "POST /v2/client/services/:id/reinstalls": {
+      "message": "演示环境不执行重装系统"
+    },
+    "POST /v2/client/services/:id/password": {
+      "message": "演示环境不执行重置密码"
+    },
+    "POST /v2/client/auto-refund/applications": {
+      "message": "演示环境不执行退款申请"
+    }
+  }
+}
