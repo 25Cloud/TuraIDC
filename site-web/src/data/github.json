@@ -1,13 +1,18 @@
 {
   "repo": {
-    "stars": 279,
-    "forks": 18,
-    "openIssues": 0,
+    "stars": 292,
+    "forks": 19,
+    "openIssues": 2,
     "license": "AGPL-3.0",
-    "pushedAt": "2026-11-07T01:51:04Z",
+    "pushedAt": "2026-11-09T06:25:22Z",
     "url": "https://github.com/25Cloud/TuraIDC"
   },
   "releases": [
+    {
+      "tag": "v0.4.6",
+      "publishedAt": "2026-11-09T06:25:31Z",
+      "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.6"
+    },
     {
       "tag": "v0.4.5",
       "publishedAt": "2026-11-07T01:51:19Z",
@@ -27,43 +32,38 @@
       "tag": "v0.4.2",
       "publishedAt": "2026-10-19T03:56:55Z",
       "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.2"
-    },
-    {
-      "tag": "v0.4.1",
-      "publishedAt": "2026-10-15T11:28:04Z",
-      "url": "https://github.com/25Cloud/TuraIDC/releases/tag/v0.4.1"
     }
   ],
   "languages": [
     {
       "name": "PHP",
-      "bytes": 12610212,
-      "percent": 63.2
+      "bytes": 13280216,
+      "percent": 64
     },
     {
       "name": "Vue",
-      "bytes": 3348080,
-      "percent": 16.8
+      "bytes": 3393984,
+      "percent": 16.3
     },
     {
       "name": "TypeScript",
-      "bytes": 2048933,
-      "percent": 10.3
+      "bytes": 2123379,
+      "percent": 10.2
     },
     {
       "name": "JavaScript",
-      "bytes": 918667,
-      "percent": 4.6
+      "bytes": 927735,
+      "percent": 4.5
     },
     {
       "name": "Python",
       "bytes": 378212,
-      "percent": 1.9
+      "percent": 1.8
     },
     {
       "name": "Other",
-      "bytes": 652423,
-      "percent": 3.3
+      "bytes": 655685,
+      "percent": 3.2
     }
   ]
 }
