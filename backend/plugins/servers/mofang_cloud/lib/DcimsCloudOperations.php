@@ -33,6 +33,28 @@ final class DcimsCloudOperations implements CloudOperations
     /** 新版本接口未提供强制断电/强制重启端点时的统一提示 */
     private const UNSUPPORTED_HARD_POWER_MESSAGE = '魔方云新版本接口不支持强制断电/强制重启，请用关机/重启';
 
+    /** 新版本接口未提供快照/备份端点时的统一提示 */
+    private const UNSUPPORTED_SNAPSHOT_MESSAGE = '魔方云新版本接口不提供快照/备份能力，请到魔方云面板操作';
+
+    /** 新版本接口未提供 ISO 挂载与启动项端点时的统一提示 */
+    private const UNSUPPORTED_ISO_MESSAGE = '魔方云新版本接口不提供 ISO 挂载与启动项设置，请到魔方云面板操作';
+
+    /**
+     * 改配里「新版本接口无法调整」的键 → 面向用户的中文名。
+     *
+     * 这些键出现在请求里（且值不是 null/''/0）时不会提交给上游：
+     * 只请求了它们就直接报错，和可调整项混在一起时在返回的 message 里点明「未提交」。
+     */
+    private const CONFIG_UNSUPPORTED_KEYS = [
+        'cpu' => 'CPU',
+        'memory' => '内存',
+        'disk_id' => '磁盘',
+        'disk_size' => '磁盘容量',
+        'ipv6_num' => 'IPv6 数量',
+        'snap_num' => '快照配额',
+        'backup_num' => '备份配额',
+    ];
+
     /** 任务列表一次取多少条（契约 §5.5 的固定口径） */
     private const TASK_PAGE_SIZE = 20;
 
@@ -474,6 +496,234 @@ final class DcimsCloudOperations implements CloudOperations
     public function deleteNatRule(int $hostId, int $ruleId): array
     {
         throw new CloudApiException(self::UNSUPPORTED_NETWORK_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无快照/备份列表端点（`DcimsClient` 里没有 snapshot 相关路径）。
+     */
+    public function snapshots(int $hostId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_SNAPSHOT_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无快照/备份创建端点。
+     */
+    public function createSnapshot(int $hostId, array $params): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_SNAPSHOT_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无快照/备份删除端点。
+     */
+    public function deleteSnapshot(int $hostId, int $snapshotId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_SNAPSHOT_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无快照回滚端点。
+     */
+    public function restoreSnapshot(int $hostId, int $snapshotId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_SNAPSHOT_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无 ISO 列表端点；这里**故意抛异常**而不是返回空数组，
+     * 否则前端会显示「没有可用 ISO」，把「上游没有这个能力」伪装成「当前确实一个都没有」。
+     */
+    public function isoImages(int $hostId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_ISO_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无挂载 ISO 的端点。
+     */
+    public function mountIso(int $hostId, string $isoId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_ISO_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无卸载 ISO 的端点。
+     */
+    public function unmountIso(int $hostId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_ISO_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无启动项设置端点（实例启动顺序只能在面板里改）。
+     */
+    public function setBootOrder(int $hostId, string $order): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_ISO_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无安全组规则读取端点。
+     */
+    public function securityRules(int $hostId, int $groupId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_NETWORK_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无安全组创建端点。
+     */
+    public function createSecurityGroup(int $hostId, array $params): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_NETWORK_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无安全组删除端点。
+     */
+    public function deleteSecurityGroup(int $hostId, int $groupId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_NETWORK_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无安全组规则创建端点。
+     */
+    public function createSecurityRule(int $hostId, int $groupId, array $params): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_NETWORK_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无安全组规则删除端点。
+     */
+    public function deleteSecurityRule(int $hostId, int $groupId, int $ruleId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_NETWORK_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口无「把安全组应用到实例」的端点。
+     */
+    public function applySecurityGroup(int $hostId, int $groupId): array
+    {
+        throw new CloudApiException(self::UNSUPPORTED_NETWORK_MESSAGE, null, CloudApiMode::Dcims);
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * 新版本接口只有四个可写的规格端点：入带宽、出带宽、流量上限、IPv4 数量（按地址组）。
+     * CPU / 内存 / 磁盘 / IPv6 / 快照配额 / 备份配额在新接口里没有写端点，
+     * 因此这里分三种情况处理：
+     * 1. 只请求了不支持的项 → 直接抛合并后的中文异常，一个请求都不发；
+     * 2. 支持项与不支持项混在一起 → 只提交支持项，并在 `message` 里点明哪些没提交（避免管理员以为全改了）；
+     * 3. 一个可提交项都没有（全是 null/''/0）→ 抛「改配失败：没有可提交的变更项」，
+     *    与老版实现保持同一成败语义，适配器不必按代际写特例。
+     *
+     * 顺序固定为 in_bw → out_bw → flow → ip_num：一个端点一次调用，无法回滚，
+     * 固定顺序至少让「改到一半失败」的结果可预期，审计日志也能按顺序对上；
+     * 中途失败时消息里会带上「已生效」的部分，管理员才知道到底改了哪些。
+     */
+    public function changeConfig(int $hostId, array $params): array
+    {
+        $unsupported = [];
+        foreach (self::CONFIG_UNSUPPORTED_KEYS as $key => $label) {
+            if ($this->isSpecified($params[$key] ?? null)) {
+                $unsupported[] = $label;
+            }
+        }
+
+        // 支持项：值同样按「null/''/0 视为不改」过滤
+        $inBw = $this->isSpecified($params['in_bw'] ?? null) ? max(0, (int) $params['in_bw']) : null;
+        $outBw = $this->isSpecified($params['out_bw'] ?? null) ? max(0, (int) $params['out_bw']) : null;
+        $flow = $this->isSpecified($params['flow'] ?? null) ? max(0, (int) $params['flow']) : null;
+        $ipNum = $this->isSpecified($params['ip_num'] ?? null) ? max(0, (int) $params['ip_num']) : null;
+        // ip_group 单独给没有意义（没有数量就不构成一次调整），只在 ip_num 生效时使用
+        $ipGroup = $this->isSpecified($params['ip_group'] ?? null) ? (int) $params['ip_group'] : 0;
+
+        if ($inBw === null && $outBw === null && $flow === null && $ipNum === null) {
+            if ($unsupported !== []) {
+                throw new CloudApiException(
+                    '魔方云新版本接口不支持调整'.implode('、', $unsupported).'，请到魔方云面板操作',
+                    null,
+                    CloudApiMode::Dcims
+                );
+            }
+
+            // 与老版实现同一语义：没给出任何可提交项就是一次失败的改配，不返回「成功但什么都没做」
+            throw new CloudApiException('改配失败：没有可提交的变更项', null, CloudApiMode::Dcims);
+        }
+
+        $applied = [];
+        $appliedLabels = [];
+        $raw = [];
+
+        if ($inBw !== null) {
+            $raw = $this->applyConfigChange($hostId, '/server/'.$hostId.'/in_bandwidth', ['in_bw' => $inBw], '入方向带宽', $appliedLabels);
+            $applied[] = 'in_bw';
+            $appliedLabels[] = '入方向带宽';
+        }
+
+        if ($outBw !== null) {
+            $raw = $this->applyConfigChange($hostId, '/server/'.$hostId.'/out_bandwidth', ['out_bw' => $outBw], '出方向带宽', $appliedLabels);
+            $applied[] = 'out_bw';
+            $appliedLabels[] = '出方向带宽';
+        }
+
+        if ($flow !== null) {
+            $raw = $this->applyConfigChange($hostId, '/server/'.$hostId.'/limit_flow', ['limit_flow' => $flow], '流量上限', $appliedLabels);
+            $applied[] = 'flow';
+            $appliedLabels[] = '流量上限';
+        }
+
+        if ($ipNum !== null) {
+            // 契约 §4.4：按地址组给数量，ip_group 缺省 0 = 默认地址组
+            $raw = $this->applyConfigChange($hostId, '/server/'.$hostId.'/ip', ['ip' => [['ip_group_id' => $ipGroup, 'num' => $ipNum]]], 'IPv4 数量', $appliedLabels);
+            $applied[] = 'ip_num';
+            $appliedLabels[] = 'IPv4 数量';
+        }
+
+        $message = '已调整：'.implode('、', $appliedLabels);
+        if ($unsupported !== []) {
+            $message .= '；以下项目新版本接口不支持，未提交：'.implode('、', $unsupported);
+        }
+
+        return [
+            'ok' => true,
+            'message' => $message,
+            'applied' => $applied,
+            'raw' => $raw,
+        ];
     }
 
     /**
@@ -1388,6 +1638,61 @@ final class DcimsCloudOperations implements CloudOperations
         }
 
         return '';
+    }
+
+    /**
+     * 执行一次改配请求；失败时把「已生效」的部分拼进消息。
+     *
+     * 一个端点一次调用、没法回滚，所以失败消息必须回答「到底改了哪些」：
+     * 例如 `出方向带宽调整失败（入方向带宽已生效）：带宽超过套餐上限`；
+     * 一个都没成功时不加前缀，保持老版实现那种「整单失败」的读感。
+     *
+     * @param  array<string, mixed>  $payload
+     * @param  array<int, string>  $appliedLabels  已成功下发的项目（中文名，按下发顺序）
+     * @return array<string, mixed> 上游原始响应体
+     */
+    private function applyConfigChange(int $hostId, string $path, array $payload, string $label, array $appliedLabels): array
+    {
+        $body = $this->client->request('PUT', $path, $this->body($hostId, $payload));
+
+        try {
+            $this->assertSuccess($body, $label.'调整');
+        } catch (CloudApiException) {
+            $prefix = $appliedLabels === [] ? '' : '（'.implode('、', $appliedLabels).'已生效）';
+
+            throw new CloudApiException(
+                $label.'调整失败'.$prefix.'：'.DcimsCloudClient::messageOf($body),
+                null,
+                CloudApiMode::Dcims
+            );
+        }
+
+        return $body;
+    }
+
+    /**
+     * 改配参数是否「本次指定了」。
+     *
+     * 口径与接口 docblock 一致：`null` / `''` / `0` / `[]` 都视为「本次不改这一项」，
+     * 只有真的有值才算一次调整——否则平台把整套配置项原样传进来时会被误判成「要改成 0」。
+     */
+    private function isSpecified(mixed $value): bool
+    {
+        if ($value === null || $value === '' || $value === [] || $value === false) {
+            return false;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (float) $value !== 0.0;
+        }
+
+        if (is_string($value)) {
+            $trimmed = trim($value);
+
+            return $trimmed !== '' && (! is_numeric($trimmed) || (float) $trimmed !== 0.0);
+        }
+
+        return true;
     }
 
     /**

@@ -461,20 +461,25 @@ final class LegacyCloudOperations implements CloudOperations
 
     public function securityGroups(int $hostId): array
     {
-        $detail = $this->client->request('GET', '/clouds/'.$hostId);
-        $userId = (int) ($detail['user_id'] ?? 0);
+        $query = ['list_type' => 'all'];
 
-        // 没有归属用户就不查（避免把上游全部安全组拉回来）
-        if ($userId <= 0) {
-            return [];
+        // hostId > 0：只列该实例归属客户的安全组（一个面板账号下可能挂着多个客户）
+        // hostId <= 0：平台要的是「这个面板上我能看到的安全组」，不带 user 过滤。
+        // 平台的安全组页是按服务打开的，拿不到具体实例时传 0；早前这里直接按 0 去查
+        // /clouds/0，必然 404，等于原生安全组列表永远读不出来。
+        if ($hostId > 0) {
+            $detail = $this->client->request('GET', '/clouds/'.$hostId);
+            $userId = (int) ($detail['user_id'] ?? 0);
+
+            // 没有归属用户就不查（避免把上游全部安全组拉回来）
+            if ($userId <= 0) {
+                return [];
+            }
+
+            $query['user'] = $userId;
         }
 
-        $body = $this->client->request('GET', '/security_groups', [], [
-            'list_type' => 'all',
-            'user' => $userId,
-        ]);
-
-        return $this->rows($body);
+        return $this->rows($this->client->request('GET', '/security_groups', [], $query));
     }
 
     public function natRules(int $hostId): array
@@ -555,6 +560,377 @@ final class LegacyCloudOperations implements CloudOperations
             'ok' => true,
             'message' => '流量包已附加到实例',
             'raw' => $body,
+        ];
+    }
+
+    /* ------------------------------ 快照 / 备份 ------------------------------ */
+
+    /** {@inheritDoc} */
+    public function snapshots(int $hostId): array
+    {
+        $body = $this->client->request('GET', '/clouds/'.$hostId.'/snapshots', [], [
+            'page' => 1,
+            'per_page' => 9999,
+        ]);
+
+        // 列表只认严格 success（契约 §5.2 第一条），失败当空列表而不抛，避免整页报错
+        if (! $this->isStrictSuccess($body)) {
+            return [];
+        }
+
+        return $this->snapshotRows($body);
+    }
+
+    /** {@inheritDoc} */
+    public function createSnapshot(int $hostId, array $params): array
+    {
+        $name = $this->string($params['name'] ?? '');
+        if ($name === '') {
+            throw new CloudApiException('创建快照失败：缺少快照名称', null, CloudApiMode::Legacy);
+        }
+
+        $type = strtolower($this->string($params['type'] ?? '')) ?: 'snap';
+        if (! in_array($type, ['snap', 'backup'], true)) {
+            throw new CloudApiException('创建快照失败：类型只支持 snap 或 backup', null, CloudApiMode::Legacy);
+        }
+
+        $diskId = (int) ($params['disk_id'] ?? 0);
+        if ($diskId <= 0) {
+            // 没指定磁盘就落到系统盘（契约 §3.8 的 `disks/{diskId}/snapshots` 是磁盘维度）
+            $diskId = $this->systemDiskId($hostId);
+        }
+
+        if ($diskId <= 0) {
+            throw new CloudApiException('创建快照失败：找不到系统盘，无法创建', null, CloudApiMode::Legacy);
+        }
+
+        $body = $this->client->request('POST', '/disks/'.$diskId.'/snapshots', [
+            'type' => $type,
+            'name' => $name,
+        ]);
+        $this->assertLooseSuccess($body, $type === 'backup' ? '创建备份失败' : '创建快照失败');
+
+        return [
+            'ok' => true,
+            'message' => ($type === 'backup' ? '备份' : '快照').'任务已发起，请稍后查看',
+            // 上游不一定回 ID：给不出就是 0，不伪造
+            'snapshot_id' => (int) ($body['data']['id'] ?? $body['data']['snapshot_id'] ?? $body['id'] ?? 0),
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function deleteSnapshot(int $hostId, int $snapshotId): array
+    {
+        $body = $this->client->request('DELETE', '/snapshots/'.$snapshotId);
+        $this->assertLooseSuccess($body, '删除快照失败');
+
+        return [
+            'ok' => true,
+            'message' => '删除成功',
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function restoreSnapshot(int $hostId, int $snapshotId): array
+    {
+        // hostid 放 query：上游靠它校验快照归属（契约 §3.8）
+        $body = $this->client->request('POST', '/snapshots/'.$snapshotId.'/restore', [], ['hostid' => $hostId]);
+        $this->assertLooseSuccess($body, '回滚实例失败');
+
+        return [
+            'ok' => true,
+            'message' => '回滚任务已发起，请稍后查看',
+            'raw' => $body,
+        ];
+    }
+
+    /* ------------------------------ ISO / 启动项 ------------------------------ */
+
+    /** {@inheritDoc} */
+    public function isoImages(int $hostId): array
+    {
+        $detail = $this->client->request('GET', '/clouds/'.$hostId);
+        $nodeId = (int) ($detail['node_id'] ?? 0);
+
+        if ($nodeId <= 0) {
+            return [];
+        }
+
+        $body = $this->client->request('GET', '/node_isos', [], ['id' => $nodeId, 'type' => 'node']);
+
+        return $this->isoRows($body);
+    }
+
+    /** {@inheritDoc} */
+    public function mountIso(int $hostId, string $isoId): array
+    {
+        $isoId = $this->string($isoId);
+        if ($isoId === '') {
+            throw new CloudApiException('挂载 ISO 失败：缺少镜像 ID', null, CloudApiMode::Legacy);
+        }
+
+        $body = $this->client->request('POST', '/clouds/'.$hostId.'/iso', ['iso' => $isoId]);
+        $this->assertLooseSuccess($body, '挂载 ISO 失败，请关机后重试');
+
+        return [
+            'ok' => true,
+            'message' => 'ISO 挂载成功',
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function unmountIso(int $hostId): array
+    {
+        // 卸载要带「当前挂载的 ISO」；详情里没有就不带该字段，直接发卸载
+        $detail = $this->client->request('GET', '/clouds/'.$hostId);
+        $iso = $this->string($detail['iso'] ?? '');
+
+        $body = $this->client->request('DELETE', '/clouds/'.$hostId.'/iso', $iso === '' ? [] : ['iso' => $iso]);
+        $this->assertLooseSuccess($body, '卸载 ISO 失败');
+
+        return [
+            'ok' => true,
+            'message' => 'ISO 卸载成功',
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function setBootOrder(int $hostId, string $order): array
+    {
+        $order = $this->string($order);
+        if ($order === '') {
+            throw new CloudApiException('设置启动项失败：缺少启动项参数', null, CloudApiMode::Legacy);
+        }
+
+        // disk / cdrom 是上游自己的枚举，原样透传
+        $body = $this->client->request('PUT', '/clouds/'.$hostId, ['bootorder' => $order]);
+        $this->assertLooseSuccess($body, '设置启动项失败');
+
+        return [
+            'ok' => true,
+            'message' => '启动项已设置为 '.$order,
+            'raw' => $body,
+        ];
+    }
+
+    /* ------------------------------ 安全组写 ------------------------------ */
+
+    /** {@inheritDoc} */
+    public function securityRules(int $hostId, int $groupId): array
+    {
+        $this->assertOwnedSecurityGroup($hostId, $groupId);
+
+        $body = $this->client->request('GET', '/security_groups/'.$groupId.'/rules', [], ['per_page' => 9999]);
+
+        return $this->securityRuleRows($body);
+    }
+
+    /** {@inheritDoc} */
+    public function createSecurityGroup(int $hostId, array $params): array
+    {
+        $name = $this->string($params['name'] ?? '');
+        if ($name === '') {
+            throw new CloudApiException('新建安全组失败：缺少安全组名称', null, CloudApiMode::Legacy);
+        }
+
+        $host = $this->hostOwnership($hostId);
+
+        $body = $this->client->request('POST', '/security_groups', [
+            'uid' => $host['user_id'],
+            'name' => $name,
+            'description' => $this->string($params['description'] ?? ''),
+            'type' => $host['type'] === '' ? 'host' : $host['type'],
+        ]);
+        $this->assertLooseSuccess($body, '新建安全组失败');
+
+        return [
+            'ok' => true,
+            'message' => '创建成功',
+            'group_id' => (int) ($body['data']['id'] ?? $body['id'] ?? 0),
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function deleteSecurityGroup(int $hostId, int $groupId): array
+    {
+        $this->assertOwnedSecurityGroup($hostId, $groupId);
+
+        $body = $this->client->request('DELETE', '/security_groups/'.$groupId);
+        $this->assertLooseSuccess($body, '删除安全组失败');
+
+        return [
+            'ok' => true,
+            'message' => '删除成功',
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function createSecurityRule(int $hostId, int $groupId, array $params): array
+    {
+        $this->assertOwnedSecurityGroup($hostId, $groupId);
+
+        // 方向与协议是上游硬要求，缺了直接给可读提示；平台报文里不会带 action
+        $payload = [];
+        foreach (['direction', 'protocol'] as $key) {
+            $value = $this->string($params[$key] ?? '');
+            if ($value === '') {
+                throw new CloudApiException('新建安全组规则失败：缺少 '.$key, null, CloudApiMode::Legacy);
+            }
+
+            $payload[$key] = $value;
+        }
+
+        // action 缺省补 accept：上游要求显式动作，但平台侧提交只有
+        // id/direction/protocol/port/ip/description 六个键，永远不带 action
+        $action = $this->string($params['action'] ?? '');
+        $payload['action'] = $action === '' ? 'accept' : $action;
+
+        // 其余字段「没给就不提交」，避免把上游已有值覆盖成空
+        foreach (['port', 'ip', 'description', 'start_port', 'end_port', 'start_ip', 'end_ip'] as $key) {
+            $value = $this->string($params[$key] ?? '');
+            if ($value !== '') {
+                $payload[$key] = $value;
+            }
+        }
+
+        $priority = (int) ($params['priority'] ?? 0);
+        if ($priority > 0) {
+            $payload['priority'] = $priority;
+        }
+
+        $body = $this->client->request('POST', '/security_groups/'.$groupId.'/rules', $payload);
+        $this->assertLooseSuccess($body, '新建安全组规则失败');
+
+        return [
+            'ok' => true,
+            'message' => '创建成功',
+            'rule_id' => (int) ($body['data']['id'] ?? $body['id'] ?? 0),
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function deleteSecurityRule(int $hostId, int $groupId, int $ruleId): array
+    {
+        $this->assertOwnedSecurityGroup($hostId, $groupId);
+
+        // 规则必须真在这条组里：上游的删除端点只看规则 ID，不校验组
+        $rules = $this->client->request('GET', '/security_groups/'.$groupId.'/rules', [], ['per_page' => 9999]);
+        $ruleIds = array_map(
+            static fn (array $item): int => (int) ($item['id'] ?? 0),
+            $this->rows($rules)
+        );
+
+        if (! in_array($ruleId, $ruleIds, true)) {
+            throw new CloudApiException('安全组规则不属于该安全组', null, CloudApiMode::Legacy);
+        }
+
+        $body = $this->client->request('DELETE', '/security_group_rules/'.$ruleId);
+        $this->assertLooseSuccess($body, '删除安全组规则失败');
+
+        return [
+            'ok' => true,
+            'message' => '删除成功',
+            'raw' => $body,
+        ];
+    }
+
+    /** {@inheritDoc} */
+    public function applySecurityGroup(int $hostId, int $groupId): array
+    {
+        $this->assertOwnedSecurityGroup($hostId, $groupId);
+
+        $body = $this->client->request('POST', '/security_groups/'.$groupId.'/links', [
+            'cloud' => $hostId,
+            'type' => 1,
+        ]);
+        $this->assertLooseSuccess($body, '应用安全组失败');
+
+        return [
+            'ok' => true,
+            'message' => '应用成功',
+            'raw' => $body,
+        ];
+    }
+
+    /* -------------------------------- 改配 -------------------------------- */
+
+    /** {@inheritDoc} */
+    public function changeConfig(int $hostId, array $params): array
+    {
+        $applied = [];
+        $raw = [];
+
+        // 1) 主机属性与带宽共用一份报文，连发 `PUT /clouds/{id}` 与 `PUT /clouds/{id}/bw`（契约 §3.6）
+        $main = $this->onlySpecified([
+            'cpu' => $params['cpu'] ?? null,
+            'memory' => $params['memory'] ?? null,
+            'traffic_quota' => $params['flow'] ?? null,
+            'snap_num' => $params['snap_num'] ?? null,
+            'backup_num' => $params['backup_num'] ?? null,
+            'in_bw' => $params['in_bw'] ?? null,
+            'out_bw' => $params['out_bw'] ?? null,
+        ]);
+
+        if ($main !== []) {
+            $raw = $this->client->request('PUT', '/clouds/'.$hostId, $main);
+            $this->assertLooseSuccess($raw, '改配失败（主机属性）');
+
+            $raw = $this->client->request('PUT', '/clouds/'.$hostId.'/bw', $main);
+            $this->assertLooseSuccess($raw, '改配失败（带宽）');
+
+            foreach (['cpu', 'memory', 'flow', 'snap_num', 'backup_num', 'in_bw', 'out_bw'] as $key) {
+                if ($this->isSpecified($params[$key] ?? null)) {
+                    $applied[] = $key;
+                }
+            }
+        }
+
+        // 2) 附加 IPv4 数量 / 地址组
+        $ip = $this->onlySpecified([
+            'num' => $params['ip_num'] ?? null,
+            'ip_group' => $params['ip_group'] ?? null,
+        ]);
+
+        if ($ip !== []) {
+            $raw = $this->client->request('PUT', '/clouds/'.$hostId.'/ip', $ip);
+            $this->assertLooseSuccess($raw, '改配失败（IP 数量）');
+
+            foreach (['ip_num', 'ip_group'] as $key) {
+                if ($this->isSpecified($params[$key] ?? null)) {
+                    $applied[] = $key;
+                }
+            }
+        }
+
+        // 3) 附加 IPv6 数量
+        if ($this->isSpecified($params['ipv6_num'] ?? null)) {
+            $raw = $this->client->request('PUT', '/clouds/'.$hostId.'/ipv6', ['num' => (int) $params['ipv6_num']]);
+            $this->assertLooseSuccess($raw, '改配失败（IPv6 数量）');
+            $applied[] = 'ipv6_num';
+        }
+
+        // 4) 数据盘：有盘就扩容，没有就新建（契约 §3.7）
+        if ((int) ($params['disk_size'] ?? 0) > 0) {
+            $raw = $this->resizeOrCreateDataDisk($hostId, (int) ($params['disk_id'] ?? 0), (int) $params['disk_size']);
+            $applied[] = 'disk_size';
+        }
+
+        if ($applied === []) {
+            throw new CloudApiException('改配失败：没有可提交的变更项', null, CloudApiMode::Legacy);
+        }
+
+        return [
+            'ok' => true,
+            'message' => '改配已提交',
+            'applied' => $applied,
+            'raw' => $raw,
         ];
     }
 
@@ -1166,5 +1542,264 @@ final class LegacyCloudOperations implements CloudOperations
     private function float(mixed $value): float
     {
         return is_numeric($value) ? (float) $value : 0.0;
+    }
+
+    /* ------------------------------- 私有工具 ------------------------------- */
+
+    /**
+     * `null` / `''` / `0` 一律视为「本次不改这一项」。
+     */
+    private function isSpecified(mixed $value): bool
+    {
+        if ($value === null || $value === '') {
+            return false;
+        }
+
+        if (is_array($value)) {
+            return $value !== [];
+        }
+
+        return ! (is_numeric($value) && (float) $value === 0.0);
+    }
+
+    /**
+     * 过滤掉「未指定」的键；数值型值转 int，表单提交更干净。
+     *
+     * @param  array<string, mixed>  $map
+     * @return array<string, mixed>
+     */
+    private function onlySpecified(array $map): array
+    {
+        $payload = [];
+
+        foreach ($map as $key => $value) {
+            if (! $this->isSpecified($value)) {
+                continue;
+            }
+
+            $payload[$key] = is_numeric($value) ? (int) $value : (string) $value;
+        }
+
+        return $payload;
+    }
+
+    /**
+     * 读实例详情里与授权相关的两件事：归属客户 ID 与实例类型。
+     *
+     * @return array{user_id: int, type: string}
+     */
+    private function hostOwnership(int $hostId): array
+    {
+        $detail = $this->client->request('GET', '/clouds/'.$hostId);
+
+        return [
+            'user_id' => (int) ($detail['user_id'] ?? 0),
+            'type' => $this->string($detail['type'] ?? ''),
+        ];
+    }
+
+    /**
+     * 安全组归属校验：组必须在该实例归属客户的安全组全集里。
+     *
+     * 一个面板账号管着上游所有客户，只校验「组存在」等于放任跨客户操作，
+     * 所以这里必须按客户过滤后再比对。
+     */
+    private function assertOwnedSecurityGroup(int $hostId, int $groupId): void
+    {
+        if ($groupId <= 0) {
+            throw new CloudApiException('安全组 ID 无效', null, CloudApiMode::Legacy);
+        }
+
+        $host = $this->hostOwnership($hostId);
+        if ($host['user_id'] <= 0) {
+            throw new CloudApiException('无法确认实例归属的上游客户，已拒绝操作安全组', null, CloudApiMode::Legacy);
+        }
+
+        $body = $this->client->request('GET', '/security_groups', [], [
+            'list_type' => 'all',
+            'user' => $host['user_id'],
+        ]);
+
+        $ownedIds = array_map(
+            static fn (array $item): int => (int) ($item['id'] ?? 0),
+            $this->rows($body)
+        );
+
+        if (! in_array($groupId, $ownedIds, true)) {
+            throw new CloudApiException('安全组不属于该实例归属的客户', null, CloudApiMode::Legacy);
+        }
+    }
+
+    /**
+     * 快照/备份列表归一化（契约 §3.8 的 9 个键）。
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<int, array<string, mixed>>
+     */
+    private function snapshotRows(array $body): array
+    {
+        $rows = [];
+
+        foreach ($this->rows($body) as $item) {
+            $type = strtolower($this->string($item['type'] ?? ''));
+
+            $rows[] = [
+                'id' => (int) ($item['id'] ?? 0),
+                'name' => $this->string($item['name'] ?? ''),
+                // 上游只给 snap / backup，其它值（历史数据）原样保留小写
+                'type' => $type,
+                'disk_id' => (int) ($item['diskid'] ?? $item['disk_id'] ?? 0),
+                'disk_name' => $this->string($item['disk_remarks'] ?? $item['disk_name'] ?? ''),
+                'size_gb' => round($this->float($item['size'] ?? $item['size_gb'] ?? 0), 2),
+                'created_at' => $this->string($item['created_at'] ?? $item['create_time'] ?? ''),
+                'status' => $this->string($item['status'] ?? ''),
+                'raw' => $item,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * 安全组规则归一化：保留上游锁定标记（`lock`），不在这里删规则。
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<int, array<string, mixed>>
+     */
+    private function securityRuleRows(array $body): array
+    {
+        $rows = [];
+
+        foreach ($this->rows($body) as $item) {
+            $startPort = $this->string($item['start_port'] ?? '');
+            $endPort = $this->string($item['end_port'] ?? '');
+            $port = $this->string($item['port'] ?? '');
+
+            if ($port === '' && $startPort !== '') {
+                $port = $endPort !== '' && $endPort !== $startPort ? $startPort.'-'.$endPort : $startPort;
+            }
+
+            $ip = $this->string($item['ip'] ?? $item['start_ip'] ?? '');
+
+            $rows[] = [
+                'id' => (int) ($item['id'] ?? 0),
+                'direction' => strtolower($this->string($item['direction'] ?? '')),
+                'protocol' => strtolower($this->string($item['protocol'] ?? '')),
+                'port' => $port,
+                'ip' => $ip,
+                'action' => strtolower($this->string($item['action'] ?? '')),
+                'priority' => (int) ($item['priority'] ?? 0),
+                'description' => $this->string($item['description'] ?? ''),
+                'locked' => (int) ($item['lock'] ?? 0) === 1 ? 1 : 0,
+                'raw' => $item,
+            ];
+        }
+
+        return $rows;
+    }
+
+    /**
+     * `GET /node_isos` 的响应是「分组 => info[]」两层结构，这里摊平成 `[['id','name']]`。
+     *
+     * @param  array<string, mixed>  $body
+     * @return array<int, array{id: string, name: string}>
+     */
+    private function isoRows(array $body): array
+    {
+        $isos = [];
+
+        foreach ($this->rows($body) as $group) {
+            $items = $group['info'] ?? [];
+            if (! is_array($items)) {
+                continue;
+            }
+
+            foreach ($items as $item) {
+                if (! is_array($item)) {
+                    continue;
+                }
+
+                $isos[] = [
+                    'id' => (string) ($item['id'] ?? ''),
+                    'name' => $this->string($item['name'] ?? ''),
+                ];
+            }
+        }
+
+        return $isos;
+    }
+
+    /**
+     * 从实例详情里挑系统盘 ID（0 = 没找到）。
+     */
+    private function systemDiskId(int $hostId): int
+    {
+        $detail = $this->client->request('GET', '/clouds/'.$hostId);
+
+        foreach ((array) ($detail['disk'] ?? []) as $disk) {
+            if (! is_array($disk)) {
+                continue;
+            }
+
+            if ($this->string($disk['type'] ?? '') === 'system') {
+                return (int) ($disk['id'] ?? 0);
+            }
+        }
+
+        return 0;
+    }
+
+    /**
+     * 数据盘扩容或新建：有数据盘就改容量，没有就用系统盘所在存储池新建一块。
+     *
+     * @return array<string, mixed> 最后一次上游响应
+     */
+    private function resizeOrCreateDataDisk(int $hostId, int $diskId, int $sizeGb): array
+    {
+        $detail = $this->client->request('GET', '/clouds/'.$hostId);
+        $storeId = 0;
+
+        foreach ((array) ($detail['disk'] ?? []) as $disk) {
+            if (! is_array($disk)) {
+                continue;
+            }
+
+            $type = $this->string($disk['type'] ?? '');
+
+            if ($diskId <= 0 && $type === 'data') {
+                $diskId = (int) ($disk['id'] ?? 0);
+            }
+
+            if ($storeId <= 0 && $type === 'system') {
+                $storeId = (int) ($disk['store_id'] ?? 0);
+            }
+        }
+
+        if ($diskId > 0) {
+            $body = $this->client->request('PUT', '/disks/'.$diskId, ['size' => $sizeGb]);
+            $this->assertLooseSuccess($body, '改配失败（数据盘扩容）');
+
+            return $body;
+        }
+
+        // 系统盘也没带存储池 → 问上游要一份可用存储池
+        if ($storeId <= 0) {
+            $stores = $this->client->request('GET', '/clouds/'.$hostId.'/stores');
+            $first = $this->rows($stores)[0] ?? [];
+            $storeId = (int) ($first['id'] ?? 0);
+        }
+
+        if ($storeId <= 0) {
+            throw new CloudApiException('找不到可用存储池，无法新建数据盘', null, CloudApiMode::Legacy);
+        }
+
+        $body = $this->client->request('POST', '/clouds/'.$hostId.'/disks', [
+            'size' => $sizeGb,
+            'store' => $storeId,
+            'driver' => 'virtio',
+        ]);
+        $this->assertLooseSuccess($body, '改配失败（新建数据盘）');
+
+        return $body;
     }
 }

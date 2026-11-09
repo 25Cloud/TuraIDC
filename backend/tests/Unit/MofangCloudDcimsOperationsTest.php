@@ -6,6 +6,7 @@ namespace Tests\Unit;
 
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 use TuraIDC\Plugins\Servers\MofangCloud\Lib\CloudApiException;
 use TuraIDC\Plugins\Servers\MofangCloud\Lib\CloudApiMode;
@@ -486,6 +487,251 @@ class MofangCloudDcimsOperationsTest extends TestCase
         $second = json_decode(Http::recorded()[2][0]->body(), true);
         $this->assertIsArray($second);
         $this->assertArrayNotHasKey('client', $second);
+    }
+
+    public function test_change_config_sends_only_the_requested_endpoint(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/88/in_bandwidth' => Http::response(['status' => 200, 'msg' => 'ok']),
+        ]);
+
+        $result = $this->operations()->changeConfig(88, ['in_bw' => 200]);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(['in_bw'], $result['applied']);
+        $this->assertSame('已调整：入方向带宽', $result['message']);
+
+        /** @var array<int, array{0: Request, 1: mixed}> $recorded */
+        $recorded = Http::recorded();
+        $this->assertCount(1, $recorded, '只改带宽时不应该顺手打其它端点');
+
+        $request = $recorded[0][0];
+        $this->assertSame('PUT', $request->method());
+        $this->assertSame(self::BASE_URL.'/api/v1/server/88/in_bandwidth', $request->url());
+
+        $payload = json_decode($request->body(), true);
+        $this->assertIsArray($payload);
+        $this->assertSame(200, $payload['in_bw'] ?? null);
+        $this->assertSame('88', $payload['id'] ?? null);
+        $this->assertSame(88, $payload['product_id'] ?? null);
+    }
+
+    public function test_change_config_sends_all_supported_endpoints_in_fixed_order(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/88/in_bandwidth' => Http::response(['status' => 200]),
+            self::BASE_URL.'/api/v1/server/88/out_bandwidth' => Http::response(['status' => 200]),
+            self::BASE_URL.'/api/v1/server/88/limit_flow' => Http::response(['status' => 200]),
+            self::BASE_URL.'/api/v1/server/88/ip' => Http::response(['status' => 200]),
+        ]);
+
+        $result = $this->operations()->changeConfig(88, [
+            'in_bw' => 100,
+            'out_bw' => 200,
+            'flow' => 500,
+            'ip_num' => 2,
+        ]);
+
+        $this->assertSame(['in_bw', 'out_bw', 'flow', 'ip_num'], $result['applied']);
+        $this->assertSame('已调整：入方向带宽、出方向带宽、流量上限、IPv4 数量', $result['message']);
+
+        /** @var array<int, array{0: Request, 1: mixed}> $recorded */
+        $recorded = Http::recorded()->all();
+        $this->assertCount(4, $recorded);
+
+        $this->assertSame([
+            self::BASE_URL.'/api/v1/server/88/in_bandwidth',
+            self::BASE_URL.'/api/v1/server/88/out_bandwidth',
+            self::BASE_URL.'/api/v1/server/88/limit_flow',
+            self::BASE_URL.'/api/v1/server/88/ip',
+        ], array_map(static fn (array $pair): string => $pair[0]->url(), $recorded));
+
+        $payloads = array_map(static fn (array $pair): array => (array) json_decode($pair[0]->body(), true), $recorded);
+
+        $this->assertSame(100, $payloads[0]['in_bw'] ?? null);
+        $this->assertSame(200, $payloads[1]['out_bw'] ?? null);
+        $this->assertSame(500, $payloads[2]['limit_flow'] ?? null);
+        $this->assertSame([['ip_group_id' => 0, 'num' => 2]], $payloads[3]['ip'] ?? null);
+
+        // 每个报文都必须带 id（签名要求 path 与 body 一致）
+        foreach ($payloads as $payload) {
+            $this->assertSame('88', $payload['id'] ?? null);
+        }
+    }
+
+    public function test_change_config_uses_the_given_ip_group(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/88/ip' => Http::response(['status' => 200]),
+        ]);
+
+        $result = $this->operations()->changeConfig(88, ['ip_num' => 3, 'ip_group' => 7]);
+
+        $this->assertSame(['ip_num'], $result['applied']);
+
+        $payload = json_decode(Http::recorded()[0][0]->body(), true);
+        $this->assertIsArray($payload);
+        $this->assertSame([['ip_group_id' => 7, 'num' => 3]], $payload['ip'] ?? null);
+    }
+
+    public function test_change_config_ignores_ip_group_without_ip_num(): void
+    {
+        Http::fake();
+
+        // 只有地址组、没有数量，不构成一次调整 → 与「什么都没指定」同一语义：抛错且零请求
+        try {
+            $this->operations()->changeConfig(88, ['ip_group' => 5]);
+            $this->fail('没有可提交项时必须报错');
+        } catch (CloudApiException $exception) {
+            $this->assertSame('改配失败：没有可提交的变更项', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_change_config_rejects_unsupported_only_request_without_requests(): void
+    {
+        Http::fake();
+
+        try {
+            $this->operations()->changeConfig(88, ['cpu' => 8]);
+            $this->fail('只请求不支持的项时必须报错');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('不支持调整', $exception->getMessage());
+            $this->assertStringContainsString('CPU', $exception->getMessage());
+            $this->assertStringContainsString('请到魔方云面板操作', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_change_config_applies_supported_part_and_reports_skipped_items(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/88/in_bandwidth' => Http::response(['status' => 200]),
+        ]);
+
+        $result = $this->operations()->changeConfig(88, [
+            'in_bw' => 50,
+            'memory' => 8192,
+            'disk_size' => 200,
+        ]);
+
+        $this->assertSame(['in_bw'], $result['applied']);
+        $this->assertStringContainsString('已调整：入方向带宽', $result['message']);
+        $this->assertStringContainsString('未提交', $result['message']);
+        $this->assertStringContainsString('内存', $result['message']);
+        $this->assertStringContainsString('磁盘容量', $result['message']);
+        $this->assertCount(1, Http::recorded());
+    }
+
+    public function test_change_config_rejects_empty_request_without_requests(): void
+    {
+        Http::fake();
+
+        // 全是 null/''/0：一次可提交的变更都没有，与老版实现同一语义（改配失败），不发任何请求
+        try {
+            $this->operations()->changeConfig(88, [
+                'in_bw' => 0,
+                'out_bw' => 0,
+                'flow' => 0,
+                'ip_num' => 0,
+                'cpu' => 0,
+            ]);
+            $this->fail('没有可提交项时必须报错');
+        } catch (CloudApiException $exception) {
+            $this->assertSame('改配失败：没有可提交的变更项', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_change_config_reports_applied_items_when_a_later_endpoint_fails(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/88/in_bandwidth' => Http::response(['status' => 200]),
+            self::BASE_URL.'/api/v1/server/88/out_bandwidth' => Http::response([
+                'status' => 500,
+                'msg' => '带宽超过套餐上限',
+            ]),
+        ]);
+
+        try {
+            $this->operations()->changeConfig(88, ['in_bw' => 100, 'out_bw' => 9999]);
+            $this->fail('第二个端点失败时必须抛异常');
+        } catch (CloudApiException $exception) {
+            // 管理员要知道「入方向已经改了」，不能只看到一句出方向失败就以为整单没生效
+            $this->assertSame(
+                '出方向带宽调整失败（入方向带宽已生效）：带宽超过套餐上限',
+                $exception->getMessage()
+            );
+        }
+
+        $this->assertCount(2, Http::recorded());
+    }
+
+    public function test_change_config_has_no_applied_prefix_when_the_first_endpoint_fails(): void
+    {
+        Http::fake([
+            self::BASE_URL.'/api/v1/server/88/in_bandwidth' => Http::response(['status' => 500, 'msg' => '不允许调小']),
+        ]);
+
+        try {
+            $this->operations()->changeConfig(88, ['in_bw' => 10, 'out_bw' => 20]);
+            $this->fail('第一个端点失败时必须抛异常');
+        } catch (CloudApiException $exception) {
+            $this->assertSame('入方向带宽调整失败：不允许调小', $exception->getMessage());
+        }
+
+        // 第一项就失败：后续端点不该再发
+        $this->assertCount(1, Http::recorded());
+    }
+
+    /**
+     * 新版本接口没有这些端点：必须抛中文异常，且一个请求都不发。
+     *
+     * 用闭包而不是「方法名字符串 + 动态调用」，这样参数个数/类型由 PHP 直接校验，
+     * 将来接口签名变化时用例会当场报错而不是悄悄跑空。
+     *
+     * @return array<string, array{0: callable(DcimsCloudOperations): array}>
+     */
+    public static function unsupportedCapabilityProvider(): array
+    {
+        return [
+            'snapshots' => [static fn (DcimsCloudOperations $operations): array => $operations->snapshots(88)],
+            'createSnapshot' => [static fn (DcimsCloudOperations $operations): array => $operations->createSnapshot(88, ['name' => 'snap-1'])],
+            'deleteSnapshot' => [static fn (DcimsCloudOperations $operations): array => $operations->deleteSnapshot(88, 5)],
+            'restoreSnapshot' => [static fn (DcimsCloudOperations $operations): array => $operations->restoreSnapshot(88, 5)],
+            'isoImages' => [static fn (DcimsCloudOperations $operations): array => $operations->isoImages(88)],
+            'mountIso' => [static fn (DcimsCloudOperations $operations): array => $operations->mountIso(88, 'iso-1')],
+            'unmountIso' => [static fn (DcimsCloudOperations $operations): array => $operations->unmountIso(88)],
+            'setBootOrder' => [static fn (DcimsCloudOperations $operations): array => $operations->setBootOrder(88, 'disk')],
+            'securityRules' => [static fn (DcimsCloudOperations $operations): array => $operations->securityRules(88, 3)],
+            'createSecurityGroup' => [static fn (DcimsCloudOperations $operations): array => $operations->createSecurityGroup(88, ['name' => 'sg'])],
+            'deleteSecurityGroup' => [static fn (DcimsCloudOperations $operations): array => $operations->deleteSecurityGroup(88, 3)],
+            'createSecurityRule' => [static fn (DcimsCloudOperations $operations): array => $operations->createSecurityRule(88, 3, ['protocol' => 'tcp'])],
+            'deleteSecurityRule' => [static fn (DcimsCloudOperations $operations): array => $operations->deleteSecurityRule(88, 3, 9)],
+            'applySecurityGroup' => [static fn (DcimsCloudOperations $operations): array => $operations->applySecurityGroup(88, 3)],
+        ];
+    }
+
+    /**
+     * @param  callable(DcimsCloudOperations): array  $call
+     */
+    #[DataProvider('unsupportedCapabilityProvider')]
+    public function test_unsupported_capabilities_throw_without_sending_requests(callable $call): void
+    {
+        Http::fake();
+
+        try {
+            $call($this->operations());
+            $this->fail('新版本接口没有该端点，必须抛出 CloudApiException');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('新版本接口', $exception->getMessage());
+            $this->assertStringContainsString('请到魔方云面板操作', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
     }
 
     private function operations(): DcimsCloudOperations

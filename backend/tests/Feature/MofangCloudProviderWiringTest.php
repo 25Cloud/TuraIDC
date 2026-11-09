@@ -8,7 +8,9 @@ use App\Models\Supplier;
 use App\Services\Integrations\Plugins\PluginInstaller;
 use App\Services\Integrations\Plugins\PluginRuntimeRegistry;
 use App\Services\Integrations\Plugins\PluginScanner;
+use App\Services\Upstream\Contracts\ProvidesConsoleNetwork;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
+use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
 use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
 use App\Services\Upstream\Contracts\ProvidesProvisioning;
 use App\Services\Upstream\ProviderRegistry;
@@ -61,6 +63,10 @@ class MofangCloudProviderWiringTest extends TestCase
 
         $this->assertNotNull($driver);
         $this->assertTrue($driver->supports(ProvidesConsoleRuntime::class));
+        // 安全组与 NAT 转发都已接原生端点：漏声明这两个标记，控制台会退回
+        // 「解析上游 HTML 自定义模块」那条老路，而魔方云根本没有 HTML 模块可解析。
+        $this->assertTrue($driver->supports(ProvidesConsoleSecurity::class));
+        $this->assertTrue($driver->supports(ProvidesConsoleNetwork::class));
         // 开通能力必须声明：编排层以 ProvidesProvisioning 作为门槛，漏声明会导致
         // 订单付了钱却不进自动开通，只能人工补开。
         $this->assertTrue($driver->supports(ProvidesProvisioning::class));

@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Services\Upstream\Contracts\ProvidesConsoleAccess;
+use App\Services\Upstream\Contracts\ProvidesConsoleNetwork;
 use App\Services\Upstream\Contracts\ProvidesConsoleRuntime;
+use App\Services\Upstream\Contracts\ProvidesConsoleSecurity;
 use App\Services\Upstream\Contracts\ProvidesHostSuspension;
 use App\Services\Upstream\Contracts\ProvidesHostTermination;
 use App\Services\Upstream\Contracts\ProvidesOrderProvisioning;
@@ -28,6 +30,9 @@ return [
         'capabilities' => [
             ProvidesConsoleAccess::class,
             ProvidesConsoleRuntime::class,
+            // 安全组与 NAT 转发都有原生端点（老版 /v1），控制台据此启用写操作
+            ProvidesConsoleSecurity::class,
+            ProvidesConsoleNetwork::class,
             ProvidesHostSuspension::class,
             ProvidesHostTermination::class,
             // 编排层以 ProvidesProvisioning/ProvidesRenewal 作为能力门槛，子接口虽然通过

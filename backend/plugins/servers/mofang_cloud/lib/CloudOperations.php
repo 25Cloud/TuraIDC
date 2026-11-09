@@ -192,6 +192,10 @@ interface CloudOperations
     /**
      * 安全组列表；当前代际不支持时抛 CloudApiException（消息面向用户可读）。
      *
+     * `$hostId > 0` 表示「这台实例归属客户的安全组」，实现应按客户过滤；
+     * `$hostId <= 0` 表示「这个面板账号能看到的安全组」——平台的安全组页按服务打开，
+     * 取不到实例时会传 0，实现不得据此去查 `/clouds/0`。
+     *
      * @return array<int, array<string, mixed>>
      */
     public function securityGroups(int $hostId): array;
@@ -213,6 +217,179 @@ interface CloudOperations
      * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
      */
     public function deleteNatRule(int $hostId, int $ruleId): array;
+
+    /* ------------------------------ 快照 / 备份 ------------------------------ */
+
+    /**
+     * 快照与备份列表。
+     *
+     * 魔方财务把「快照」和「备份」当成同一类对象，只靠 `type` 区分（契约 §3.8），
+     * 所以本平台也只有一个列表入口，靠 `type` 决定展示分组。
+     *
+     * 归一化返回（每条）：
+     * - `id`         int    快照 ID
+     * - `name`       string 快照名
+     * - `type`       string `snap`（快照）| `backup`（备份）
+     * - `disk_id`    int    所属磁盘 ID（0 = 上游未给）
+     * - `disk_name`  string 所属磁盘名（可空）
+     * - `size_gb`    float  体积（GB，0 = 上游未给）
+     * - `created_at` string `Y-m-d H:i:s`（可空）
+     * - `status`     string 上游状态串（可空）
+     * - `raw`        array  上游原始条目，排障用
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function snapshots(int $hostId): array;
+
+    /**
+     * 创建快照 / 备份。
+     *
+     * @param  array<string, mixed>  $params  `name` 必填；`type` 取 `snap`|`backup`（默认 `snap`）；
+     *                                        `disk_id` 不给时取该实例的系统盘
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'snapshot_id' => int, 'raw' => array]`
+     */
+    public function createSnapshot(int $hostId, array $params): array;
+
+    /**
+     * 删除快照 / 备份。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function deleteSnapshot(int $hostId, int $snapshotId): array;
+
+    /**
+     * 用快照 / 备份回滚实例。
+     *
+     * 上游是异步任务，返回成功只代表任务已受理，不做「回滚完成」的承诺。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function restoreSnapshot(int $hostId, int $snapshotId): array;
+
+    /* ------------------------------ ISO / 启动项 ------------------------------ */
+
+    /**
+     * 当前主机所在节点上的可挂载 ISO 列表。
+     *
+     * @return array<int, array{id:string, name:string}>
+     */
+    public function isoImages(int $hostId): array;
+
+    /**
+     * 挂载 ISO（挂上之后实例通常要重启才生效，由调用方决定何时重启）。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function mountIso(int $hostId, string $isoId): array;
+
+    /**
+     * 卸载 ISO。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function unmountIso(int $hostId): array;
+
+    /**
+     * 设置启动项。
+     *
+     * @param  string  $order  `disk`（硬盘优先）| `cdrom`（光驱优先）| 上游原始串
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function setBootOrder(int $hostId, string $order): array;
+
+    /* ------------------------------ 安全组写 ------------------------------ */
+
+    /**
+     * 读取安全组内的规则。
+     *
+     * 归一化返回（每条）：
+     * - `id`          int    规则 ID
+     * - `direction`   string `in` | `out`
+     * - `protocol`    string `tcp` | `udp` | `icmp` | ...
+     * - `port`        string 端口或端口段（可空，如 `80`、`8000-9000`）
+     * - `ip`          string 授权地址（可空，如 `0.0.0.0/0`）
+     * - `action`      string `accept` | `drop`
+     * - `priority`    int    优先级（0 = 上游未给）
+     * - `description` string 备注
+     * - `locked`      int    是否上游锁定（1 = 不允许用户改动）
+     * - `raw`         array
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    public function securityRules(int $hostId, int $groupId): array;
+
+    /**
+     * 新建安全组。
+     *
+     * 安全组挂在**上游客户**名下而不是单台实例名下，所以必须给 hostId 用于反查归属客户；
+     * 跨代差异（老版还要带 `type`）由实现内部处理。
+     *
+     * @param  array<string, mixed>  $params  `name` 必填，`description` 可选
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'group_id' => int, 'raw' => array]`
+     */
+    public function createSecurityGroup(int $hostId, array $params): array;
+
+    /**
+     * 删除安全组。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function deleteSecurityGroup(int $hostId, int $groupId): array;
+
+    /**
+     * 新建安全组规则。
+     *
+     * @param  array<string, mixed>  $params  `direction` 与 `protocol` 必填；`action` 缺省按 `accept`
+     *                                        处理（平台永远不会传这个键）；`port`、`ip`、`priority`、
+     *                                        `description` 给了才提交；端口也可以拆成
+     *                                        `start_port` + `end_port` 二段式
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'rule_id' => int, 'raw' => array]`
+     */
+    public function createSecurityRule(int $hostId, int $groupId, array $params): array;
+
+    /**
+     * 删除安全组规则。
+     *
+     * 上游把规则做成顶层资源（`DELETE /security_group_rules/{id}`），groupId 只用于
+     * 调用前的归属校验，防止拿别人的组 ID 删本组规则。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function deleteSecurityRule(int $hostId, int $groupId, int $ruleId): array;
+
+    /**
+     * 把安全组应用到实例上。
+     *
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'raw' => array]`
+     */
+    public function applySecurityGroup(int $hostId, int $groupId): array;
+
+    /* ------------------------------ 改配 ------------------------------ */
+
+    /**
+     * 变更实例规格（不涉及计费，计费口径由平台在订单侧决定）。
+     *
+     * 入参键固定，值为 `null` / `''` / `0` 一律视为「本次不改这一项」，实现不得提交：
+     *
+     * - `cpu`        int  核数
+     * - `memory`     int  内存（MB）
+     * - `in_bw`      int  入方向带宽（Mbps）
+     * - `out_bw`     int  出方向带宽（Mbps）
+     * - `flow`       int  流量上限（GB）
+     * - `ip_num`     int  附加 IPv4 数量
+     * - `ip_group`   int  附加 IP 的地址组
+     * - `ipv6_num`   int  附加 IPv6 数量
+     * - `disk_id`    int  要扩容的数据盘 ID（0 = 没有数据盘，需要新建）
+     * - `disk_size`  int  数据盘目标容量（GB）
+     * - `snap_num`   int  快照配额
+     * - `backup_num` int  备份配额
+     *
+     * 返回 `applied` 是本次真正下发过的字段名列表，供调用方与审计日志对照。
+     *
+     * @param  array<string, mixed>  $params
+     * @return array<string, mixed> `['ok' => bool, 'message' => string, 'applied' => array<int, string>, 'raw' => array]`
+     */
+    public function changeConfig(int $hostId, array $params): array;
 
     /**
      * 开通实例。入参由 `MofangCloudAdapter::provisionOrder()` 归一后传入，键固定为：
