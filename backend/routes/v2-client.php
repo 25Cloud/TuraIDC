@@ -178,6 +178,14 @@ Route::middleware(['auth:sanctum', 'ensure.client'])->group(function (): void {
     Route::delete('/services/{id}/security-groups/{groupId}', [ServiceConsoleController::class, 'deleteSecurityGroup'])->middleware('throttle:10,1,client-service-security-group-delete');
     Route::post('/services/{id}/security-groups/{groupId}/rules', [ServiceConsoleController::class, 'createSecurityRule'])->middleware('throttle:10,1,client-service-security-rule-create');
     Route::delete('/services/{id}/security-groups/{groupId}/rules/{ruleId}', [ServiceConsoleController::class, 'deleteSecurityRule'])->middleware('throttle:10,1,client-service-security-rule-delete');
+    Route::get('/services/{id}/snapshots', [ServiceConsoleController::class, 'snapshots']);
+    Route::post('/services/{id}/snapshots', [ServiceConsoleController::class, 'createSnapshot'])->middleware('throttle:10,1,client-service-snapshot-create');
+    Route::delete('/services/{id}/snapshots/{snapshotId}', [ServiceConsoleController::class, 'deleteSnapshot'])->middleware('throttle:10,1,client-service-snapshot-delete');
+    Route::post('/services/{id}/snapshots/{snapshotId}/restore', [ServiceConsoleController::class, 'restoreSnapshot'])->middleware('throttle:10,1,client-service-snapshot-restore');
+    Route::get('/services/{id}/iso', [ServiceConsoleController::class, 'isoPanel']);
+    Route::post('/services/{id}/iso', [ServiceConsoleController::class, 'mountIso'])->middleware('throttle:10,1,client-service-iso-mount');
+    Route::delete('/services/{id}/iso', [ServiceConsoleController::class, 'unmountIso'])->middleware('throttle:10,1,client-service-iso-unmount');
+    Route::put('/services/{id}/iso/bootorder', [ServiceConsoleController::class, 'setBootOrder'])->middleware('throttle:10,1,client-service-iso-bootorder');
     Route::get('/services/{id}/vnc', [ServiceConsoleController::class, 'vnc']);
     Route::get('/services/{service}/connection', [ServiceController::class, 'connection']);
     Route::get('/services/{service}/runtime', [ServiceController::class, 'runtime']);

@@ -80,8 +80,12 @@ class ServiceConsoleAreaService
 
     /**
      * 返回当前服务支持的控制台能力：
-     *   supported / error / areas / nat_supported / monitor_supported / fetchable。
+     *   supported / error / areas / nat_supported / monitor_supported / fetchable /
+     *   snapshot_supported / iso_supported。
      * 非可控上游或上游拉取失败时不抛错，由调用方按默认 tab 渲染。
+     *
+     * `snapshot_supported` / `iso_supported` 与自定义 HTML 模块无关，只反映驱动有没有
+     * `getSnapshots` / `getIsoImages` 这两个具名能力；前端据此决定是否渲染对应面板。
      *
      * @return array<string, mixed>
      */
@@ -102,8 +106,19 @@ class ServiceConsoleAreaService
             return $this->withPreloadPolicy($cached);
         }
 
+        // 驱动级能力标志：无论后面模块解析成不成，都要按真实探测结果回填
+        $snapshotSupported = false;
+        $isoSupported = false;
+
         try {
             [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+
+            // 快照 / ISO 是驱动级具名能力，和「自定义 HTML 模块」完全无关：
+            // 必须在解析模块之前就定下来。上游不提供自定义模块（supported_modules 直接报错）
+            // 时，这两个入口照样要能出现，所以标志位不能只在成功分支里算。
+            $snapshotSupported = is_callable([$runtime, 'getSnapshots']);
+            $isoSupported = is_callable([$runtime, 'getIsoImages']);
+
             $modules = $this->detailService->fetchSupportedModules($supplier, $hostId, $jwt);
 
             $capabilities = $this->deriveModuleCapabilities($modules, $hostId);
@@ -125,6 +140,8 @@ class ServiceConsoleAreaService
 
             $capabilities['supported'] = true;
             $capabilities['fetchable'] = is_callable([$runtime, 'fetchCustomModulePage']);
+            $capabilities['snapshot_supported'] = $snapshotSupported;
+            $capabilities['iso_supported'] = $isoSupported;
 
             Cache::put($cacheKey, $capabilities, now()->addSeconds(self::CAPABILITIES_CACHE_TTL_SECONDS));
 
@@ -136,6 +153,9 @@ class ServiceConsoleAreaService
             ]);
 
             $payload = $this->capabilityPayload(false, '读取上游功能面板失败，请稍后重试');
+            // 模块读不到不代表实例没有快照/ISO 能力，标志位按已探明的结果回填
+            $payload['snapshot_supported'] = $snapshotSupported;
+            $payload['iso_supported'] = $isoSupported;
             Cache::put($cacheKey, $payload, now()->addSeconds(self::CAPABILITIES_CACHE_TTL_SECONDS));
 
             return $this->withPreloadPolicy($payload);
@@ -463,6 +483,8 @@ class ServiceConsoleAreaService
             'nat_supported' => false,
             'monitor_supported' => false,
             'fetchable' => false,
+            'snapshot_supported' => false,
+            'iso_supported' => false,
         ];
     }
 

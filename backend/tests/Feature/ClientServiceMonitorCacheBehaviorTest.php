@@ -9,10 +9,13 @@ use App\Models\Supplier;
 use App\Services\ClientServiceConsole\ClientServiceConsoleService;
 use App\Services\ClientServiceConsole\ServiceConsoleAreaService;
 use App\Services\ClientServiceConsole\ServiceDetailService;
+use App\Services\ClientServiceConsole\ServiceHostConfigService;
+use App\Services\ClientServiceConsole\ServiceIsoService;
 use App\Services\ClientServiceConsole\ServiceNatService;
 use App\Services\ClientServiceConsole\ServiceOverviewService;
 use App\Services\ClientServiceConsole\ServicePowerService;
 use App\Services\ClientServiceConsole\ServiceSecurityGroupService;
+use App\Services\ClientServiceConsole\ServiceSnapshotService;
 use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Services\ClientServiceConsole\ServiceTransformService;
 use App\Services\ClientServiceConsole\ServiceVncService;
@@ -106,6 +109,10 @@ class ClientServiceMonitorCacheBehaviorTest extends TestCase
             $this->createMock(ServiceNatService::class),
             $this->createMock(ServiceSecurityGroupService::class),
             $this->createMock(ServiceConsoleAreaService::class),
+            // 快照 / ISO / 改配三个子服务：本用例只测监控缓存键，全部给空桩
+            $this->createMock(ServiceSnapshotService::class),
+            $this->createMock(ServiceIsoService::class),
+            $this->createMock(ServiceHostConfigService::class),
         );
     }
 

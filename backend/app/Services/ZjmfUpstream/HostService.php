@@ -42,6 +42,7 @@ class HostService
     public function __construct(
         private readonly ServiceRenewService $renewService,
         private readonly ?ServiceConsoleAreaService $consoleArea = null,
+        private readonly ?FlowPacketService $flowPackets = null,
     ) {}
 
     /**
@@ -105,8 +106,13 @@ class HostService
                 'module_client_main_area' => $mainArea,
                 'dcimcloud' => ['nat_acl' => '', 'nat_web' => ''],
                 'dcim' => [
-                    'flowpacket' => [],
-                    'flow_packet_use_list' => [],
+                    // 流量包档位：下游主机页的「流量包」列表面板直接渲染这份数据，
+                    // 用户选中后回调 /dcim/buy_flow_packet（fid = 这里的 id）
+                    'flowpacket' => $this->flowPacketService()->packagesForService(
+                        $service,
+                        (int) ($hostData['bwlimit'] ?? 0)
+                    ),
+                    'flow_packet_use_list' => $this->flowPacketService()->usageForService($service),
                     // 下游按 auth 决定渲染哪些控制按钮；未声明的动作一律不显示
                     'auth' => $this->buildDcimAuth($service),
                     'svg' => '',
@@ -123,6 +129,11 @@ class HostService
     private function consoleArea(): ServiceConsoleAreaService
     {
         return $this->consoleArea ?? app(ServiceConsoleAreaService::class);
+    }
+
+    private function flowPacketService(): FlowPacketService
+    {
+        return $this->flowPackets ?? app(FlowPacketService::class);
     }
 
     /**

@@ -11,6 +11,12 @@ final class ProviderKey
     public const ZJMF_FINANCE_API = 'zjmf_finance_api';
 
     /**
+     * 魔方云（DCIMS）直连上游：老版 /v1 与新版 /api/v1 两代接口共用该 key，
+     * 代际由供应商配置里的接口代际决定，不按 key 区分为两个 provider。
+     */
+    public const MOFANG_CLOUD_API = 'mofang_cloud_api';
+
+    /**
      * 兜底展示名：仅翻译没有独立驱动类的历史 key。
      *
      * 注意：有驱动类（如 zjmf_finance_api、demo_servers）的 provider 一律展示

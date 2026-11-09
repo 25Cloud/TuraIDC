@@ -23,6 +23,7 @@ class DcimService
     public function __construct(
         private readonly ServicePowerService $power,
         private readonly ServiceVncService $vnc,
+        private readonly ?FlowPacketService $flowPackets = null,
     ) {}
 
     public function on(User $user, int $serviceId): array
@@ -326,9 +327,30 @@ class DcimService
         return ['status' => 400, 'msg' => '暂不支持购买重装次数'];
     }
 
-    public function buyFlowPacket(): array
+    /**
+     * 流量包下单：只建账单，付款走 /apply_credit，真正的上游采购在支付后执行。
+     *
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function buyFlowPacket(User $user, array $data): array
     {
-        return ['status' => 400, 'msg' => '暂不支持购买流量包'];
+        return $this->flowPacketService()->purchase($user, $data);
+    }
+
+    /**
+     * 流量包账单履约状态（魔方财务 3.8.0 新增的查询接口）。
+     *
+     * @return array<string, mixed>
+     */
+    public function flowPacketOrderStatus(User $user, int $invoiceId): array
+    {
+        return $this->flowPacketService()->orderStatus($user, $invoiceId);
+    }
+
+    private function flowPacketService(): FlowPacketService
+    {
+        return $this->flowPackets ?? app(FlowPacketService::class);
     }
 
     private function findUserService(User $user, int $serviceId): ?Service

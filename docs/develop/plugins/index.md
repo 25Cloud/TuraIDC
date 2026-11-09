@@ -37,20 +37,22 @@ backend/plugins/{domain-directory}/{slug}/
 
 加载顺序由 `PluginFileLoader` 控制：
 
-1. 递归加载 `lib/`、`logic/`、`controller/` 下 PHP 文件。
+1. 递归加载 `lib/`、`logic/`、`controller/` 下 PHP 文件：先按路径排序，把声明了接口 / trait / enum 的文件整批装载，再装载其余文件。
 2. 如果存在 `vendor/autoload.php`，加载插件依赖。
 3. 加载插件根目录 PHP 文件，跳过 `config.php`。
 4. 递归加载 `src/`：大插件按 PSR-4 组织代码的首选位置（`AiAssistant`、`zjmf_bridge` 都用它）。
 
-### 大插件必须自注册 PSR-4
+### 类继承类时自注册 PSR-4
 
-上面前三步是「按目录顺序 `require` 每个文件」。插件只有几个类时没问题；一旦有几十个类、
-且其中存在被多处 `extends`/`implements` 的接口（`AiTool`、`AiProviderInterface` 这类），
-`require` 顺序一旦让子类先于父类/接口出现，PHP 在**声明阶段**就直接 fatal
-（`Interface "..." not found`），而且报错位置和真实原因（顺序）看起来毫无关系。
+上面第 1 步早先是「按文件系统返回顺序 `require` 每个文件」。这个顺序与文件系统有关：NTFS 大体按
+文件名，ext4 走目录哈希，于是同一份插件代码在本地开发机不报错、到了 Linux（含 CI）随机
+`Interface "..." not found`，而且报错位置和真实原因（顺序）看起来毫无关系。现在核心固定先装载
+声明了接口 / trait / enum 的文件，`implements`、`use Trait`、`interface A extends B` 都不再受顺序影响
+（`backend/tests/Unit/PluginFileLoaderDeclarationOrderTest.php` 守着这条）。
 
-`AiAssistant` 的做法是加一个 `logic/autoload.php`，只给本插件命名空间注册
-`spl_autoload_register`，让父类与接口按需加载：
+仍然受顺序影响的是**类继承类**：`class Foo extends Base` 里两个类都在不同文件时，装载先后依旧只按
+路径排序。插件里一旦有几十个类、且存在被多处 `extends` 的父类（`AiTool` 这类），就按 `AiAssistant`
+的做法加一个 `logic/autoload.php`，只给本插件命名空间注册 `spl_autoload_register`，让父类按需加载：
 
 ```php
 spl_autoload_register(static function (string $class): void {
@@ -71,7 +73,7 @@ spl_autoload_register(static function (string $class): void {
 ```
 
 只注册自身前缀、不接管其它命名空间、不主动加载业务类——它只是让 `require` 顺序不再是正确性
-前提。`logic/` 按字母序先于 `src/` 被加载，所以这个文件本身一定先于任何业务类生效。
+前提。`logic/` 整批先于 `src/` 被加载，所以这个文件一定早于 `src/` 里的任何业务类生效。
 
 ## 3. config.php 规范
 

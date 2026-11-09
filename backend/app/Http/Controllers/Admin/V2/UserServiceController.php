@@ -6,10 +6,12 @@ namespace App\Http\Controllers\Admin\V2;
 
 use App\Exceptions\BusinessException;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\V2\UserService\ChangeServiceHostConfigRequest;
 use App\Http\Requests\Admin\V2\UserService\CreateSecurityGroupRequest;
 use App\Http\Requests\Admin\V2\UserService\CreateSecurityRuleRequest;
 use App\Http\Requests\Admin\V2\UserService\CreateServiceHostUpgradeOrderRequest;
 use App\Http\Requests\Admin\V2\UserService\CreateServiceNatForwardingRequest;
+use App\Http\Requests\Admin\V2\UserService\CreateServiceSnapshotRequest;
 use App\Http\Requests\Admin\V2\UserService\CreateServiceTrafficPackageOrderRequest;
 use App\Http\Requests\Admin\V2\UserService\DeleteServiceNatForwardingRequest;
 use App\Http\Requests\Admin\V2\UserService\DeleteServiceSecurityGroupRequest;
@@ -17,11 +19,13 @@ use App\Http\Requests\Admin\V2\UserService\DeleteServiceSecurityRuleRequest;
 use App\Http\Requests\Admin\V2\UserService\DeleteUserServiceRequest;
 use App\Http\Requests\Admin\V2\UserService\ListServiceOperationLogsRequest;
 use App\Http\Requests\Admin\V2\UserService\ListUserServicesRequest;
+use App\Http\Requests\Admin\V2\UserService\MountServiceIsoRequest;
 use App\Http\Requests\Admin\V2\UserService\ProvisionUpstreamUserServiceRequest;
 use App\Http\Requests\Admin\V2\UserService\QuoteServiceHostUpgradeRequest;
 use App\Http\Requests\Admin\V2\UserService\QuoteServiceTrafficPackageRequest;
 use App\Http\Requests\Admin\V2\UserService\RefreshUserServiceStatusesRequest;
 use App\Http\Requests\Admin\V2\UserService\ServiceRescueActionRequest;
+use App\Http\Requests\Admin\V2\UserService\SetServiceIsoBootOrderRequest;
 use App\Http\Requests\Admin\V2\UserService\ShowServiceModuleStatusRequest;
 use App\Http\Requests\Admin\V2\UserService\ShowServiceMonitorBatchRequest;
 use App\Http\Requests\Admin\V2\UserService\ShowServiceMonitorRequest;
@@ -452,6 +456,121 @@ class UserServiceController extends Controller
                 fn () => $this->users->deleteServiceSecurityRule($user, $service, $group, $rule, $this->adminContext($request))
             ),
             '删除成功'
+        );
+    }
+
+    public function snapshots(ShowUserServiceRequest $request, User $user, int $service): JsonResponse
+    {
+        return $this->success($this->users->serviceSnapshots($user, $service));
+    }
+
+    public function createSnapshot(CreateServiceSnapshotRequest $request, User $user, int $service): JsonResponse
+    {
+        $data = $request->validated();
+
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $user,
+                $service,
+                'snapshot_create',
+                fn () => $this->users->createServiceSnapshot($user, $service, $data, $this->adminContext($request))
+            ),
+            '提交成功'
+        );
+    }
+
+    public function deleteSnapshot(Request $request, User $user, int $service, int $snapshot): JsonResponse
+    {
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $user,
+                $service,
+                'snapshot_delete_'.$snapshot,
+                fn () => $this->users->deleteServiceSnapshot($user, $service, $snapshot, $this->adminContext($request))
+            ),
+            '删除成功'
+        );
+    }
+
+    public function restoreSnapshot(Request $request, User $user, int $service, int $snapshot): JsonResponse
+    {
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $user,
+                $service,
+                'snapshot_restore_'.$snapshot,
+                fn () => $this->users->restoreServiceSnapshot($user, $service, $snapshot, $this->adminContext($request))
+            ),
+            '回滚任务已提交'
+        );
+    }
+
+    public function isoPanel(ShowUserServiceRequest $request, User $user, int $service): JsonResponse
+    {
+        return $this->success($this->users->serviceIsoPanel($user, $service));
+    }
+
+    public function mountIso(MountServiceIsoRequest $request, User $user, int $service): JsonResponse
+    {
+        $data = $request->validated();
+
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $user,
+                $service,
+                'iso_mount',
+                fn () => $this->users->mountServiceIso($user, $service, $data, $this->adminContext($request))
+            ),
+            '挂载成功'
+        );
+    }
+
+    public function unmountIso(Request $request, User $user, int $service): JsonResponse
+    {
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $user,
+                $service,
+                'iso_unmount',
+                fn () => $this->users->unmountServiceIso($user, $service, $this->adminContext($request))
+            ),
+            '卸载成功'
+        );
+    }
+
+    public function setIsoBootOrder(SetServiceIsoBootOrderRequest $request, User $user, int $service): JsonResponse
+    {
+        $data = $request->validated();
+
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $user,
+                $service,
+                'iso_bootorder',
+                fn () => $this->users->setServiceIsoBootOrder($user, $service, $data, $this->adminContext($request))
+            ),
+            '启动项已更新'
+        );
+    }
+
+    /**
+     * 变更实例规格。
+     *
+     * 只挂在管理端：本平台没有「按配置项补差价」的上游改配订单模型，
+     * 放开给用户等于免费升配，所以入口只给运营。
+     */
+    public function changeHostConfig(ChangeServiceHostConfigRequest $request, User $user, int $service): JsonResponse
+    {
+        $data = $request->validated();
+
+        return $this->success(
+            $this->executeLockedServiceAction(
+                $user,
+                $service,
+                'host_config_change',
+                fn () => $this->users->changeServiceHostConfig($user, $service, $data, $this->adminContext($request))
+            ),
+            '规格变更已提交'
         );
     }
 

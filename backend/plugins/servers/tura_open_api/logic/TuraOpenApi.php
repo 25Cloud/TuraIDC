@@ -106,7 +106,17 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
         ProvidesStatusSync::class,
         ProvidesSupplierBalance::class,
         ProvidesUpstreamQuoting::class,
+        // 开放接口私有能力名（不是契约接口）：配置项升级与流量包。
+        // 下游据此判定「这家上游能不能做升级/买流量包」，见 supports()。
+        self::CAPABILITY_HOST_UPGRADE,
+        self::CAPABILITY_FLOW_PACKET,
     ];
+
+    /** 能力名：配置项升级（预览/报价/下单） */
+    public const CAPABILITY_HOST_UPGRADE = 'host_upgrade';
+
+    /** 能力名：流量包（档位/下单） */
+    public const CAPABILITY_FLOW_PACKET = 'flow_packet';
 
     /** 目录导入/续费探测用的标准周期序（与 hydrateSelectedPricing 保持一致） */
     private const STANDARD_BILLING_CYCLES = ['monthly', 'quarterly', 'semiannually', 'annually'];
@@ -167,8 +177,17 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
 
     public function supports(string $capability): bool
     {
-        return in_array($capability, self::CAPABILITIES, true)
-            && $this instanceof $capability;
+        if (! in_array($capability, self::CAPABILITIES, true)) {
+            return false;
+        }
+
+        // 能力清单里既有契约接口（Provides*），也有本驱动私有的能力名
+        // （host_upgrade / flow_packet）。前者必须靠 instanceof 复核，后者是字符串标记。
+        if (! interface_exists($capability) && ! class_exists($capability)) {
+            return true;
+        }
+
+        return $this instanceof $capability;
     }
 
     public function resolve(string $capability): ?object
@@ -1648,6 +1667,253 @@ class TuraOpenApi implements ProvidesBatchStatusSync, ProvidesConsoleCatalog, Pr
             'data' => [
                 'modules' => [],
             ],
+        ];
+    }
+
+    /* --------------------------- 配置项升级 · 流量包 --------------------------- */
+
+    /**
+     * 配置项升级预览：GET /api/v2/open/services/{id}/upgrades。
+     *
+     * 上游回的是它自己的控制台结构（service_id/options 等），这里只把 options 摘出来，
+     * 与 ZJMF 驱动的 `getHostUpgradeOptions()` 返回形状保持一致（data=选项列表），
+     * 下游 ServiceUpgradeService 因此不需要为两家上游写分支。
+     *
+     * @return array<string, mixed>
+     */
+    public function getHostUpgradeOptions(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $data = $this->client()->get($supplier, "/api/v2/open/services/{$hostId}/upgrades");
+
+        return [
+            'status' => 200,
+            'data' => is_array($data['options'] ?? null) ? $data['options'] : [],
+        ];
+    }
+
+    /**
+     * 升级报价：POST /api/v2/open/services/{id}/upgrades/quotes。
+     *
+     * 只传 product_id 与 billing_cycle（开放接口不收 promo_code 之外的东西），
+     * 返回上游报价明细本身，下游把它透给用户即可。
+     *
+     * @return array<string, mixed>
+     */
+    public function previewHostUpgrade(Supplier $supplier, int $hostId, int $productId, string $billingCycle, ?string $jwt = null): array
+    {
+        $billingCycle = trim($billingCycle);
+        throw_if($productId <= 0, new BusinessException('请选择目标商品', 42200));
+        throw_if($billingCycle === '', new BusinessException('请选择目标周期', 42200));
+
+        $data = $this->client()->post($supplier, "/api/v2/open/services/{$hostId}/upgrades/quotes", [
+            'product_id' => $productId,
+            'billing_cycle' => $billingCycle,
+        ]);
+
+        return [
+            'status' => 200,
+            'data' => is_array($data['quote'] ?? null) ? $data['quote'] : $data,
+        ];
+    }
+
+    /**
+     * 升级下单：上游开账单 → 用供应商账号余额付掉 → 回读实例详情。
+     *
+     * 这是 TuraIDC↔TuraIDC 的「一步到位」路径：下游 ServiceUpgradeService 检测到
+     * `purchaseHostUpgrade` 可调用时会优先走它，跳过 ZJMF 那套
+     * preview → promo → checkout → fund 的四段式。
+     *
+     * @return array{upstream_invoice_id: int, host_detail: array<string, mixed>}
+     */
+    public function purchaseHostUpgrade(
+        Supplier $supplier,
+        int $hostId,
+        int $productId,
+        string $billingCycle,
+        string $promoCode = '',
+        ?string $jwt = null,
+    ): array {
+        $payload = [
+            'product_id' => $productId,
+            'billing_cycle' => trim($billingCycle),
+        ];
+
+        $promoCode = trim($promoCode);
+        if ($promoCode !== '') {
+            $payload['promo_code'] = $promoCode;
+        }
+
+        return $this->purchaseUpstreamInvoice(
+            $supplier,
+            $hostId,
+            "/api/v2/open/services/{$hostId}/upgrades/orders",
+            $payload,
+            '上游未返回产品升降级账单 ID',
+        );
+    }
+
+    /**
+     * 可售流量包档位：GET /api/v2/open/services/{id}/flow-packages。
+     *
+     * 原样返回上游的 {supported, message, traffic, packages}，下游据此决定
+     * 是否展示购买入口（supported=false 就是「这台不开流量包」）。
+     *
+     * @return array<string, mixed>
+     */
+    public function getTrafficPackages(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->client()->get($supplier, "/api/v2/open/services/{$hostId}/flow-packages");
+    }
+
+    /**
+     * 流量包下单：上游开账单 → 供应商余额付款 → 回读实例详情。
+     *
+     * 参数形状锁定下游 `ServiceTrafficPackageService::processPaidTrafficPackageOrder`
+     * 的调用签名（含未用的 $rootUrl，仅为签名兼容 ZJMF 驱动）。
+     *
+     * @param  array<string, mixed>  $configOption  形如 [optionId => targetValue]，由本驱动的
+     *                                              getHostUpgradeConfigOptions() 合成
+     * @return array{upstream_invoice_id: int, host_detail: array<string, mixed>}
+     */
+    public function purchaseTrafficPackage(
+        Supplier $supplier,
+        int $hostId,
+        string $mode,
+        array $configOption,
+        int $flowPacketId,
+        string $rootUrl = '',
+        ?string $jwt = null,
+    ): array {
+        $targetValue = $this->resolveTrafficTargetValue($configOption, $flowPacketId);
+        throw_if($targetValue <= 0, new BusinessException('流量包订单缺少目标档位', 42200));
+
+        return $this->purchaseUpstreamInvoice(
+            $supplier,
+            $hostId,
+            "/api/v2/open/services/{$hostId}/flow-packages/orders",
+            ['target_value' => $targetValue],
+            '上游未返回流量包账单 ID',
+        );
+    }
+
+    /**
+     * 流量包档位（兼容 ZJMF 驱动的 upgradeconfig 形状）。
+     *
+     * 下游流量包服务读的是 `getHostUpgradeConfigOptions()`：它要在选项列表里找到
+     * 一个「流量类选项」，再按 sub 档位换算 configoption。开放接口没有这个概念，
+     * 这里把 `GET /flow-packages` 的档位合成一个 choice 型选项（option_type 留空
+     * 即非区间模式），其中 `sub[].id = target_value`，于是
+     * `configoption = [optionId => target_value]` 能被 purchaseTrafficPackage 反解。
+     *
+     * 优点是不用改下游服务类；代价是这层是**协议适配**，不是上游真实存在的选项结构。
+     *
+     * @return array{response: array<string, mixed>, options: array<int, array<string, mixed>>}
+     */
+    public function getHostUpgradeConfigOptions(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $packages = $this->getTrafficPackageList($supplier, $hostId, $jwt);
+        $options = $packages === [] ? [] : [$this->synthesizeTrafficOption($packages)];
+
+        return [
+            'response' => [
+                'status' => 200,
+                'data' => ['options' => $options],
+            ],
+            'options' => $options,
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getTrafficPackageList(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $data = $this->getTrafficPackages($supplier, $hostId, $jwt);
+
+        if (! (bool) ($data['supported'] ?? false)) {
+            return [];
+        }
+
+        $packages = is_array($data['packages'] ?? null) ? $data['packages'] : [];
+
+        return array_values(array_filter($packages, static fn (mixed $item): bool => is_array($item)));
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $packages
+     * @return array<string, mixed>
+     */
+    private function synthesizeTrafficOption(array $packages): array
+    {
+        $sub = [];
+
+        foreach ($packages as $package) {
+            $targetValue = (int) ($package['target_value'] ?? 0);
+            if ($targetValue <= 0) {
+                continue;
+            }
+
+            $label = trim((string) ($package['target_label'] ?? $package['label'] ?? ''));
+            $sub[] = [
+                'id' => $targetValue,
+                'option_name' => $label !== '' ? $label : (string) $targetValue,
+                'option_name_first' => (string) $targetValue,
+            ];
+        }
+
+        return [
+            // option_id 固定为 1：下游只用它拼 configoption 的键，反解时按值取档位
+            'id' => 1,
+            'field' => 'flow_limit',
+            'name' => '流量包',
+            'option_type' => 0,
+            'sub' => $sub,
+        ];
+    }
+
+    /**
+     * 从下游传来的 configoption / flow_packet_id 反解流量档位。
+     *
+     * @param  array<string, mixed>  $configOption
+     */
+    private function resolveTrafficTargetValue(array $configOption, int $flowPacketId): int
+    {
+        foreach ($configOption as $value) {
+            if (is_numeric($value) && (int) $value > 0) {
+                return (int) $value;
+            }
+        }
+
+        return $flowPacketId > 0 ? $flowPacketId : 0;
+    }
+
+    /**
+     * 「开账单 → 余额付款 → 回读实例」三步闭环，升级与流量包共用。
+     *
+     * 付款走开放接口 `POST /orders/{invoice}/pay`：账单是开给**供应商账号**的，
+     * 用该账号余额支付，与续费链路完全同口径（下游不需要另开支付通道）。
+     *
+     * @param  array<string, mixed>  $invoicePayload
+     * @return array{upstream_invoice_id: int, host_detail: array<string, mixed>}
+     */
+    private function purchaseUpstreamInvoice(
+        Supplier $supplier,
+        int $hostId,
+        string $invoiceUri,
+        array $invoicePayload,
+        string $missingInvoiceMessage,
+    ): array {
+        $invoice = $this->client()->post($supplier, $invoiceUri, $invoicePayload);
+        $invoiceId = (int) ($invoice['id'] ?? 0);
+        throw_if($invoiceId <= 0, new BusinessException($missingInvoiceMessage, 42200));
+
+        $this->client()->post($supplier, "/api/v2/open/orders/{$invoiceId}/pay", []);
+
+        $detail = $this->client()->get($supplier, "/api/v2/open/services/{$hostId}");
+
+        return [
+            'upstream_invoice_id' => $invoiceId,
+            'host_detail' => $this->hostPayloadFromDetail($detail),
         ];
     }
 

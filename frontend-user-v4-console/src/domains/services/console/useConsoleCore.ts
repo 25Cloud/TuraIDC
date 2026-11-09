@@ -11,8 +11,8 @@ import type {
 type ConsoleDetailPatch = Partial<ConsoleServiceDetail>;
 
 export const DEFAULT_TAB = 'overview';
-export const CLOUD_TABS = ['overview', 'monitor', 'security', 'logs', 'finance', 'vnc'];
-export const NAT_TABS = ['overview', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
+export const CLOUD_TABS = ['overview', 'monitor', 'security', 'snapshot', 'iso', 'logs', 'finance', 'vnc'];
+export const NAT_TABS = ['overview', 'monitor', 'security', 'snapshot', 'iso', 'nat', 'logs', 'finance', 'vnc'];
 /**
  * 面板型产品（CDN / 虚拟主机）的基础 tab：控制能力全部来自上游自定义区域，
  * 不具备云服务器的监控/安全组/VNC 等能力，因此兜底时不套用云主机集合。
@@ -23,7 +23,17 @@ const PANEL_CATEGORY_KEYS = new Set(['cdn', 'web_hosting']);
 const VIRTUAL_HOST_TEMPLATE_KEYS = new Set(['virtualhost', 'virtual_host', 'web_hosting', 'hosting']);
 const VIRTUAL_HOST_CATEGORY_KEYS = new Set(['virtualhost', 'virtual_host', 'web_hosting', 'hosting']);
 /** 内置控制台 tab 展示顺序（自定义区域插入到 overview 之后） */
-export const BUILTIN_TABS_ORDER = ['overview', 'monitor', 'security', 'nat', 'logs', 'finance', 'vnc'];
+export const BUILTIN_TABS_ORDER = [
+  'overview',
+  'monitor',
+  'security',
+  'snapshot',
+  'iso',
+  'nat',
+  'logs',
+  'finance',
+  'vnc',
+];
 export const VNC_CREDENTIAL_STORAGE_PREFIX = 'turaidc:vnc-credentials:';
 
 export function emptyDetail(): ConsoleServiceDetail {
@@ -250,6 +260,31 @@ export function isPanelConsole(detail: ConsoleServiceDetail): boolean {
 }
 
 /**
+ * 快照 / ISO 两个 tab 需要驱动具备对应的具名能力才渲染。
+ *
+ * 能力由 `GET /v2/client/services/{id}/console/capabilities` 下发
+ * （`snapshot_supported` / `iso_supported`，见后端 ServiceConsoleAreaService::capabilitiesForUser()）；
+ * 旧版本后端不下发这两个字段时一律按 false 处理 —— 宁可少个入口，也不要给用户一个点进去
+ * 只有「不支持」的空 tab。
+ */
+function isCapabilityTabEnabled(key: string, capabilities?: ServiceConsoleCapabilities | null): boolean {
+  if (key === 'snapshot') return capabilities?.snapshot_supported === true;
+  if (key === 'iso') return capabilities?.iso_supported === true;
+
+  return true;
+}
+
+/**
+ * 按能力过滤 tab 列表。
+ *
+ * 静态集合（CLOUD_TABS / NAT_TABS）里保留了 snapshot/iso 的「顺序位」，但它们能不能出现
+ * 取决于能力标志位，所以动态与静态两条返回路径都要再过一遍这个过滤器。
+ */
+function filterCapabilityTabs(keys: string[], capabilities?: ServiceConsoleCapabilities | null): string[] {
+  return keys.filter((key) => isCapabilityTabEnabled(key, capabilities));
+}
+
+/**
  * 依据上游能力下发结果组装可用控制台 tab。
  *
  * - 上游为「智简魔方类」（supported && fetchable）时动态组装：
@@ -257,6 +292,9 @@ export function isPanelConsole(detail: ConsoleServiceDetail): boolean {
  * - 面板型产品（CDN / 虚拟主机）不具备云服务器的监控/安全组/VNC 能力，
  *   动态与兜底路径都只保留 overview + finance，其余入口由自定义区域承载；
  * - 其余场景回退到原有 NAT / 云服务器静态集合，保证非自定义产品行为不变。
+ *
+ * 两条路径最后都按「快照 / ISO 能力标志位」过滤一次：静态集合里虽然带着这两个 key 的位置，
+ * 但只有 `snapshot_supported` / `iso_supported` 为 true 时才允许它们出现在导航里。
  */
 export function resolveAvailableTabs(
   detail: ConsoleServiceDetail,
@@ -267,7 +305,7 @@ export function resolveAvailableTabs(
 
   if (!dynamicReady) {
     const fallbackKeys = panelConsole ? PANEL_TABS : isNatConsole(detail) ? NAT_TABS : CLOUD_TABS;
-    return { keys: [...fallbackKeys], areaLabels: {} };
+    return { keys: filterCapabilityTabs([...fallbackKeys], capabilities), areaLabels: {} };
   }
 
   const keys: string[] = ['overview'];
@@ -292,6 +330,8 @@ export function resolveAvailableTabs(
     if (panelConsole && key !== 'finance') continue;
     // NAT 能力以动态 tab 交付；无该能力时与云服务器集合保持一致
     if (key === 'nat' && !natSupported) continue;
+    // 快照 / ISO 只在驱动真的具备对应具名能力时出现
+    if (!isCapabilityTabEnabled(key, capabilities)) continue;
     seen.add(key);
     keys.push(key);
   }

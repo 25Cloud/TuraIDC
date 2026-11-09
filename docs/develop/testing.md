@@ -158,17 +158,28 @@ cd backend
 php artisan test --list-tests
 ```
 
-**Windows 本机开发提速**（2026-09 实测）：`php artisan test` 在 Windows 下经 Symfony Process 包装转发输出，单个最小测试类可卡到分钟级；`vendor/bin/phpunit` 直跑同一文件仅约 0.6 秒（同一份 `phpunit.xml.dist`，`APP_ENV=testing` 与测试库配置一致生效）。本机改动后的增量回归建议：
+**本机增量验证（2026-11-08 实测）**：慢的不是测试，是入口。`php artisan test` 启动时按 `.env` 连开发库，而开发库一次连接要 40 秒级，所以同样 7 条测试的文件：`php artisan test` 48.1 秒、`vendor/bin/phpunit` 5.2 秒；`phpstan` 同理，单个文件不指定环境 90.3 秒、带上 `APP_ENV=testing` 6.3 秒（`checkModelProperties` 要读库，读不到还会把列类型全当字符串，报出 `paid_at` 之类的假错）。根因是 `phpunit.xml.dist` 用 `APP_ENV=testing` 连本地测试库，而 artisan / phpstan 默认吃 `.env`。
+
+改完代码一条命令跑「该跑的」：
+
+```bash
+pnpm run verify:changed
+pnpm run verify:changed -- --dry-run
+pnpm run verify:changed -- --only=test
+pnpm run verify:changed -- --base=origin/main
+TURAIDC_PHP=e:/php83/php.exe pnpm run verify:changed
+```
+
+需要手跑底层命令时按这个口径：
 
 ```bash
 cd backend
-# 单文件（最快，不扫描其余测试）
-php vendor/bin/phpunit tests/Feature/目标测试.php
-# 少量相关类（--filter 仍会扫描全部测试文件，文件多时明显慢于传路径）
-php vendor/bin/phpunit --filter="测试类A|测试类B"
-# 全量回归可加 opcache 降低框架编译开销（phpunit.xml 的 <ini> 对 opcache 无效，必须启动时 -d）
-php -d opcache.enable_cli=1 vendor/bin/phpunit
+php vendor/bin/phpunit tests/Feature/TargetTest.php
+php vendor/bin/phpunit --filter="TestClassA|TestClassB"
+APP_ENV=testing php vendor/bin/phpstan analyse app/...
 ```
+
+本机测试库参数也直接决定全量速度（2026-11-08 实测，64 条用例的子集 31.8 秒 → 28.0 秒）：`innodb_buffer_pool_size` 别停在 64M、`innodb_flush_log_at_trx_commit=2`（测试库可以少一次落盘）。全量 2400+ 条在本机约 7.5 分钟，属于发布前动作，不必每次改动都跑。
 
 测试依赖：`idc_test` 测试库（基线 `database/schema/mysql-schema.sql` 导入后补跑 `php artisan migrate --env=testing --force`）；本机无 Redis 时 `phpunit.xml.dist` 已把 `redis_volatile` store 切为 `array`（`CACHE_VOLATILE_DRIVER`），无需真实 Redis。
 

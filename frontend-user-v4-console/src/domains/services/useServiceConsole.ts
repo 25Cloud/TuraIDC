@@ -15,6 +15,7 @@ import { useConsoleRescue } from './console/useConsoleRescue';
 import { useConsoleSecurity } from './console/useConsoleSecurity';
 import { useConsoleTabs } from './console/useConsoleTabs';
 import { useConsoleTrafficPackages } from './console/useConsoleTrafficPackages';
+import { useConsoleUpgrades } from './console/useConsoleUpgrades';
 import { useConsoleVnc } from './console/useConsoleVnc';
 
 export function useServiceConsole() {
@@ -102,6 +103,36 @@ export function useServiceConsole() {
     handleTrafficPackageChange,
     submitTrafficPackageOrder,
   } = useConsoleTrafficPackages({ serviceId });
+
+  // 配置项升级（补差价）
+  const {
+    upgradeVisible,
+    upgradeLoading,
+    upgradeQuoting,
+    upgradeSubmitting,
+    upgradeError,
+    upgradeData,
+    upgradeQuote,
+    upgradeOptions,
+    upgradeForm,
+    upgradeQuoteKind,
+    upgradeQuoteAmount,
+    upgradePayableAmount,
+    upgradeOptionName,
+    upgradeCycleOptions,
+    upgradeEmptyText,
+    currentConfigRows,
+    selectedUpgradeOption,
+    canSubmitUpgrade,
+    upgradeSubmitBlocked,
+    openUpgradeDialog,
+    loadUpgradePreview,
+    quoteUpgrade,
+    handleUpgradeOptionChange,
+    handleUpgradeCycleChange,
+    reapplyUpgradePromoCode,
+    submitUpgradeOrder,
+  } = useConsoleUpgrades({ serviceId, detail });
 
   // Security groups
   const {
@@ -198,6 +229,11 @@ export function useServiceConsole() {
     natState,
     logsState,
     financeState,
+    snapshotState,
+    snapshotVisible,
+    snapshotForm,
+    isoState,
+    isoForm,
     loadedTabs,
     resetLazyTabs,
     loadMonitor,
@@ -207,6 +243,15 @@ export function useServiceConsole() {
     openNatForwardingDialog,
     submitNatForwarding,
     deleteNatForwarding,
+    loadSnapshots,
+    openSnapshotDialog,
+    submitSnapshot,
+    deleteSnapshot,
+    restoreSnapshot,
+    loadIsoPanel,
+    mountIso,
+    unmountIso,
+    setIsoBootOrder,
     loadLogs,
     loadFinanceLogs,
   } = useConsoleTabs({ serviceId });
@@ -237,9 +282,28 @@ export function useServiceConsole() {
       String(detail.value.machine_category?.label || '').trim() ||
       findSpecValue(detail, ['区域', '地区', '机房', 'region'], '--'),
   );
-  const serviceOs = computed(
-    () => String(detail.value.upstream?.os || '').trim() || findSpecValue(detail, ['操作系统', 'os'], '--'),
-  );
+  /**
+   * 操作系统名。
+   *
+   * `upstream.os` 是上游的系统 **ID**（真机上是 "97"），真实系统名在后端 `buildSpecs()`
+   * 产出的 `specs[].key === 'os'` 里（`ServiceTransformService::buildSpecs()`，value 形如
+   * "Debian-12.1-x64"）。所以优先按 key 精确取，取不到再退回 `upstream.os`。
+   */
+  const serviceOs = computed(() => {
+    const specs = Array.isArray(detail.value.specs) ? detail.value.specs : [];
+    const osItem = specs.find(
+      (item) =>
+        String(item?.key ?? '')
+          .trim()
+          .toLowerCase() === 'os',
+    );
+    const osSpecValue = String(osItem?.value ?? '').trim();
+    if (osSpecValue !== '') return osSpecValue;
+
+    const byLabel = findSpecValue(detail, ['操作系统', 'os'], '--');
+
+    return byLabel !== '--' ? byLabel : String(detail.value.upstream?.os || '').trim() || '--';
+  });
   const primaryConnectionLabel = computed(() =>
     isNatConsole(detail.value) ? t('serviceConsole.remoteAddress') : t('serviceConsole.publicIp'),
   );
@@ -269,8 +333,50 @@ export function useServiceConsole() {
   );
   const connectionPortText = computed(() => {
     const port = Number(detail.value.connection?.nat_remote_port || detail.value.connection?.port || 0);
-    return Number.isFinite(port) && port > 0 ? String(port) : '--';
+    if (Number.isFinite(port) && port > 0) return String(port);
+
+    // 上游 host.port 为空时后端下发 0（真机 service 3993 就是这种情形）：只要有登录用户名，
+    // 说明这是可 SSH 登录的机器，按默认端口 22 展示；后端同步侧也会补默认值，这里仍兜底。
+    const username = String(detail.value.connection?.username || '').trim();
+    if (port === 0 && username !== '') return '22';
+
+    return '--';
   });
+
+  /** 流量用量文案：限额内显示「已用 / 总量」，不限量时给「不限」 */
+  const trafficText = computed(() =>
+    detail.value.traffic?.limited
+      ? `${detail.value.traffic.usage_label || '0G'} / ${detail.value.traffic.limit_label || t('serviceConsole.traffic.unlimited')}`
+      : t('serviceConsole.traffic.unlimited'),
+  );
+
+  /** 流量百分比（后端 traffic.usage_percent，真机是 57.7），不合法时返回 null 表示不画进度条 */
+  const trafficPercent = computed<number | null>(() => {
+    // 类型上是 number|null，但上游换版本时可能下发空串，这里按 unknown 收一次
+    const raw: unknown = detail.value.traffic?.usage_percent;
+    if (raw === null || raw === undefined || raw === '') return null;
+
+    const value = Number(raw);
+    if (!Number.isFinite(value)) return null;
+
+    return Math.min(100, Math.max(0, Number(value.toFixed(1))));
+  });
+
+  const trafficPercentText = computed(() => String(trafficPercent.value ?? 0));
+
+  const trafficProgressStatus = computed<'warning' | 'error' | undefined>(() => {
+    const percent = trafficPercent.value;
+    if (percent === null) return undefined;
+    if (percent >= 100) return 'error';
+    if (percent >= 90) return 'warning';
+
+    return undefined;
+  });
+
+  /** 操作系统行右侧的两个系统操作入口，跟随 detail.actions */
+  const canReinstall = computed(() => Boolean(detail.value.actions?.reinstall));
+  const canResetPassword = computed(() => Boolean(detail.value.actions?.password_reset));
+
   const instanceStatusText = computed(() => {
     const operationLabel = String(operationStatus.label || '').trim();
     if (operationLabel) return operationLabel;
@@ -337,7 +443,7 @@ export function useServiceConsole() {
    * 开关开启时这些面板的数据同样在首屏预热，关闭时保持「切到面板再按需加载」。
    * 总览 / VNC 不在此列：总览由页面级 detailLoading 负责，VNC 是点击后才打开的弹窗。
    */
-  const DATA_TAB_KEYS = ['monitor', 'security', 'nat', 'logs', 'finance'] as const;
+  const DATA_TAB_KEYS = ['monitor', 'security', 'nat', 'snapshot', 'iso', 'logs', 'finance'] as const;
   type DataTabKey = (typeof DATA_TAB_KEYS)[number];
 
   function isDataTabKey(key: string): key is DataTabKey {
@@ -357,6 +463,8 @@ export function useServiceConsole() {
     if (key === 'monitor') await loadMonitor();
     else if (key === 'security') await loadSecurityGroups();
     else if (key === 'nat') await loadNatForwardings();
+    else if (key === 'snapshot') await loadSnapshots();
+    else if (key === 'iso') await loadIsoPanel();
     else if (key === 'logs') await loadLogs(silent);
     else if (key === 'finance') await loadFinanceLogs(silent);
   }
@@ -417,6 +525,32 @@ export function useServiceConsole() {
     trafficData,
     trafficQuote,
     trafficForm,
+    upgradeVisible,
+    upgradeLoading,
+    upgradeQuoting,
+    upgradeSubmitting,
+    upgradeError,
+    upgradeData,
+    upgradeQuote,
+    upgradeOptions,
+    upgradeForm,
+    upgradeQuoteKind,
+    upgradeQuoteAmount,
+    upgradePayableAmount,
+    upgradeOptionName,
+    upgradeCycleOptions,
+    upgradeEmptyText,
+    currentConfigRows,
+    selectedUpgradeOption,
+    canSubmitUpgrade,
+    upgradeSubmitBlocked,
+    openUpgradeDialog,
+    loadUpgradePreview,
+    quoteUpgrade,
+    handleUpgradeOptionChange,
+    handleUpgradeCycleChange,
+    reapplyUpgradePromoCode,
+    submitUpgradeOrder,
     nameVisible,
     nameSubmitting,
     nameForm,
@@ -442,6 +576,11 @@ export function useServiceConsole() {
     natState,
     natVisible,
     natForm,
+    snapshotState,
+    snapshotVisible,
+    snapshotForm,
+    isoState,
+    isoForm,
     logsState,
     financeState,
 
@@ -459,6 +598,12 @@ export function useServiceConsole() {
     primaryConnectionText,
     connectionEndpointText,
     connectionPortText,
+    trafficText,
+    trafficPercent,
+    trafficPercentText,
+    trafficProgressStatus,
+    canReinstall,
+    canResetPassword,
     instanceStatusText,
     instanceStatusTheme,
     serviceIpCount,
@@ -524,6 +669,15 @@ export function useServiceConsole() {
     openNatForwardingDialog,
     submitNatForwarding,
     deleteNatForwarding,
+    loadSnapshots,
+    openSnapshotDialog,
+    submitSnapshot,
+    deleteSnapshot,
+    restoreSnapshot,
+    loadIsoPanel,
+    mountIso,
+    unmountIso,
+    setIsoBootOrder,
     loadLogs,
     loadFinanceLogs,
     handleOpenVnc,

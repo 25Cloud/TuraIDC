@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: 3a4c48ec7b22441dbe3294f1a4545f894609bf5e814ff51bd6e7caeb9f7e6f7b
+sourceHash: 220f52fc5be7f5de54b86c4f34e7234ccbf47b8fa0e175cc320787446a7ac339
 generated: zh-tw
 ---
 
@@ -44,20 +44,22 @@ backend/plugins/{domain-directory}/{slug}/
 
 載入順序由 `PluginFileLoader` 控制：
 
-1. 遞迴載入 `lib/`、`logic/`、`controller/` 下 PHP 檔案。
+1. 遞迴載入 `lib/`、`logic/`、`controller/` 下 PHP 檔案：先按路徑排序，把聲明瞭介面 / trait / enum 的檔案整批裝載，再裝載其餘檔案。
 2. 如果存在 `vendor/autoload.php`，載入外掛依賴。
 3. 載入外掛根目錄 PHP 檔案，跳過 `config.php`。
 4. 遞迴載入 `src/`：大外掛按 PSR-4 組織程式碼的首選位置（`AiAssistant`、`zjmf_bridge` 都用它）。
 
-### 大外掛必須自註冊 PSR-4
+### 類繼承類時自註冊 PSR-4
 
-上面前三步是「按目錄順序 `require` 每個檔案」。外掛只有幾個類時沒問題；一旦有幾十個類、
-且其中存在被多處 `extends`/`implements` 的介面（`AiTool`、`AiProviderInterface` 這類），
-`require` 順序一旦讓子類先於父類/接口出現，PHP 在**宣告階段**就直接 fatal
-（`Interface "..." not found`），而且報錯位置和真實原因（順序）看起來毫無關係。
+上面第 1 步早先是「按檔案系統返回順序 `require` 每個檔案」。這個順序與檔案系統有關：NTFS 大體按
+檔名，ext4 走目錄雜湊，於是同一份外掛程式碼在本地開發機不報錯、到了 Linux（含 CI）隨機
+`Interface "..." not found`，而且報錯位置和真實原因（順序）看起來毫無關係。現在核心固定先裝載
+聲明瞭介面 / trait / enum 的檔案，`implements`、`use Trait`、`interface A extends B` 都不再受順序影響
+（`backend/tests/Unit/PluginFileLoaderDeclarationOrderTest.php` 守著這條）。
 
-`AiAssistant` 的做法是加一個 `logic/autoload.php`，只給本外掛名稱空間註冊
-`spl_autoload_register`，讓父類與介面按需載入：
+仍然受順序影響的是**類繼承類**：`class Foo extends Base` 裡兩個類都在不同檔案時，裝載先後依舊只按
+路徑排序。外掛裡一旦有幾十個類、且存在被多處 `extends` 的父類（`AiTool` 這類），就按 `AiAssistant`
+的做法加一個 `logic/autoload.php`，只給本外掛名稱空間註冊 `spl_autoload_register`，讓父類按需載入：
 
 ```php
 spl_autoload_register(static function (string $class): void {
@@ -78,7 +80,7 @@ spl_autoload_register(static function (string $class): void {
 ```
 
 只註冊自身字首、不接管其它名稱空間、不主動載入業務類——它只是讓 `require` 順序不再是正確性
-前提。`logic/` 按字母序先於 `src/` 被載入，所以這個檔案本身一定先於任何業務類生效。
+前提。`logic/` 整批先於 `src/` 被載入，所以這個檔案一定早於 `src/` 裡的任何業務類生效。
 
 ## 3. config.php 規範
 

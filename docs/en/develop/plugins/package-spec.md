@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: c8a918ccca7ea627d1129ef41cd2fbb1ac7ceea2f264111c7d1584bac0076afa
+sourceHash: 691813f10c0203f32fdf93c74354a21997f1ad453309dd90d9c952ec32c07ed3
 translatedAt: 2026-10-26
 ---
 

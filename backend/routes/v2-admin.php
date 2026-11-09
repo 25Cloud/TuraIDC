@@ -170,6 +170,15 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
         Route::delete('/users/{user}/services/{service}/security-groups/{group}/rules/{rule}', [UserServiceController::class, 'deleteSecurityRule'])->middleware('throttle:10,1,admin-service-security-rule-delete');
         Route::delete('/users/{user}/services/{service}/security-groups/{group}', [UserServiceController::class, 'deleteSecurityGroup'])->middleware('throttle:10,1,admin-service-security-group-delete');
         Route::post('/users/{user}/services/{service}/security-groups', [UserServiceController::class, 'createSecurityGroup'])->middleware('throttle:10,1,admin-service-security-group-create');
+        Route::get('/users/{user}/services/{service}/snapshots', [UserServiceController::class, 'snapshots']);
+        Route::post('/users/{user}/services/{service}/snapshots', [UserServiceController::class, 'createSnapshot'])->middleware('throttle:10,1,admin-service-snapshot-create');
+        Route::delete('/users/{user}/services/{service}/snapshots/{snapshot}', [UserServiceController::class, 'deleteSnapshot'])->middleware('throttle:10,1,admin-service-snapshot-delete');
+        Route::post('/users/{user}/services/{service}/snapshots/{snapshot}/restore', [UserServiceController::class, 'restoreSnapshot'])->middleware('throttle:10,1,admin-service-snapshot-restore');
+        Route::get('/users/{user}/services/{service}/iso', [UserServiceController::class, 'isoPanel']);
+        Route::post('/users/{user}/services/{service}/iso', [UserServiceController::class, 'mountIso'])->middleware('throttle:10,1,admin-service-iso-mount');
+        Route::delete('/users/{user}/services/{service}/iso', [UserServiceController::class, 'unmountIso'])->middleware('throttle:10,1,admin-service-iso-unmount');
+        Route::put('/users/{user}/services/{service}/iso/bootorder', [UserServiceController::class, 'setIsoBootOrder'])->middleware('throttle:10,1,admin-service-iso-bootorder');
+        Route::post('/users/{user}/services/{service}/host-config', [UserServiceController::class, 'changeHostConfig'])->middleware('throttle:10,1,admin-service-host-config');
     });
 
     Route::middleware(['permission:'.AdminPermissions::USER_LOGIN_AS])->group(function (): void {
@@ -315,6 +324,8 @@ Route::middleware(['auth:sanctum', 'ensure.admin'])->group(function (): void {
 
     Route::middleware(['permission:'.AdminPermissions::PRODUCT_SYNC])->group(function (): void {
         Route::post('/products/traffic-package-pulls', [ProductController::class, 'pullTrafficPackageCatalog']);
+        // 一键拉取已改异步：提交只拿 task_id，进度与结果由这条查询，避免上游慢把请求挂死
+        Route::get('/products/traffic-package-pulls/{task}', [ProductController::class, 'trafficPackagePullStatus']);
         Route::post('/products/description/sync-batch', [ProductDescriptionSyncController::class, 'syncBatch']);
         Route::post('/products/description/auto-sync', [ProductDescriptionSyncController::class, 'autoSync']);
         Route::get('/products/description/sync-settings', [ProductDescriptionSyncController::class, 'settings']);

@@ -352,6 +352,49 @@
     flex: none;
   }
 
+  /* ---- 概览：流量进度条 + 操作系统行系统操作入口 ---- */
+  // 流量：文字在上、进度条在下，撑满整格，避免被 .detail-cell-value 的 nowrap 挤成一条线
+  .detail-cell .traffic-cell__value {
+    flex-flow: column wrap;
+    align-items: stretch;
+    gap: 0.25rem;
+  }
+
+  .traffic-cell__progress {
+    width: 100%;
+  }
+
+  .traffic-cell__caption {
+    color: var(--td-text-color-placeholder);
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.4;
+  }
+
+  // 操作系统：名字在左，重装/重置两个入口贴在右侧
+  .detail-cell .os-cell__value {
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .detail-cell .os-cell__value .os-cell__name {
+    flex: 1 1 6rem;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .os-cell__actions {
+    display: flex;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
   .connection-ip-cell {
     align-items: flex-start;
   }
@@ -442,6 +485,76 @@
 
   .credential-icon-button {
     flex: none;
+  }
+
+  // 重置密码按钮：紧贴密码值与复制图标，不参与压缩
+  .credential-reset-button {
+    flex: none;
+  }
+
+  /* ---- 快照/备份 与 ISO 挂载面板 ---- */
+  .snapshot-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+
+    & + & {
+      padding-top: 1.25rem;
+      margin-top: 1.25rem;
+      border-top: 0.0625rem solid var(--td-component-stroke);
+    }
+  }
+
+  .snapshot-section__header {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+
+    h4 {
+      margin: 0;
+      font: var(--td-font-title-small);
+      color: var(--td-text-color-primary);
+    }
+  }
+
+  .snapshot-section__count {
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+  }
+
+  .snapshot-section__empty {
+    margin: 0;
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+  }
+
+  .iso-current {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    align-items: center;
+    padding: 0.5rem 0.75rem;
+    margin-bottom: 1rem;
+    background: var(--td-bg-color-container-hover);
+    border-radius: var(--td-radius-medium);
+  }
+
+  .iso-current__label {
+    color: var(--td-text-color-placeholder);
+    font: var(--td-font-body-small);
+  }
+
+  .iso-current__name {
+    color: var(--td-text-color-primary);
+    font: var(--td-font-body-medium);
+  }
+
+  .iso-form__row {
+    flex-wrap: wrap;
+  }
+
+  .iso-form__select {
+    min-width: 16rem;
   }
 
   .credential-icon-button .t-icon,

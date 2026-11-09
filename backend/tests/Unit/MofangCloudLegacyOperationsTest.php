@@ -1,0 +1,1164 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Unit;
+
+use App\Exceptions\BusinessException;
+use GuzzleHttp\Promise\PromiseInterface;
+use Illuminate\Http\Client\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Tests\TestCase;
+use TuraIDC\Plugins\Servers\MofangCloud\Lib\CloudApiException;
+use TuraIDC\Plugins\Servers\MofangCloud\Lib\CloudApiMode;
+use TuraIDC\Plugins\Servers\MofangCloud\Lib\CloudCredentials;
+use TuraIDC\Plugins\Servers\MofangCloud\Lib\LegacyCloudClient;
+use TuraIDC\Plugins\Servers\MofangCloud\Lib\LegacyCloudOperations;
+
+/**
+ * 魔方云老版本（legacy /v1）能力实现的协议映射回归。
+ *
+ * 覆盖三类风险：
+ * 1. 传输层契约：`{base}/v1{action}`、`access-token` 头、登录取「带引号 token 原文」；
+ * 2. 平响应的解析：详情字段在顶层、列表在 `data`、状态端点的 `status` 是运行状态而不是成功标志；
+ * 3. 老接口的能力缺口与串行依赖：取消任务不支持、安全组要先查详情拿 user_id。
+ */
+class MofangCloudLegacyOperationsTest extends TestCase
+{
+    private const BASE = 'https://cloud.test';
+
+    private const TOKEN = 'legacy-token-abc';
+
+    /** @var array<string, mixed> 本轮用例的上游响应表（按 URL 片段匹配） */
+    private array $routes = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // 插件命名空间（TuraIDC\Plugins\…）不在 composer autoload 里，由插件运行时加载；
+        // 这里直接 require 插件 lib 目录，避免测试依赖「插件已安装」这一状态
+        $this->loadPluginLib();
+
+        // token 缓存 key 含 supplierId，用例之间必须清干净，否则先跑的先赢
+        Cache::flush();
+
+        // 只注册一次 stub，用例内用 fakeUpstream() 换响应表（fake() 会追加而不是替换）
+        Http::fake(fn (Request $request) => $this->dispatchFake($request));
+    }
+
+    public function test_power_posts_to_legacy_endpoint_with_access_token_header(): void
+    {
+        $this->fakeUpstream([
+            '/v1/login?a=a' => '"'.self::TOKEN.'"',
+            '/v1/clouds/88/on' => ['status' => 'success', 'msg' => '开机成功'],
+        ]);
+
+        $result = $this->operations()->power('on', 88);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('开机成功', $result['message']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/clouds/88/on')
+            && $request->hasHeader('access-token', self::TOKEN));
+
+        // 登录用的是带引号原文，客户端必须把引号去掉再用
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/login?a=a')
+            && ($request['username'] ?? '') === 'u'
+            && ($request['password'] ?? '') === 'p');
+    }
+
+    public function test_power_rejects_unknown_action_before_any_request(): void
+    {
+        Http::fake();
+
+        try {
+            $this->operations()->power('suspend', 88);
+            $this->fail('未知电源动作必须直接拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('不支持的电源操作', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_host_detail_normalizes_top_level_fields(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88' => [
+                'id' => 88,
+                'hostname' => 'web1.example.test',
+                'status' => 'on',
+                'mainip' => '1.2.3.4',
+                'ip' => [
+                    ['ipaddress' => '5.6.7.8', 'remark' => '备用,线路2'],
+                    ['ipaddress' => '1.2.3.4'],
+                ],
+                'ipv6' => [['ipv6' => '2001:db8::1']],
+                'client_show_ip_remark' => 1,
+                'traffic_quota' => 100,
+                'tmp_traffic' => 20,
+                'cpu' => 4,
+                'memory' => 8192,
+                'osuser' => 'root',
+                'rootpassword' => 's3cret',
+                'port' => 22,
+                'node_id' => 7,
+                'kvmid' => 'kvm-88',
+                'system' => 'CentOS 7',
+                'create_time' => '2026-01-02 03:04:05',
+                'rescue' => 0,
+                'iso' => '',
+                'bootorder' => 'c',
+                'disk' => [
+                    ['id' => 11, 'size' => 40, 'type' => 'system'],
+                    ['id' => 12, 'size' => 100, 'type' => 'data'],
+                ],
+            ],
+        ]);
+
+        $detail = $this->operations()->hostDetail(88);
+
+        // 详情是平响应：字段直接在顶层，不需要 status/msg/data 信封
+        $this->assertSame('web1.example.test', $detail['domain']);
+        $this->assertSame('on', $detail['domainstatus']);
+        $this->assertSame('1.2.3.4', $detail['dedicatedip']);
+        $this->assertSame(100, $detail['bwlimit']);
+        $this->assertSame(20, $detail['bwlimit_included']);
+        $this->assertSame(4, $detail['cpu']);
+        $this->assertSame(8192, $detail['memory']);
+        $this->assertSame('root', $detail['username']);
+        $this->assertSame('s3cret', $detail['password']);
+        $this->assertSame(22, $detail['port']);
+        $this->assertSame(7, $detail['node_id']);
+        $this->assertSame('kvm-88', $detail['kvmid']);
+        $this->assertSame('CentOS 7', $detail['os']);
+        $this->assertSame('2026-01-02 03:04:05', $detail['created_at']);
+        $this->assertSame(0.0, $detail['bwusage']);
+
+        // 附加 IP：备注按显示开关拼接、主 IP 剔除、IPv6 追加
+        $this->assertContains('5.6.7.8(备用，线路2)', $detail['assignedips']);
+        $this->assertContains('2001:db8::1', $detail['assignedips']);
+        $this->assertNotContains('1.2.3.4', $detail['assignedips']);
+
+        $this->assertCount(2, $detail['disk']);
+        $this->assertSame('data', $detail['disk'][1]['type']);
+        $this->assertSame(100.0, $detail['disk'][1]['size']);
+    }
+
+    public function test_host_status_maps_running_states(): void
+    {
+        $cases = [
+            'wait_reboot' => 'wait_reboot',
+            'task' => 'task',
+            'cold_migrate' => 'task',
+            'on' => 'on',
+            'something_new' => 'unknown',
+        ];
+
+        foreach ($cases as $raw => $expected) {
+            $this->seedToken();
+            $this->fakeUpstream([
+                '/v1/clouds/88/status' => [
+                    'status' => $raw,
+                    'task' => $raw === 'task' ? 'reinstall' : '',
+                    'task_name' => $raw === 'task' ? '重装系统' : '',
+                ],
+            ]);
+
+            $status = $this->operations()->hostStatus(88);
+
+            $this->assertSame($expected, $status['status'], '状态「'.$raw.'」映射错误');
+        }
+
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/status' => ['status' => 'task', 'task' => 'reinstall', 'task_name' => '重装系统'],
+        ]);
+
+        $status = $this->operations()->hostStatus(88);
+        $this->assertSame('reinstall', $status['task']);
+        $this->assertSame('重装系统', $status['task_name']);
+    }
+
+    public function test_security_groups_fetches_detail_first_then_list(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88' => ['id' => 88, 'user_id' => 12, 'status' => 'on'],
+            '/v1/security_groups' => ['data' => [['id' => 3, 'name' => 'sg-a', 'description' => '']]],
+        ]);
+
+        $groups = $this->operations()->securityGroups(88);
+
+        $this->assertCount(1, $groups);
+        $this->assertSame(3, $groups[0]['id']);
+
+        // 只有详情 + 列表两次请求：不会去查全局安全组
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/security_groups?')
+            && str_contains($request->url(), 'user=12')
+            && str_contains($request->url(), 'list_type=all'));
+    }
+
+    public function test_security_groups_without_host_lists_panel_wide_without_cloud_lookup(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/security_groups' => ['data' => [['id' => 3, 'name' => 'sg-a'], ['id' => 4, 'name' => 'sg-b']]],
+        ]);
+
+        $groups = $this->operations()->securityGroups(0);
+
+        $this->assertCount(2, $groups);
+
+        // hostId=0 时绝不能去查 /v1/clouds/0：那是必然 404 的请求
+        Http::assertSentCount(1);
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/v1/clouds/0'));
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/security_groups?')
+            && str_contains($request->url(), 'list_type=all')
+            && ! str_contains($request->url(), 'user='));
+    }
+
+    public function test_cancel_task_is_not_supported_on_legacy_api(): void
+    {
+        Http::fake();
+
+        try {
+            $this->operations()->cancelTask(88);
+            $this->fail('老接口没有取消任务，必须抛业务异常');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('不支持取消任务', $exception->getMessage());
+            $this->assertSame(CloudApiMode::Legacy, $exception->mode());
+            $this->assertInstanceOf(BusinessException::class, $exception);
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_reinstall_returns_new_credentials_from_upstream(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/reinstall' => [
+                'status' => 'success',
+                'msg' => '重装发起成功',
+                'data' => ['password' => 'NewPass9', 'user' => 'root'],
+            ],
+        ]);
+
+        $result = $this->operations()->reinstall(88, ['os_id' => 7, 'port' => 2222, 'format_data_disk' => 1]);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('NewPass9', $result['password']);
+        $this->assertSame('root', $result['username']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/clouds/88/reinstall')
+            && (string) ($request['os'] ?? '') === '7'
+            && (string) ($request['port'] ?? '') === '2222'
+            && (string) ($request['format_data_disk'] ?? '') === '1');
+    }
+
+    public function test_nat_rules_inject_host_ip_and_delete_passes_hostid(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/nat_acl' => [
+                'data' => [['id' => 5, 'ext_port' => 10022, 'int_port' => 22, 'protocol' => 1]],
+                'nat_host_ip' => '9.9.9.9',
+            ],
+            '/v1/nat_acl/5' => ['status' => 200],
+        ]);
+
+        $rules = $this->operations()->natRules(88);
+        $this->assertCount(1, $rules);
+        $this->assertSame('9.9.9.9', $rules[0]['nat_host_ip']);
+
+        $deleted = $this->operations()->deleteNatRule(88, 5);
+        $this->assertTrue($deleted['ok']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_contains($request->url(), '/v1/nat_acl/5?hostid=88'));
+    }
+
+    public function test_terminate_treats_missing_instance_as_deleted(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88' => [404, ['error' => 'Host not found']],
+        ]);
+
+        $result = $this->operations()->terminate(88);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('删除成功', $result['message']);
+    }
+
+    public function test_traffic_usage_converts_bytes_to_gb_and_computes_percent(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/net_info' => [
+                'meta' => ['traffic_quota' => 100, 'tmp_traffic' => 20, 'traffic_type' => 3],
+                'info' => ['30_day' => ['total' => 53687091200, 'accept' => 1, 'send' => 2, 'float' => 0]],
+            ],
+        ]);
+
+        $usage = $this->operations()->trafficUsage(88);
+
+        // 53687091200 B = 50 GB
+        $this->assertSame(50.0, $usage['used']);
+        $this->assertSame(100, $usage['limit']);
+        $this->assertSame(20, $usage['extra']);
+        $this->assertSame(50.0, $usage['percent']);
+        $this->assertSame('', $usage['reset_at']);
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/net_info?host_id=88'));
+    }
+
+    public function test_statistics_reads_columns_by_metric(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88' => ['id' => 88, 'node_id' => 7, 'kvmid' => 'kvm-88', 'status' => 'on'],
+            '/v1/statistics' => ['data' => [['2026-01-02 03:04:05', 12.5, 30, 40]]],
+        ]);
+
+        $cpu = $this->operations()->statistics(88, 'cpu', ['st' => '1700000000', 'et' => '1700003600']);
+        $this->assertCount(1, $cpu);
+        $this->assertSame(12.5, $cpu[0]['value']);
+        $this->assertArrayNotHasKey('value2', $cpu[0]);
+
+        // memory 取第 3、4 列
+        $memory = $this->operations()->statistics(88, 'memory', []);
+        $this->assertSame(30.0, $memory[0]['value']);
+        $this->assertSame(40.0, $memory[0]['value2']);
+
+        // disk 取第 2、3 列，并带上 dev_name
+        $disk = $this->operations()->statistics(88, 'disk', ['select' => 'vdb']);
+        $this->assertSame(12.5, $disk[0]['value']);
+        $this->assertSame(30.0, $disk[0]['value2']);
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'type=disk_io')
+            && str_contains($request->url(), 'dev_name=vdb')
+            && str_contains($request->url(), 'node_id=7')
+            && str_contains($request->url(), 'kvm=kvm-88'));
+    }
+
+    public function test_vnc_prefers_https_url(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/vnc' => [
+                'status' => 'success',
+                'vnc_url_http' => 'http://vnc.example.test:6080',
+                'vnc_url_https' => 'https://vnc.example.test:6081',
+                'vnc_pass' => 'vnc-pass',
+                'token' => 'vnc-token',
+            ],
+        ]);
+
+        $vnc = $this->operations()->vnc(88);
+
+        $this->assertSame('https://vnc.example.test:6081', $vnc['url']);
+        $this->assertSame('vnc-token', $vnc['token']);
+        $this->assertSame('vnc-pass', $vnc['pass']);
+    }
+
+    public function test_write_failure_raises_readable_business_exception(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/off' => ['status' => 'error', 'msg' => '实例正在重装中，暂不可关机'],
+        ]);
+
+        $this->expectException(CloudApiException::class);
+        $this->expectExceptionMessage('实例正在重装中，暂不可关机');
+
+        $this->operations()->power('off', 88);
+    }
+
+    public function test_provision_posts_cloud_payload_and_returns_upstream_host_id(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds' => ['status' => 'success', 'msg' => '开通成功', 'data' => ['id' => 4321]],
+        ]);
+
+        $result = $this->operations()->provision([
+            'product_id' => 51,
+            'hostname' => 'prov.example.test',
+            'password' => 'Root1234',
+            'os_id' => 7,
+            'area_id' => 3,
+            'cpu' => 2,
+            'memory' => 2048,
+            'disk' => 40,
+            'bandwidth' => 100,
+            'flow' => 500,
+            'ip_num' => 2,
+            'ipv6_num' => 1,
+            'billing_cycle' => 'monthly',
+            'quantity' => 1,
+            'config_options' => ['type' => 'host', 'network_type' => 'normal', 'client' => 12],
+        ]);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(4321, $result['host_id']);
+
+        // 平台键 → 契约 §7 字段名；billing_cycle / quantity / product_id 契约里没有，不能发
+        Http::assertSent(function ($request): bool {
+            $body = $request->data();
+
+            return $request->method() === 'POST'
+                && str_ends_with($request->url(), '/v1/clouds')
+                && ($body['hostname'] ?? '') === 'prov.example.test'
+                && ($body['rootpass'] ?? '') === 'Root1234'
+                && (string) ($body['os'] ?? '') === '7'
+                && (string) ($body['area'] ?? '') === '3'
+                && (string) ($body['cpu'] ?? '') === '2'
+                && (string) ($body['memory'] ?? '') === '2048'
+                && (string) ($body['system_disk_size'] ?? '') === '40'
+                && (string) ($body['in_bw'] ?? '') === '100'
+                && (string) ($body['out_bw'] ?? '') === '100'
+                && (string) ($body['traffic_quota'] ?? '') === '500'
+                && (string) ($body['ip_num'] ?? '') === '2'
+                && (string) ($body['ipv6_num'] ?? '') === '1'
+                && (string) ($body['client'] ?? '') === '12'
+                && ($body['type'] ?? '') === 'host'
+                && ! array_key_exists('billing_cycle', $body)
+                && ! array_key_exists('quantity', $body)
+                && ! array_key_exists('product_id', $body);
+        });
+    }
+
+    public function test_provision_omits_unspecified_fields_and_fails_without_host_id(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds' => ['status' => 'success', 'data' => []],
+        ]);
+
+        // 上游没给 data.id 时必须判失败，不能返回 host_id=0 的半成品
+        try {
+            $this->operations()->provision($this->provisionParams([
+                'hostname' => 'only.example.test',
+                'password' => 'p',
+                // 0 视为未指定：cpu / memory / disk 都不该出现在报文里
+                'cpu' => 0,
+                'memory' => 0,
+                'disk' => 0,
+                'config_options' => ['client' => 12],
+            ]));
+            $this->fail('缺少上游主机 ID 必须抛异常');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('未返回云主机 ID', $exception->getMessage());
+        }
+
+        // null / '' / 0 一律不提交
+        Http::assertSent(fn ($request): bool => ! array_key_exists('cpu', $request->data())
+            && ! array_key_exists('memory', $request->data())
+            && ! array_key_exists('system_disk_size', $request->data()));
+    }
+
+    public function test_provision_reuses_existing_upstream_client_by_username(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/user/check' => ['data' => ['id' => 77]],
+            '/v1/clouds' => ['status' => 'success', 'data' => ['id' => 9001]],
+        ]);
+
+        $result = $this->operations()->provision($this->provisionParams(['client_username' => 'pfx1001']));
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(9001, $result['host_id']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/clouds')
+            && (string) ($request->data()['client'] ?? '') === '77');
+
+        // 上游已有该客户时不能再建档
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/user'));
+    }
+
+    public function test_provision_creates_upstream_client_when_missing(): void
+    {
+        $this->seedToken();
+        $checks = 0;
+
+        $this->fakeUpstream([
+            // 第一次查不到 → 建档 → 第二次查到 id
+            '/v1/user/check' => function () use (&$checks): array {
+                $checks++;
+
+                return $checks === 1 ? ['data' => []] : ['data' => ['id' => 88]];
+            },
+            '/v1/user' => ['status' => 'success'],
+            '/v1/clouds' => ['status' => 'success', 'data' => ['id' => 9002]],
+        ]);
+
+        $result = $this->operations()->provision($this->provisionParams(['client_username' => 'pfx1002']));
+
+        $this->assertSame(9002, $result['host_id']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/user')
+            && (string) ($request->data()['username'] ?? '') === 'pfx1002'
+            && (string) ($request->data()['status'] ?? '') === '1');
+
+        Http::assertSent(fn ($request): bool => str_ends_with($request->url(), '/v1/clouds')
+            && (string) ($request->data()['client'] ?? '') === '88');
+    }
+
+    public function test_provision_without_client_username_throws_before_any_request(): void
+    {
+        try {
+            $this->operations()->provision($this->provisionParams([]));
+            $this->fail('没有 client_username 也没有 client 时必须直接拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('无法确定实例归属的上游客户', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_buy_flow_packet_puts_temp_traffic(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/temp_traffic' => ['status' => 'success', 'msg' => 'ok'],
+        ]);
+
+        $result = $this->operations()->buyFlowPacket(88, 200);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame('流量包已附加到实例', $result['message']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/clouds/88/temp_traffic')
+            && (string) ($request->data()['traffic'] ?? '') === '200');
+    }
+
+    public function test_buy_flow_packet_rejects_empty_traffic_and_upstream_failure(): void
+    {
+        try {
+            $this->operations()->buyFlowPacket(88, 0);
+            $this->fail('流量为 0 必须直接拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('必须是正整数', $exception->getMessage());
+        }
+
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/temp_traffic' => ['status' => 'error', 'msg' => '实例处于锁定状态'],
+        ]);
+
+        $this->expectException(CloudApiException::class);
+        $this->expectExceptionMessage('实例处于锁定状态');
+
+        $this->operations()->buyFlowPacket(88, 100);
+    }
+
+    /* ------------------------------ 快照 / 备份 ------------------------------ */
+
+    public function test_snapshots_list_is_strict_and_failure_yields_empty_list(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/snapshots' => ['status' => 'error', 'msg' => '读取失败'],
+        ]);
+
+        // 列表失败不抛异常，返回空列表（接口约定）
+        $this->assertSame([], $this->operations()->snapshots(88));
+    }
+
+    public function test_snapshots_normalizes_rows_and_query(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/snapshots' => [
+                'status' => 'success',
+                'data' => [
+                    ['id' => 31, 'name' => 's1', 'type' => 'snap', 'diskid' => 11, 'disk_remarks' => '系统盘', 'size' => 40, 'created_at' => '2026-01-01 00:00:00', 'status' => 'ok'],
+                    ['id' => 32, 'name' => 'b1', 'type' => 'BACKUP', 'diskid' => 12],
+                ],
+            ],
+        ]);
+
+        $rows = $this->operations()->snapshots(88);
+
+        $this->assertCount(2, $rows);
+        $this->assertSame(31, $rows[0]['id']);
+        $this->assertSame('系统盘', $rows[0]['disk_name']);
+        $this->assertSame(40.0, $rows[0]['size_gb']);
+        $this->assertSame('ok', $rows[0]['status']);
+        // 上游大写也归一到小写
+        $this->assertSame('backup', $rows[1]['type']);
+        $this->assertSame('', $rows[1]['created_at']);
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/clouds/88/snapshots?')
+            && str_contains($request->url(), 'page=1')
+            && str_contains($request->url(), 'per_page=9999'));
+    }
+
+    public function test_create_snapshot_falls_back_to_system_disk(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/disks/11/snapshots' => ['status' => 200, 'data' => ['id' => 555]],
+            '/v1/clouds/88' => [
+                'id' => 88,
+                'disk' => [
+                    ['id' => 11, 'type' => 'system', 'store_id' => 4],
+                    ['id' => 12, 'type' => 'data'],
+                ],
+            ],
+        ]);
+
+        $result = $this->operations()->createSnapshot(88, ['name' => 'snap-1']);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(555, $result['snapshot_id']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/disks/11/snapshots')
+            && (string) ($request->data()['type'] ?? '') === 'snap'
+            && (string) ($request->data()['name'] ?? '') === 'snap-1');
+    }
+
+    public function test_create_snapshot_requires_name_and_rejects_bad_type(): void
+    {
+        $this->seedToken();
+
+        try {
+            $this->operations()->createSnapshot(88, []);
+            $this->fail('缺少名称必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('缺少快照名称', $exception->getMessage());
+        }
+
+        try {
+            $this->operations()->createSnapshot(88, ['name' => 'x', 'type' => 'volume']);
+            $this->fail('非法类型必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('只支持 snap 或 backup', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    public function test_restore_snapshot_passes_hostid_in_query(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/snapshots/555/restore' => ['status' => 'success'],
+        ]);
+
+        $result = $this->operations()->restoreSnapshot(88, 555);
+
+        $this->assertTrue($result['ok']);
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_contains($request->url(), '/v1/snapshots/555/restore?hostid=88'));
+    }
+
+    public function test_delete_snapshot_uses_snapshot_endpoint(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/snapshots/555' => ['status' => 200],
+        ]);
+
+        $this->assertTrue($this->operations()->deleteSnapshot(88, 555)['ok']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_ends_with($request->url(), '/v1/snapshots/555'));
+    }
+
+    /* ------------------------------ ISO / 启动项 ------------------------------ */
+
+    public function test_iso_images_flattens_node_isos_and_unmount_passes_current_iso(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/iso' => ['status' => 'success'],
+            '/v1/node_isos' => [
+                'data' => [
+                    ['info' => [['id' => 1, 'name' => 'CentOS.iso'], ['id' => 2, 'name' => 'Windows.iso']]],
+                ],
+            ],
+            '/v1/clouds/88' => ['id' => 88, 'node_id' => 7, 'iso' => '/iso/abc.iso'],
+        ]);
+
+        $images = $this->operations()->isoImages(88);
+
+        $this->assertCount(2, $images);
+        $this->assertSame('1', $images[0]['id']);
+        $this->assertSame('Windows.iso', $images[1]['name']);
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/node_isos?')
+            && str_contains($request->url(), 'id=7')
+            && str_contains($request->url(), 'type=node'));
+
+        $result = $this->operations()->unmountIso(88);
+        $this->assertTrue($result['ok']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_ends_with($request->url(), '/v1/clouds/88/iso')
+            && (string) ($request->data()['iso'] ?? '') === '/iso/abc.iso');
+    }
+
+    public function test_mount_iso_and_set_boot_order_payload(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/iso' => ['status' => 200],
+            '/v1/clouds/88' => ['status' => 'success'],
+        ]);
+
+        $this->assertTrue($this->operations()->mountIso(88, 'iso-9')['ok']);
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/clouds/88/iso')
+            && (string) ($request->data()['iso'] ?? '') === 'iso-9');
+
+        $this->assertTrue($this->operations()->setBootOrder(88, 'cdrom')['ok']);
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/clouds/88')
+            && (string) ($request->data()['bootorder'] ?? '') === 'cdrom');
+    }
+
+    public function test_mount_iso_rejects_empty_id(): void
+    {
+        $this->seedToken();
+
+        try {
+            $this->operations()->mountIso(88, '  ');
+            $this->fail('空 ISO ID 必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('缺少镜像 ID', $exception->getMessage());
+        }
+    }
+
+    /* ------------------------------ 安全组写 ------------------------------ */
+
+    public function test_security_group_ownership_is_enforced_for_read_and_delete(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88' => ['id' => 88, 'user_id' => 12, 'type' => 'host'],
+            '/v1/security_groups' => ['data' => [['id' => 3, 'name' => 'sg-a']]],
+        ]);
+
+        try {
+            $this->operations()->securityRules(88, 99);
+            $this->fail('别人的安全组必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('不属于该实例归属的客户', $exception->getMessage());
+        }
+
+        try {
+            $this->operations()->deleteSecurityGroup(88, 99);
+            $this->fail('删除别人的安全组必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('不属于该实例归属的客户', $exception->getMessage());
+        }
+
+        // 越权路径不允许发出任何写请求
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'DELETE');
+        Http::assertNotSent(fn ($request): bool => str_contains($request->url(), '/rules'));
+    }
+
+    public function test_security_rules_keeps_locked_rules_and_builds_port_range(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/security_groups/3/rules' => [
+                'status' => 'success',
+                'data' => [
+                    ['id' => 7, 'direction' => 'in', 'protocol' => 'tcp', 'port' => '80', 'ip' => '0.0.0.0/0', 'action' => 'accept', 'priority' => 10, 'description' => 'web', 'lock' => 1],
+                    ['id' => 8, 'direction' => 'IN', 'protocol' => 'tcp', 'start_port' => '8000', 'end_port' => '9000', 'start_ip' => '10.0.0.0/8', 'action' => 'DROP', 'lock' => 0],
+                ],
+            ],
+            '/v1/security_groups' => ['data' => [['id' => 3]]],
+            '/v1/clouds/88' => ['id' => 88, 'user_id' => 12, 'type' => 'host'],
+        ]);
+
+        $rules = $this->operations()->securityRules(88, 3);
+
+        $this->assertCount(2, $rules);
+        // 上游锁定规则保留，只标记 locked=1（与魔方财务删掉的做法不同）
+        $this->assertSame(1, $rules[0]['locked']);
+        $this->assertSame('web', $rules[0]['description']);
+        $this->assertSame('8000-9000', $rules[1]['port']);
+        $this->assertSame('10.0.0.0/8', $rules[1]['ip']);
+        $this->assertSame('in', $rules[1]['direction']);
+        $this->assertSame('drop', $rules[1]['action']);
+
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/security_groups/3/rules?per_page=9999'));
+    }
+
+    public function test_create_and_apply_security_group_uses_upstream_owner_and_cloud(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/security_groups/9/links' => ['status' => 'success'],
+            '/v1/security_groups' => function (Request $request): array {
+                if ($request->method() === 'POST') {
+                    return ['status' => 'success', 'data' => ['id' => 41]];
+                }
+
+                return ['data' => [['id' => 3], ['id' => 9]]];
+            },
+            '/v1/clouds/88' => ['id' => 88, 'user_id' => 12, 'type' => 'hyperv'],
+        ]);
+
+        $created = $this->operations()->createSecurityGroup(88, ['name' => 'sg-new', 'description' => '测试']);
+
+        $this->assertSame(41, $created['group_id']);
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/security_groups')
+            && (string) ($request->data()['uid'] ?? '') === '12'
+            && (string) ($request->data()['type'] ?? '') === 'hyperv'
+            && (string) ($request->data()['name'] ?? '') === 'sg-new');
+
+        $applied = $this->operations()->applySecurityGroup(88, 9);
+        $this->assertTrue($applied['ok']);
+
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/security_groups/9/links')
+            && (string) ($request->data()['cloud'] ?? '') === '88'
+            && (string) ($request->data()['type'] ?? '') === '1');
+    }
+
+    public function test_create_security_rule_requires_direction_and_omits_empty_fields(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/security_groups/3/rules' => ['status' => 'success', 'data' => ['id' => 77]],
+            '/v1/security_groups' => ['data' => [['id' => 3]]],
+            '/v1/clouds/88' => ['id' => 88, 'user_id' => 12, 'type' => 'host'],
+        ]);
+
+        try {
+            $this->operations()->createSecurityRule(88, 3, ['protocol' => 'tcp']);
+            $this->fail('缺少 direction 必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('缺少 direction', $exception->getMessage());
+        }
+
+        // 平台侧报文只有 id/direction/protocol/port/ip/description，不带 action：
+        // 驱动必须补 accept，否则上游会拒；空字段也不能提交
+        $created = $this->operations()->createSecurityRule(88, 3, [
+            'direction' => 'in',
+            'protocol' => 'tcp',
+            'port' => '443',
+            'description' => 'https',
+            'start_ip' => '',
+            'priority' => 0,
+        ]);
+
+        $this->assertSame(77, $created['rule_id']);
+        Http::assertSent(function ($request): bool {
+            $body = $request->data();
+
+            return $request->method() === 'POST'
+                && str_ends_with($request->url(), '/v1/security_groups/3/rules')
+                && (string) ($body['direction'] ?? '') === 'in'
+                && (string) ($body['port'] ?? '') === '443'
+                && (string) ($body['action'] ?? '') === 'accept'
+                && ! array_key_exists('start_ip', $body)
+                && ! array_key_exists('priority', $body);
+        });
+    }
+
+    public function test_create_security_rule_rejects_missing_protocol(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/security_groups' => ['data' => [['id' => 3]]],
+            '/v1/clouds/88' => ['id' => 88, 'user_id' => 12, 'type' => 'host'],
+        ]);
+
+        try {
+            $this->operations()->createSecurityRule(88, 3, ['direction' => 'in']);
+            $this->fail('缺少 protocol 必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('缺少 protocol', $exception->getMessage());
+        }
+
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'POST'
+            && str_contains($request->url(), '/rules'));
+    }
+
+    public function test_delete_security_rule_rejects_rule_outside_group(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/security_group_rules/7' => ['status' => 'success'],
+            '/v1/security_groups/3/rules' => ['status' => 'success', 'data' => [['id' => 7]]],
+            '/v1/security_groups' => ['data' => [['id' => 3]]],
+            '/v1/clouds/88' => ['id' => 88, 'user_id' => 12, 'type' => 'host'],
+        ]);
+
+        try {
+            $this->operations()->deleteSecurityRule(88, 3, 8);
+            $this->fail('规则不属于该组时必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('安全组规则不属于该安全组', $exception->getMessage());
+        }
+
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'DELETE');
+
+        $this->assertTrue($this->operations()->deleteSecurityRule(88, 3, 7)['ok']);
+        Http::assertSent(fn ($request): bool => $request->method() === 'DELETE'
+            && str_ends_with($request->url(), '/v1/security_group_rules/7'));
+    }
+
+    /* -------------------------------- 改配 -------------------------------- */
+
+    public function test_change_config_sends_main_payload_to_cloud_and_bandwidth(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/bw' => ['status' => 'success'],
+            '/v1/clouds/88' => ['status' => 200],
+        ]);
+
+        $result = $this->operations()->changeConfig(88, [
+            'cpu' => 4,
+            'memory' => 4096,
+            'in_bw' => 100,
+            'out_bw' => 200,
+            'flow' => 500,
+        ]);
+
+        $this->assertTrue($result['ok']);
+        $this->assertSame(['cpu', 'memory', 'flow', 'in_bw', 'out_bw'], $result['applied']);
+
+        // 同一份报文连发两个端点，顺序是 /clouds 再 /bw
+        Http::assertSentCount(2);
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/clouds/88')
+            && (string) ($request->data()['cpu'] ?? '') === '4'
+            && (string) ($request->data()['traffic_quota'] ?? '') === '500');
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/clouds/88/bw')
+            && (string) ($request->data()['in_bw'] ?? '') === '100'
+            && (string) ($request->data()['out_bw'] ?? '') === '200');
+    }
+
+    public function test_change_config_with_only_ip_hits_ip_endpoint_only(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/ip' => ['status' => 'success'],
+        ]);
+
+        $result = $this->operations()->changeConfig(88, ['ip_num' => 2, 'ip_group' => 5]);
+
+        $this->assertSame(['ip_num', 'ip_group'], $result['applied']);
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/clouds/88/ip')
+            && (string) ($request->data()['num'] ?? '') === '2'
+            && (string) ($request->data()['ip_group'] ?? '') === '5');
+    }
+
+    public function test_change_config_resizes_existing_data_disk(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/disks/12' => ['status' => 'success'],
+            '/v1/clouds/88' => [
+                'id' => 88,
+                'disk' => [
+                    ['id' => 11, 'type' => 'system', 'store_id' => 4],
+                    ['id' => 12, 'type' => 'data'],
+                ],
+            ],
+        ]);
+
+        $result = $this->operations()->changeConfig(88, ['disk_size' => 150]);
+
+        $this->assertSame(['disk_size'], $result['applied']);
+        Http::assertSent(fn ($request): bool => $request->method() === 'PUT'
+            && str_ends_with($request->url(), '/v1/disks/12')
+            && (string) ($request->data()['size'] ?? '') === '150');
+    }
+
+    public function test_change_config_creates_data_disk_with_store_fallback(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/disks' => ['status' => 'success'],
+            '/v1/clouds/88/stores' => ['status' => 'success', 'data' => [['id' => 5]]],
+            '/v1/clouds/88' => ['id' => 88, 'disk' => [['id' => 11, 'type' => 'system', 'store_id' => 0]]],
+        ]);
+
+        $result = $this->operations()->changeConfig(88, ['disk_size' => 200]);
+
+        $this->assertSame(['disk_size'], $result['applied']);
+
+        // 系统盘没带 store_id → 走 /stores 取第一个存储池
+        Http::assertSent(fn ($request): bool => $request->method() === 'POST'
+            && str_ends_with($request->url(), '/v1/clouds/88/disks')
+            && (string) ($request->data()['size'] ?? '') === '200'
+            && (string) ($request->data()['store'] ?? '') === '5'
+            && (string) ($request->data()['driver'] ?? '') === 'virtio');
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), '/v1/clouds/88/stores'));
+    }
+
+    public function test_change_config_throws_when_no_store_available(): void
+    {
+        $this->seedToken();
+        $this->fakeUpstream([
+            '/v1/clouds/88/stores' => ['status' => 'success', 'data' => []],
+            '/v1/clouds/88' => ['id' => 88, 'disk' => [['id' => 11, 'type' => 'system', 'store_id' => 0]]],
+        ]);
+
+        try {
+            $this->operations()->changeConfig(88, ['disk_size' => 200]);
+            $this->fail('没有存储池时必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('找不到可用存储池', $exception->getMessage());
+        }
+
+        Http::assertNotSent(fn ($request): bool => $request->method() === 'POST');
+    }
+
+    public function test_change_config_without_any_change_throws(): void
+    {
+        $this->seedToken();
+
+        try {
+            $this->operations()->changeConfig(88, ['cpu' => 0, 'flow' => '']);
+            $this->fail('没有任何变更项时必须拒绝');
+        } catch (CloudApiException $exception) {
+            $this->assertStringContainsString('没有可提交的变更项', $exception->getMessage());
+        }
+
+        Http::assertNothingSent();
+    }
+
+    /* --------------------------------- 夹具 --------------------------------- */
+
+    /**
+     * 按依赖顺序加载插件 lib（插件类不在 composer autoload 中）。
+     */
+    private function loadPluginLib(): void
+    {
+        $dir = dirname(__DIR__, 2).'/plugins/servers/mofang_cloud/lib';
+
+        foreach ([
+            'CloudApiMode.php',
+            'CloudApiException.php',
+            'CloudCredentials.php',
+            'CloudApiClient.php',
+            'CloudOperations.php',
+            'LegacyCloudClient.php',
+            'LegacyCloudOperations.php',
+        ] as $file) {
+            require_once $dir.'/'.$file;
+        }
+    }
+
+    /**
+     * 开通用例的基准入参；`$overrides` 覆盖同名顶层键。
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private function provisionParams(array $overrides = []): array
+    {
+        return array_merge([
+            'product_id' => 51,
+            'hostname' => 'prov.example.test',
+            'password' => 'Root1234',
+            'os_id' => 7,
+            'area_id' => 3,
+            'cpu' => 2,
+            'memory' => 2048,
+            'disk' => 40,
+            'bandwidth' => 100,
+            'flow' => 500,
+            'ip_num' => 2,
+            'ipv6_num' => 1,
+            'billing_cycle' => 'monthly',
+            'quantity' => 1,
+        ], $overrides);
+    }
+
+    private function credentials(): CloudCredentials
+    {
+        return new CloudCredentials(
+            supplierId: 1,
+            baseUrl: self::BASE,
+            account: 'u',
+            secret: 'p',
+            mode: CloudApiMode::Legacy,
+        );
+    }
+
+    private function operations(): LegacyCloudOperations
+    {
+        return new LegacyCloudOperations(new LegacyCloudClient($this->credentials()));
+    }
+
+    /**
+     * 预置 token，避免每个用例都先发一次登录请求（需要精确计数时尤其重要）。
+     */
+    private function seedToken(): void
+    {
+        Cache::put($this->credentials()->tokenCacheKey(), self::TOKEN, 3600);
+    }
+
+    /**
+     * 登记本轮上游响应表。
+     *
+     * 注意：`Http::fake()` 是**追加** stub 而不是替换，所以 stub 只在 setUp 注册一次，
+     * 这里只换数据表；否则同一用例里第二次登记不会生效，会返回上一轮响应。
+     *
+     * - 字符串直接当响应体（登录接口返回带引号 token 原文）
+     * - 关联数组当 JSON 响应体
+     * - `[状态码, 响应体]` 形式表达非 2xx（如删除实例返回 404）
+     * - 闭包按调用次数动态出响应（如「先查不到、建档后才查到」）
+     *
+     * @param  array<string, mixed>  $routes
+     */
+    private function fakeUpstream(array $routes): void
+    {
+        $this->routes = $routes;
+    }
+
+    /**
+     * 唯一的 stub：按 URL 片段分发，命中不到的请求返回可读错误体。
+     */
+    private function dispatchFake(Request $request): PromiseInterface
+    {
+        $url = (string) $request->url();
+
+        foreach ($this->routes as $fragment => $response) {
+            if (! str_contains($url, (string) $fragment)) {
+                continue;
+            }
+
+            if ($response instanceof \Closure) {
+                return Http::response($response($request), 200);
+            }
+
+            if (is_array($response) && array_is_list($response) && count($response) === 2 && is_int($response[0])) {
+                return Http::response($response[1], $response[0]);
+            }
+
+            return Http::response($response, 200);
+        }
+
+        return Http::response(['error' => '测试未模拟的请求: '.$request->method().' '.$url], 200);
+    }
+}

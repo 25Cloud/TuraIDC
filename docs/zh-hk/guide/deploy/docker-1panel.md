@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 6595fa43badd8738e78701650b6ba06bad2bb14ad4a005ce9e60196927b2425a
+sourceHash: 9273fe563d1672b25c2594bcc7aca6748c3bec4886f0b7c01d97ef6d6fc7c958
 generated: zh-hk
 ---
 
@@ -60,7 +60,7 @@ vim .env
 | ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四個公開地址，互不相同、同一協議、無路徑；`https://api.example.com` 形式                                                                                                       |
 | `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官網/控制台跨子域共享登錄態時填父域如 `.example.com`；單域留空                                                                                                                 |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 鏡像倉庫地址；Compose 當前按 `:${IMAGE_TAG}` 拼接鏡像名，生產應填寫已掃描的不可變 tag（如提交 SHA 或版本 tag），不要把完整 digest 填進 `IMAGE_TAG`，也不要使用 `latest` |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 鏡像倉庫地址；Compose 當前按 `:${IMAGE_TAG}` 拼接鏡像名，生產應填寫已掃描的不可變 tag（如提交 SHA 或版本 tag），不要把完整 digest 填進 `IMAGE_TAG`，也不要使用 `latest`        |
 | `APP_KEY`                                                          | 是   | 生產部署必須顯式填寫並持久化保存。可在倉庫根目錄的 `backend` 目錄執行 `php artisan key:generate --show` 生成 `base64:...` 值；容器重建不會隨機換鑰，缺失時 entrypoint 直接退出 |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默認管理員 `cerbo` 的密碼，至少 12 位強密碼，僅空庫首次生效                                                                                                          |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 環境 `true`，純 HTTP 環境 `false`                                                                                                                                        |

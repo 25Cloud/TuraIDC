@@ -55,6 +55,8 @@ Route::middleware(['zjmf.upstream', 'throttle:zjmf-upstream-api'])->group(functi
     Route::get('/host/trafficusage', [DcimController::class, 'trafficUsage']);
     Route::get('/dcim/resintall_status', [DcimController::class, 'reinstallStatus']);
     Route::get('/dcim/detail', [DcimController::class, 'detail']);
+    // 流量包履约状态（魔方 3.8.0 的 FlowPacketUpstreamOrderService 会轮询它）
+    Route::get('/dcim/flow_packet_order_status', [DcimController::class, 'flowPacketOrderStatus']);
 });
 
 Route::middleware(['zjmf.upstream', 'throttle:zjmf-upstream-write'])->group(function (): void {

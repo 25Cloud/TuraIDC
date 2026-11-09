@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: c8a918ccca7ea627d1129ef41cd2fbb1ac7ceea2f264111c7d1584bac0076afa
+sourceHash: 691813f10c0203f32fdf93c74354a21997f1ad453309dd90d9c952ec32c07ed3
 generated: zh-tw
 ---
 
@@ -83,10 +83,10 @@ my-sms-plugin/
 - **不提交** `vendor/` 與執行時產物；自帶依賴（如 SDK）隨包分發時提供 `composer.json` 或鎖檔案。
 - **版本號**遵循語義化版本 `MAJOR.MINOR.PATCH`，manifest `info.version` 與 Git tag 保持一致。
 - **許可**：外掛獨立授權。隨主倉分發的內建外掛遵循主倉協議；獨立倉庫外掛可自選許可，但不得使用主倉程式碼的派生實現而不履行主倉協議義務（見第 7 節）。
-- **類多就走 PSR-4**：核心 `PluginFileLoader` 是按目錄順序 `require` 的，幾十個類、且有被多處
-  `extends`/`implements` 的介面時，子類先於父類被載入會直接 fatal。此時把類放進 `src/` 並加
-  `logic/autoload.php` 只為本外掛名稱空間註冊 `spl_autoload_register`（完整寫法見
-  [開發指南](index.md) 第 2 節，`ai_assistant` 是現成例子）。
+- **類多就走 PSR-4**：核心 `PluginFileLoader` 會先裝載聲明瞭介面 / trait / enum 的檔案、再裝載其餘檔案，
+  所以「實現類先於介面」不再 fatal；剩下的風險是**類繼承類**（父類在另一個檔案）——幾十個類、且有被
+  多處 `extends` 的父類時，把類放進 `src/` 並加 `logic/autoload.php` 只為本外掛名稱空間註冊
+  `spl_autoload_register`（完整寫法見 [開發指南](index.md) 第 2 節，`ai_assistant` 是現成例子）。
 - **週期能力只能走清單**：`info.extra.scheduled_tasks` / `schedule_hooks`，不要在外掛裡註冊
   Laravel `Schedule`；同樣**不要指望主倉 `routes/console.php` 去 schedule 你這個外掛的命令**——
   外掛解除安裝後那條 Schedule 會留下每天一次「命令不存在」的失敗記錄。

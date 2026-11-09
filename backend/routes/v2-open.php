@@ -27,12 +27,19 @@ Route::middleware(['api.key:services,read'])->group(function (): void {
     Route::get('/services/{service}', [OpenServiceController::class, 'show']);
     Route::get('/services/{service}/renewals', [OpenServiceController::class, 'renewPreview']);
     Route::get('/services/{service}/reinstall-options', [OpenServiceController::class, 'reinstallOptions']);
+    // 配置项升级预览 / 流量包档位：纯读，复用 services,read
+    Route::get('/services/{service}/upgrades', [OpenServiceController::class, 'upgrades']);
+    Route::get('/services/{service}/flow-packages', [OpenServiceController::class, 'flowPackages']);
 });
 
 Route::middleware(['api.key:services,write', 'throttle:open-api-write'])->group(function (): void {
     Route::post('/services/{service}/power', [OpenServiceController::class, 'power']);
     Route::post('/services/{service}/renew', [OpenServiceController::class, 'renew']);
     Route::post('/services/{service}/reinstall', [OpenServiceController::class, 'reinstall']);
+    // 升级报价 / 升级账单 / 流量包账单：都会产生可支付的账单，按写端点限流
+    Route::post('/services/{service}/upgrades/quotes', [OpenServiceController::class, 'quoteUpgrade']);
+    Route::post('/services/{service}/upgrades/orders', [OpenServiceController::class, 'createUpgradeOrder']);
+    Route::post('/services/{service}/flow-packages/orders', [OpenServiceController::class, 'createFlowPackageOrder']);
 });
 
 Route::middleware(['api.key:finance,read'])->group(function (): void {

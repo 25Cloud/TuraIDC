@@ -76,10 +76,10 @@ my-sms-plugin/
 - **不提交** `vendor/` 与运行时产物；自带依赖（如 SDK）随包分发时提供 `composer.json` 或锁文件。
 - **版本号**遵循语义化版本 `MAJOR.MINOR.PATCH`，manifest `info.version` 与 Git tag 保持一致。
 - **许可**：插件独立授权。随主仓分发的内置插件遵循主仓协议；独立仓库插件可自选许可，但不得使用主仓代码的派生实现而不履行主仓协议义务（见第 7 节）。
-- **类多就走 PSR-4**：核心 `PluginFileLoader` 是按目录顺序 `require` 的，几十个类、且有被多处
-  `extends`/`implements` 的接口时，子类先于父类被加载会直接 fatal。此时把类放进 `src/` 并加
-  `logic/autoload.php` 只为本插件命名空间注册 `spl_autoload_register`（完整写法见
-  [开发指南](index.md) 第 2 节，`ai_assistant` 是现成例子）。
+- **类多就走 PSR-4**：核心 `PluginFileLoader` 会先装载声明了接口 / trait / enum 的文件、再装载其余文件，
+  所以「实现类先于接口」不再 fatal；剩下的风险是**类继承类**（父类在另一个文件）——几十个类、且有被
+  多处 `extends` 的父类时，把类放进 `src/` 并加 `logic/autoload.php` 只为本插件命名空间注册
+  `spl_autoload_register`（完整写法见 [开发指南](index.md) 第 2 节，`ai_assistant` 是现成例子）。
 - **周期能力只能走清单**：`info.extra.scheduled_tasks` / `schedule_hooks`，不要在插件里注册
   Laravel `Schedule`；同样**不要指望主仓 `routes/console.php` 去 schedule 你这个插件的命令**——
   插件卸载后那条 Schedule 会留下每天一次「命令不存在」的失败记录。

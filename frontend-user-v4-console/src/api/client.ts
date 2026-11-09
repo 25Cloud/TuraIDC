@@ -45,7 +45,9 @@ import type {
   SecurityRulePayload,
   ServiceConsoleAreaTicket,
   ServiceConsoleCapabilities,
+  ServiceConsoleMessagePayload,
   ServiceInstance,
+  ServiceIsoPanel,
   ServiceNameUpdatePayload,
   ServiceOperationLogPayload,
   ServiceOverviewPayload,
@@ -55,9 +57,13 @@ import type {
   ServiceReinstallPayload,
   ServiceRemarkUpdatePayload,
   ServiceRenewPreview,
+  ServiceSnapshotPanel,
   ServiceTrafficPackageOrderPayload,
   ServiceTrafficPackagePreview,
   ServiceTrafficPackageQuote,
+  ServiceUpgradeOrderPayload,
+  ServiceUpgradePreview,
+  ServiceUpgradeQuote,
   ServiceVncPayload,
   TicketImageUploadPayload,
   TicketRecord,
@@ -294,6 +300,14 @@ const clientApi = {
     postEnvelope<ServiceTrafficPackageQuote>(`/v2/client/services/${id}/traffic-packages/quote`, data),
   createTrafficPackageOrder: (id: number | string, data: Record<string, unknown>) =>
     postEnvelope<ServiceTrafficPackageOrderPayload>(`/v2/client/services/${id}/traffic-packages/orders`, data),
+  // 配置项升级（补差价）：preview → quotes → orders，对应后端 ServiceConsoleController 的
+  // hostUpgradePreview / quoteHostUpgrade / createHostUpgradeOrder（routes/v2-client.php:159-161）
+  serviceUpgradePreview: (id: number | string) =>
+    getEnvelope<ServiceUpgradePreview>(`/v2/client/services/${id}/upgrades`),
+  quoteServiceUpgrade: (id: number | string, data: Record<string, unknown>) =>
+    postEnvelope<ServiceUpgradeQuote>(`/v2/client/services/${id}/upgrades/quotes`, data),
+  createServiceUpgradeOrder: (id: number | string, data: Record<string, unknown>) =>
+    postEnvelope<ServiceUpgradeOrderPayload>(`/v2/client/services/${id}/upgrades/orders`, data),
   serviceRenewPreview: (id: number | string, params?: QueryParams) =>
     getEnvelope<ServiceRenewPreview>(`/v2/client/services/${id}/renewals`, { params }),
   createRenewOrder: (id: number | string, data: Record<string, unknown>) =>
@@ -348,6 +362,26 @@ const clientApi = {
     request.delete<ApiEnvelope<{ message?: string }>, ApiEnvelope<{ message?: string }>>(
       `/v2/client/services/${id}/security-groups/${groupId}/rules/${ruleId}`,
     ),
+  // 快照 / 备份：列表带 supported/error 三态，写操作统一回 { message }
+  serviceSnapshots: (id: number | string) => getEnvelope<ServiceSnapshotPanel>(`/v2/client/services/${id}/snapshots`),
+  createServiceSnapshot: (id: number | string, data: Record<string, unknown>) =>
+    postEnvelope<ServiceConsoleMessagePayload>(`/v2/client/services/${id}/snapshots`, data),
+  deleteServiceSnapshot: (id: number | string, snapshotId: number | string) =>
+    request.delete<ApiEnvelope<ServiceConsoleMessagePayload>, ApiEnvelope<ServiceConsoleMessagePayload>>(
+      `/v2/client/services/${id}/snapshots/${snapshotId}`,
+    ),
+  restoreServiceSnapshot: (id: number | string, snapshotId: number | string) =>
+    postEnvelope<ServiceConsoleMessagePayload>(`/v2/client/services/${id}/snapshots/${snapshotId}/restore`),
+  // ISO / 启动项：挂载、卸载、改启动项都是立即生效的写操作
+  serviceIsoPanel: (id: number | string) => getEnvelope<ServiceIsoPanel>(`/v2/client/services/${id}/iso`),
+  mountServiceIso: (id: number | string, data: Record<string, unknown>) =>
+    postEnvelope<ServiceConsoleMessagePayload>(`/v2/client/services/${id}/iso`, data),
+  unmountServiceIso: (id: number | string) =>
+    request.delete<ApiEnvelope<ServiceConsoleMessagePayload>, ApiEnvelope<ServiceConsoleMessagePayload>>(
+      `/v2/client/services/${id}/iso`,
+    ),
+  setServiceIsoBootOrder: (id: number | string, data: Record<string, unknown>) =>
+    putEnvelope<ServiceConsoleMessagePayload>(`/v2/client/services/${id}/iso/bootorder`, data),
   serviceVnc: (id: number | string, config: Record<string, unknown> = {}) =>
     getEnvelope<ServiceVncPayload>(`/v2/client/services/${id}/vnc`, config),
   vncToken: (token: string) => request.get(`/v2/client/vnc-tokens/${token}`),

@@ -7,6 +7,7 @@ namespace App\Services\ClientServiceConsole;
 use App\Exceptions\BusinessException;
 use App\Models\OperationLog;
 use App\Models\Service;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Services\System\OperationLogService;
 use App\Support\SensitiveDataSanitizer;
@@ -120,8 +121,8 @@ class ServiceSecurityGroupService
             'product.productGroup.secondProductGroup.firstProductGroup',
             'product.supplier',
         ]);
-        $securityGroupContext = $this->resolveSecurityGroupContext($service, true);
-        $this->throwIfNativeSecurityGroupContext($securityGroupContext);
+        // 原生驱动具备 getSecurityGroupRules 时直接读驱动，没有能力时由
+        // callSecurityGroupAction 抛原来的「仅支持安全组列表和应用操作」。
         $this->assertSecurityGroupBoundToCurrentHost($service, $groupId);
 
         $result = $this->callSecurityGroupAction($service, 'showSecurityRules', ['id' => $groupId], '读取安全组规则');
@@ -177,31 +178,15 @@ class ServiceSecurityGroupService
         ]);
 
         $securityGroupContext = $this->assertSecurityGroupVisibleToCurrentHost($service, $groupId);
-        $runtime = $this->detailService->resolveRuntimeCapabilityForSupplier($securityGroupContext['supplier']);
 
-        if ($this->isNativeSecurityGroupContext($securityGroupContext)) {
-            throw_if(
-                ! is_callable([$runtime, 'applySecurityGroup']),
-                new BusinessException('当前上游未提供安全组应用能力', 42200)
-            );
-
-            $response = $runtime->applySecurityGroup(
-                $securityGroupContext['supplier'],
-                $groupId,
-                (int) $securityGroupContext['host_id'],
-                $securityGroupContext['jwt']
-            );
-            $this->detailService->assertSuccess($response, '应用安全组');
-            $result = ['response' => $response, 'context' => $securityGroupContext];
-        } else {
-            $result = $this->callSecurityGroupAction(
-                $service,
-                'linkSecurityGroup',
-                ['id' => $groupId],
-                '应用安全组',
-                $securityGroupContext
-            );
-        }
+        // 原生与 HTML 两条通道统一由分派器处理：原生走驱动方法，custom 走原表单提交。
+        $result = $this->callSecurityGroupAction(
+            $service,
+            'linkSecurityGroup',
+            ['id' => $groupId],
+            '应用安全组',
+            $securityGroupContext
+        );
         $this->forgetSecurityGroupContextCache($service);
 
         $message = trim((string) ($result['response']['msg'] ?? '')) ?: '安全组已应用';
@@ -366,13 +351,16 @@ class ServiceSecurityGroupService
         $jwt = $runtime->login($supplier);
 
         if ($mode === 'native') {
+            // 原生通道能做什么由驱动实际暴露的方法决定：驱动没写的写操作不亮开关，
+            // 前端因此不会给出必然 422 的按钮。
+            $capabilities = $this->resolveNativeSecurityGroupCapabilities($runtime);
             $response = $runtime->getSecurityGroups($supplier, 1, 9999, $jwt);
             $this->detailService->assertSuccess($response, '读取安全组');
             $payload = $this->detailService->extractPayload($response);
             $rawGroups = $this->extractNativeSecurityGroupRows($payload);
             $ownedBindings = $this->resolveOwnedSecurityGroupBindingsForService($service);
             $groups = collect($rawGroups)
-                ->map(fn (array $item) => $this->normalizeNativeSecurityGroupItem($item, $hostId))
+                ->map(fn (array $item) => $this->normalizeNativeSecurityGroupItem($item, $hostId, $capabilities))
                 ->filter()
                 ->filter(function (array $item) use ($ownedBindings, $rawGroups): bool {
                     if ((bool) ($item['is_applied'] ?? false)) {
@@ -397,7 +385,7 @@ class ServiceSecurityGroupService
                 'protocols' => [],
                 'raw_groups' => $rawGroups,
                 'groups' => $groups,
-                'can_create' => false,
+                'can_create' => $capabilities['can_create'],
             ];
 
             Cache::put(
@@ -470,10 +458,23 @@ class ServiceSecurityGroupService
 
     // ── Private helpers ────────────────────────────────────────────────────
 
+    /**
+     * 安全组写操作分派器：原生驱动有对应方法就走原生 API，否则走 HTML 自定义模块。
+     *
+     * 只有 custom 上下文提交表单；native 上下文交给 nativeSecurityGroupAction()，
+     * 由它按能力选择驱动方法，缺方法时抛与会话原有文案一致的错误。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{context: array<string, mixed>, response: array<string, mixed>}
+     */
     private function callSecurityGroupAction(Service $service, string $func, array $payload, string $action, ?array $context = null): array
     {
         $context ??= $this->resolveSecurityGroupContext($service);
-        $this->throwIfNativeSecurityGroupContext($context);
+
+        if ($this->isNativeSecurityGroupContext($context)) {
+            return $this->nativeSecurityGroupAction($context, $func, $payload, $action);
+        }
+
         $runtime = $this->detailService->resolveRuntimeCapabilityForSupplier($context['supplier']);
         $requestPayload = array_merge($payload, ['func' => $func]);
         $response = is_callable([$runtime, 'submitCustomModuleAction'])
@@ -488,6 +489,99 @@ class ServiceSecurityGroupService
         $this->detailService->assertSuccess($response, $action);
 
         return ['context' => $context, 'response' => $response];
+    }
+
+    /**
+     * 原生安全组动作：按 $func 映射到驱动方法（签名见各驱动契约）。
+     *
+     * 驱动没有实现该方法时抛与会话一致的老文案：对管理员和站长来说，
+     * 「这个上游做不了这个动作」的表达方式不该因为换了驱动类型而变化。
+     *
+     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>  $payload
+     * @return array{context: array<string, mixed>, response: array<string, mixed>}
+     */
+    private function nativeSecurityGroupAction(array $context, string $func, array $payload, string $action): array
+    {
+        // 上下文里没有 supplier 说明它不是本服务解析出来的原生上下文（或已被裁剪），
+        // 无从调用驱动；按能力缺口处理，保持与会话一致的文案而不是抛类型错误。
+        $supplier = $context['supplier'] ?? null;
+        throw_if(
+            ! $supplier instanceof Supplier,
+            new BusinessException('当前上游仅支持安全组列表和应用操作', 42200)
+        );
+
+        $runtime = $this->detailService->resolveRuntimeCapabilityForSupplier($supplier);
+        $hostId = (int) ($context['host_id'] ?? 0);
+        $jwt = isset($context['jwt']) && is_string($context['jwt']) ? $context['jwt'] : null;
+
+        [$method, $arguments] = $this->resolveNativeSecurityGroupCall($func, $payload, $hostId);
+
+        throw_if(
+            $method === '',
+            new BusinessException('当前上游仅支持安全组列表和应用操作', 42200)
+        );
+
+        throw_if(
+            ! is_callable([$runtime, $method]),
+            new BusinessException('当前上游仅支持安全组列表和应用操作', 42200)
+        );
+
+        // 驱动签名统一为 (Supplier, ...业务实参, ?jwt)：一次性展开，避免位置参数与解包混用
+        $response = $runtime->{$method}(...array_merge([$supplier], $arguments, [$jwt]));
+        $this->detailService->assertSuccess($response, $action);
+
+        return ['context' => $context, 'response' => $response];
+    }
+
+    /**
+     * $func → 驱动方法 + 实参（不含 supplier 与 jwt，由调用方统一补）。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{0: string, 1: array<int, mixed>}
+     */
+    private function resolveNativeSecurityGroupCall(string $func, array $payload, int $hostId): array
+    {
+        $groupId = (int) ($payload['id'] ?? 0);
+
+        return match ($func) {
+            'showSecurityRules' => ['getSecurityGroupRules', [$groupId, $hostId]],
+            'createSecurityGroup' => ['createSecurityGroup', [[
+                'name' => trim((string) ($payload['name'] ?? '')),
+                'description' => trim((string) ($payload['description'] ?? '')),
+                'host_id' => $hostId,
+            ]]],
+            'delSecurityGroup' => ['deleteSecurityGroup', [$groupId, $hostId]],
+            // 规则表单的 id 是安全组 ID，不属于驱动参数，故剔除
+            'createSecurityRule' => ['createSecurityRule', [
+                $groupId,
+                array_diff_key($payload, ['id' => true]),
+                $hostId,
+            ]],
+            'delSecurityRule' => ['deleteSecurityRule', [
+                (int) ($payload['group'] ?? 0),
+                $groupId,
+                $hostId,
+            ]],
+            'linkSecurityGroup' => ['applySecurityGroup', [$groupId, $hostId]],
+            default => ['', []],
+        };
+    }
+
+    /**
+     * 原生驱动能力表：只反映驱动是否实现了该方法，不代表上游一定允许。
+     *
+     * @return array{can_view: bool, can_add_rule: bool, can_apply: bool, can_delete: bool, can_create: bool}
+     */
+    private function resolveNativeSecurityGroupCapabilities(object $runtime): array
+    {
+        return [
+            'can_view' => is_callable([$runtime, 'getSecurityGroupRules']),
+            'can_add_rule' => is_callable([$runtime, 'createSecurityRule']),
+            'can_apply' => is_callable([$runtime, 'applySecurityGroup']),
+            'can_delete' => is_callable([$runtime, 'deleteSecurityGroup']),
+            'can_create' => is_callable([$runtime, 'createSecurityGroup']),
+        ];
     }
 
     private function assertSecurityRulePayload(array $context, string $direction, string $protocol, string $port, string $ip): void
@@ -591,14 +685,6 @@ class ServiceSecurityGroupService
         return ($context['mode'] ?? '') === 'native';
     }
 
-    private function throwIfNativeSecurityGroupContext(array $context): void
-    {
-        throw_if(
-            $this->isNativeSecurityGroupContext($context),
-            new BusinessException('当前上游仅支持安全组列表和应用操作', 42200)
-        );
-    }
-
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -617,25 +703,28 @@ class ServiceSecurityGroupService
     }
 
     /**
+     * @param  array<string, bool>  $capabilities  驱动实际实现的方法，见 resolveNativeSecurityGroupCapabilities()
      * @return array<string, mixed>|null
      */
-    private function normalizeNativeSecurityGroupItem(array $item, int $hostId): ?array
+    private function normalizeNativeSecurityGroupItem(array $item, int $hostId, array $capabilities): ?array
     {
         $id = (int) (($item['id'] ?? $item['security_group_id'] ?? 0) ?: 0);
         if ($id <= 0) {
             return null;
         }
 
+        $canDelete = (bool) ($capabilities['can_delete'] ?? false);
+
         return [
             'id' => $id,
             'name' => trim((string) ($item['name'] ?? $item['security_group_name'] ?? $item['title'] ?? '')),
             'description' => trim((string) ($item['description'] ?? $item['remark'] ?? $item['notes'] ?? '')),
-            'can_view' => false,
-            'can_add_rule' => false,
-            'can_apply' => true,
-            'can_delete' => false,
+            'can_view' => (bool) ($capabilities['can_view'] ?? false),
+            'can_add_rule' => (bool) ($capabilities['can_add_rule'] ?? false),
+            'can_apply' => (bool) ($capabilities['can_apply'] ?? false),
+            'can_delete' => $canDelete,
             'apply_disabled' => false,
-            'delete_disabled' => true,
+            'delete_disabled' => ! $canDelete,
             'is_applied' => $this->isNativeSecurityGroupAppliedToHost($item, $hostId),
             'raw' => $item,
         ];
@@ -731,10 +820,10 @@ class ServiceSecurityGroupService
      * 删除规则前的归属断言：ruleId 必须属于目标 groupId。
      * 通过上游 showSecurityRules 拉取该组规则并确认 ruleId 存在；
      * 不在列表内时按 404 拒绝，避免用自有组 ID 借上游删掉同主机他人组的规则。
+     * 原生与 custom 两种上下文都走分派器，规则来源口径一致。
      */
     private function assertSecurityRuleBelongsToGroup(Service $service, array $context, int $groupId, int $ruleId): void
     {
-        // callSecurityGroupAction 自带 native 上下文守卫（仅支持列表与应用操作），此处只处理 custom 模式。
         $result = $this->callSecurityGroupAction($service, 'showSecurityRules', ['id' => $groupId], '读取安全组规则', $context);
         $payload = $this->detailService->extractPayload($result['response']);
         $raw = $payload['list'] ?? [];

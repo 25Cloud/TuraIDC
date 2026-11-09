@@ -2,7 +2,9 @@
 
 本项目采用 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/) 格式，并遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
-## [未发布]
+## [v0.4.6] - 2026-11-09
+
+v0.4.5 之后的累计发布（16 个提交）。主题是**魔方云（DCIMS）直连上游插件落地**、**流量包双通道与成本价加价**、**魔方财务 3.8.0 兼容层收口**，以及**插件装载顺序不再跟随文件系统**。
 
 ### 新增
 
@@ -10,16 +12,28 @@
 - **商品配置双通道自动回退**：新增 `ZjmfProductConfigGateway`，优先 `api/product/prodetail`（3.7.6 → 3.8.0 都在），失败自动换 `cart/get_product_config`（老站），并把走通的那条按供应商记 6 小时；`prodetail` 返回体归一成 `cart/get_product_config` 的老结构，所有既有解析代码零改动
 - **批量商品配置合并请求**：`prodetail` 支持一次带多个 `pids`，价格/配置项/库存同步从「每商品一次请求」变成「每批一次请求」
 - **同步推送签名 v2**：新增 `ZjmfSyncSignature`（3.8.0 的 HMAC-SHA256 规范化载荷算法）；本系统作为上游向下游推送 `api/host/sync` 时先发 v2，下游回「签名验证失败」再自动回退 legacy；作为下游接收 `api/host/sync`、`api/ticket_reply/sync` 时两代签名都收，v2 额外校验时间戳（±300 秒）与 32 位 nonce 并做重放拦截
+- **流量包加价**：目录项新增 `cost_price`（上游成本价）、`markup_type`（不加价 / 按比例 / 固定）、`markup_value`，售价一律由「成本 + 加价」算出（`SettingService::applyTrafficPackageMarkup`，与后台前端同一套算法）；一键对接从上游拉档位时按当前分组规则直接生成售价，老数据缺省不加价、原价不动
+- **上游侧流量包通道**：本系统作为上游时，魔方财务可以在站内买流量包——`/host/header` 下发 `data.dcim.flowpacket` 档位（`id` 复用流量值 GB），`/dcim/buy_flow_packet` 按档位建账单并按 `idempotency_key` 幂等，付款仍走 `/apply_credit`，支付后复用站内同一套链路向供应商真实采购；3.8.0 额外支持 `GET /dcim/flow_packet_order_status` 的 `Unpaid/Pending/Paid` 三态
+- **一键对接拉流量包改异步**：`POST /products/traffic-package-pulls` 立即返回任务号，`GET /products/traffic-package-pulls/{task}` 轮询进度（阶段文案 + 百分比），管理端改成进度条轮询；`QUEUE_CONNECTION=sync` 时仍就地执行并保留原来的 `source/traffic/packages` 平铺结构
+- **存量流量包目录回填命令**：`php artisan traffic:backfill-catalog` 按商品分类跑一遍与一键对接相同的拉取逻辑写入目录（成本价 + 加价，上游没报价的档位写 `enabled=0`），`--repair-config` 只补空串与「两种模式都关」的坏配置，不动总开关
+- **控制台「配置项升级」入口**：服务控制台头部「更多 → 规格升级」原来点了没反应，现在打开对话框展示当前配置、可选目标与补差价，确认后生成升级账单并跳转支付；上游没有可用配置时给空态提示
+- **魔方云（DCIMS）直连上游插件**：新增 `mofang_cloud_api` 供应商类型，按供应商配置的「接口代际」分别对接魔方云老版 `/v1`（账号密码换 `access-token`、表单编码、401 重登重放、响应体无信封）与新版 `/api/v1`（AppID/AppSecret 双 HMAC 签名、JSON 报文、`status|code` 信封），两代的端点路径与鉴权方式互不混用；选「自动分辨」时先探新版再试老版，结果按供应商缓存 1 小时。支持下单开通（老版 `POST /v1/clouds`，新版 `POST /server/auto_assign` 后补装系统，开通前先按「客户名前缀 + 本地用户 ID」确保上游客户存在）、流量包购买、实例详情、开机/关机/重启、VNC、改密、重装与镜像列表、救援、任务进度、流量用量与曲线、暂停/恢复/删除、镜像与区域目录、安全组与 NAT 转发；批量状态同步复用同一套归一化结构。新版接口没有的能力（强制断电/强制重启、安全组、NAT、区域、监控统计）显式报可读错误，不发注定 404 的请求
+- **魔方云插件补齐快照/ISO/安全组写/改配**：老版 `/v1` 侧新增快照与备份（列表/创建/删除/回滚）、ISO 挂载与卸载、启动项（硬盘/光驱优先）、安全组全套写操作（建组/删组/建规则/删规则/应用）与改配（CPU、内存、进/出带宽、流量上限、附加 IPv4/IPv6、数据盘扩容或新建、快照与备份配额）；安全组每个写操作都先校验「组属于该实例的归属客户」、删规则再校验「规则属于该组」，因为驱动用单个面板账号管着上游所有客户。新版 `/api/v1` 侧只放开带宽、流量上限与附加 IP，CPU/内存/磁盘/快照配额在该代没有端点，逐项给中文原因且一个请求都不发；多端点部分失败时消息里带「已生效」前缀。平台侧：控制台新增「快照/备份」与「ISO」两个面板（三态与安全组一致，能力标志位 `snapshot_supported`/`iso_supported` 由驱动具名方法决定，与自定义 HTML 模块无关），安全组与 NAT 的写操作改为能力驱动（驱动有原生方法就走原生，zjmf 适配器行为不变），改配只在管理端开放（`POST /admin/v2/users/{user}/services/{service}/host-config`），因为本平台没有按配置项补差价的上游改配订单模型
 
 ### 优化
 
+- **实例概览信息补齐**：流量改成「已用 / 总量 + 百分比进度条」，操作系统显示真实系统名（取 `specs[].key=os` 的 value，不再显示上游 os ID），并把它旁边的「重装系统」「重置密码」入口提到操作系统同一行；连接端口在上游没下发时按机器类产品兜底 22
+- **本地增量验证脚本**：新增 `pnpm run verify:changed`——按改动文件跑语法检查、只分析改动文件的 phpstan、命中相关测试、改动到的前端才构建、文档改动才校验；同一批改动从「全量十几分钟」降到约 105 秒
+- **本地验证入口口径修正**：`php artisan test` 与 `phpstan` 会按 `.env` 连开发库（本机那个连接 40 秒级），同一个 7 条测试的文件 artisan 48.1 秒 / `vendor/bin/phpunit` 5.2 秒，phpstan 单文件 90.3 秒 / 带 `APP_ENV=testing` 6.3 秒；文档已改成正确口径
 - **账单余额支付走全版本通道**：`/apply_credit`（3.7.6 → 3.8.0 都在）优先、`/v1/invoices/{id}/fund`（仅老版本）兜底；上游回「账单已处理」归一成 `already_paid` 成功，幂等重试不再被判失败
 - **`/v1/user` 降级**：3.8.0+ 没有 `/v1/user` 时改用 `/cart/credit` 拼等价结构，供应商卡片与余额同步照常
 - **`/v1` 明确的报错**：升级配置/升级套餐这类只有 `/v1` 才有入口的操作，在关闭 `/v1` 或实测 404 后直接给出「请到供应商后台手工操作，或把接口版本设为 3.7.6」的提示，不再抛「供应商接口返回异常页面（HTTP 404）」
 
 ### 修复
 
+- **插件装载顺序跟着文件系统走，Linux 上随机致命错误**：`PluginFileLoader` 原来按文件系统返回顺序 `require` 每个 PHP 文件——NTFS 大体按文件名，ext4 走目录哈希，于是魔方云插件把 `CloudApiClient` / `CloudOperations` 接口与实现类放进同一个 `lib/` 之后，本地全绿、CI 上却是 `Interface "..." not found`（PHP 在**声明期**就解析 `implements`），从插件落地那三个提交起一路挡红主线。现在先按路径排序、把声明了接口 / trait / enum 的文件整批提前装载，再装载其余文件；`backend/tests/Unit/PluginFileLoaderDeclarationOrderTest.php` 用「实现类文件名排在接口前面」的临时目录把这条钉死，`docs/develop/plugins/` 的加载顺序说明同步改写
 - **供应商升级到 3.8.0 后整批商品开不出来**：3.8.0 删除了 openapi 的整套 `/v1/*`，并把 `cart/get_product_config` 挂上「仅下游 API 账号可用」的 `UpstreamApiCheck`（部分商家直接删掉该路由），导致商品配置读不到、库存同步静默失败、付完款的订单开不出来
+- **降级会建出负金额账单**：配置升级的差价直接取上游 `amount_total`，负数会被支付链路算成「无需支付」并直接置为已付，等于白送一次降配；现在 `amount_total < 0` 直接回业务错误并提示走人工
 
 ## [v0.4.5] - 2026-11-07
 
