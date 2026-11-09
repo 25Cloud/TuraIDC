@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: a50fced116f788251cf3d2a056f1693ce319961be556793089b682c38e4d04d8
+sourceHash: 1376bec7169e71b89f5a488206386bcdd1953d832d192de1b1a42e01fae1725a
 translatedAt: 2026-10-26
 ---
 
@@ -82,7 +82,7 @@ Conventions:
 - **Do not commit** `vendor/` or runtime artifacts; when shipping bundled dependencies (such as an SDK) with the package, provide `composer.json` or a lock file.
 - **Version numbers** follow semantic versioning `MAJOR.MINOR.PATCH`, and the manifest `info.version` stays consistent with the Git tag.
 - **License**: plugins are licensed independently. Built-in plugins distributed with the main repository follow the main repository license; standalone repositories may choose their own license, but an implementation derived from main-repository code must still fulfil the main repository's license obligations (see Section 7).
-- **Go PSR-4 once classes pile up**: core's `PluginFileLoader` `require`s files in directory order, so with dozens of classes and interfaces `extends`/`implements`-ed in many places, a child loaded before its parent fails outright. Put the classes in `src/` and add a `logic/autoload.php` that registers `spl_autoload_register` for your namespace only (full example in the [development guide](index.md) Section 2; `ai_assistant` is a working reference).
+- **Go PSR-4 once classes pile up**: core's `PluginFileLoader` loads files that declare an interface / trait / enum first and only then the rest, so "implementation before its interface" no longer fails outright. What remains exposed is **classes extending classes** (parent in another file): with dozens of classes and a base class `extends`-ed in many places, put the classes in `src/` and add a `logic/autoload.php` that registers `spl_autoload_register` for your namespace only (full example in the [development guide](index.md) Section 2; `ai_assistant` is a working reference).
 - **Periodic capability only through the manifest**: `info.extra.scheduled_tasks` / `schedule_hooks`, never a Laravel `Schedule` inside the plugin. Equally, **do not expect the main repository's `routes/console.php` to schedule your plugin command** — that `Schedule` entry outlives plugin removal and leaves one "command does not exist" failure per day.
 
 ## 4. Plugin Package Format

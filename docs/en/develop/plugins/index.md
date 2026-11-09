@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/index.md
-sourceHash: 3a4c48ec7b22441dbe3294f1a4545f894609bf5e814ff51bd6e7caeb9f7e6f7b
+sourceHash: 220f52fc5be7f5de54b86c4f34e7234ccbf47b8fa0e175cc320787446a7ac339
 translatedAt: 2026-10-26
 ---
 
@@ -43,16 +43,16 @@ The current project does not use the ZJMF Finance `.tpl` template mechanism; nei
 
 The loading order is controlled by `PluginFileLoader`:
 
-1. Recursively load PHP files under `lib/`, `logic/`, and `controller/`.
+1. Recursively load PHP files under `lib/`, `logic/`, and `controller/`: paths are sorted first, every file declaring an interface / trait / enum is loaded as a batch, and the remaining files follow.
 2. If `vendor/autoload.php` exists, load the plugin dependencies.
 3. Load PHP files in the plugin root directory, skipping `config.php`.
 4. Recursively load `src/`, the preferred location for large plugins organised by PSR-4 (`AiAssistant` and `zjmf_bridge` both use it).
 
-### Large plugins must register PSR-4 themselves
+### Register PSR-4 yourself when classes extend classes
 
-The first three steps `require` every file in directory order. That is fine for a plugin with a handful of classes; once there are dozens of classes and some interfaces are `extends`/`implements`-ed in many places (`AiTool`, `AiProviderInterface`), a `require` order that loads a child before its parent or interface makes PHP fail at **declaration time** (`Interface "..." not found`), and the error location looks unrelated to the real cause (the ordering).
+Step 1 above used to `require` every file in the order the filesystem returned them. That order depends on the filesystem: NTFS is roughly by file name, ext4 uses directory hashing, so the same plugin code stays quiet on a local dev box and fails at random with `Interface "..." not found` on Linux (CI included), with an error location that looks unrelated to the real cause (the ordering). Core now always loads the files that declare an interface / trait / enum first, so `implements`, `use Trait` and `interface A extends B` no longer depend on order (`backend/tests/Unit/PluginFileLoaderDeclarationOrderTest.php` guards this).
 
-`AiAssistant` solves this with a `logic/autoload.php` that registers `spl_autoload_register` for its own namespace only, so parents and interfaces load on demand:
+What still depends on order is **classes extending classes**: with `class Foo extends Base` in separate files, their relative order is still only the path sort. Once a plugin has dozens of classes and a base class `extends`-ed in many places (`AiTool` and the like), do what `AiAssistant` does: add a `logic/autoload.php` that registers `spl_autoload_register` for its own namespace only, so parents and interfaces load on demand:
 
 ```php
 spl_autoload_register(static function (string $class): void {
@@ -72,7 +72,7 @@ spl_autoload_register(static function (string $class): void {
 });
 ```
 
-It registers only its own prefix, takes over no other namespace, and loads no business class on its own — it simply stops `require` ordering from being a correctness precondition. `logic/` sorts before `src/`, so this file always takes effect before any business class.
+It registers only its own prefix, takes over no other namespace, and loads no business class on its own — it simply stops `require` ordering from being a correctness precondition. `logic/` is loaded as a whole before `src/`, so this file always takes effect before any business class in `src/`.
 
 ## 3. config.php Specification
 

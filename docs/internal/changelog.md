@@ -29,6 +29,7 @@
 
 ### 修复
 
+- **插件装载顺序跟着文件系统走，Linux 上随机致命错误**：`PluginFileLoader` 原来按文件系统返回顺序 `require` 每个 PHP 文件——NTFS 大体按文件名，ext4 走目录哈希，于是魔方云插件把 `CloudApiClient` / `CloudOperations` 接口与实现类放进同一个 `lib/` 之后，本地全绿、CI 上却是 `Interface "..." not found`（PHP 在**声明期**就解析 `implements`），从插件落地那三个提交起一路挡红主线。现在先按路径排序、把声明了接口 / trait / enum 的文件整批提前装载，再装载其余文件；`backend/tests/Unit/PluginFileLoaderDeclarationOrderTest.php` 用「实现类文件名排在接口前面」的临时目录把这条钉死，`docs/develop/plugins/` 的加载顺序说明同步改写
 - **供应商升级到 3.8.0 后整批商品开不出来**：3.8.0 删除了 openapi 的整套 `/v1/*`，并把 `cart/get_product_config` 挂上「仅下游 API 账号可用」的 `UpstreamApiCheck`（部分商家直接删掉该路由），导致商品配置读不到、库存同步静默失败、付完款的订单开不出来
 - **降级会建出负金额账单**：配置升级的差价直接取上游 `amount_total`，负数会被支付链路算成「无需支付」并直接置为已付，等于白送一次降配；现在 `amount_total < 0` 直接回业务错误并提示走人工
 
