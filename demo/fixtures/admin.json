@@ -387,7 +387,7 @@
           "product_type": "cloud_server",
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "effective_product_group_id": 4101,
           "effective_product_group_level": 1,
           "sort_order": 0,
@@ -403,7 +403,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4111,
               "effective_product_group_level": 2,
@@ -421,7 +421,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4112,
               "effective_product_group_level": 2,
@@ -475,7 +475,7 @@
           "product_type": "traffic_package",
           "product_type_label": "流量包",
           "service_type_code": "traffic_package",
-          "first_product_group_code": "value-added",
+          "first_product_group_code": "traffic_package",
           "effective_product_group_id": 4103,
           "effective_product_group_level": 1,
           "sort_order": 2,
@@ -493,7 +493,7 @@
           "product_type": "cloud_server",
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "effective_product_group_id": 4101,
           "effective_product_group_level": 1,
           "sort_order": 0,
@@ -509,7 +509,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4111,
               "effective_product_group_level": 2,
@@ -527,7 +527,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4112,
               "effective_product_group_level": 2,
@@ -581,7 +581,7 @@
           "product_type": "traffic_package",
           "product_type_label": "流量包",
           "service_type_code": "traffic_package",
-          "first_product_group_code": "value-added",
+          "first_product_group_code": "traffic_package",
           "effective_product_group_id": 4103,
           "effective_product_group_level": 1,
           "sort_order": 2,
@@ -602,7 +602,7 @@
           "product_type": "cloud_server",
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "effective_product_group_id": 4101,
           "effective_product_group_level": 1,
           "sort_order": 0,
@@ -618,7 +618,7 @@
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
           "first_product_group_id": 4101,
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "first_product_group_name": "云服务器",
           "effective_product_group_id": 4111,
           "effective_product_group_level": 2,
@@ -635,7 +635,7 @@
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
           "first_product_group_id": 4101,
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "first_product_group_name": "云服务器",
           "effective_product_group_id": 4112,
           "effective_product_group_level": 2,
@@ -683,7 +683,7 @@
           "product_type": "traffic_package",
           "product_type_label": "流量包",
           "service_type_code": "traffic_package",
-          "first_product_group_code": "value-added",
+          "first_product_group_code": "traffic_package",
           "effective_product_group_id": 4103,
           "effective_product_group_level": 1,
           "sort_order": 2,
@@ -766,19 +766,70 @@
           "id": 1,
           "name": "AMD EPYC 7002",
           "sort_order": 0,
-          "groups": [
-            "云服务器"
-          ],
-          "status": 1
+          "model_count": 2,
+          "status": 1,
+          "models": [
+            {
+              "id": 11,
+              "name": "EPYC 7302P",
+              "core_count": 16,
+              "thread_count": 32,
+              "base_frequency": "3.00",
+              "turbo_frequency": "3.30",
+              "bindings": [
+                {
+                  "product_group_id": 4111,
+                  "product_group_name": "香港"
+                }
+              ],
+              "binding_ids": [
+                4111
+              ]
+            },
+            {
+              "id": 12,
+              "name": "EPYC 7502P",
+              "core_count": 32,
+              "thread_count": 64,
+              "base_frequency": "2.50",
+              "turbo_frequency": "3.35",
+              "bindings": [
+                {
+                  "product_group_id": 4112,
+                  "product_group_name": "新加坡"
+                }
+              ],
+              "binding_ids": [
+                4112
+              ]
+            }
+          ]
         },
         {
           "id": 2,
           "name": "Intel Xeon E5-2650",
           "sort_order": 1,
-          "groups": [
-            "独立服务器"
-          ],
-          "status": 1
+          "model_count": 1,
+          "status": 1,
+          "models": [
+            {
+              "id": 21,
+              "name": "E5-2650 v4",
+              "core_count": 12,
+              "thread_count": 24,
+              "base_frequency": "2.20",
+              "turbo_frequency": "2.90",
+              "bindings": [
+                {
+                  "product_group_id": 4121,
+                  "product_group_name": "日本"
+                }
+              ],
+              "binding_ids": [
+                4121
+              ]
+            }
+          ]
         }
       ]
     },
@@ -2572,7 +2623,7 @@
           "product_type": "cloud_server",
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "effective_product_group_id": 4101,
           "effective_product_group_level": 1,
           "sort_order": 0,
@@ -2588,7 +2639,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4111,
               "effective_product_group_level": 2,
@@ -2606,7 +2657,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4112,
               "effective_product_group_level": 2,
@@ -2660,7 +2711,7 @@
           "product_type": "traffic_package",
           "product_type_label": "流量包",
           "service_type_code": "traffic_package",
-          "first_product_group_code": "value-added",
+          "first_product_group_code": "traffic_package",
           "effective_product_group_id": 4103,
           "effective_product_group_level": 1,
           "sort_order": 2,
@@ -2678,7 +2729,7 @@
           "product_type": "cloud_server",
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "effective_product_group_id": 4101,
           "effective_product_group_level": 1,
           "sort_order": 0,
@@ -2694,7 +2745,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4111,
               "effective_product_group_level": 2,
@@ -2712,7 +2763,7 @@
               "product_type_label": "云服务器",
               "service_type_code": "cloud_server",
               "first_product_group_id": 4101,
-              "first_product_group_code": "cloud",
+              "first_product_group_code": "cloud_server",
               "first_product_group_name": "云服务器",
               "effective_product_group_id": 4112,
               "effective_product_group_level": 2,
@@ -2766,7 +2817,7 @@
           "product_type": "traffic_package",
           "product_type_label": "流量包",
           "service_type_code": "traffic_package",
-          "first_product_group_code": "value-added",
+          "first_product_group_code": "traffic_package",
           "effective_product_group_id": 4103,
           "effective_product_group_level": 1,
           "sort_order": 2,
@@ -2786,7 +2837,7 @@
           "product_type": "cloud_server",
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "effective_product_group_id": 4101,
           "effective_product_group_level": 1,
           "sort_order": 0,
@@ -2802,7 +2853,7 @@
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
           "first_product_group_id": 4101,
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "first_product_group_name": "云服务器",
           "effective_product_group_id": 4111,
           "effective_product_group_level": 2,
@@ -2819,7 +2870,7 @@
           "product_type_label": "云服务器",
           "service_type_code": "cloud_server",
           "first_product_group_id": 4101,
-          "first_product_group_code": "cloud",
+          "first_product_group_code": "cloud_server",
           "first_product_group_name": "云服务器",
           "effective_product_group_id": 4112,
           "effective_product_group_level": 2,
@@ -2867,7 +2918,7 @@
           "product_type": "traffic_package",
           "product_type_label": "流量包",
           "service_type_code": "traffic_package",
-          "first_product_group_code": "value-added",
+          "first_product_group_code": "traffic_package",
           "effective_product_group_id": 4103,
           "effective_product_group_level": 1,
           "sort_order": 2,
@@ -3490,6 +3541,41 @@
         }
       ]
     },
+    "GET /v2/admin/schedule-queue-jobs": {
+      "list": [
+        {
+          "id": 1,
+          "kind": "pending",
+          "queue": "default",
+          "display_name": "SendServiceSuspendedNotification",
+          "attempts": 0,
+          "max_tries": 3,
+          "state": "pending",
+          "uuid": "demo-job-uuid-0001",
+          "created_at": "2026-11-09 09:45:00",
+          "available_at": "2026-11-09 09:45:00"
+        },
+        {
+          "id": 2,
+          "kind": "failed",
+          "queue": "default",
+          "display_name": "SyncUpstreamHostStatus",
+          "attempts": 3,
+          "max_tries": 3,
+          "state": "failed",
+          "uuid": "demo-job-uuid-0002",
+          "created_at": "2026-11-08 22:10:00",
+          "available_at": "2026-11-08 22:10:00"
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 20,
+      "connection": {
+        "runtime": "database",
+        "inspected": "database"
+      }
+    },
     "GET /v2/admin/staff": {
       "list": [
         {
@@ -3651,40 +3737,99 @@
       }
     ],
     "GET /v2/admin/database/status": {
-      "driver": "mysql",
-      "version": "8.0.36",
-      "connection": "mysql",
       "database": "turaidc_demo",
-      "total_size": "18.4 MB",
-      "tables": [
+      "total_count": 3,
+      "total_rows": 2218,
+      "total_size_mb": 18.4,
+      "list": [
         {
           "name": "users",
           "rows": 512,
-          "data_size": "2.1 MB",
-          "index_size": "0.4 MB"
+          "size_mb": 2.5,
+          "update_time": "2026-11-09 09:40:00"
         },
         {
           "name": "services",
           "rows": 286,
-          "data_size": "1.8 MB",
-          "index_size": "0.3 MB"
+          "size_mb": 2.1,
+          "update_time": "2026-11-09 09:40:00"
         },
         {
           "name": "invoices",
           "rows": 1420,
-          "data_size": "3.6 MB",
-          "index_size": "0.9 MB"
+          "size_mb": 4.5,
+          "update_time": "2026-11-09 01:00:02"
         }
-      ]
+      ],
+      "optimization": {
+        "candidate_count": 2,
+        "estimated_reclaimable_mb": 6.8,
+        "cooldown_remaining_seconds": 0,
+        "last_optimized_at": "2026-11-01 03:00:00",
+        "candidates": [
+          {
+            "name": "invoices",
+            "reclaimable_mb": 4.2,
+            "fragmentation_ratio": 0.31
+          },
+          {
+            "name": "operation_logs",
+            "reclaimable_mb": 2.6,
+            "fragmentation_ratio": 0.27
+          }
+        ]
+      }
     },
     "GET /v2/admin/redis/status": {
-      "connected": true,
-      "driver": "redis",
-      "version": "7.2.4",
-      "used_memory": "12.5 MB",
-      "keys": 128,
-      "hit_rate": "98.2%",
-      "uptime": "6 天 04:12:31"
+      "available": true,
+      "client": "phpredis",
+      "prefix": "turaidc_demo:",
+      "cache_store": "redis",
+      "connections": [
+        {
+          "name": "cache",
+          "database": 0,
+          "connected": true,
+          "message": "PONG"
+        },
+        {
+          "name": "session",
+          "database": 1,
+          "connected": true,
+          "message": "PONG"
+        }
+      ],
+      "server": {
+        "redis_version": "7.2.4",
+        "os": "Linux 6.8 x86_64",
+        "uptime_in_days": "6",
+        "tcp_port": "6379"
+      },
+      "keyspace": [
+        {
+          "database": "db0",
+          "keys": 96,
+          "expires": 48,
+          "avg_ttl": 3600
+        },
+        {
+          "database": "db1",
+          "keys": 32,
+          "expires": 32,
+          "avg_ttl": 7200
+        }
+      ],
+      "memory": {
+        "used_memory_human": "12.5M",
+        "used_memory_peak_human": "18.2M",
+        "maxmemory_human": "256M"
+      },
+      "stats": {
+        "keyspace_hits": 18422,
+        "keyspace_misses": 337,
+        "connected_clients": "4",
+        "total_commands_processed": "52180"
+      }
     },
     "GET /v2/admin/open-api/config": {
       "enabled": false,

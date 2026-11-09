@@ -23,7 +23,10 @@
     "commercial": "Commercial license",
     "viewDocs": "Docs",
     "demo": "Live demo",
-    "demoSite": "Interactive demo"
+    "demoSite": "Interactive demo",
+    "demoUser": "Storefront",
+    "demoConsole": "Console",
+    "demoAdmin": "Admin"
   },
   "theme": {
     "label": "Theme",

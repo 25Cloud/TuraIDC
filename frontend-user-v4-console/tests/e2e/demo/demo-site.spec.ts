@@ -44,6 +44,7 @@ test('homepage renders system site with product data', async ({ page }) => {
   );
 
   expect(state.misses).toEqual([]);
+  expect(await page.locator('#turaidc-demo-nav').count()).toBe(1);
   expect(state.text).toContain('云服务器');
   expect(state.text).toContain('香港');
   expect(errors).toEqual([]);

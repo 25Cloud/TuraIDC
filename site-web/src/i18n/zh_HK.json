@@ -23,7 +23,10 @@
     "commercial": "商業授權",
     "viewDocs": "文檔",
     "demo": "在線演示",
-    "demoSite": "介面示範"
+    "demoSite": "介面示範",
+    "demoUser": "使用者端",
+    "demoConsole": "控制台",
+    "demoAdmin": "管理端"
   },
   "theme": {
     "label": "主題",

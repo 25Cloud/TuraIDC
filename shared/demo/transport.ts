@@ -1,6 +1,6 @@
 import type { AxiosAdapter, AxiosInstance, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-import { installDemoBadge } from './badge';
+import { installDemoNav } from './nav';
 
 /** 演示站的三端标识，只用于诊断信息与角标文案 */
 export type DemoApp = 'console' | 'admin' | 'user';
@@ -28,9 +28,7 @@ export interface DemoTransportOptions {
   app: DemoApp;
   /** 懒加载示例数据；由各端传入，避免 shared 反向依赖具体前端目录 */
   loadFixtures: () => Promise<DemoFixtureFile | { default: DemoFixtureFile }>;
-  /** 角标文案，默认「演示环境 · 数据为示例，操作不会生效」 */
-  badgeText?: string;
-  /** 演示环境是否不挂角标（自检用） */
+  /** 演示环境是否不挂导览浮层（自检用） */
   silent?: boolean;
 }
 
@@ -131,7 +129,7 @@ export function installDemoTransport(instance: AxiosInstance, options: DemoTrans
   installFetchBridge(options.app, () => routers, diagnostics, ensureFixtures);
 
   if (!options.silent) {
-    installDemoBadge(options.badgeText ?? '演示环境 · 数据为示例，操作不会生效');
+    installDemoNav(options.app);
   }
 }
 

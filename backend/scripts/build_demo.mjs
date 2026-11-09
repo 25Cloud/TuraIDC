@@ -215,6 +215,13 @@ async function buildLanding() {
   await mkdir(target, { recursive: true });
   const landing = await readFile(path.join(repositoryRoot, 'demo', 'landing', 'index.html'), 'utf8');
   await writeFile(path.join(target, 'index.html'), landing, 'utf8');
+
+  // 演示站不该被搜索引擎收录：根目录放一份全站 Disallow
+  const robots = path.join(repositoryRoot, 'demo', 'landing', 'robots.txt');
+  if (existsSync(robots)) {
+    await writeFile(path.join(distRoot, 'robots.txt'), await readFile(robots, 'utf8'), 'utf8');
+  }
+
   console.log('\n演示说明页 → demo/dist/start/index.html');
 }
 
