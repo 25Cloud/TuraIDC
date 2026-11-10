@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 13ffba2a4857118da64f5f5e39facdf6a5d57ba240a64a9bde2ed52cd35d0160
+sourceHash: 2186c34dc8c243063bc741e5c0b6e3dcff49055641c8b9b6294dad1334c0ba28
 translatedAt: 2026-10-26
 ---
 
