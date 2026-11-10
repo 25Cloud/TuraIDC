@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 2186c34dc8c243063bc741e5c0b6e3dcff49055641c8b9b6294dad1334c0ba28
+sourceHash: 63ebcaee7d240439f7f5d64802e6dbff289274a6e038db37abfdebdde05ccda1
 generated: zh-hk
 ---
 
@@ -61,7 +61,7 @@ vim .env
 | `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四個公開地址，互不相同、同一協議、無路徑；`https://api.example.com` 形式                                                                                                                                                          |
 | `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官網/控制台跨子域共享登錄態時填父域如 `.example.com`；單域留空                                                                                                                                                                    |
 | `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 鏡像倉庫地址；Compose 當前按 `:${IMAGE_TAG}` 拼接鏡像名。提交 SHA 或版本 tag 只是標籤，本身不保證不可變；生產必須用倉庫策略強制標籤不可變，或每次部署校驗實際鏡像 digest。不要把完整 digest 填進 `IMAGE_TAG`，也不要使用 `latest` |
-| `APP_KEY`                                                          | 是   | 生產部署必須顯式填寫並持久化保存。無需宿主機 PHP 時按下方命令從 app 鏡像生成 `base64:...` 值；有倉庫依賴時也可在 `backend` 目錄執行 `php artisan key:generate --show`。容器重建不會隨機換鑰，缺失時 entrypoint 直接退出           |
+| `APP_KEY`                                                          | 是   | 生產部署必須顯式填寫並持久化保存。僅首次部署的空庫可按下方命令從 app 鏡像生成 `base64:...` 值；已有數據庫或升級舊版本必須繼續使用原密鑰，不得生成新密鑰。容器重建不會隨機換鑰，缺失時 entrypoint 直接退出                         |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默認管理員 `cerbo` 的密碼，至少 12 位強密碼，僅空庫首次生效                                                                                                                                                             |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 環境 `true`，純 HTTP 環境 `false`                                                                                                                                                                                           |
 | `DB_HOST` / `DB_PORT`                                              | 否   | 數據庫來源：留空使用編排內 mysql 容器（默認）；填寫遠程地址則本地 mysql 不拉取不啟動，app 直連遠程庫，端口默認 3306                                                                                                               |
@@ -80,14 +80,26 @@ vim .env
 >
 > 遠程數據庫 / Redis 模式：`DB_HOST` 或 `REDIS_HOST` 填寫遠程地址後，對應本地容器不會被創建，`docker compose pull` 也不拉取其鏡像。要求伺服器 Compose v2.20+（依賴跳過用 `required: false`）；遠程庫需自行建庫、對伺服器 IP 授權；數據庫結構與初始化仍由 app 容器 entrypoint 在啟動時執行。
 
-首次部署的宿主機沒有 PHP 或倉庫尚未安裝 `backend/vendor/` 時，先拉取 app 鏡像，再在 `deploy/docker` 目錄執行下面的命令生成密鑰；把輸出的整行寫入 `.env` 的 `APP_KEY=` 後再啟動 Compose：
+首次部署且使用空庫時，宿主機沒有 PHP 或倉庫尚未安裝 `backend/vendor/`，可在 `deploy/docker` 目錄先準備 app 鏡像，再執行下面的命令生成密鑰；把輸出的整行寫入 `.env` 的 `APP_KEY=` 後再啟動 Compose。使用 CI 鏡像時執行 `docker compose pull app`；沒有鏡像倉庫時改用 `docker compose build app`：
 
 ```bash
+# CI 镜像
 docker compose pull app
+# 无镜像仓库时改用：docker compose build app
 docker compose run --rm --no-deps --entrypoint php app -r 'echo "base64:", base64_encode(random_bytes(32)), PHP_EOL;'
 ```
 
 提交 SHA 或版本 tag 不能單獨證明鏡像內容未被替換。生產環境應在鏡像倉庫啟用標籤不可變策略；若倉庫不支持該策略，每次部署前都要讀取並核對實際鏡像 digest，再執行 `docker compose up -d`。
+
+### 3.1 已有數據庫或舊版本升級
+
+已有數據庫或從舊版本升級時，不能執行上面的密鑰生成命令。重建舊容器前，先從仍在運行的舊 app 容器讀取原密鑰：
+
+```bash
+docker compose exec app sh -lc "grep '^APP_KEY=' /var/www/backend/.env"
+```
+
+將輸出的完整 `APP_KEY=...` 寫入宿主機 `deploy/docker/.env`，再重建或升級容器。舊容器已經銷燬時，應從與數據庫同批次的備份或密鑰記錄恢復；沒有原密鑰時不要生成新值，否則歷史密文將無法解密。
 
 ## 4. CI 自動打包推送
 

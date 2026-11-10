@@ -128,7 +128,7 @@ class ServiceVncTokenSecurityTest extends TestCase
 
     public function test_vnc_token_exchange_matches_console_origin_without_path(): void
     {
-        config(['app.client_console_url' => 'https://console.example.test/console']);
+        config(['app.client_console_url' => 'https://console.example.test:443/console']);
         Cache::store('redis_volatile')->put('vnc_token:path-console-token', [
             'service_id' => 12,
             'username' => 'root',
@@ -138,6 +138,25 @@ class ServiceVncTokenSecurityTest extends TestCase
 
         $this->getJson('/api/v2/client/vnc-tokens/path-console-token', [
             'Origin' => 'https://console.example.test',
+        ])->assertOk();
+    }
+
+    public function test_vnc_token_exchange_keeps_non_default_console_port_distinct(): void
+    {
+        config(['app.client_console_url' => 'https://console.example.test:8443/console']);
+        Cache::store('redis_volatile')->put('vnc_token:non-default-port-token', [
+            'service_id' => 12,
+            'username' => 'root',
+            'target' => '10.0.0.8:5900',
+            'token_scope' => 'public',
+        ], now()->addMinutes(5));
+
+        $this->getJson('/api/v2/client/vnc-tokens/non-default-port-token', [
+            'Origin' => 'https://console.example.test',
+        ])->assertForbidden();
+
+        $this->getJson('/api/v2/client/vnc-tokens/non-default-port-token', [
+            'Origin' => 'https://console.example.test:8443',
         ])->assertOk();
     }
 

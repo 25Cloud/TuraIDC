@@ -54,7 +54,7 @@ vim .env
 | `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四个公开地址，互不相同、同一协议、无路径；`https://api.example.com` 形式                                                                                                                                                          |
 | `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官网/控制台跨子域共享登录态时填父域如 `.example.com`；单域留空                                                                                                                                                                    |
 | `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 镜像仓库地址；Compose 当前按 `:${IMAGE_TAG}` 拼接镜像名。提交 SHA 或版本 tag 只是标签，本身不保证不可变；生产必须用仓库策略强制标签不可变，或每次部署校验实际镜像 digest。不要把完整 digest 填进 `IMAGE_TAG`，也不要使用 `latest` |
-| `APP_KEY`                                                          | 是   | 生产部署必须显式填写并持久化保存。无需宿主机 PHP 时按下方命令从 app 镜像生成 `base64:...` 值；有仓库依赖时也可在 `backend` 目录执行 `php artisan key:generate --show`。容器重建不会随机换钥，缺失时 entrypoint 直接退出           |
+| `APP_KEY`                                                          | 是   | 生产部署必须显式填写并持久化保存。仅首次部署的空库可按下方命令从 app 镜像生成 `base64:...` 值；已有数据库或升级旧版本必须继续使用原密钥，不得生成新密钥。容器重建不会随机换钥，缺失时 entrypoint 直接退出                         |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默认管理员 `cerbo` 的密码，至少 12 位强密码，仅空库首次生效                                                                                                                                                             |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 环境 `true`，纯 HTTP 环境 `false`                                                                                                                                                                                           |
 | `DB_HOST` / `DB_PORT`                                              | 否   | 数据库来源：留空使用编排内 mysql 容器（默认）；填写远程地址则本地 mysql 不拉取不启动，app 直连远程库，端口默认 3306                                                                                                               |
@@ -73,14 +73,26 @@ vim .env
 >
 > 远程数据库 / Redis 模式：`DB_HOST` 或 `REDIS_HOST` 填写远程地址后，对应本地容器不会被创建，`docker compose pull` 也不拉取其镜像。要求服务器 Compose v2.20+（依赖跳过用 `required: false`）；远程库需自行建库、对服务器 IP 授权；数据库结构与初始化仍由 app 容器 entrypoint 在启动时执行。
 
-首次部署的宿主机没有 PHP 或仓库尚未安装 `backend/vendor/` 时，先拉取 app 镜像，再在 `deploy/docker` 目录执行下面的命令生成密钥；把输出的整行写入 `.env` 的 `APP_KEY=` 后再启动 Compose：
+首次部署且使用空库时，宿主机没有 PHP 或仓库尚未安装 `backend/vendor/`，可在 `deploy/docker` 目录先准备 app 镜像，再执行下面的命令生成密钥；把输出的整行写入 `.env` 的 `APP_KEY=` 后再启动 Compose。使用 CI 镜像时执行 `docker compose pull app`；没有镜像仓库时改用 `docker compose build app`：
 
 ```bash
+# CI 镜像
 docker compose pull app
+# 无镜像仓库时改用：docker compose build app
 docker compose run --rm --no-deps --entrypoint php app -r 'echo "base64:", base64_encode(random_bytes(32)), PHP_EOL;'
 ```
 
 提交 SHA 或版本 tag 不能单独证明镜像内容未被替换。生产环境应在镜像仓库启用标签不可变策略；若仓库不支持该策略，每次部署前都要读取并核对实际镜像 digest，再执行 `docker compose up -d`。
+
+### 3.1 已有数据库或旧版本升级
+
+已有数据库或从旧版本升级时，不能执行上面的密钥生成命令。重建旧容器前，先从仍在运行的旧 app 容器读取原密钥：
+
+```bash
+docker compose exec app sh -lc "grep '^APP_KEY=' /var/www/backend/.env"
+```
+
+将输出的完整 `APP_KEY=...` 写入宿主机 `deploy/docker/.env`，再重建或升级容器。旧容器已经销毁时，应从与数据库同批次的备份或密钥记录恢复；没有原密钥时不要生成新值，否则历史密文将无法解密。
 
 ## 4. CI 自动打包推送
 

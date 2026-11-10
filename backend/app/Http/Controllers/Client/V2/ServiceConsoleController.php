@@ -630,36 +630,56 @@ class ServiceConsoleController extends Controller
 
         if ($origin === '') {
             $referer = trim((string) $request->headers->get('Referer', ''));
-            $parts = $referer !== '' ? parse_url($referer) : false;
-            if (! is_array($parts) || trim((string) ($parts['scheme'] ?? '')) === '' || trim((string) ($parts['host'] ?? '')) === '') {
+            $origin = $this->normalizeVncOrigin($referer);
+            if ($origin === null) {
                 throw new BusinessException('VNC 兑换请求缺少可验证来源', 40300, 403);
             }
-
-            $origin = strtolower((string) $parts['scheme']).'://'.strtolower((string) $parts['host']);
-            if (isset($parts['port'])) {
-                $origin .= ':'.(int) $parts['port'];
+        } else {
+            $origin = $this->normalizeVncOrigin($origin);
+            if ($origin === null) {
+                throw new BusinessException('VNC 兑换请求缺少可验证来源', 40300, 403);
             }
         }
 
         foreach ($allowed as $allowedOrigin) {
-            $parts = parse_url((string) $allowedOrigin);
-            if (! is_array($parts)
-                || trim((string) ($parts['scheme'] ?? '')) === ''
-                || trim((string) ($parts['host'] ?? '')) === '') {
+            $allowedOrigin = $this->normalizeVncOrigin((string) $allowedOrigin);
+            if ($allowedOrigin === null) {
                 continue;
             }
 
-            $allowedOrigin = strtolower((string) $parts['scheme']).'://'.strtolower((string) $parts['host']);
-            if (isset($parts['port'])) {
-                $allowedOrigin .= ':'.(int) $parts['port'];
-            }
-
-            if (strcasecmp($allowedOrigin, rtrim($origin, '/')) === 0) {
+            if (strcasecmp($allowedOrigin, $origin) === 0) {
                 return;
             }
         }
 
         throw new BusinessException('VNC 兑换来源未获授权', 40300, 403);
+    }
+
+    private function normalizeVncOrigin(string $value): ?string
+    {
+        $parts = parse_url(trim($value));
+        if (! is_array($parts)) {
+            return null;
+        }
+
+        $scheme = strtolower(trim((string) ($parts['scheme'] ?? '')));
+        $host = strtolower(trim((string) ($parts['host'] ?? '')));
+
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
+            return null;
+        }
+
+        $port = isset($parts['port']) ? (int) $parts['port'] : null;
+        if ($port !== null && $port < 1) {
+            return null;
+        }
+
+        $defaultPort = $scheme === 'https' ? 443 : 80;
+        if ($port === null || $port === $defaultPort) {
+            return $scheme.'://'.$host;
+        }
+
+        return $scheme.'://'.$host.':'.$port;
     }
 
     private function buildOperationContext(Request $request, string $actorType = 'client'): array
