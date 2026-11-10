@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 63ebcaee7d240439f7f5d64802e6dbff289274a6e038db37abfdebdde05ccda1
+sourceHash: 2fca07f7cf72bbbdc6ea0b74c128e4a5d4818476fce2febe8393222fdd30a14d
 generated: zh-tw
 ---
 
@@ -155,7 +155,7 @@ git clone <你的仓库地址> /opt/turaidc && cd /opt/turaidc
 
 ```bash
 cd deploy/docker
-cp .env.example .env
+test -f .env || cp .env.example .env  # 不覆盖已有配置
 vim .env            # 填写四个地址、APP_KEY、密码等
 
 # 拉取 CI 推送的镜像并启动（推荐）

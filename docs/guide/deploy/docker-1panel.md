@@ -148,7 +148,7 @@ git clone <你的仓库地址> /opt/turaidc && cd /opt/turaidc
 
 ```bash
 cd deploy/docker
-cp .env.example .env
+test -f .env || cp .env.example .env  # 不覆盖已有配置
 vim .env            # 填写四个地址、APP_KEY、密码等
 
 # 拉取 CI 推送的镜像并启动（推荐）
