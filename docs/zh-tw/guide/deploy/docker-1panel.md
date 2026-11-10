@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 9273fe563d1672b25c2594bcc7aca6748c3bec4886f0b7c01d97ef6d6fc7c958
+sourceHash: 13ffba2a4857118da64f5f5e39facdf6a5d57ba240a64a9bde2ed52cd35d0160
 generated: zh-tw
 ---
 
@@ -60,8 +60,8 @@ vim .env
 | ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四個公開地址，互不相同、同一協議、無路徑；`https://api.example.com` 形式                                                                                                       |
 | `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官網/控制台跨子域共享登入態時填父域如 `.example.com`；單域留空                                                                                                                 |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 映象倉庫地址；Compose 當前按 `:${IMAGE_TAG}` 拼接映象名，生產應填寫已掃描的不可變 tag（如提交 SHA 或版本 tag），不要把完整 digest 填進 `IMAGE_TAG`，也不要使用 `latest`        |
-| `APP_KEY`                                                          | 是   | 生產部署必須顯式填寫並持久化儲存。可在倉庫根目錄的 `backend` 目錄執行 `php artisan key:generate --show` 生成 `base64:...` 值；容器重建不會隨機換鑰，缺失時 entrypoint 直接退出 |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 映象倉庫地址；Compose 當前按 `:${IMAGE_TAG}` 拼接映象名。提交 SHA 或版本 tag 只是標籤，本身不保證不可變；生產必須用倉庫策略強制標籤不可變，或每次部署校驗實際映象 digest。不要把完整 digest 填進 `IMAGE_TAG`，也不要使用 `latest` |
+| `APP_KEY`                                                          | 是   | 生產部署必須顯式填寫並持久化儲存。無需宿主機 PHP 時按下方命令從 app 映象生成 `base64:...` 值；有倉庫依賴時也可在 `backend` 目錄執行 `php artisan key:generate --show`。容器重建不會隨機換鑰，缺失時 entrypoint 直接退出 |
 | `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化預設管理員 `cerbo` 的密碼，至少 12 位強密碼，僅空庫首次生效                                                                                                          |
 | `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 環境 `true`，純 HTTP 環境 `false`                                                                                                                                        |
 | `DB_HOST` / `DB_PORT`                                              | 否   | 資料庫來源：留空使用編排內 mysql 容器（預設）；填寫遠端地址則本地 mysql 不拉取不啟動，app 直連遠端庫，埠預設 3306                                                            |
@@ -79,6 +79,15 @@ vim .env
 > 約束：密碼與地址值不要包含雙引號 `"` 和反斜槓 `\`，避免破壞 `.env` 解析。`.env` 已被 `.dockerignore` 排除，不會進映象、不會入庫。
 >
 > 遠端資料庫 / Redis 模式：`DB_HOST` 或 `REDIS_HOST` 填寫遠端地址後，對應本地容器不會被建立，`docker compose pull` 也不拉取其映象。要求伺服器 Compose v2.20+（依賴跳過用 `required: false`）；遠端庫需自行建庫、對伺服器 IP 授權；資料庫結構與初始化仍由 app 容器 entrypoint 在啟動時執行。
+
+首次部署的宿主機沒有 PHP 或倉庫尚未安裝 `backend/vendor/` 時，先拉取 app 映象，再在 `deploy/docker` 目錄執行下面的命令生成金鑰；把輸出的整行寫入 `.env` 的 `APP_KEY=` 後再啟動 Compose：
+
+```bash
+docker compose pull app
+docker compose run --rm --no-deps --entrypoint php app -r 'echo "base64:", base64_encode(random_bytes(32)), PHP_EOL;'
+```
+
+提交 SHA 或版本 tag 不能單獨證明映象內容未被替換。生產環境應在映象倉庫啟用標籤不可變策略；若倉庫不支援該策略，每次部署前都要讀取並核對實際映象 digest，再執行 `docker compose up -d`。
 
 ## 4. CI 自動打包推送
 

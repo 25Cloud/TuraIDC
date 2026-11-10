@@ -9,7 +9,9 @@
 cd deploy/docker
 cp .env.example .env
 # 编辑 .env：填四个公开地址、APP_KEY、数据库密码、管理员初始密码、镜像仓库等
-# 生产拉取模式还应把 app/frontends 镜像固定到已扫描的不可变 tag（如提交 SHA 或版本 tag）；不要使用 latest。
+# 没有宿主机 PHP 时，先 docker compose pull app，再用 app 镜像执行：
+# docker compose run --rm --no-deps --entrypoint php app -r 'echo "base64:", base64_encode(random_bytes(32)), PHP_EOL;'
+# 生产拉取模式必须启用仓库标签不可变策略，或每次部署核对实际镜像 digest；不要使用 latest。
 
 # 2a. 拉取模式（推荐，CI 已推送镜像到 GHCR）
 docker compose pull && docker compose up -d

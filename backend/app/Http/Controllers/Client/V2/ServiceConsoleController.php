@@ -642,7 +642,19 @@ class ServiceConsoleController extends Controller
         }
 
         foreach ($allowed as $allowedOrigin) {
-            if (strcasecmp(rtrim((string) $allowedOrigin, '/'), rtrim($origin, '/')) === 0) {
+            $parts = parse_url((string) $allowedOrigin);
+            if (! is_array($parts)
+                || trim((string) ($parts['scheme'] ?? '')) === ''
+                || trim((string) ($parts['host'] ?? '')) === '') {
+                continue;
+            }
+
+            $allowedOrigin = strtolower((string) $parts['scheme']).'://'.strtolower((string) $parts['host']);
+            if (isset($parts['port'])) {
+                $allowedOrigin .= ':'.(int) $parts['port'];
+            }
+
+            if (strcasecmp($allowedOrigin, rtrim($origin, '/')) === 0) {
                 return;
             }
         }

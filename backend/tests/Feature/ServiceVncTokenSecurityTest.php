@@ -126,6 +126,21 @@ class ServiceVncTokenSecurityTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_vnc_token_exchange_matches_console_origin_without_path(): void
+    {
+        config(['app.client_console_url' => 'https://console.example.test/console']);
+        Cache::store('redis_volatile')->put('vnc_token:path-console-token', [
+            'service_id' => 12,
+            'username' => 'root',
+            'target' => '10.0.0.8:5900',
+            'token_scope' => 'public',
+        ], now()->addMinutes(5));
+
+        $this->getJson('/api/v2/client/vnc-tokens/path-console-token', [
+            'Origin' => 'https://console.example.test',
+        ])->assertOk();
+    }
+
     public function test_public_vnc_token_exchange_log_never_contains_raw_token_or_password(): void
     {
         Cache::store('redis_volatile')->put('vnc_token:log-token', [
