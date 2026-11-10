@@ -1,3 +1,4 @@
+import { installDemoTransport } from '@turaidc/shared/demo';
 import {
   attachSafeRequestDedupe,
   buildSafeRequestKey,
@@ -198,6 +199,15 @@ const httpClient = axios.create({
     Accept: 'application/json',
   },
 });
+
+// 演示站构建：请求不出网，全部由打包进来的示例数据应答（见 docs/internal/designs/frontend/demo-site-design.md）
+if (import.meta.env.VITE_DEMO_MODE === 'true') {
+  installDemoTransport(httpClient, {
+    app: 'console',
+    loadFixtures: () => import('@demo-fixtures/console.json'),
+  });
+  // 不预置 token：让访客走一遍登录（登录页已填好演示凭据），比「莫名已在登录态」更明白
+}
 
 httpClient.interceptors.request.use(
   (config) => {

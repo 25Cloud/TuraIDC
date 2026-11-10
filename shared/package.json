@@ -7,6 +7,7 @@
     ".": "./index.ts",
     "./locale": "./locale/index.ts",
     "./runtime": "./runtime/index.ts",
+    "./demo": "./demo/index.ts",
     "./text": "./text/index.ts",
     "./content": "./content/index.ts",
     "./components/CapCaptchaCard.vue": "./components/CapCaptchaCard.vue",

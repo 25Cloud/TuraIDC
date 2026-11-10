@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { ArrowRightIcon, LogoGithubIcon } from "tdesign-icons-vue-next";
 
-import { LINKS } from "../data/site";
+import { DEMO_ENTRIES, DEMO_SITE_URL, LINKS } from "../data/site";
 import { useSite } from "../i18n/context";
 import SystemShot from "./SystemShot.vue";
 
 const { messages } = useSite();
 const hero = messages.hero;
+
+/** 演示站三端入口：路径来自 data/site.ts，文案走 i18n 的 actions.demoUser/Console/Admin */
+const DEMO_LABEL_KEYS = { user: "demoUser", console: "demoConsole", admin: "demoAdmin" } as const;
+const demoHref = (path: string) => `${DEMO_SITE_URL.replace(/\/+$/, "")}${path}`;
+const demoLabel = (key: keyof typeof DEMO_LABEL_KEYS) => messages.actions[DEMO_LABEL_KEYS[key]];
 
 const TITLE_PARTS = [
   { text: hero.titleLead, accent: false },
@@ -49,6 +54,14 @@ const TITLE_PARTS = [
             <LogoGithubIcon size="16px" aria-hidden="true" />
             {{ messages.actions.github }}
           </a>
+          <a
+            class="btn btn-outline"
+            :href="LINKS.demoSite"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {{ messages.actions.demoSite }}
+          </a>
         </div>
 
         <div class="hero-links anim" style="--d: 270ms">
@@ -63,6 +76,37 @@ const TITLE_PARTS = [
           <a class="ghost-link" :href="LINKS.migrate">
             {{ messages.actions.migrate }} →
           </a>
+        </div>
+
+        <!-- 演示站：三端各给一条直链。访客最常问的就是「管理端在哪」，这里一次说清。 -->
+        <div
+          class="demo-entries anim"
+          style="
+            --d: 300ms;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 8px;
+            margin-top: 14px;
+            font-size: 13px;
+          "
+        >
+          <span style="opacity: 0.72">{{ messages.actions.demoSite }}：</span>
+          <a
+            v-for="entry in DEMO_ENTRIES"
+            :key="entry.key"
+            :href="demoHref(entry.path)"
+            target="_blank"
+            rel="noopener noreferrer"
+            style="
+              padding: 4px 10px;
+              border-radius: 999px;
+              border: 1px solid rgba(148, 163, 184, 0.4);
+              text-decoration: none;
+              color: inherit;
+            "
+            >{{ demoLabel(entry.key) }}</a
+          >
         </div>
 
         <dl class="stats anim" style="--d: 320ms">

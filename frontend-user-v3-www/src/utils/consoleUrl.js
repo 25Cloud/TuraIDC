@@ -10,6 +10,17 @@
 // 同源的 /client/login —— 那条路径落在官网 SPA 上，登录和注册永远到不了控制台。
 const CONSOLE_BASE_PATH = normalizeBasePath(import.meta.env.VITE_CONSOLE_BASE_PATH || '/console')
 
+/**
+ * 演示站里三端都用 hash 路由（静态托管下 deep link 不依赖服务端回退），
+ * 所以拼控制台地址时要在应用根与业务路径之间插一个 `#`，
+ * 否则会得到 `/console/client/login` 这种 404 路径。
+ */
+const HASH_ROUTING = import.meta.env.VITE_DEMO_MODE === 'true'
+
+function withHashRouting(base, path) {
+  return HASH_ROUTING ? `${base}/#${path}` : `${base}${path}`
+}
+
 function normalizeBasePath(rawValue = '/console') {
   const trimmed = String(rawValue || '').trim()
   if (!trimmed || trimmed === '/') {
@@ -100,13 +111,13 @@ export function buildConsoleUrl(path = '/client/dashboard', query = {}) {
   const consoleOrigin = normalizeConsoleOrigin()
 
   if (!consoleOrigin) {
-    return appendQuery(`${CONSOLE_BASE_PATH}${consolePath}`, query)
+    return appendQuery(withHashRouting(CONSOLE_BASE_PATH, consolePath), query)
   }
 
   try {
-    return appendQuery(new URL(`${consoleOrigin}${consolePath}`).toString(), query)
+    return appendQuery(new URL(withHashRouting(consoleOrigin, consolePath)).toString(), query)
   } catch {
-    return appendQuery(`${CONSOLE_BASE_PATH}${consolePath}`, query)
+    return appendQuery(withHashRouting(CONSOLE_BASE_PATH, consolePath), query)
   }
 }
 

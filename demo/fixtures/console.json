@@ -1,0 +1,2383 @@
+{
+  "endpoints": {
+    "GET /v2/site/config": {
+      "site_name": "TuraIDC 演示站",
+      "site_logo": "",
+      "site_favicon": "",
+      "brand_primary_color": "#0052d9",
+      "brand_radius": "6px",
+      "captcha_enabled": "false",
+      "register_enabled": "true"
+    },
+    "POST /v2/client/login": {
+      "token": "demo-client-token-demo",
+      "user": {
+        "id": 1001,
+        "nickname": "演示客户",
+        "username": "demo",
+        "email": "demo@example.com",
+        "phone": "13800000000",
+        "real_name": "演示客户",
+        "balance": "1286.40",
+        "credit_limit": "0.00",
+        "coupon_count": 2,
+        "created_at": "2025-11-18 10:24:11",
+        "name": "演示客户",
+        "display_name": "演示客户",
+        "cash_balance": "1286.40"
+      }
+    },
+    "GET /v2/client/auth/info": {
+      "id": 1001,
+      "nickname": "演示客户",
+      "username": "demo",
+      "email": "demo@example.com",
+      "phone": "13800000000",
+      "real_name": "演示客户",
+      "balance": "1286.40",
+      "credit_limit": "0.00",
+      "coupon_count": 2,
+      "created_at": "2025-11-18 10:24:11",
+      "name": "演示客户",
+      "display_name": "演示客户",
+      "status": 1,
+      "cash_balance": "1286.40",
+      "referral_code": "DEMO1001",
+      "referral_frozen_balance": "0.00",
+      "referral_available_balance": "128.60",
+      "referral_pending_withdrawal_balance": "0.00",
+      "referral_withdrawn_balance": "0.00",
+      "total_sales_amount": "1286.00",
+      "is_verified": 1,
+      "verification_status": 1,
+      "verification_message": "",
+      "id_card_masked": "DEMO**********0000",
+      "qq": "",
+      "avatar": "",
+      "login_email_alert": 0,
+      "login_notify": 1,
+      "login_location_alert": 0,
+      "password_change_alert": 1,
+      "phone_change_alert": 1,
+      "email_change_alert": 1,
+      "marketing_alert": 0,
+      "last_login_at": "2026-11-09 08:41:22",
+      "last_login_ip": "198.51.100.1",
+      "verified_at": "2025-11-18 10:24:11",
+      "roles": [
+        "client"
+      ],
+      "features": {
+        "ai_assistant": false,
+        "auto_refund": false
+      },
+      "account_policy": {
+        "require_verification": false,
+        "require_phone": false,
+        "require_email": false,
+        "missing_items": [],
+        "message": ""
+      }
+    },
+    "GET /v2/client/auth/captcha-config": {
+      "enabled": false,
+      "captcha_id": "",
+      "provider": "",
+      "scenes": {},
+      "script_url": ""
+    },
+    "GET /v2/client/auth/alipay-account": {
+      "real_name": "演示客户",
+      "account": "demo-pay@example.com",
+      "is_bound": true
+    },
+    "GET /v2/client/auth/notification-preferences": {
+      "login_notify": 1,
+      "login_location_alert": 0,
+      "password_change_alert": 1,
+      "phone_change_alert": 1,
+      "email_change_alert": 1,
+      "marketing_alert": 0
+    },
+    "GET /v2/client/services": {
+      "list": [
+        {
+          "id": 5101,
+          "name": "演示香港-轻量云",
+          "custom_service_name": "演示香港-轻量云",
+          "combined_display_name": "香港轻量云 2 核 4G",
+          "product_display_name": "香港轻量云 2 核 4G",
+          "product_spec_display": "2 核 4G / 60G",
+          "remark": "",
+          "status": 1,
+          "status_label": "运行中",
+          "status_tone": "success",
+          "billing_cycle": "monthly",
+          "billing_cycle_label": "月付",
+          "amount": "68.00",
+          "expires_at": "2026-12-18 00:00:00",
+          "created_at": "2026-01-18 10:24:11",
+          "auto_renew": 1,
+          "domain": "demo-hk-01.example.com",
+          "specs": [
+            {
+              "key": "os",
+              "label": "操作系统",
+              "value": "Debian 12"
+            },
+            {
+              "key": "area",
+              "label": "区域",
+              "value": "香港"
+            },
+            {
+              "key": "cpu",
+              "label": "CPU",
+              "value": "2 核"
+            },
+            {
+              "key": "memory",
+              "label": "内存",
+              "value": "4 G"
+            },
+            {
+              "key": "system_disk_size",
+              "label": "系统盘",
+              "value": "60 G"
+            },
+            {
+              "key": "bw",
+              "label": "带宽",
+              "value": "30 Mbps"
+            },
+            {
+              "key": "ip_num",
+              "label": "IP数量",
+              "value": "1 个"
+            }
+          ],
+          "product": {
+            "id": 3201,
+            "display_name": "香港轻量云 2 核 4G",
+            "group_name": "云服务器",
+            "type_label": "云服务器",
+            "catalog_type": "cloud_server"
+          },
+          "upstream": {
+            "provider_key": "demo",
+            "host_id": 30005101,
+            "status": "active",
+            "remote_error": "",
+            "os": "Debian 12",
+            "dedicated_ip": "203.0.113.10"
+          },
+          "invoice": {
+            "id": 9101,
+            "invoice_no": "DEMO202611090001",
+            "order_no": "DEMOORDER202611090001",
+            "status": 0
+          },
+          "traffic": {
+            "usage": "182",
+            "limit": 1000,
+            "remaining": "818",
+            "usage_label": "182G",
+            "limit_label": "1000G",
+            "remaining_label": "818G",
+            "usage_percent": 18.2,
+            "limited": true,
+            "button_text": "购买流量包",
+            "purchase_enabled": true
+          }
+        },
+        {
+          "id": 5102,
+          "name": "演示日本-独服",
+          "custom_service_name": "演示日本-独服",
+          "combined_display_name": "日本独立服务器 E5-2650",
+          "product_display_name": "日本独立服务器 E5-2650",
+          "product_spec_display": "16 核 32G / 960G",
+          "remark": "",
+          "status": 1,
+          "status_label": "运行中",
+          "status_tone": "success",
+          "billing_cycle": "monthly",
+          "billing_cycle_label": "月付",
+          "amount": "899.00",
+          "expires_at": "2026-11-30 00:00:00",
+          "created_at": "2026-03-02 09:11:40",
+          "auto_renew": 1,
+          "domain": "demo-jp-01.example.com",
+          "specs": [
+            {
+              "key": "os",
+              "label": "操作系统",
+              "value": "Ubuntu 24.04"
+            },
+            {
+              "key": "area",
+              "label": "区域",
+              "value": "日本"
+            },
+            {
+              "key": "cpu",
+              "label": "CPU",
+              "value": "16 核"
+            },
+            {
+              "key": "memory",
+              "label": "内存",
+              "value": "32 G"
+            },
+            {
+              "key": "system_disk_size",
+              "label": "系统盘",
+              "value": "960 G"
+            },
+            {
+              "key": "bw",
+              "label": "带宽",
+              "value": "100 Mbps"
+            },
+            {
+              "key": "ip_num",
+              "label": "IP数量",
+              "value": "1 个"
+            }
+          ],
+          "product": {
+            "id": 3202,
+            "display_name": "日本独立服务器 E5-2650",
+            "group_name": "独立服务器",
+            "type_label": "独立服务器",
+            "catalog_type": "dedicated"
+          },
+          "upstream": {
+            "provider_key": "demo",
+            "host_id": 30005102,
+            "status": "active",
+            "remote_error": "",
+            "os": "Ubuntu 24.04",
+            "dedicated_ip": "198.51.100.24"
+          },
+          "invoice": {
+            "id": 9101,
+            "invoice_no": "DEMO202611090001",
+            "order_no": "DEMOORDER202611090001",
+            "status": 0
+          },
+          "traffic": {
+            "usage": "3120",
+            "limit": 10000,
+            "remaining": "6880",
+            "usage_label": "3120G",
+            "limit_label": "10000G",
+            "remaining_label": "6880G",
+            "usage_percent": 31.2,
+            "limited": true,
+            "button_text": "购买流量包",
+            "purchase_enabled": true
+          }
+        },
+        {
+          "id": 5103,
+          "name": "演示新加坡-测试机",
+          "custom_service_name": "演示新加坡-测试机",
+          "combined_display_name": "新加坡云服务器 1 核 2G",
+          "product_display_name": "新加坡云服务器 1 核 2G",
+          "product_spec_display": "1 核 2G / 40G",
+          "remark": "",
+          "status": 2,
+          "status_label": "已暂停",
+          "status_tone": "purple",
+          "billing_cycle": "monthly",
+          "billing_cycle_label": "月付",
+          "amount": "29.00",
+          "expires_at": "2026-11-25 00:00:00",
+          "created_at": "2026-05-21 16:03:27",
+          "auto_renew": 1,
+          "domain": "demo-sg-01.example.com",
+          "specs": [
+            {
+              "key": "os",
+              "label": "操作系统",
+              "value": "AlmaLinux 9"
+            },
+            {
+              "key": "area",
+              "label": "区域",
+              "value": "新加坡"
+            },
+            {
+              "key": "cpu",
+              "label": "CPU",
+              "value": "1 核"
+            },
+            {
+              "key": "memory",
+              "label": "内存",
+              "value": "2 G"
+            },
+            {
+              "key": "system_disk_size",
+              "label": "系统盘",
+              "value": "40 G"
+            },
+            {
+              "key": "bw",
+              "label": "带宽",
+              "value": "10 Mbps"
+            },
+            {
+              "key": "ip_num",
+              "label": "IP数量",
+              "value": "1 个"
+            }
+          ],
+          "product": {
+            "id": 3203,
+            "display_name": "新加坡云服务器 1 核 2G",
+            "group_name": "云服务器",
+            "type_label": "云服务器",
+            "catalog_type": "cloud_server"
+          },
+          "upstream": {
+            "provider_key": "demo",
+            "host_id": 30005103,
+            "status": "suspended",
+            "remote_error": "",
+            "os": "AlmaLinux 9",
+            "dedicated_ip": "192.0.2.66"
+          },
+          "invoice": {
+            "id": 9101,
+            "invoice_no": "DEMO202611090001",
+            "order_no": "DEMOORDER202611090001",
+            "status": 0
+          },
+          "traffic": {
+            "usage": "96",
+            "limit": 500,
+            "remaining": "404",
+            "usage_label": "96G",
+            "limit_label": "500G",
+            "remaining_label": "404G",
+            "usage_percent": 19.2,
+            "limited": true,
+            "button_text": "购买流量包",
+            "purchase_enabled": true
+          }
+        }
+      ],
+      "total": 3,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/services/grouped-overview": {
+      "total": 3,
+      "category_total": 2,
+      "list": [
+        {
+          "key": "group-1",
+          "id": 1,
+          "group_level": 1,
+          "group_level_label": "一级分组",
+          "product_type": "cloud_server",
+          "product_type_label": "云服务器",
+          "first_product_group_name": "云服务器",
+          "name": "云服务器",
+          "title": "云服务器",
+          "description": "云服务器下的演示实例",
+          "count": 2,
+          "active_count": 1,
+          "pending_count": 0,
+          "expiring_count": 1,
+          "primary_service_id": 5101,
+          "console_mode": "standard",
+          "is_nat_console": false,
+          "icon_resolved": {
+            "mode": "text",
+            "text": "云",
+            "icon_name": null,
+            "abbr": "云服务器"
+          },
+          "children": [
+            {
+              "key": "service-5101",
+              "id": 5101,
+              "name": "演示香港-轻量云",
+              "title": "演示香港-轻量云",
+              "group_level": 2,
+              "group_path_text": "云服务器 / 演示香港-轻量云",
+              "count": 1,
+              "active_count": 1,
+              "pending_count": 0,
+              "expiring_count": 0,
+              "status_label": "运行中",
+              "status_tone": "success",
+              "primary_service_id": 5101,
+              "preview_names": [
+                "演示香港-轻量云"
+              ],
+              "console_mode": "standard",
+              "is_nat_console": false
+            },
+            {
+              "key": "service-5103",
+              "id": 5103,
+              "name": "演示新加坡-测试机",
+              "title": "演示新加坡-测试机",
+              "group_level": 2,
+              "group_path_text": "云服务器 / 演示新加坡-测试机",
+              "count": 1,
+              "active_count": 0,
+              "pending_count": 0,
+              "expiring_count": 0,
+              "status_label": "已暂停",
+              "status_tone": "purple",
+              "primary_service_id": 5103,
+              "preview_names": [
+                "演示新加坡-测试机"
+              ],
+              "console_mode": "standard",
+              "is_nat_console": false
+            }
+          ],
+          "items": [
+            {
+              "id": 5101,
+              "name": "演示香港-轻量云",
+              "product_name": "香港轻量云 2 核 4G",
+              "group_name": "云服务器",
+              "root_group_name": "云服务器",
+              "group_path_text": "云服务器",
+              "status": 1,
+              "status_label": "运行中",
+              "status_tone": "success",
+              "billing_cycle_label": "月付",
+              "expires_at": "2026-12-18 00:00:00",
+              "amount": "68.00",
+              "console_mode": "standard",
+              "is_nat_console": false
+            },
+            {
+              "id": 5103,
+              "name": "演示新加坡-测试机",
+              "product_name": "新加坡云服务器 1 核 2G",
+              "group_name": "云服务器",
+              "root_group_name": "云服务器",
+              "group_path_text": "云服务器",
+              "status": 2,
+              "status_label": "已暂停",
+              "status_tone": "purple",
+              "billing_cycle_label": "月付",
+              "expires_at": "2026-11-25 00:00:00",
+              "amount": "29.00",
+              "console_mode": "standard",
+              "is_nat_console": false
+            }
+          ]
+        },
+        {
+          "key": "group-2",
+          "id": 2,
+          "group_level": 1,
+          "group_level_label": "一级分组",
+          "product_type": "dedicated",
+          "product_type_label": "独立服务器",
+          "first_product_group_name": "独立服务器",
+          "name": "独立服务器",
+          "title": "独立服务器",
+          "description": "独立服务器下的演示实例",
+          "count": 1,
+          "active_count": 1,
+          "pending_count": 0,
+          "expiring_count": 1,
+          "primary_service_id": 5102,
+          "console_mode": "standard",
+          "is_nat_console": false,
+          "icon_resolved": {
+            "mode": "text",
+            "text": "独",
+            "icon_name": null,
+            "abbr": "独立服务器"
+          },
+          "children": [
+            {
+              "key": "service-5102",
+              "id": 5102,
+              "name": "演示日本-独服",
+              "title": "演示日本-独服",
+              "group_level": 2,
+              "group_path_text": "独立服务器 / 演示日本-独服",
+              "count": 1,
+              "active_count": 1,
+              "pending_count": 0,
+              "expiring_count": 0,
+              "status_label": "运行中",
+              "status_tone": "success",
+              "primary_service_id": 5102,
+              "preview_names": [
+                "演示日本-独服"
+              ],
+              "console_mode": "standard",
+              "is_nat_console": false
+            }
+          ],
+          "items": [
+            {
+              "id": 5102,
+              "name": "演示日本-独服",
+              "product_name": "日本独立服务器 E5-2650",
+              "group_name": "独立服务器",
+              "root_group_name": "独立服务器",
+              "group_path_text": "独立服务器",
+              "status": 1,
+              "status_label": "运行中",
+              "status_tone": "success",
+              "billing_cycle_label": "月付",
+              "expires_at": "2026-11-30 00:00:00",
+              "amount": "899.00",
+              "console_mode": "standard",
+              "is_nat_console": false
+            }
+          ]
+        }
+      ],
+      "catalog_types": [
+        {
+          "label": "云服务器",
+          "value": "group-1",
+          "count": 2,
+          "icon_resolved": {
+            "mode": "text",
+            "text": "云",
+            "icon_name": null,
+            "abbr": "云服务器"
+          }
+        },
+        {
+          "label": "独立服务器",
+          "value": "group-2",
+          "count": 1,
+          "icon_resolved": {
+            "mode": "text",
+            "text": "独",
+            "icon_name": null,
+            "abbr": "独立服务器"
+          }
+        }
+      ]
+    },
+    "GET /v2/client/services/5101": {
+      "service": {
+        "id": 5101,
+        "name": "演示香港-轻量云",
+        "custom_service_name": "演示香港-轻量云",
+        "combined_display_name": "香港轻量云 2 核 4G",
+        "product_display_name": "香港轻量云 2 核 4G",
+        "product_spec_display": "2 核 4G / 60G",
+        "remark": "",
+        "status": 1,
+        "status_label": "运行中",
+        "status_tone": "success",
+        "billing_cycle": "monthly",
+        "billing_cycle_label": "月付",
+        "amount": "68.00",
+        "expires_at": "2026-12-18 00:00:00",
+        "created_at": "2026-01-18 10:24:11",
+        "auto_renew": 1,
+        "domain": "demo-hk-01.example.com",
+        "specs": [
+          {
+            "key": "os",
+            "label": "操作系统",
+            "value": "Debian 12"
+          },
+          {
+            "key": "area",
+            "label": "区域",
+            "value": "香港"
+          },
+          {
+            "key": "cpu",
+            "label": "CPU",
+            "value": "2 核"
+          },
+          {
+            "key": "memory",
+            "label": "内存",
+            "value": "4 G"
+          },
+          {
+            "key": "system_disk_size",
+            "label": "系统盘",
+            "value": "60 G"
+          },
+          {
+            "key": "bw",
+            "label": "带宽",
+            "value": "30 Mbps"
+          },
+          {
+            "key": "ip_num",
+            "label": "IP数量",
+            "value": "1 个"
+          }
+        ],
+        "product": {
+          "id": 3201,
+          "display_name": "香港轻量云 2 核 4G",
+          "group_name": "云服务器",
+          "type_label": "云服务器",
+          "catalog_type": "cloud_server"
+        },
+        "upstream": {
+          "provider_key": "demo",
+          "host_id": 30005101,
+          "status": "active",
+          "remote_error": "",
+          "os": "Debian 12",
+          "dedicated_ip": "203.0.113.10"
+        },
+        "invoice": {
+          "id": 9101,
+          "invoice_no": "DEMO202611090001",
+          "order_no": "DEMOORDER202611090001",
+          "status": 0
+        },
+        "traffic": {
+          "usage": "182",
+          "limit": 1000,
+          "remaining": "818",
+          "usage_label": "182G",
+          "limit_label": "1000G",
+          "remaining_label": "818G",
+          "usage_percent": 18.2,
+          "limited": true,
+          "button_text": "购买流量包",
+          "purchase_enabled": true
+        },
+        "can_manage": true,
+        "console_template": "",
+        "console_mode": "standard",
+        "machine_category": {
+          "key": "cloud_server",
+          "label": "云服务器"
+        },
+        "runtime": {
+          "power_state": "on",
+          "power_label": "运行中",
+          "description": "演示实例，操作不会真正下发到上游"
+        },
+        "connection": {
+          "hostname": "demo-hk-01.example.com",
+          "username": "root",
+          "has_password": true,
+          "password": "Demo@123456",
+          "port": 22,
+          "dedicated_ip": "203.0.113.10",
+          "internal_ip": "10.0.0.11",
+          "assigned_ips": [
+            "203.0.113.10"
+          ],
+          "nat_remote_address": "",
+          "nat_remote_host": "",
+          "nat_remote_port": 0
+        },
+        "actions": {
+          "refresh": true,
+          "power": true,
+          "module_status": false,
+          "reinstall": true,
+          "password_reset": true,
+          "rescue": false,
+          "vnc": false,
+          "traffic_package": true,
+          "upgrade": false,
+          "snapshot": false,
+          "iso": false
+        },
+        "_sync": {
+          "at": "2026-11-09 09:00:00",
+          "source": "demo"
+        }
+      }
+    },
+    "GET /v2/client/services/5101/connection": {
+      "connection": {
+        "hostname": "demo-hk-01.example.com",
+        "username": "root",
+        "has_password": true,
+        "password": "Demo@123456",
+        "port": 22,
+        "dedicated_ip": "203.0.113.10",
+        "internal_ip": "10.0.0.11",
+        "assigned_ips": [
+          "203.0.113.10"
+        ],
+        "nat_remote_address": "",
+        "nat_remote_host": "",
+        "nat_remote_port": 0
+      }
+    },
+    "GET /v2/client/services/5101/runtime": {
+      "runtime": {
+        "power_state": "on",
+        "power_label": "运行中",
+        "description": "演示实例，操作不会真正下发到上游"
+      }
+    },
+    "GET /v2/client/services/5102": {
+      "service": {
+        "id": 5102,
+        "name": "演示日本-独服",
+        "custom_service_name": "演示日本-独服",
+        "combined_display_name": "日本独立服务器 E5-2650",
+        "product_display_name": "日本独立服务器 E5-2650",
+        "product_spec_display": "16 核 32G / 960G",
+        "remark": "",
+        "status": 1,
+        "status_label": "运行中",
+        "status_tone": "success",
+        "billing_cycle": "monthly",
+        "billing_cycle_label": "月付",
+        "amount": "899.00",
+        "expires_at": "2026-11-30 00:00:00",
+        "created_at": "2026-03-02 09:11:40",
+        "auto_renew": 1,
+        "domain": "demo-jp-01.example.com",
+        "specs": [
+          {
+            "key": "os",
+            "label": "操作系统",
+            "value": "Ubuntu 24.04"
+          },
+          {
+            "key": "area",
+            "label": "区域",
+            "value": "日本"
+          },
+          {
+            "key": "cpu",
+            "label": "CPU",
+            "value": "16 核"
+          },
+          {
+            "key": "memory",
+            "label": "内存",
+            "value": "32 G"
+          },
+          {
+            "key": "system_disk_size",
+            "label": "系统盘",
+            "value": "960 G"
+          },
+          {
+            "key": "bw",
+            "label": "带宽",
+            "value": "100 Mbps"
+          },
+          {
+            "key": "ip_num",
+            "label": "IP数量",
+            "value": "1 个"
+          }
+        ],
+        "product": {
+          "id": 3202,
+          "display_name": "日本独立服务器 E5-2650",
+          "group_name": "独立服务器",
+          "type_label": "独立服务器",
+          "catalog_type": "dedicated"
+        },
+        "upstream": {
+          "provider_key": "demo",
+          "host_id": 30005102,
+          "status": "active",
+          "remote_error": "",
+          "os": "Ubuntu 24.04",
+          "dedicated_ip": "198.51.100.24"
+        },
+        "invoice": {
+          "id": 9101,
+          "invoice_no": "DEMO202611090001",
+          "order_no": "DEMOORDER202611090001",
+          "status": 0
+        },
+        "traffic": {
+          "usage": "3120",
+          "limit": 10000,
+          "remaining": "6880",
+          "usage_label": "3120G",
+          "limit_label": "10000G",
+          "remaining_label": "6880G",
+          "usage_percent": 31.2,
+          "limited": true,
+          "button_text": "购买流量包",
+          "purchase_enabled": true
+        },
+        "can_manage": true,
+        "console_template": "",
+        "console_mode": "standard",
+        "machine_category": {
+          "key": "cloud_server",
+          "label": "云服务器"
+        },
+        "runtime": {
+          "power_state": "on",
+          "power_label": "运行中",
+          "description": "演示实例，操作不会真正下发到上游"
+        },
+        "connection": {
+          "hostname": "demo-jp-01.example.com",
+          "username": "root",
+          "has_password": true,
+          "password": "Demo@123456",
+          "port": 22,
+          "dedicated_ip": "198.51.100.24",
+          "internal_ip": "10.0.0.12",
+          "assigned_ips": [
+            "198.51.100.24"
+          ],
+          "nat_remote_address": "",
+          "nat_remote_host": "",
+          "nat_remote_port": 0
+        },
+        "actions": {
+          "refresh": true,
+          "power": true,
+          "module_status": false,
+          "reinstall": true,
+          "password_reset": true,
+          "rescue": false,
+          "vnc": false,
+          "traffic_package": true,
+          "upgrade": false,
+          "snapshot": false,
+          "iso": false
+        },
+        "_sync": {
+          "at": "2026-11-09 09:00:00",
+          "source": "demo"
+        }
+      }
+    },
+    "GET /v2/client/services/5102/connection": {
+      "connection": {
+        "hostname": "demo-jp-01.example.com",
+        "username": "root",
+        "has_password": true,
+        "password": "Demo@123456",
+        "port": 22,
+        "dedicated_ip": "198.51.100.24",
+        "internal_ip": "10.0.0.12",
+        "assigned_ips": [
+          "198.51.100.24"
+        ],
+        "nat_remote_address": "",
+        "nat_remote_host": "",
+        "nat_remote_port": 0
+      }
+    },
+    "GET /v2/client/services/5102/runtime": {
+      "runtime": {
+        "power_state": "on",
+        "power_label": "运行中",
+        "description": "演示实例，操作不会真正下发到上游"
+      }
+    },
+    "GET /v2/client/services/5103": {
+      "service": {
+        "id": 5103,
+        "name": "演示新加坡-测试机",
+        "custom_service_name": "演示新加坡-测试机",
+        "combined_display_name": "新加坡云服务器 1 核 2G",
+        "product_display_name": "新加坡云服务器 1 核 2G",
+        "product_spec_display": "1 核 2G / 40G",
+        "remark": "",
+        "status": 2,
+        "status_label": "已暂停",
+        "status_tone": "purple",
+        "billing_cycle": "monthly",
+        "billing_cycle_label": "月付",
+        "amount": "29.00",
+        "expires_at": "2026-11-25 00:00:00",
+        "created_at": "2026-05-21 16:03:27",
+        "auto_renew": 1,
+        "domain": "demo-sg-01.example.com",
+        "specs": [
+          {
+            "key": "os",
+            "label": "操作系统",
+            "value": "AlmaLinux 9"
+          },
+          {
+            "key": "area",
+            "label": "区域",
+            "value": "新加坡"
+          },
+          {
+            "key": "cpu",
+            "label": "CPU",
+            "value": "1 核"
+          },
+          {
+            "key": "memory",
+            "label": "内存",
+            "value": "2 G"
+          },
+          {
+            "key": "system_disk_size",
+            "label": "系统盘",
+            "value": "40 G"
+          },
+          {
+            "key": "bw",
+            "label": "带宽",
+            "value": "10 Mbps"
+          },
+          {
+            "key": "ip_num",
+            "label": "IP数量",
+            "value": "1 个"
+          }
+        ],
+        "product": {
+          "id": 3203,
+          "display_name": "新加坡云服务器 1 核 2G",
+          "group_name": "云服务器",
+          "type_label": "云服务器",
+          "catalog_type": "cloud_server"
+        },
+        "upstream": {
+          "provider_key": "demo",
+          "host_id": 30005103,
+          "status": "suspended",
+          "remote_error": "",
+          "os": "AlmaLinux 9",
+          "dedicated_ip": "192.0.2.66"
+        },
+        "invoice": {
+          "id": 9101,
+          "invoice_no": "DEMO202611090001",
+          "order_no": "DEMOORDER202611090001",
+          "status": 0
+        },
+        "traffic": {
+          "usage": "96",
+          "limit": 500,
+          "remaining": "404",
+          "usage_label": "96G",
+          "limit_label": "500G",
+          "remaining_label": "404G",
+          "usage_percent": 19.2,
+          "limited": true,
+          "button_text": "购买流量包",
+          "purchase_enabled": true
+        },
+        "can_manage": true,
+        "console_template": "",
+        "console_mode": "standard",
+        "machine_category": {
+          "key": "cloud_server",
+          "label": "云服务器"
+        },
+        "runtime": {
+          "power_state": "on",
+          "power_label": "已暂停",
+          "description": "演示实例，操作不会真正下发到上游"
+        },
+        "connection": {
+          "hostname": "demo-sg-01.example.com",
+          "username": "root",
+          "has_password": true,
+          "password": "Demo@123456",
+          "port": 22,
+          "dedicated_ip": "192.0.2.66",
+          "internal_ip": "10.0.0.13",
+          "assigned_ips": [
+            "192.0.2.66"
+          ],
+          "nat_remote_address": "",
+          "nat_remote_host": "",
+          "nat_remote_port": 0
+        },
+        "actions": {
+          "refresh": true,
+          "power": true,
+          "module_status": false,
+          "reinstall": true,
+          "password_reset": true,
+          "rescue": false,
+          "vnc": false,
+          "traffic_package": true,
+          "upgrade": false,
+          "snapshot": false,
+          "iso": false
+        },
+        "_sync": {
+          "at": "2026-11-09 09:00:00",
+          "source": "demo"
+        }
+      }
+    },
+    "GET /v2/client/services/5103/connection": {
+      "connection": {
+        "hostname": "demo-sg-01.example.com",
+        "username": "root",
+        "has_password": true,
+        "password": "Demo@123456",
+        "port": 22,
+        "dedicated_ip": "192.0.2.66",
+        "internal_ip": "10.0.0.13",
+        "assigned_ips": [
+          "192.0.2.66"
+        ],
+        "nat_remote_address": "",
+        "nat_remote_host": "",
+        "nat_remote_port": 0
+      }
+    },
+    "GET /v2/client/services/5103/runtime": {
+      "runtime": {
+        "power_state": "on",
+        "power_label": "已暂停",
+        "description": "演示实例，操作不会真正下发到上游"
+      }
+    },
+    "GET /v2/client/services/:id": {
+      "service": {
+        "id": 5101,
+        "name": "演示香港-轻量云",
+        "custom_service_name": "演示香港-轻量云",
+        "combined_display_name": "香港轻量云 2 核 4G",
+        "product_display_name": "香港轻量云 2 核 4G",
+        "product_spec_display": "2 核 4G / 60G",
+        "remark": "",
+        "status": 1,
+        "status_label": "运行中",
+        "status_tone": "success",
+        "billing_cycle": "monthly",
+        "billing_cycle_label": "月付",
+        "amount": "68.00",
+        "expires_at": "2026-12-18 00:00:00",
+        "created_at": "2026-01-18 10:24:11",
+        "auto_renew": 1,
+        "domain": "demo-hk-01.example.com",
+        "specs": [
+          {
+            "key": "os",
+            "label": "操作系统",
+            "value": "Debian 12"
+          },
+          {
+            "key": "area",
+            "label": "区域",
+            "value": "香港"
+          },
+          {
+            "key": "cpu",
+            "label": "CPU",
+            "value": "2 核"
+          },
+          {
+            "key": "memory",
+            "label": "内存",
+            "value": "4 G"
+          },
+          {
+            "key": "system_disk_size",
+            "label": "系统盘",
+            "value": "60 G"
+          },
+          {
+            "key": "bw",
+            "label": "带宽",
+            "value": "30 Mbps"
+          },
+          {
+            "key": "ip_num",
+            "label": "IP数量",
+            "value": "1 个"
+          }
+        ],
+        "product": {
+          "id": 3201,
+          "display_name": "香港轻量云 2 核 4G",
+          "group_name": "云服务器",
+          "type_label": "云服务器",
+          "catalog_type": "cloud_server"
+        },
+        "upstream": {
+          "provider_key": "demo",
+          "host_id": 30005101,
+          "status": "active",
+          "remote_error": "",
+          "os": "Debian 12",
+          "dedicated_ip": "203.0.113.10"
+        },
+        "invoice": {
+          "id": 9101,
+          "invoice_no": "DEMO202611090001",
+          "order_no": "DEMOORDER202611090001",
+          "status": 0
+        },
+        "traffic": {
+          "usage": "182",
+          "limit": 1000,
+          "remaining": "818",
+          "usage_label": "182G",
+          "limit_label": "1000G",
+          "remaining_label": "818G",
+          "usage_percent": 18.2,
+          "limited": true,
+          "button_text": "购买流量包",
+          "purchase_enabled": true
+        },
+        "can_manage": true,
+        "console_template": "",
+        "console_mode": "standard",
+        "machine_category": {
+          "key": "cloud_server",
+          "label": "云服务器"
+        },
+        "runtime": {
+          "power_state": "on",
+          "power_label": "运行中",
+          "description": "演示实例，操作不会真正下发到上游"
+        },
+        "connection": {
+          "hostname": "demo-hk-01.example.com",
+          "username": "root",
+          "has_password": true,
+          "password": "Demo@123456",
+          "port": 22,
+          "dedicated_ip": "203.0.113.10",
+          "internal_ip": "10.0.0.11",
+          "assigned_ips": [
+            "203.0.113.10"
+          ],
+          "nat_remote_address": "",
+          "nat_remote_host": "",
+          "nat_remote_port": 0
+        },
+        "actions": {
+          "refresh": true,
+          "power": true,
+          "module_status": false,
+          "reinstall": true,
+          "password_reset": true,
+          "rescue": false,
+          "vnc": false,
+          "traffic_package": true,
+          "upgrade": false,
+          "snapshot": false,
+          "iso": false
+        },
+        "_sync": {
+          "at": "2026-11-09 09:00:00",
+          "source": "demo"
+        }
+      }
+    },
+    "GET /v2/client/services/:id/connection": {
+      "connection": {
+        "hostname": "demo-hk-01.example.com",
+        "username": "root",
+        "has_password": true,
+        "password": "Demo@123456",
+        "port": 22,
+        "dedicated_ip": "203.0.113.10",
+        "internal_ip": "10.0.0.11",
+        "assigned_ips": [
+          "203.0.113.10"
+        ],
+        "nat_remote_address": "",
+        "nat_remote_host": "",
+        "nat_remote_port": 0
+      }
+    },
+    "GET /v2/client/services/:id/runtime": {
+      "runtime": {
+        "power_state": "on",
+        "power_label": "运行中",
+        "description": "演示实例，操作不会真正下发到上游"
+      }
+    },
+    "GET /v2/client/services/:id/console/capabilities": {
+      "supported": true,
+      "fetchable": false,
+      "nat_supported": false,
+      "monitor_supported": false,
+      "snapshot_supported": false,
+      "iso_supported": false,
+      "area_preload_all": false,
+      "areas": []
+    },
+    "GET /v2/client/recharge/gateways": {
+      "list": [
+        {
+          "key": "alipay",
+          "option_key": "alipay",
+          "name": "支付宝",
+          "label": "支付宝",
+          "payment_type": "alipay"
+        },
+        {
+          "key": "wechat",
+          "option_key": "wechat",
+          "name": "微信支付",
+          "label": "微信支付",
+          "payment_type": "wechat"
+        },
+        {
+          "key": "epay",
+          "option_key": "epay",
+          "name": "易支付",
+          "label": "易支付",
+          "payment_type": "epay"
+        }
+      ]
+    },
+    "GET /v2/client/finance/ledger/summary": {
+      "cash_balance": "1286.40",
+      "total_in": "500.00",
+      "total_out": "68.00",
+      "total_count": 2,
+      "recharge_in": "500.00",
+      "invoice_payment_out": "68.00",
+      "refund_in": "0.00",
+      "manual_adjust_out": "0.00",
+      "unpaid_count": 1,
+      "unpaid_amount": "68.00",
+      "total_invoices": 3,
+      "recent_30d_recharge": "500.00",
+      "recent_30d_refund": "0.00"
+    },
+    "GET /v2/client/invoices": {
+      "list": [
+        {
+          "id": 9101,
+          "invoice_no": "DEMO202611090001",
+          "type": "renew",
+          "type_label": "续费",
+          "status": 0,
+          "status_label": "待支付",
+          "amount": "68.00",
+          "due_date": "2026-11-20 00:00:00",
+          "created_at": "2026-11-09 09:12:00",
+          "items": [
+            {
+              "id": 91010,
+              "description": "演示香港-轻量云 续费 1 个月",
+              "quantity": 1,
+              "unit_price": "68.00",
+              "amount": "68.00"
+            }
+          ],
+          "payable_amount": "68.00",
+          "paid_amount": "0.00",
+          "discount": "0.00",
+          "billing_cycle": "monthly",
+          "billing_cycle_label": "月付",
+          "combined_display_name": "演示香港-轻量云",
+          "product_display_name": "香港轻量云 2 核 4G",
+          "product_spec_display": "2 核 4G",
+          "service_id": 5101,
+          "product_id": 3201,
+          "product": {
+            "id": 3201,
+            "display_name": "香港轻量云 2 核 4G",
+            "group_name": "云服务器"
+          },
+          "service": {
+            "id": 5101,
+            "name": "演示香港-轻量云"
+          }
+        },
+        {
+          "id": 9102,
+          "invoice_no": "DEMO202610250002",
+          "type": "recharge",
+          "type_label": "充值",
+          "status": 1,
+          "status_label": "已支付",
+          "amount": "500.00",
+          "paid_at": "2026-10-25 21:03:11",
+          "created_at": "2026-10-25 21:01:52",
+          "items": [
+            {
+              "id": 91020,
+              "description": "账户充值",
+              "quantity": 1,
+              "unit_price": "500.00",
+              "amount": "500.00"
+            }
+          ],
+          "payable_amount": "0.00",
+          "paid_amount": "500.00",
+          "discount": "0.00",
+          "billing_cycle": "monthly",
+          "billing_cycle_label": "月付",
+          "combined_display_name": "演示日本-独服",
+          "product_display_name": "日本独立服务器 E5-2650",
+          "product_spec_display": "16 核 32G",
+          "service_id": 5102,
+          "product_id": 3202,
+          "product": {
+            "id": 3202,
+            "display_name": "日本独立服务器 E5-2650",
+            "group_name": "独立服务器"
+          },
+          "service": {
+            "id": 5102,
+            "name": "演示日本-独服"
+          }
+        },
+        {
+          "id": 9103,
+          "invoice_no": "DEMO202610250003",
+          "type": "renew",
+          "type_label": "续费",
+          "status": 1,
+          "status_label": "已支付",
+          "amount": "68.00",
+          "paid_at": "2026-10-25 21:05:02",
+          "due_date": "2026-10-25 00:00:00",
+          "created_at": "2026-10-24 20:11:30",
+          "items": [
+            {
+              "id": 91030,
+              "description": "演示香港-轻量云 续费 1 个月",
+              "quantity": 1,
+              "unit_price": "68.00",
+              "amount": "68.00"
+            }
+          ],
+          "payable_amount": "0.00",
+          "paid_amount": "68.00",
+          "discount": "0.00",
+          "billing_cycle": "monthly",
+          "billing_cycle_label": "月付",
+          "combined_display_name": "演示新加坡-测试机",
+          "product_display_name": "新加坡云服务器 1 核 2G",
+          "product_spec_display": "1 核 2G",
+          "service_id": 5103,
+          "product_id": 3203,
+          "product": {
+            "id": 3203,
+            "display_name": "新加坡云服务器 1 核 2G",
+            "group_name": "云服务器"
+          },
+          "service": {
+            "id": 5103,
+            "name": "演示新加坡-测试机"
+          }
+        }
+      ],
+      "total": 3,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/invoices/summary": {
+      "total_count": 3,
+      "unpaid_count": 1,
+      "unpaid_amount": "68.00",
+      "paid_count": 2,
+      "paid_amount": "568.00",
+      "paid_total": "568.00",
+      "total_amount": "636.00"
+    },
+    "GET /v2/client/payments": {
+      "list": [
+        {
+          "id": 9201,
+          "payment_no": "DEMOPAY202610250001",
+          "trade_no": "DEMO-ALIPAY-202610250001",
+          "gateway": "alipay",
+          "gateway_key": "alipay",
+          "gateway_label": "支付宝",
+          "amount": "500.00",
+          "status": 1,
+          "status_label": "成功",
+          "paid_at": "2026-10-25 21:03:11",
+          "created_at": "2026-10-25 21:01:52",
+          "invoice_id": 9102,
+          "invoice_no": "DEMO202610250002",
+          "invoice_type": "recharge",
+          "invoice_status": 1,
+          "invoice": {
+            "id": 9102,
+            "invoice_no": "DEMO202610250002",
+            "status": 1,
+            "amount": "500.00",
+            "paid_amount": "500.00",
+            "type": "recharge"
+          }
+        },
+        {
+          "id": 9202,
+          "payment_no": "DEMOPAY202610250002",
+          "trade_no": "DEMO-BALANCE-202610250002",
+          "gateway": "balance",
+          "gateway_key": "balance",
+          "gateway_label": "余额支付",
+          "amount": "68.00",
+          "status": 1,
+          "status_label": "成功",
+          "paid_at": "2026-10-25 21:05:02",
+          "created_at": "2026-10-25 21:04:40",
+          "invoice_id": 9103,
+          "invoice_no": "DEMO202610250003",
+          "invoice_type": "renew",
+          "invoice_status": 1,
+          "invoice": {
+            "id": 9103,
+            "invoice_no": "DEMO202610250003",
+            "status": 1,
+            "amount": "68.00",
+            "paid_amount": "68.00",
+            "type": "renew"
+          }
+        },
+        {
+          "id": 9203,
+          "payment_no": "DEMOPAY202611090003",
+          "trade_no": "",
+          "gateway": "alipay",
+          "gateway_key": "alipay",
+          "gateway_label": "支付宝",
+          "amount": "68.00",
+          "status": 0,
+          "status_label": "待支付",
+          "paid_at": "",
+          "created_at": "2026-11-09 09:12:00",
+          "invoice_id": 9101,
+          "invoice_no": "DEMO202611090001",
+          "invoice_type": "renew",
+          "invoice_status": 0,
+          "invoice": {
+            "id": 9101,
+            "invoice_no": "DEMO202611090001",
+            "status": 0,
+            "amount": "68.00",
+            "paid_amount": "0.00",
+            "type": "renew"
+          }
+        }
+      ],
+      "total": 3,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/orders": {
+      "list": [
+        {
+          "id": 8501,
+          "order_no": "DEMOORDER202611090001",
+          "type": "renew",
+          "type_label": "续费",
+          "status": 0,
+          "status_label": "待付款",
+          "amount": "68.00",
+          "paid_amount": "0.00",
+          "discount": "0.00",
+          "billing_cycle": "monthly",
+          "quantity": 1,
+          "product_name": "香港轻量云 2 核 4G",
+          "product_full_path": "云服务器 / 香港轻量云 2 核 4G",
+          "product_path_segments": [
+            "云服务器",
+            "香港轻量云 2 核 4G"
+          ],
+          "service_name": "演示香港-轻量云",
+          "coupon_code": "",
+          "remark": "演示订单，未支付",
+          "paid_at": "",
+          "created_at": "2026-11-09 09:12:00",
+          "invoice": {
+            "id": 9101,
+            "invoice_no": "DEMO202611090001",
+            "type": "renew",
+            "status": 0,
+            "amount": "68.00",
+            "paid_amount": "0.00",
+            "paid_at": "",
+            "due_date": "2026-11-20 00:00:00",
+            "created_at": "2026-11-09 09:12:00",
+            "payments": []
+          },
+          "service": {
+            "id": 5101,
+            "name": "演示香港-轻量云",
+            "domain": "demo-hk-01.example.com",
+            "status": 1,
+            "expires_at": "2026-12-18 00:00:00"
+          },
+          "coupon": null
+        },
+        {
+          "id": 8502,
+          "order_no": "DEMOORDER202610250002",
+          "type": "renew",
+          "type_label": "续费",
+          "status": 3,
+          "status_label": "已完成",
+          "amount": "68.00",
+          "paid_amount": "68.00",
+          "discount": "0.00",
+          "billing_cycle": "monthly",
+          "quantity": 1,
+          "product_name": "香港轻量云 2 核 4G",
+          "product_full_path": "云服务器 / 香港轻量云 2 核 4G",
+          "product_path_segments": [
+            "云服务器",
+            "香港轻量云 2 核 4G"
+          ],
+          "service_name": "演示香港-轻量云",
+          "coupon_code": "",
+          "remark": "演示订单，余额支付完成",
+          "paid_at": "2026-10-25 21:05:02",
+          "created_at": "2026-10-24 20:11:30",
+          "invoice": {
+            "id": 9103,
+            "invoice_no": "DEMO202610250003",
+            "type": "renew",
+            "status": 1,
+            "amount": "68.00",
+            "paid_amount": "68.00",
+            "paid_at": "2026-10-25 21:05:02",
+            "due_date": "2026-10-25 00:00:00",
+            "created_at": "2026-10-24 20:11:30",
+            "payments": [
+              {
+                "id": 9202,
+                "payment_no": "DEMOPAY202610250002",
+                "gateway": "balance",
+                "trade_no": "DEMO-BALANCE-202610250002",
+                "amount": "68.00",
+                "status": 1,
+                "paid_at": "2026-10-25 21:05:02"
+              }
+            ]
+          },
+          "service": {
+            "id": 5101,
+            "name": "演示香港-轻量云",
+            "domain": "demo-hk-01.example.com",
+            "status": 1,
+            "expires_at": "2026-12-18 00:00:00"
+          },
+          "coupon": null
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/orders/summary": {
+      "total": 2,
+      "pending": 1,
+      "paid": 1,
+      "processing": 0,
+      "completed": 1,
+      "cancelled": 0,
+      "refunded": 0,
+      "unpaid_amount": "68.00",
+      "month_amount": "136.00"
+    },
+    "GET /v2/client/balance-logs": {
+      "list": [
+        {
+          "id": 6101,
+          "event_type": "recharge",
+          "change_amount": "500.00",
+          "balance_after": "1354.40",
+          "remark": "账户充值",
+          "created_at": "2026-10-25 21:03:11",
+          "invoice_id": 9102
+        },
+        {
+          "id": 6102,
+          "event_type": "invoice_payment",
+          "change_amount": "-68.00",
+          "balance_after": "1286.40",
+          "remark": "演示香港-轻量云 续费 1 个月",
+          "created_at": "2026-10-25 21:05:02",
+          "invoice_id": 9103
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 20
+    },
+    "GET /v2/client/coupons/summary": {
+      "total": 2,
+      "available": 2,
+      "used_up": 0,
+      "expired": 0
+    },
+    "GET /v2/client/coupons": {
+      "list": [
+        {
+          "id": 7201,
+          "coupon_code": "DEMO10",
+          "coupon_id": 9001,
+          "name": "满 100 减 10",
+          "description": "适用于云服务器续费",
+          "status": "available",
+          "status_label": "可使用",
+          "status_reason": "",
+          "discount_type": "fixed",
+          "discount_type_label": "满减",
+          "discount_value": "10.00",
+          "discount_label": "减 ¥10",
+          "max_discount_amount": null,
+          "min_amount": "100.00",
+          "can_claim": false,
+          "product_scope_text": "全部云服务器",
+          "validity_text": "2026-12-31 23:59:59 到期",
+          "starts_at": "2026-10-01 00:00:00",
+          "expires_at": "2026-12-31 23:59:59",
+          "receive_type": "manual",
+          "receive_type_label": "手动领取",
+          "per_user_limit": 1,
+          "used_times": 0,
+          "remaining_times": 1,
+          "first_order_only": false,
+          "remaining_stock": 100,
+          "used_at": null,
+          "revoked_at": null,
+          "billing_cycle_text": "不限周期",
+          "products": []
+        },
+        {
+          "id": 7202,
+          "coupon_code": "DEMO20",
+          "coupon_id": 9002,
+          "name": "9 折优惠券",
+          "description": "适用于独立服务器",
+          "status": "expired",
+          "status_label": "已过期",
+          "status_reason": "已超过有效期",
+          "discount_type": "percentage",
+          "discount_type_label": "折扣",
+          "discount_value": "0.90",
+          "discount_label": "9 折",
+          "max_discount_amount": "200.00",
+          "min_amount": "0.00",
+          "can_claim": false,
+          "product_scope_text": "全部独立服务器",
+          "validity_text": "已于 2026-10-31 23:59:59 过期",
+          "starts_at": "2026-09-01 00:00:00",
+          "expires_at": "2026-10-31 23:59:59",
+          "receive_type": "manual",
+          "receive_type_label": "手动领取",
+          "per_user_limit": 1,
+          "used_times": 0,
+          "remaining_times": 0,
+          "first_order_only": false,
+          "remaining_stock": 0,
+          "used_at": null,
+          "revoked_at": null,
+          "billing_cycle_text": "不限周期",
+          "products": []
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/coupons/public": {
+      "list": [
+        {
+          "id": 7201,
+          "coupon_code": "DEMO10",
+          "coupon_id": 9001,
+          "name": "满 100 减 10",
+          "description": "适用于云服务器续费",
+          "status": "available",
+          "status_label": "可使用",
+          "status_reason": "",
+          "discount_type": "fixed",
+          "discount_type_label": "满减",
+          "discount_value": "10.00",
+          "discount_label": "减 ¥10",
+          "max_discount_amount": null,
+          "min_amount": "100.00",
+          "can_claim": true,
+          "product_scope_text": "全部云服务器",
+          "validity_text": "2026-12-31 23:59:59 到期",
+          "starts_at": "2026-10-01 00:00:00",
+          "expires_at": "2026-12-31 23:59:59",
+          "receive_type": "manual",
+          "receive_type_label": "手动领取",
+          "per_user_limit": 1,
+          "used_times": 0,
+          "remaining_times": 1,
+          "first_order_only": false,
+          "remaining_stock": 100,
+          "used_at": null,
+          "revoked_at": null,
+          "billing_cycle_text": "不限周期",
+          "products": []
+        },
+        {
+          "id": 7202,
+          "coupon_code": "DEMO20",
+          "coupon_id": 9002,
+          "name": "9 折优惠券",
+          "description": "适用于独立服务器",
+          "status": "expired",
+          "status_label": "已过期",
+          "status_reason": "已超过有效期",
+          "discount_type": "percentage",
+          "discount_type_label": "折扣",
+          "discount_value": "0.90",
+          "discount_label": "9 折",
+          "max_discount_amount": "200.00",
+          "min_amount": "0.00",
+          "can_claim": true,
+          "product_scope_text": "全部独立服务器",
+          "validity_text": "已于 2026-10-31 23:59:59 过期",
+          "starts_at": "2026-09-01 00:00:00",
+          "expires_at": "2026-10-31 23:59:59",
+          "receive_type": "manual",
+          "receive_type_label": "手动领取",
+          "per_user_limit": 1,
+          "used_times": 0,
+          "remaining_times": 0,
+          "first_order_only": false,
+          "remaining_stock": 0,
+          "used_at": null,
+          "revoked_at": null,
+          "billing_cycle_text": "不限周期",
+          "products": []
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/notices": {
+      "list": [
+        {
+          "id": 8101,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "演示公告：控制台已切换为示例数据",
+          "slug": "demo-8101",
+          "summary": "当前站点处于演示模式，所有实例、账单与工单均为示例数据，任何操作都不会真正执行。",
+          "excerpt": "当前站点处于演示模式，所有实例、账单与工单均为示例数据，任何操作都不会真正执行。",
+          "content": "<p>欢迎体验 TuraIDC 演示站。</p><p>本页数据由 <code>demo/fixtures/console.json</code> 生成，是只读示例。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "站点公告",
+          "category": "站点公告",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-11-08 10:00:00",
+          "last_published_at": "2026-11-08 10:00:00",
+          "created_at": "2026-11-08 10:00:00",
+          "updated_at": "2026-11-08 10:00:00"
+        },
+        {
+          "id": 8102,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "演示公告：香港节点维护演练",
+          "slug": "demo-8102",
+          "summary": "这是演示用维护通知，用于展示控制台公告列表的排版效果。",
+          "excerpt": "这是演示用维护通知，用于展示控制台公告列表的排版效果。",
+          "content": "<p>本条为演示公告，不涉及任何真实维护。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "维护通知",
+          "category": "维护通知",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-11-05 18:30:00",
+          "last_published_at": "2026-11-05 18:30:00",
+          "created_at": "2026-11-05 18:30:00",
+          "updated_at": "2026-11-05 18:30:00"
+        }
+      ],
+      "categories": [
+        {
+          "id": 1,
+          "name": "站点公告",
+          "slug": "notice",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "维护通知",
+          "slug": "maintenance",
+          "count": 1
+        }
+      ],
+      "page": 1,
+      "page_size": 5,
+      "total": 2
+    },
+    "GET /v2/client/help-articles": {
+      "list": [
+        {
+          "id": 8201,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "如何重置实例的登录密码",
+          "slug": "demo-8201",
+          "summary": "在控制台「实例概览」→「登录凭据」里点「重置密码」，按提示输入新密码即可。",
+          "excerpt": "在控制台「实例概览」→「登录凭据」里点「重置密码」，按提示输入新密码即可。",
+          "content": "<p>演示环境不会真的改密码，只展示交互流程。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "常见问题",
+          "category": "常见问题",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-10-20 09:00:00",
+          "last_published_at": "2026-10-20 09:00:00",
+          "created_at": "2026-10-20 09:00:00",
+          "updated_at": "2026-10-20 09:00:00"
+        },
+        {
+          "id": 8202,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "如何购买流量包",
+          "slug": "demo-8202",
+          "summary": "在「实例概览」→「配置信息」右上角点「购买流量包」，选择档位后生成账单。",
+          "excerpt": "在「实例概览」→「配置信息」右上角点「购买流量包」，选择档位后生成账单。",
+          "content": "<p>演示环境的账单不会真正扣费。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "计费与账单",
+          "category": "计费与账单",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-10-12 14:20:00",
+          "last_published_at": "2026-10-12 14:20:00",
+          "created_at": "2026-10-12 14:20:00",
+          "updated_at": "2026-10-12 14:20:00"
+        }
+      ],
+      "categories": [
+        {
+          "id": 1,
+          "name": "常见问题",
+          "slug": "faq",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "计费与账单",
+          "slug": "billing",
+          "count": 1
+        }
+      ],
+      "page": 1,
+      "page_size": 10,
+      "total": 2
+    },
+    "GET /v2/client/notices/unread-count": {
+      "count": 1
+    },
+    "GET /v2/client/notifications/unread-count": {
+      "count": 2
+    },
+    "GET /v2/client/content/overview": {
+      "notices": [
+        {
+          "id": 8101,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "演示公告：控制台已切换为示例数据",
+          "slug": "demo-8101",
+          "summary": "当前站点处于演示模式，所有实例、账单与工单均为示例数据，任何操作都不会真正执行。",
+          "excerpt": "当前站点处于演示模式，所有实例、账单与工单均为示例数据，任何操作都不会真正执行。",
+          "content": "<p>欢迎体验 TuraIDC 演示站。</p><p>本页数据由 <code>demo/fixtures/console.json</code> 生成，是只读示例。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "站点公告",
+          "category": "站点公告",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-11-08 10:00:00",
+          "last_published_at": "2026-11-08 10:00:00",
+          "created_at": "2026-11-08 10:00:00",
+          "updated_at": "2026-11-08 10:00:00"
+        },
+        {
+          "id": 8102,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "演示公告：香港节点维护演练",
+          "slug": "demo-8102",
+          "summary": "这是演示用维护通知，用于展示控制台公告列表的排版效果。",
+          "excerpt": "这是演示用维护通知，用于展示控制台公告列表的排版效果。",
+          "content": "<p>本条为演示公告，不涉及任何真实维护。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "维护通知",
+          "category": "维护通知",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-11-05 18:30:00",
+          "last_published_at": "2026-11-05 18:30:00",
+          "created_at": "2026-11-05 18:30:00",
+          "updated_at": "2026-11-05 18:30:00"
+        }
+      ],
+      "help_articles": [
+        {
+          "id": 8201,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "如何重置实例的登录密码",
+          "slug": "demo-8201",
+          "summary": "在控制台「实例概览」→「登录凭据」里点「重置密码」，按提示输入新密码即可。",
+          "excerpt": "在控制台「实例概览」→「登录凭据」里点「重置密码」，按提示输入新密码即可。",
+          "content": "<p>演示环境不会真的改密码，只展示交互流程。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "常见问题",
+          "category": "常见问题",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-10-20 09:00:00",
+          "last_published_at": "2026-10-20 09:00:00",
+          "created_at": "2026-10-20 09:00:00",
+          "updated_at": "2026-10-20 09:00:00"
+        },
+        {
+          "id": 8202,
+          "content_type": "notice",
+          "type": "notice",
+          "title": "如何购买流量包",
+          "slug": "demo-8202",
+          "summary": "在「实例概览」→「配置信息」右上角点「购买流量包」，选择档位后生成账单。",
+          "excerpt": "在「实例概览」→「配置信息」右上角点「购买流量包」，选择档位后生成账单。",
+          "content": "<p>演示环境的账单不会真正扣费。</p>",
+          "category_id": 1,
+          "content_category_id": 1,
+          "category_name": "计费与账单",
+          "category": "计费与账单",
+          "category_slug": "demo",
+          "status": 1,
+          "is_pinned": 0,
+          "is_recommended": 0,
+          "view_count": 128,
+          "publish_at": "2026-10-12 14:20:00",
+          "last_published_at": "2026-10-12 14:20:00",
+          "created_at": "2026-10-12 14:20:00",
+          "updated_at": "2026-10-12 14:20:00"
+        }
+      ],
+      "notice_categories": [
+        {
+          "id": 1,
+          "name": "站点公告",
+          "slug": "notice",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "维护通知",
+          "slug": "maintenance",
+          "count": 1
+        }
+      ],
+      "help_categories": [
+        {
+          "id": 1,
+          "name": "常见问题",
+          "slug": "faq",
+          "count": 1
+        },
+        {
+          "id": 2,
+          "name": "计费与账单",
+          "slug": "billing",
+          "count": 1
+        }
+      ]
+    },
+    "GET /v2/client/notices/:id": {
+      "id": 8101,
+      "content_type": "notice",
+      "type": "notice",
+      "title": "演示公告：控制台已切换为示例数据",
+      "slug": "demo-8101",
+      "summary": "当前站点处于演示模式，所有实例、账单与工单均为示例数据，任何操作都不会真正执行。",
+      "excerpt": "当前站点处于演示模式，所有实例、账单与工单均为示例数据，任何操作都不会真正执行。",
+      "content": "<p>欢迎体验 TuraIDC 演示站。</p><p>本页数据由 <code>demo/fixtures/console.json</code> 生成，是只读示例。</p>",
+      "category_id": 1,
+      "content_category_id": 1,
+      "category_name": "站点公告",
+      "category": "站点公告",
+      "category_slug": "demo",
+      "status": 1,
+      "is_pinned": 0,
+      "is_recommended": 0,
+      "view_count": 128,
+      "publish_at": "2026-11-08 10:00:00",
+      "last_published_at": "2026-11-08 10:00:00",
+      "created_at": "2026-11-08 10:00:00",
+      "updated_at": "2026-11-08 10:00:00"
+    },
+    "GET /v2/client/help-articles/:id": {
+      "id": 8201,
+      "content_type": "notice",
+      "type": "notice",
+      "title": "如何重置实例的登录密码",
+      "slug": "demo-8201",
+      "summary": "在控制台「实例概览」→「登录凭据」里点「重置密码」，按提示输入新密码即可。",
+      "excerpt": "在控制台「实例概览」→「登录凭据」里点「重置密码」，按提示输入新密码即可。",
+      "content": "<p>演示环境不会真的改密码，只展示交互流程。</p>",
+      "category_id": 1,
+      "content_category_id": 1,
+      "category_name": "常见问题",
+      "category": "常见问题",
+      "category_slug": "demo",
+      "status": 1,
+      "is_pinned": 0,
+      "is_recommended": 0,
+      "view_count": 128,
+      "publish_at": "2026-10-20 09:00:00",
+      "last_published_at": "2026-10-20 09:00:00",
+      "created_at": "2026-10-20 09:00:00",
+      "updated_at": "2026-10-20 09:00:00"
+    },
+    "GET /v2/client/tickets": {
+      "list": [
+        {
+          "id": 7101,
+          "subject": "演示工单：如何调整实例带宽",
+          "status": 0,
+          "priority": "normal",
+          "department": "技术支持",
+          "content": "演示工单：如何调整实例带宽（演示工单，内容为示例文本）",
+          "close_reason": null,
+          "close_reason_label": null,
+          "created_at": "2026-11-08 14:20:00",
+          "updated_at": "2026-11-08 14:20:00",
+          "user_id": 1001,
+          "service_id": 5101,
+          "user": {
+            "id": 1001,
+            "display_name": "演示客户",
+            "email": "demo@example.com"
+          },
+          "service": {
+            "id": 5101,
+            "name": "演示香港-轻量云",
+            "display_name": "演示香港-轻量云"
+          },
+          "replies": [],
+          "attachments": [],
+          "attachment_urls": []
+        },
+        {
+          "id": 7102,
+          "subject": "演示工单：发票抬头修改",
+          "status": 2,
+          "priority": "low",
+          "department": "财务",
+          "content": "演示工单：发票抬头修改（演示工单，内容为示例文本）",
+          "close_reason": null,
+          "close_reason_label": null,
+          "created_at": "2026-11-03 10:02:00",
+          "updated_at": "2026-11-04 09:31:00",
+          "user_id": 1001,
+          "service_id": 5102,
+          "user": {
+            "id": 1001,
+            "display_name": "演示客户",
+            "email": "demo@example.com"
+          },
+          "service": {
+            "id": 5102,
+            "name": "演示日本-独服",
+            "display_name": "演示日本-独服"
+          },
+          "replies": [],
+          "attachments": [],
+          "attachment_urls": []
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/referral/overview": {
+      "referral_code": "DEMO1001",
+      "register_path": "/register?ref=DEMO1001",
+      "referral_link": "/register?ref=DEMO1001",
+      "available_coupons": 2,
+      "reward_rate": "10.00",
+      "reward_freeze_days": 7,
+      "withdraw_min_amount": "50.00",
+      "total_sales_amount": "1286.00",
+      "referral_frozen_amount": "0.00",
+      "referral_available_amount": "128.60",
+      "referral_withdrawing_amount": "0.00",
+      "referral_withdrawn_amount": "0.00",
+      "direct_referral_count": 2,
+      "rewarded_orders_count": 2,
+      "total_reward_amount": "128.60",
+      "current_member_level": {
+        "id": 1,
+        "name": "普通会员",
+        "code": "basic",
+        "reward_rate": "10.00",
+        "sales_amount_min": "0.00",
+        "sales_amount_max": "5000.00",
+        "distance_amount": "3714.00"
+      },
+      "next_member_level": {
+        "id": 2,
+        "name": "白银会员",
+        "code": "silver",
+        "reward_rate": "15.00",
+        "sales_amount_min": "5000.00",
+        "sales_amount_max": "20000.00",
+        "distance_amount": "0.00"
+      },
+      "member_levels": [
+        {
+          "id": 1,
+          "name": "普通会员",
+          "code": "basic",
+          "reward_rate": "10.00"
+        },
+        {
+          "id": 2,
+          "name": "白银会员",
+          "code": "silver",
+          "reward_rate": "15.00"
+        }
+      ],
+      "recent_referrals": [
+        {
+          "id": 2001,
+          "nickname": "演示客户 A",
+          "email": "demo-a@example.com",
+          "referred_at": "2026-10-02 11:20:00"
+        },
+        {
+          "id": 2002,
+          "nickname": "演示客户 B",
+          "email": "demo-b@example.com",
+          "referred_at": "2026-10-18 15:45:00"
+        }
+      ]
+    },
+    "GET /v2/client/referral/rewards": {
+      "list": [
+        {
+          "id": 6201,
+          "reward_amount": "115.74",
+          "reward_rate": "10.00",
+          "order_amount": "1157.40",
+          "order_type": "renew",
+          "status": 1,
+          "rewarded_at": "2026-10-02 11:20:00",
+          "available_at": "2026-10-09 11:20:00",
+          "released_at": "2026-10-09 11:20:00",
+          "remark": "演示客户 A 续费奖励",
+          "referred_user": {
+            "id": 2001,
+            "nickname": "演示客户 A",
+            "email": "demo-a@example.com"
+          },
+          "invoice": {
+            "id": 9103,
+            "invoice_no": "DEMO202610250003",
+            "product_display_name": "香港轻量云 2 核 4G"
+          }
+        },
+        {
+          "id": 6202,
+          "reward_amount": "12.86",
+          "reward_rate": "10.00",
+          "order_amount": "128.60",
+          "order_type": "new",
+          "status": 1,
+          "rewarded_at": "2026-10-18 15:45:00",
+          "available_at": "2026-10-25 15:45:00",
+          "released_at": "2026-10-25 15:45:00",
+          "remark": "演示客户 B 新购奖励",
+          "referred_user": {
+            "id": 2002,
+            "nickname": "演示客户 B",
+            "email": "demo-b@example.com"
+          },
+          "invoice": {
+            "id": 9102,
+            "invoice_no": "DEMO202610250002",
+            "product_display_name": "流量包 100GB"
+          }
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/referral/account-logs": {
+      "list": [
+        {
+          "id": 6301,
+          "event_type": "reward_released",
+          "type": "reward_released",
+          "change_amount": "115.74",
+          "amount": "115.74",
+          "frozen_balance": "0.00",
+          "frozen_amount": "0.00",
+          "available_balance": "115.74",
+          "available_amount": "115.74",
+          "pending_withdrawal_balance": "0.00",
+          "withdrawing_amount": "0.00",
+          "withdrawn_balance": "0.00",
+          "withdrawn_amount": "0.00",
+          "remark": "邀请奖励释放",
+          "operator": "系统",
+          "created_at": "2026-10-09 11:20:00",
+          "user": {
+            "id": 2001,
+            "nickname": "演示客户 A"
+          }
+        },
+        {
+          "id": 6302,
+          "event_type": "reward_released",
+          "type": "reward_released",
+          "change_amount": "12.86",
+          "amount": "12.86",
+          "frozen_balance": "0.00",
+          "frozen_amount": "0.00",
+          "available_balance": "128.60",
+          "available_amount": "128.60",
+          "pending_withdrawal_balance": "0.00",
+          "withdrawing_amount": "0.00",
+          "withdrawn_balance": "0.00",
+          "withdrawn_amount": "0.00",
+          "remark": "邀请奖励释放",
+          "operator": "系统",
+          "created_at": "2026-10-25 15:45:00",
+          "user": {
+            "id": 2002,
+            "nickname": "演示客户 B"
+          }
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/referral/withdrawals": {
+      "list": [
+        {
+          "id": 6401,
+          "amount": "100.00",
+          "method": "alipay",
+          "account_name": "演示客户",
+          "account_no": "demo-pay@example.com",
+          "status": 2,
+          "remark": "演示数据：支付宝账号信息不完整，已驳回",
+          "created_at": "2026-10-26 10:02:00",
+          "processed_at": "2026-10-27 09:30:00"
+        }
+      ],
+      "total": 1,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/referral/direct-referrals": {
+      "list": [
+        {
+          "id": 2001,
+          "nickname": "演示客户 A",
+          "email": "demo-a@example.com",
+          "created_at": "2026-09-30 11:20:00",
+          "referred_at": "2026-10-02 11:20:00"
+        },
+        {
+          "id": 2002,
+          "nickname": "演示客户 B",
+          "email": "demo-b@example.com",
+          "created_at": "2026-10-16 15:45:00",
+          "referred_at": "2026-10-18 15:45:00"
+        }
+      ],
+      "total": 2,
+      "page": 1,
+      "page_size": 10
+    },
+    "GET /v2/client/api-keys": {
+      "list": [
+        {
+          "id": 7001,
+          "name": "演示密钥",
+          "key_prefix": "demo_key_",
+          "secret_last4": "a1b2",
+          "scopes": {
+            "services": "read",
+            "invoices": "read"
+          },
+          "expires_at": null,
+          "ip_allowlist": [],
+          "status": "enabled",
+          "last_used_at": "2026-11-08 20:14:03",
+          "created_at": "2026-09-12 10:00:00"
+        }
+      ]
+    },
+    "GET /v2/client/ai/bootstrap": {
+      "enabled": false,
+      "quota": null,
+      "tools": [],
+      "allowed_permission_modes": [
+        "read_only",
+        "confirm"
+      ]
+    }
+  },
+  "refused": {
+    "DELETE /v2/client/services/:id": {
+      "message": "演示环境不执行删除实例"
+    },
+    "POST /v2/client/services/:id/reinstalls": {
+      "message": "演示环境不执行重装系统"
+    },
+    "POST /v2/client/services/:id/password": {
+      "message": "演示环境不执行重置密码"
+    },
+    "POST /v2/client/auto-refund/applications": {
+      "message": "演示环境不执行退款申请"
+    }
+  }
+}

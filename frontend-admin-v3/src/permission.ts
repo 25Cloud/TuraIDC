@@ -4,6 +4,7 @@ import NProgress from 'nprogress'; // progress bar
 import { MessagePlugin } from 'tdesign-vue-next';
 import type { RouteRecordRaw } from 'vue-router';
 
+import { setAdminToken } from '@/app/runtime/session';
 import { hasPermissionInList } from '@/constants/permissions';
 import { t } from '@/locales';
 import router from '@/router';
@@ -24,6 +25,15 @@ router.beforeEach(async (to, from, next) => {
   // 始终以 Cookie/session 中的 token 为准，避免 Pinia state 与 Cookie 不同步
   userStore.syncTokenFromSession();
   const token = userStore.token;
+
+  // 演示站：不管 token 在不在，登录页一律直接送进看板——访客点「管理端」就该看到界面，
+  // 而不是一道没人给他账号密码的登录墙。
+  if (import.meta.env.VITE_DEMO_MODE === 'true' && to.path === '/admin/login') {
+    setAdminToken('demo-admin-token');
+    next({ path: '/admin/dashboard', replace: true });
+    NProgress.done();
+    return;
+  }
 
   if (token) {
     if (to.path === '/admin/login') {

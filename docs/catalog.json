@@ -359,6 +359,12 @@
       "summary": "Zjmf 定时任务系统源码深度解析。"
     },
     {
+      "path": "internal/designs/frontend/demo-site-design.md",
+      "status": "current",
+      "summary": "演示站定位、四个子目录分工、axios adapter 假数据与 demo hash 路由的取舍，以及零外网请求的验收口径。",
+      "review_by": "2027-05-09"
+    },
+    {
       "path": "internal/designs/frontend/site-web-landing-design.md",
       "status": "current",
       "summary": "项目官网首页 site-web 的定位、页面结构、SEO 口径与已知取舍。",
@@ -422,6 +428,12 @@
       "status": "active",
       "summary": "数据库结构专家团审查发现的分组修复与回归计划。",
       "review_by": "2026-12-13"
+    },
+    {
+      "path": "internal/execution-plans/active/demo-site-2026-11-09.md",
+      "status": "active",
+      "summary": "纯静态演示站落地：shared/demo 传输层、三端 demo 挂载、fixtures 生成器、build_demo 组装与 EdgeOne 首次部署。",
+      "review_by": "2026-12-09"
     },
     {
       "path": "internal/execution-plans/active/expert-review-remediation-2026-08-12.md",

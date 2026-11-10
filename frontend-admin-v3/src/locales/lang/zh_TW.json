@@ -4478,7 +4478,8 @@
     "passwordRequired": "請輸入密碼",
     "loginSuccess": "登入成功",
     "loginFailed": "登入失敗，請檢查賬號密碼",
-    "captchaRetry": "驗證碼載入失敗，點選重試"
+    "captchaRetry": "驗證碼載入失敗，點選重試",
+    "demoHint": "示範環境：帳號 {account} / 密碼 {password}（已自動填好，直接點登入）"
   },
   "orders": {
     "index": {

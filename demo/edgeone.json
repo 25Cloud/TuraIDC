@@ -1,0 +1,6 @@
+{
+  "installCommand": "cd .. && HUSKY=0 pnpm install --frozen-lockfile",
+  "buildCommand": "cd .. && node backend/scripts/build_demo.mjs",
+  "outputDirectory": "dist",
+  "nodeVersion": "24.18.0"
+}

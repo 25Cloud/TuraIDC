@@ -10,6 +10,15 @@ export const REPO_SLUG = "25Cloud/TuraIDC";
 export const CONTACT_MAIL = "contact@turaidc.com";
 /** 二五云：目前唯一跑着 TuraIDC 的生产站点，作为在线演示入口 */
 export const DEMO_URL = "https://idc.25y.cn/";
+/** 演示站：纯静态、无后端，首页 / 用户端 / 控制台 / 管理端都能直接点 */
+export const DEMO_SITE_URL = "https://demo.turaidc.com/";
+
+/** 演示站三端入口：官网与演示站互相指路，访客不用猜「管理端在哪」 */
+export const DEMO_ENTRIES = [
+  { key: "user" as const, path: "/", account: null },
+  { key: "console" as const, path: "/console/#/client/login", account: "demo@example.com / demo123456" },
+  { key: "admin" as const, path: "/admin/#/admin/dashboard", account: "admin / demo123456" },
+];
 
 export const NAV_LINKS = [
   { key: "features", href: "#features" },
@@ -26,6 +35,7 @@ export const LINKS = {
   releases: `${REPO_URL}/releases`,
   issues: `${REPO_URL}/issues`,
   demo: DEMO_URL,
+  demoSite: DEMO_SITE_URL,
   quickStart: `${DOCS_URL}/quick-start`,
   deployDocs: `${DOCS_URL}/guide/deploy/scheduling`,
   api: `${DOCS_URL}/develop/api`,

@@ -15,7 +15,8 @@
     "lint:fix": "eslint --ext .vue,.js,jsx,.ts,.tsx ./ --max-warnings 0 --fix",
     "stylelint": "stylelint src/**/*.{html,vue,css,sass,less}",
     "stylelint:fix": "stylelint --fix src/**/*.{html,vue,css,sass,less}",
-    "verify:refactor": "node scripts/verify-refactor.mjs"
+    "verify:refactor": "node scripts/verify-refactor.mjs",
+    "test:demo": "playwright test --config=playwright.demo.config.ts"
   },
   "dependencies": {
     "@turaidc/shared": "file:../shared",

@@ -5,6 +5,21 @@
         <h1>{{ $t('login.consoleTitle') }}</h1>
         <p>{{ $t('login.subtitle') }}</p>
       </div>
+      <!-- 演示站：账号密码直接写出来并已自动填好，访客点一下「登录」就能进 -->
+      <div
+        v-if="DEMO_MODE"
+        style="
+          margin: 0 0 18px;
+          padding: 10px 14px;
+          border-radius: 8px;
+          background: rgba(0, 82, 217, 0.08);
+          border: 1px solid rgba(0, 82, 217, 0.24);
+          font-size: 13px;
+          line-height: 1.6;
+        "
+      >
+        {{ $t('login.demoHint', { account: DEMO_ACCOUNT.username, password: DEMO_ACCOUNT.password }) }}
+      </div>
       <t-form ref="formRef" :data="formData" :rules="formRules" label-align="top" @submit="handleLogin">
         <t-form-item :label="$t('login.account')" name="account">
           <t-input
@@ -121,9 +136,12 @@ function handleCaptchaRetry() {
 const REMEMBER_ACCOUNT_KEY = 'turaidc-admin-remembered-account';
 const rememberAccount = ref(false);
 
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
+const DEMO_ACCOUNT = { username: 'admin', password: 'demo123456' };
+
 const formData = ref({
-  account: '',
-  password: '',
+  account: DEMO_MODE ? DEMO_ACCOUNT.username : '',
+  password: DEMO_MODE ? DEMO_ACCOUNT.password : '',
 });
 
 onMounted(() => {
