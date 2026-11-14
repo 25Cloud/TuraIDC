@@ -187,6 +187,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: 校验前端镜像构建上下文
+        run: node backend/scripts/check_frontend_build_context.mjs
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:

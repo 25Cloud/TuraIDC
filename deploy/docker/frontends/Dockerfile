@@ -48,6 +48,12 @@ RUN corepack enable pnpm \
 COPY backend/scripts ./backend/scripts
 COPY theme.css tsconfig.base.json logo.png favicon.png ./
 COPY shared ./shared
+# 演示数据：三端的 request 模块用 tsconfig paths / vite alias 的 @demo-fixtures
+# 指向仓库根 demo/fixtures/*.json（只有 VITE_DEMO_MODE=true 时才会被动态 import 真正加载）。
+# 但类型检查与 rollup 的模块解析阶段就要找到这些文件，缺了直接
+# TS2307: Cannot find module '@demo-fixtures/admin.json' 构建失败，
+# 因此即使生产镜像根本用不到演示数据，也必须拷进构建阶段。
+COPY demo/fixtures ./demo/fixtures
 COPY frontend-admin-v3 ./frontend-admin-v3
 COPY frontend-user-v3-www ./frontend-user-v3-www
 COPY frontend-user-v4-console ./frontend-user-v4-console

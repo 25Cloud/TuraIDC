@@ -346,6 +346,26 @@ Laravel 的 `mimetypes` 规则本身走 Symfony 的 MimeTypeGuesser，fileinfo �
 **对策**：任何「会产生上游订单」的失败路径都必须落一个可幂等的检查点（账单号、实例号或
 主机名），并用不可重试的异常类型终止自动重试。切不要把这类失败混进通用异常让队列重试。
 
+### 3.15 前端镜像构建漏拷仓库根目录，只在 Docker 里才炸
+
+三端的 `request` 模块用 tsconfig paths 与 vite alias 的 `@demo-fixtures` 指向**仓库根**的
+`demo/fixtures/*.json`（演示数据，只有 `VITE_DEMO_MODE=true` 时才会被动态 import 真正加载）。
+本地和 CI 都是完整仓库，文件在场，`pnpm run build:frontends` 一路绿灯；但镜像构建只按
+`deploy/docker/frontends/Dockerfile` 里的 COPY 清单装配上下文，没拷 `demo/fixtures` 时
+`vue-tsc` 直接报：
+
+```
+error TS2307: Cannot find module '@demo-fixtures/admin.json' or its corresponding type declarations.
+```
+
+坑在两点：一是它出现在 `pnpm install` 之后，一次要烧几分钟才看得到，不可能靠本地构建提前发现；
+二是 CI 的 `Frontend (Vue 3)` 永远是绿的——两套构建所处的文件环境根本不是同一个。
+
+**对策**：`backend/scripts/check_frontend_build_context.mjs` 把三端 tsconfig paths / vite alias
+里解析到自身目录之外的路径，与实际 COPY 清单做交叉比对，并验证每条 COPY 源真实存在。
+`ci.yml`（装依赖前）与 `docker-image.yml`（进 Buildx 前）各跑一次，秒级失败并直接点名缺哪个目录。
+以后新增任何跨目录别名（`@xxx` 指向 `../xxx`），先把该目录补进 frontends Dockerfile 的 COPY。
+
 ## 四、提交
 ### 4.1 必须 `--no-verify`
 

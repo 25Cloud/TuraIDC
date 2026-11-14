@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: 02fd4ead22323b2dfdd5880efa7f4a4131b5c52a18c2bc7627e8f94accce6728
+sourceHash: ed69f1a93de2409a27da4c46cf35dcb5451d014eed2c34dc2eea52b9c4cdc5e1
 translatedAt: 2026-10-26
 ---
 
@@ -271,6 +271,20 @@ The real trap sits **after a successful checkout**: once `/cart/settle` returns 
 3. `ensureLocalService` locks per order and re-checks by `order_id + product_id`, so concurrent fulfilment cannot create two services for one order (the screenshot with two service rows pointing at the same upstream instance came from exactly that).
 
 **Countermeasure**: every failure path that may have created an upstream order must leave an idempotent checkpoint — invoice number, instance id, or hostname — and must end automatic retries with a non-retryable exception type. Never let that class of failure fall into a generic exception that the queue retries.
+
+### 3.15 A frontend image build silently drops a repository-root directory, and only Docker notices
+
+All three frontends reach demo data through the `@demo-fixtures` alias — declared in `tsconfig` `paths` and in each `vite` config as `path.resolve(__dirname, '../demo/fixtures')` — so module resolution leaves the frontend directory and lands on `demo/fixtures/*.json` at the repository root. Those files are demo fixtures and are only genuinely imported when `VITE_DEMO_MODE=true`.
+
+Locally and in CI the checkout is complete, the files are present, and `pnpm run build:frontends` goes green. The image build, however, assembles its context only from the `COPY` list in `deploy/docker/frontends/Dockerfile`. Without `demo/fixtures`, `vue-tsc` fails with:
+
+```
+error TS2307: Cannot find module '@demo-fixtures/admin.json' or its corresponding type declarations.
+```
+
+Two things make that expensive: it surfaces only after `pnpm install`, so one round trip burns several minutes, and the `Frontend (Vue 3)` CI job stays green the whole time because the two builds do not see the same file tree.
+
+**Countermeasure**: `backend/scripts/check_frontend_build_context.mjs` collects every `tsconfig` `paths` / `vite` alias target that resolves outside its own frontend, cross-checks each one against the Dockerfile `COPY` list, and also verifies that every `COPY` source exists on disk. Both `ci.yml` (before installing dependencies) and `docker-image.yml` (before Buildx starts) run it, so the failure takes seconds instead of minutes and it names the missing directory. Whenever a new cross-directory alias (`@xxx` → `../xxx`) is added, put that directory into the frontends Dockerfile `COPY` first.
 
 ## 4. Committing
 

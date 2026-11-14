@@ -153,6 +153,11 @@ jobs:
       - name: Set image namespace (lowercase)
         run: echo "IMAGE_NAMESPACE=${GITHUB_REPOSITORY_OWNER,,}" >> "$GITHUB_ENV"
 
+      # 前端构建依赖仓库根的 demo/fixtures 与 shared，靠 Dockerfile 的 COPY 装配进上下文。
+      # 先跑一遍一致性校验，漏拷时 20 秒内红，不必等镜像构建跑到装完依赖才炸 TS2307。
+      - name: 校验前端镜像构建上下文
+        run: node backend/scripts/check_frontend_build_context.mjs
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 

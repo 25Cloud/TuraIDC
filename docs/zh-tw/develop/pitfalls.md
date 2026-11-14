@@ -1,6 +1,6 @@
 ---
 source: develop/pitfalls.md
-sourceHash: 02fd4ead22323b2dfdd5880efa7f4a4131b5c52a18c2bc7627e8f94accce6728
+sourceHash: ed69f1a93de2409a27da4c46cf35dcb5451d014eed2c34dc2eea52b9c4cdc5e1
 generated: zh-tw
 ---
 
@@ -352,6 +352,26 @@ Laravel 的 `mimetypes` 規則本身走 Symfony 的 MimeTypeGuesser，fileinfo �
 
 **對策**：任何「會產生上游訂單」的失敗路徑都必須落一個可冪等的檢查點（賬單號、例項號或
 主機名），並用不可重試的異常型別終止自動重試。切不要把這類失敗混進通用異常讓佇列重試。
+
+### 3.15 前端映象構建漏拷倉庫根目錄，只在 Docker 裡才炸
+
+三端的 `request` 模組用 tsconfig paths 與 vite alias 的 `@demo-fixtures` 指向**倉庫根**的
+`demo/fixtures/*.json`（演示資料，只有 `VITE_DEMO_MODE=true` 時才會被動態 import 真正載入）。
+本地和 CI 都是完整倉庫，檔案在場，`pnpm run build:frontends` 一路綠燈；但映象構建只按
+`deploy/docker/frontends/Dockerfile` 裡的 COPY 清單裝配上下文，沒拷 `demo/fixtures` 時
+`vue-tsc` 直接報：
+
+```
+error TS2307: Cannot find module '@demo-fixtures/admin.json' or its corresponding type declarations.
+```
+
+坑在兩點：一是它出現在 `pnpm install` 之後，一次要燒幾分鐘才看得到，不可能靠本地構建提前發現；
+二是 CI 的 `Frontend (Vue 3)` 永遠是綠的——兩套構建所處的檔案環境根本不是同一個。
+
+**對策**：`backend/scripts/check_frontend_build_context.mjs` 把三端 tsconfig paths / vite alias
+裡解析到自身目錄之外的路徑，與實際 COPY 清單做交叉比對，並驗證每條 COPY 源真實存在。
+`ci.yml`（裝依賴前）與 `docker-image.yml`（進 Buildx 前）各跑一次，秒級失敗並直接點名缺哪個目錄。
+以後新增任何跨目錄別名（`@xxx` 指向 `../xxx`），先把該目錄補進 frontends Dockerfile 的 COPY。
 
 ## 四、提交
 ### 4.1 必須 `--no-verify`
