@@ -40,11 +40,16 @@ COPY frontend-user-v4-console/package.json ./frontend-user-v4-console/
 # 自己解析到的「最新 pnpm」去跑，一旦与 packageManager 不一致就直接
 # ERR_PNPM_BAD_PM_VERSION（2026-11 起 corepack 默认拉 v12，构建就是这么红的）。
 # 所以这里不走 corepack 的自动解析，直接把 pnpm 装成 packageManager 指定的版本。
+# libatomic1：npm 装出来的 pnpm 是 @pnpm/exe 单文件二进制，slim 镜像缺这个库会
+# 报 "error while loading shared libraries: libatomic.so.1"。
 # --shamefully-hoist：本项目依赖根 hoist 布局（v3-www 直接 import element-plus 深路径），
 # 与 docs/guide/deploy/scheduling.md 记载的部署命令保持一致。
 # verify-deps-before-run=false：关闭 pnpm run 前的依赖检查，否则它会 purge 掉根 hoist 布局
 # （容器内无 TTY，purge 会直接以 ERR_PNPM_ABORTED_REMOVE_MODULES_DIR_NO_TTY 中止构建）
 RUN corepack disable pnpm 2>/dev/null || true; \
+  apt-get update; \
+  apt-get install -y --no-install-recommends libatomic1; \
+  rm -rf /var/lib/apt/lists/*; \
   npm install -g pnpm@11.13.1; \
   pnpm --version; \
   pnpm install --frozen-lockfile --shamefully-hoist --config.verify-deps-before-run=false
