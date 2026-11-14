@@ -6067,7 +6067,9 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await userDetailTab(page, '账单').click();
     await page.locator('.table-scroll').getByRole('button', { name: '详情', exact: true }).first().click();
     const invoiceDrawer = page.locator('.t-drawer:visible');
-    await expect(invoiceDrawer.getByText('INV-USER-001')).toBeVisible();
+    // 抽屉先播动画再取详情，CI 上（4 核 + 并发）首个断言偶尔会赶在请求回来之前，
+    // 这里给首个断言 15 秒窗口；后续两条断言沿用默认值。
+    await expect(invoiceDrawer.getByText('INV-USER-001')).toBeVisible({ timeout: 15000 });
     await expect(invoiceDrawer.getByText('支付 / 退款记录')).toBeVisible();
     await expect(invoiceDrawer.getByRole('button', { name: '退款' })).toBeVisible();
   });
