@@ -5,15 +5,15 @@ import { expect, test } from "@playwright/test";
  * 顶栏下拉（mega-menu）回归。
  *
  * 两个线上问题：
- *  1. 进了 /products 后，顶栏「产品」这个已经激活的项被反向处理——悬停时主动收起，
- *     于是「在产品页拉不开产品下拉」，而这恰恰是用户最想横向换目录的时刻；
+ *  1. 进了 /products 后，顶栏「商品」这个已经激活的项被反向处理——悬停时主动收起，
+ *     于是「在商品页拉不开商品下拉」，而这恰恰是用户最想横向换目录的时刻；
  *     /notices、/help 同理。
  *  2. 下拉打开后到数据回来之间没有任何占位：先是整块空白（公告/帮助），
- *     产品面板则因为「目录已回来、地区分组还在飞」被当成「取完了且为空」，
- *     先闪一句「暂无产品分类」再被内容顶掉。
+ *     商品面板则因为「目录已回来、地区分组还在飞」被当成「取完了且为空」，
+ *     先闪一句「暂无商品目录」再被内容顶掉。
  *
  * 顺带钉住两条交互契约：下拉必须能用键盘打开（此前只有 hover 可达），
- * 以及点击导航项只开关面板、不直接跳页，一级入口统一走面板里的「全部产品」。
+ * 以及点击导航项只开关面板、不直接跳页，一级入口统一走面板里的「全部商品」。
  */
 
 const PRODUCT_TYPES = {
@@ -119,18 +119,23 @@ async function mockSiteApi(page: Page, options: MockOptions = {}) {
   });
 }
 
+// 顶栏文案全走 i18n（zh_CN：首页 / 商品 / 官方公告 / 帮助 / 其他入口），
+// 按主导航里的可访问名字定位，不依赖 .main-nav__link 这层类链
 function navLink(page: Page, label: string) {
-  return page.locator(".main-nav__link", { hasText: label }).first();
+  return page
+    .getByRole("navigation", { name: "主导航" })
+    .getByRole("link", { name: label, exact: true })
+    .first();
 }
 
 const megaMenu = (page: Page) => page.locator(".mega-menu");
 
 test.describe("顶栏下拉", () => {
-  test("在产品页内悬停「产品」能拉下菜单", async ({ page }) => {
+  test("在商品页内悬停「商品」能拉下菜单", async ({ page }) => {
     await mockSiteApi(page);
     await page.goto("/products");
 
-    await navLink(page, "产品").hover();
+    await navLink(page, "商品").hover();
 
     await expect(megaMenu(page)).toBeVisible();
     await expect(
@@ -143,7 +148,7 @@ test.describe("顶栏下拉", () => {
     await mockSiteApi(page);
 
     await page.goto("/notices");
-    await navLink(page, "公告").hover();
+    await navLink(page, "官方公告").hover();
     await expect(megaMenu(page)).toBeVisible();
 
     await page.goto("/help");
@@ -151,18 +156,18 @@ test.describe("顶栏下拉", () => {
     await expect(megaMenu(page)).toBeVisible();
   });
 
-  test("取数期间显示骨架占位，不闪「暂无产品分类」", async ({ page }) => {
+  test("取数期间显示骨架占位，不闪「暂无商品目录」", async ({ page }) => {
     await mockSiteApi(page, { groupsDelayMs: 2500 });
     await page.goto("/");
 
-    await navLink(page, "产品").hover();
+    await navLink(page, "商品").hover();
 
     // 分组还在飞：必须是占位骨架，且任何空态文案都不允许出现
     await expect(
       megaMenu(page).locator(".mega-skeleton-item").first(),
     ).toBeVisible();
     await expect(megaMenu(page).locator(".mega-menu__empty")).toHaveCount(0);
-    await expect(page.getByText("暂无产品分类")).toHaveCount(0);
+    await expect(page.getByText("暂无商品目录")).toHaveCount(0);
 
     // 面板高度在占位与真实内容之间保持稳定，不塌陷
     const pendingHeight = (await megaMenu(page).boundingBox())?.height ?? 0;
@@ -179,18 +184,18 @@ test.describe("顶栏下拉", () => {
     await mockSiteApi(page);
     await page.goto("/");
 
-    // 从页面顶部一路 Tab 到「产品」，不写死中间有几个可聚焦元素
+    // 从页面顶部一路 Tab 到「商品」，不写死中间有几个可聚焦元素
     for (let i = 0; i < 15; i += 1) {
       await page.keyboard.press("Tab");
-      const focused = await navLink(page, "产品").evaluate(
+      const focused = await navLink(page, "商品").evaluate(
         (el) => el === document.activeElement,
       );
       if (focused) break;
     }
 
-    await expect(navLink(page, "产品")).toBeFocused();
+    await expect(navLink(page, "商品")).toBeFocused();
     await expect(megaMenu(page)).toBeVisible();
-    await expect(navLink(page, "产品")).toHaveAttribute(
+    await expect(navLink(page, "商品")).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -203,20 +208,20 @@ test.describe("顶栏下拉", () => {
     await mockSiteApi(page);
     await page.goto("/");
 
-    await navLink(page, "产品").click();
+    await navLink(page, "商品").click();
 
     await expect(megaMenu(page)).toBeVisible();
     expect(page.url()).not.toContain("/products");
 
     const overview = megaMenu(page).locator(".mega-type-more");
-    await expect(overview).toHaveText("全部产品 →");
+    await expect(overview).toHaveText("全部商品 →");
 
     // 再次点击同一项才收起
-    await navLink(page, "产品").click();
+    await navLink(page, "商品").click();
     await expect(megaMenu(page)).toHaveCount(0);
 
     // 一级入口可达
-    await navLink(page, "产品").click();
+    await navLink(page, "商品").click();
     await overview.click();
     await expect(page).toHaveURL(/\/products$/);
   });
@@ -245,11 +250,11 @@ test.describe("顶栏下拉", () => {
     });
 
     await page.goto("/");
-    await navLink(page, "产品").hover();
+    await navLink(page, "商品").hover();
 
     await expect(megaMenu(page).getByText("分类加载失败")).toBeVisible();
     // 失败不能被当成「取完了且为空」
-    await expect(page.getByText("暂无产品分类")).toHaveCount(0);
+    await expect(page.getByText("暂无商品目录")).toHaveCount(0);
 
     failing = false;
     await megaMenu(page).getByRole("button", { name: "重新加载" }).click();
@@ -281,7 +286,7 @@ test.describe("顶栏下拉", () => {
     );
 
     await page.goto("/");
-    await navLink(page, "公告").hover();
+    await navLink(page, "官方公告").hover();
     await expect(megaMenu(page)).toBeVisible();
 
     const overflow = await page.evaluate(() => {
@@ -328,7 +333,7 @@ test.describe("顶栏下拉", () => {
     });
 
     await page.goto("/");
-    await navLink(page, "公告").hover();
+    await navLink(page, "官方公告").hover();
 
     await expect(megaMenu(page).getByText("公告加载失败")).toBeVisible();
     await expect(page.getByText("暂无公告")).toHaveCount(0);

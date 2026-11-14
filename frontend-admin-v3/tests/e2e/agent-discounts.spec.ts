@@ -156,7 +156,9 @@ test('代理组与商品折扣组可新增', async ({ page }) => {
 
   await page.locator('.t-tabs__nav-item', { hasText: '商品折扣组' }).click();
   await page.getByRole('button', { name: '新增折扣组' }).click();
-  const productDialog = page.locator('.t-dialog').filter({ hasText: '新增商品折扣组' });
+  // 新建态弹窗标题是 addDiscountGroup「新增折扣组」（与按钮同名）；「新增商品折扣组」并不存在，
+  // 商品折扣组只在编辑态才叫「编辑商品折扣组」。
+  const productDialog = page.locator('.t-dialog').filter({ hasText: '新增折扣组' });
   await productDialog.getByPlaceholder('如：云服务器').fill('对象存储');
   await productDialog.getByPlaceholder('唯一标识，如 cloud').fill('oss');
   await productDialog.getByRole('button', { name: '保存' }).click();

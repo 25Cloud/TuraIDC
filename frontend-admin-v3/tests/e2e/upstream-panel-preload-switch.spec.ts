@@ -14,7 +14,7 @@ import { expect, test } from '@playwright/test';
  *  3) 切换后提交的是数字 0/1，且保存失败会把开关弹回原状态。
  *
  * 定位方式与 open-api-config-switch.spec.ts 同源：t-switch 渲染成 div 而非
- * input[type=checkbox]，没有 a11y 角色可依赖，只能按卡片容器 + 标题文本收敛。
+ * input[type=checkbox]，没有 a11y 角色可依赖，只能按字段行 + 标签文本收敛。
  */
 
 /** 设置项在 system 分组下的 key。 */
@@ -33,9 +33,18 @@ function settingsList(overrides: Record<string, string | null> = {}) {
     .map(([key, value]) => ({ key, value }));
 }
 
-/** 按卡片标题定位开关。 */
+/**
+ * 按字段标签定位开关：上游设置卡片现在是标准设置字段结构
+ * `.admin-field--switch` > `.admin-field__label`（plugins.upstream.panelPreloadTitle /
+ * originCheckTitle）+ `.t-switch`；旧版 `.upstream-origin-check-card` 已不存在。
+ * t-switch 渲染成 div 而非 input[type=checkbox]，没有 a11y 角色可依赖，
+ * 所以按「字段行 + 标签文本」收敛，不串更深层的 class 链。
+ */
 function panelSwitch(page: Page, title: string): Locator {
-  return page.locator('.upstream-origin-check-card').filter({ hasText: title }).locator('.t-switch');
+  return page
+    .locator('.admin-field--switch')
+    .filter({ has: page.locator('.admin-field__label', { hasText: title }) })
+    .locator('.t-switch');
 }
 
 /** 预置 admin 会话并统一接管 /api/v2/admin，避免路由守卫跳转登录页。 */

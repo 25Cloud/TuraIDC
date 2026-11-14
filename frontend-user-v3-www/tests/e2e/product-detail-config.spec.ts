@@ -534,7 +534,7 @@ test.describe("独立配置页移动端抽屉选择器", () => {
     // 机型：同组两个机型都出现在抽屉里
     const skuGroup = page
       .locator(".cfg-group")
-      .filter({ hasText: "产品规格" })
+      .filter({ hasText: "商品规格" })
       .first();
     await skuGroup.locator(".mobile-picker-trigger").click();
     await expect(page.locator(".mopt-item")).toHaveCount(GROUP_PRODUCTS.length);

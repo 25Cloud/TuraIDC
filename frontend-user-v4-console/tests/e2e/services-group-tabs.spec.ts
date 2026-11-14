@@ -116,10 +116,10 @@ test.describe('服务实例按一级分组切分', () => {
     const tabs = page.locator('.service-group-tabs');
     await expect(tabs).toBeVisible();
 
-    // 第一个是「全部产品」，后面按一级分组排，每项带数量
+    // 第一个是「全部商品」（client.services.allProducts），后面按一级分组排，每项带数量
     const tabItems = tabs.locator('.service-group-tab');
     await expect(tabItems).toHaveCount(3);
-    await expect(tabItems.nth(0)).toContainText('全部产品');
+    await expect(tabItems.nth(0)).toContainText('全部商品');
     await expect(tabItems.nth(0)).toContainText('3');
     await expect(tabItems.nth(1)).toContainText('云服务器');
     await expect(tabItems.nth(1)).toContainText('2');

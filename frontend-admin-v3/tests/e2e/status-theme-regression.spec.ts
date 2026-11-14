@@ -674,7 +674,8 @@ test('通知中心：邮件/短信模板测试发送收件人输入随渠道切�
   const emailDialog = page.locator('.t-dialog:visible');
   await expect(emailDialog.getByText('测试发送邮件')).toBeVisible();
   await expect(emailDialog.getByText('接收邮箱地址')).toBeVisible();
-  const emailRecipientInput = emailDialog.getByPlaceholder('请输入接收邮箱，例如：tester@example.com');
+  // 占位文案以 notifications.emailRecipientPlaceholder 为准（无「请输入」前缀）。
+  const emailRecipientInput = emailDialog.getByPlaceholder('接收邮箱，例如：tester@example.com');
   await expect(emailRecipientInput).toHaveAttribute('type', 'text');
   await emailRecipientInput.fill('tester@example.com');
 
@@ -698,7 +699,7 @@ test('通知中心：邮件/短信模板测试发送收件人输入随渠道切�
   const smsDialog = page.locator('.t-dialog:visible');
   await expect(smsDialog.getByText('测试发送短信')).toBeVisible();
   await expect(smsDialog.getByText('接收手机号')).toBeVisible();
-  const smsRecipientInput = smsDialog.getByPlaceholder('请输入接收手机号，例如：13900001234');
+  const smsRecipientInput = smsDialog.getByPlaceholder('接收手机号，例如：13900001234');
   await expect(smsRecipientInput).toHaveAttribute('type', 'tel');
   // 输入含空格/连字符，提交时应被 normalizeRecipient 清洗
   await smsRecipientInput.fill('139 0000-1234');
