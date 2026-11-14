@@ -4589,8 +4589,64 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     expect(JSON.parse(saveTrafficPayload.settings.items)).toEqual(
       expect.arrayContaining([expect.objectContaining({ label: '200GB', target_value: 200, price: '29.90' })]),
     );
-    // 流量包分组的增删改（原 4586-4649 段）随「绑定配置」改成树选择后需要重写，
-    // 这里先只保留上面的列表/上游拉取/保存断言；分组 CRUD 单独拆用例跟进。
+    // 流量包分组：新增弹窗（含绑定配置树）能打开 → 改既有分组 → 删除分组。
+    // 树里的复选框是受控的（点它不改状态、要改的是组的选中数组），自动化勾选不稳定，
+    // 这里只验证弹窗结构与树能打开；分组的增改删走既有分组的编辑/删除，载荷断言照样覆盖。
+    await page.locator('.traffic-actions').getByRole('button', { name: '新增分组' }).click();
+    const trafficGroupDialog = page.locator('.t-dialog:visible').filter({ hasText: '新增流量包分组' });
+    await expect(trafficGroupDialog.getByText('绑定配置', { exact: true })).toBeVisible();
+    await trafficGroupDialog
+      .locator('.t-form__item')
+      .filter({ hasText: '分组名称' })
+      .locator('input')
+      .fill('高防流量包');
+    await trafficGroupDialog
+      .locator('.binding-tree-select input')
+      .first()
+      .evaluate((el) => (el as HTMLElement).click());
+    const trafficBindPopup = page.locator('.binding-tree-select-popup:visible');
+    await expect(trafficBindPopup).toBeVisible();
+    await expect(trafficBindPopup.getByText('襄阳', { exact: true }).first()).toBeVisible();
+    await page.keyboard.press('Escape');
+    await trafficGroupDialog.getByRole('button', { name: '取消' }).click();
+    await expect(trafficGroupDialog).toBeHidden();
+
+    // 编辑既有分组：只改名，绑定关系沿用，响应里应带上同样的 product_ids
+    await page
+      .locator('.traffic-group-item')
+      .filter({ hasText: '基础流量包' })
+      .getByRole('button', { name: '编辑' })
+      .click();
+    const editTrafficGroupDialog = page.locator('.t-dialog:visible').filter({ hasText: '编辑流量包分组' });
+    await editTrafficGroupDialog
+      .locator('.t-form__item')
+      .filter({ hasText: '分组名称' })
+      .locator('input')
+      .fill('基础流量包编辑');
+    const updateTrafficGroupRequest = page.waitForRequest(
+      (request) => request.url().includes('/api/v2/admin/settings') && request.method() === 'POST',
+    );
+    await editTrafficGroupDialog.getByRole('button', { name: '保存分组' }).click();
+    const updateTrafficGroupPayload = (await updateTrafficGroupRequest).postDataJSON();
+    expect(JSON.parse(updateTrafficGroupPayload.settings.groups)).toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: '基础流量包编辑', product_ids: [101] })]),
+    );
+
+    // 删除刚改名的分组
+    const deleteTrafficGroupRequest = page.waitForRequest(
+      (request) => request.url().includes('/api/v2/admin/settings') && request.method() === 'POST',
+    );
+    await page
+      .locator('.traffic-group-item')
+      .filter({ hasText: '基础流量包编辑' })
+      .getByRole('button', { name: '删除' })
+      .click();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '确认删除' }).click();
+    const deleteTrafficGroupPayload = (await deleteTrafficGroupRequest).postDataJSON();
+    expect(JSON.parse(deleteTrafficGroupPayload.settings.groups)).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ name: '基础流量包编辑' })]),
+    );
+
     await page.goto('/admin/products/suppliers', { waitUntil: 'domcontentloaded' });
     // 同上：?tab=suppliers 兼容跳转已下线，这条路径本身就是供应商页
     await expect(page).toHaveURL(/\/admin\/products\/suppliers$/);
@@ -4603,8 +4659,70 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.locator('.supplier-grid').getByRole('button', { name: '批量对接' }).first().click();
     const supplierBatchDialog = page.locator('.t-dialog:visible');
     await expect(supplierBatchDialog.getByText('上游云服务器 A')).toBeVisible();
-    // 批量对接「导入分类」与新增/编辑/删除供应商这几步仍对着旧组件（t-select + 独立搜索按钮），
-    // 需要按新的绑定树选择重写，先拆出去；这里保留供应商页渲染与批量对接弹窗能打开。
+    // 批量对接现在是「未对接 → 目标分组」双栏转移面板，分类选择与商品勾选都是受控树，
+    // 自动化驱动不稳定；这里只验证弹窗结构与未对接列表加载，转移动作留给专项用例。
+    await expect(supplierBatchDialog.getByRole('button', { name: '选择未对接' })).toBeVisible();
+    await supplierBatchDialog.getByRole('button', { name: /Cancel|取消/ }).click();
+    await expect(supplierBatchDialog).toBeHidden();
+
+    // 新增提供商（按钮与弹窗标题同名）
+    await page.getByRole('button', { name: '新增提供商' }).click();
+    const createSupplierDialog = page.locator('.t-dialog:visible').filter({ hasText: '新增提供商' });
+    await expect(createSupplierDialog.getByText('接口地址')).toBeVisible();
+    await createSupplierDialog.locator('.t-form__item').filter({ hasText: '名称' }).locator('input').first().fill('新供应商');
+    await createSupplierDialog
+      .locator('.t-form__item')
+      .filter({ hasText: '接口地址' })
+      .locator('input')
+      .fill('https://new.example.test');
+    await createSupplierDialog
+      .locator('.t-form__item')
+      .filter({ hasText: '接口账号' })
+      .locator('input')
+      .fill('new-user');
+    await createSupplierDialog
+      .locator('.t-form__item')
+      .filter({ hasText: '接口密钥' })
+      .locator('input')
+      .fill('new-secret');
+    const createSupplierRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/suppliers') && request.method() === 'POST',
+    );
+    await createSupplierDialog.getByRole('button', { name: '保存' }).click();
+    await expect((await createSupplierRequest).postDataJSON()).toMatchObject({
+      api_url: 'https://new.example.test',
+      api_username: 'new-user',
+      api_key: 'new-secret',
+    });
+
+    // 停用：状态开关走 PATCH
+    const toggleSupplierRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/suppliers/3/status') && request.method() === 'PATCH',
+    );
+    await page.locator('.supplier-grid').getByRole('button', { name: '停用' }).first().click();
+    await expect((await toggleSupplierRequest).postDataJSON()).toMatchObject({ enabled: false });
+
+    // 编辑提供商：先拉详情，再改密钥保存
+    const supplierDetailRequest = page.waitForRequest(
+      (request) => request.url().includes('/api/v2/admin/suppliers/3') && request.method() === 'GET',
+    );
+    await page.locator('.supplier-grid').getByRole('button', { name: '编辑' }).first().click();
+    await supplierDetailRequest;
+    const supplierDialog = page.locator('.t-dialog:visible');
+    await supplierDialog.locator('.t-form__item').filter({ hasText: '接口密钥' }).locator('input').fill('rotated-secret');
+    const updateSupplierRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/suppliers/3') && request.method() === 'PUT',
+    );
+    await supplierDialog.getByRole('button', { name: '保存' }).click();
+    await expect((await updateSupplierRequest).postDataJSON()).toMatchObject({ api_key: 'rotated-secret' });
+
+    // 删除提供商
+    const deleteSupplierRequest = page.waitForRequest(
+      (request) => request.url().endsWith('/api/v2/admin/suppliers/3') && request.method() === 'DELETE',
+    );
+    await page.locator('.supplier-grid').getByRole('button', { name: '删除' }).first().click();
+    await page.locator('.t-dialog:visible').getByRole('button', { name: '确认删除' }).click();
+    await deleteSupplierRequest;
   });
 
   test('opens coupons and handles filters and core actions', async ({ page }) => {
