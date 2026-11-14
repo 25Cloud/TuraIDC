@@ -268,12 +268,18 @@ jobs:
         run: pnpm --filter turaidc-admin-v3 exec playwright install --with-deps chromium
 
       - name: Build ${{ matrix.app }}
-        # 官网端的 vite.config 会强校验这两个公开地址，缺了直接抛错；另外两端用不到，
-        # 设了也无副作用。注意不要注入 *_ASSET_BASE_URL：那会把资源路径写成绝对地址，
-        # vite preview 下加载不到，整套用例会全红。
+        # CI 里没有各端目录下的 .env（gitignore），构建期变量必须显式给，
+        # 否则资源路径/接口地址为空，页面渲染不出来、整套用例全红。
+        # 三端共用同一份：多给的键对别的端无害。
+        # 注意 ASSET_BASE_URL 必须是 /（相对），写成完整地址 preview 下会 404。
         env:
+          VITE_API_BASE_URL: http://127.0.0.1:8000/api
+          VITE_BASE_URL: /
+          VITE_ADMIN_ASSET_BASE_URL: /
+          VITE_CONSOLE_ASSET_BASE_URL: /
           VITE_PUBLIC_SITE_URL: https://www.example.com
           VITE_CONSOLE_SITE_URL: https://console.example.com
+          VITE_CONSOLE_BASE_PATH: /console
         run: pnpm --filter ${{ matrix.package }} build
 
       - name: Run ${{ matrix.app }} E2E
