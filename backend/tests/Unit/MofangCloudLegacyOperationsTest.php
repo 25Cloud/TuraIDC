@@ -284,7 +284,7 @@ class MofangCloudLegacyOperationsTest extends TestCase
             '/v1/clouds/88/nat_acl' => [502, ''],
         ]);
 
-        $this->expectException(\TuraIDC\Plugins\Servers\MofangCloud\Lib\CloudApiException::class);
+        $this->expectException(CloudApiException::class);
         $this->operations()->createNatRule(88, ['name' => 'web', 'ext_port' => '40000', 'int_port' => '80', 'protocol' => 1]);
     }
 
