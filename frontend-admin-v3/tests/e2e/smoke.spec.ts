@@ -4669,7 +4669,12 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.getByRole('button', { name: '新增提供商' }).click();
     const createSupplierDialog = page.locator('.t-dialog:visible').filter({ hasText: '新增提供商' });
     await expect(createSupplierDialog.getByText('接口地址')).toBeVisible();
-    await createSupplierDialog.locator('.t-form__item').filter({ hasText: '名称' }).locator('input').first().fill('新供应商');
+    await createSupplierDialog
+      .locator('.t-form__item')
+      .filter({ hasText: '名称' })
+      .locator('input')
+      .first()
+      .fill('新供应商');
     await createSupplierDialog
       .locator('.t-form__item')
       .filter({ hasText: '接口地址' })
@@ -4709,7 +4714,11 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await page.locator('.supplier-grid').getByRole('button', { name: '编辑' }).first().click();
     await supplierDetailRequest;
     const supplierDialog = page.locator('.t-dialog:visible');
-    await supplierDialog.locator('.t-form__item').filter({ hasText: '接口密钥' }).locator('input').fill('rotated-secret');
+    await supplierDialog
+      .locator('.t-form__item')
+      .filter({ hasText: '接口密钥' })
+      .locator('input')
+      .fill('rotated-secret');
     const updateSupplierRequest = page.waitForRequest(
       (request) => request.url().endsWith('/api/v2/admin/suppliers/3') && request.method() === 'PUT',
     );
