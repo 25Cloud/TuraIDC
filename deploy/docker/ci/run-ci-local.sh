@@ -3,7 +3,7 @@
 #
 # 用法：bash deploy/docker/ci/run-ci-local.sh [backend|frontend|all]
 #   - 默认 all：先构建 PHP 镜像，再顺序跑 backend、frontend
-#   - backend：仅 backend job（composer validate → install → Pint → PHPStan）
+#   - backend：仅 backend job（composer validate → install → schema/migrate → Pint/PHPStan → PHPUnit）
 #   - frontend：仅 frontend job（pnpm install → lint → typecheck → build）
 #
 # 前置要求：
@@ -57,7 +57,7 @@ if [ "$TARGET" = "backend" ] || [ "$TARGET" = "all" ]; then
 fi
 
 if [ "$TARGET" = "backend" ] || [ "$TARGET" = "all" ]; then
-  step "backend job：composer validate → install → Pint → PHPStan"
+  step "backend job：composer validate → install → schema/migrate → Pint/PHPStan → PHPUnit"
   dc run --rm backend || { echo "backend job 失败" >&2; exit 1; }
 fi
 

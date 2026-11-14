@@ -119,15 +119,15 @@
 
 上游（如魔方财务）为面板型产品下发的自定义 tab，经本系统以 iframe 隔离渲染；内容与动作走同一套短时效票据，浏览器不再持有上游凭据，上游域名与静态资源也经本系统反代：
 
-| 步骤                   | 接口                                                                      |
-| ---------------------- | ------------------------------------------------------------------------- |
-| 查询可用 tab / 能力    | `GET /api/v2/client/services/{id}/console/capabilities`                   |
-| 换取短时效票据         | `POST /api/v2/client/services/{id}/console/tickets`                       |
-| 取模块页 HTML          | `GET /api/v2/client/services/{id}/console-area/content?ticket=…&module=…` |
-| 反代上游静态资源与图片 | `GET /api/v2/client/services/{id}/console-area/asset?ticket=…&path=…`     |
-| 回发模块动作           | `POST /api/v2/client/services/{id}/console-area/actions?ticket=…`         |
+| 步骤                   | 接口                                                                        |
+| ---------------------- | --------------------------------------------------------------------------- |
+| 查询可用 tab / 能力    | `GET /api/v2/client/services/{id}/console/capabilities`                     |
+| 换取短时效票据         | `POST /api/v2/client/services/{id}/console/tickets`（写入 HttpOnly Cookie） |
+| 取模块页 HTML          | `GET /api/v2/client/services/{id}/console-area/content?module=…`            |
+| 反代上游静态资源与图片 | `GET /api/v2/client/services/{id}/console-area/asset?path=…`                |
+| 回发模块动作           | `POST /api/v2/client/services/{id}/console-area/actions`                    |
 
-`asset` 端点只接受以 `/` 开头的路径，目标主机由服务绑定的供应商推导，因此不能被当成任意 URL 的开放反代。该端点返回 CSS 时，会把文件内部的相对 `url()` 改写成同一端点的根相对地址：跨源反代换掉了相对引用的解析基准（浏览器按反代后的 URL 解析），原样透传会让 CSS 里的图片请求到本站一个不存在的路径。改写只作用于 CSS —— JS 里的相对路径没有可静态解析的形态。
+`content`、`asset`、`actions` 的票据由按服务路径限定的短时效 HttpOnly Cookie 承载，非 iframe 调用方也可使用 `Authorization: Bearer`。这些 URL 不承载票据，响应均禁止缓存并设置 `Referrer-Policy: no-referrer`。`asset` 端点只接受以 `/` 开头的路径，目标主机由服务绑定的供应商推导，因此不能被当成任意 URL 的开放反代。该端点返回 CSS 时，会把文件内部的相对 `url()` 改写成同一端点的根相对地址：跨源反代换掉了相对引用的解析基准（浏览器按反代后的 URL 解析），原样透传会让 CSS 里的图片请求到本站一个不存在的路径。改写只作用于 CSS —— JS 里的相对路径没有可静态解析的形态。
 
 `capabilities` 返回的 `area_preload_all` 表示是否在首屏预热全部自定义面板区域（缺省按开启处理）。面板内容接口是 `no-store`，浏览器缓存复用不了，所以面板只能靠 iframe 常驻来预热：开启时每个自定义区域各挂一个实例，切换 tab 不再等待，也不必来回切换重复回源上游。它由后台设置 `system.console_area_preload_all_enabled`（管理端「集成插件 → 上游 → 面板区域首屏预热」）控制，且刻意不写进能力缓存 —— 管理员改完设置立即生效，不必等 300 秒的能力缓存过期。
 

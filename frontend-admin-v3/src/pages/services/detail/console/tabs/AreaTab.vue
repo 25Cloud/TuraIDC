@@ -60,13 +60,11 @@ import { t } from '@/locales';
 
 import { resolveErrorMessage } from '../composables/useConsoleCore';
 import { useServiceConsoleContext } from '../context';
-import type { ServiceConsoleAreaTicket } from '../types';
 
-const TICKET_TTL_MS = 10 * 60 * 1000;
-const TICKET_SAFE_MARGIN_MS = 60 * 1000;
+const FALLBACK_TICKET_TTL_MS = 180 * 1000;
+const TICKET_SAFE_MARGIN_MS = 15 * 1000;
 
 interface TicketEntry {
-  ticket: string;
   expiresAt: number;
 }
 
@@ -77,8 +75,9 @@ const { serviceId, activeTab, consoleAreaLabels, consoleApi, detail } = useServi
 
 const loading = ref(false);
 const errorText = ref('');
-const ticket = ref('');
+const areaReady = ref(false);
 const loadingToken = ref(0);
+let ticketRefreshTimer: number | null = null;
 // 面板内容是否已真正渲染出来（iframe load：含其子资源加载完成）
 const frameLoaded = ref(false);
 // 用于校验 postMessage 来源，避免任意窗口借桥接打开外部地址
@@ -104,25 +103,43 @@ const panelTitle = computed(() =>
 const frameSrc = computed(() => {
   const id = serviceId.value;
   const key = moduleKey.value;
-  const token = ticket.value;
 
-  return id > 0 && key && token ? consoleApi.serviceConsoleAreaContentUrl(id, token, key) : '';
+  return id > 0 && key && areaReady.value ? consoleApi.serviceConsoleAreaContentUrl(id, key) : '';
 });
 
-async function ensureTicket(id: number): Promise<string> {
+function clearTicketRefreshTimer() {
+  if (ticketRefreshTimer !== null) {
+    window.clearTimeout(ticketRefreshTimer);
+    ticketRefreshTimer = null;
+  }
+}
+
+function scheduleTicketRefresh(serviceIdForRefresh: number, ttlMs: number) {
+  clearTicketRefreshTimer();
+  const refreshDelay = Math.max(15 * 1000, ttlMs - Math.min(30 * 1000, Math.floor(ttlMs / 4)));
+  ticketRefreshTimer = window.setTimeout(async () => {
+    if (serviceId.value !== serviceIdForRefresh) return;
+    try {
+      const nextTtlMs = await ensureTicket(serviceIdForRefresh);
+      scheduleTicketRefresh(serviceIdForRefresh, nextTtlMs);
+    } catch {
+      // 下次用户切换或刷新面板时重试，不打断当前已打开的面板。
+    }
+  }, refreshDelay);
+}
+
+async function ensureTicket(id: number): Promise<number> {
   const cached = ticketCache.get(id);
   if (cached && cached.expiresAt - Date.now() > TICKET_SAFE_MARGIN_MS) {
-    return cached.ticket;
+    return cached.expiresAt - Date.now();
   }
 
   const res = await consoleApi.createServiceConsoleAreaTicket(id);
-  const next = String((res.data as ServiceConsoleAreaTicket | undefined)?.ticket || '');
-  if (!next) {
-    throw new Error(t('services.console.credentialFailed'));
-  }
+  const expiresIn = Number(res.data?.expires_in);
+  const ttlMs = Number.isFinite(expiresIn) && expiresIn > 0 ? expiresIn * 1000 : FALLBACK_TICKET_TTL_MS;
 
-  ticketCache.set(id, { ticket: next, expiresAt: Date.now() + TICKET_TTL_MS });
-  return next;
+  ticketCache.set(id, { expiresAt: Date.now() + ttlMs });
+  return ttlMs;
 }
 
 async function loadArea() {
@@ -135,9 +152,10 @@ async function loadArea() {
   errorText.value = '';
 
   try {
-    const next = await ensureTicket(id);
+    const ttlMs = await ensureTicket(id);
     if (token !== loadingToken.value) return;
-    ticket.value = next;
+    areaReady.value = true;
+    scheduleTicketRefresh(id, ttlMs);
   } catch (error: unknown) {
     if (token !== loadingToken.value) return;
     errorText.value = resolveErrorMessage(error, t('services.console.panelLoadFailed'));
@@ -149,7 +167,9 @@ async function loadArea() {
 }
 
 function reloadArea() {
-  ticket.value = '';
+  areaReady.value = false;
+  frameLoaded.value = false;
+  clearTicketRefreshTimer();
   if (serviceId.value > 0) {
     ticketCache.delete(serviceId.value);
   }
@@ -184,6 +204,12 @@ function handleBridgeMessage(event: MessageEvent) {
   // 不校验来源等于把「代开任意网址」的能力交给了任何页面。
   const frame = frameRef.value;
   if (!frame || event.source !== frame.contentWindow) return;
+  try {
+    const expectedOrigin = new URL(frame.src, window.location.href).origin;
+    if (event.origin !== expectedOrigin) return;
+  } catch {
+    return;
+  }
 
   const data = event.data as { type?: string; id?: string; url?: string } | null;
   if (!data || data.type !== POPUP_BRIDGE_EVENT || !data.url) return;
@@ -210,12 +236,17 @@ function handleBridgeMessage(event: MessageEvent) {
 }
 
 onMounted(() => window.addEventListener('message', handleBridgeMessage));
-onUnmounted(() => window.removeEventListener('message', handleBridgeMessage));
+onUnmounted(() => {
+  window.removeEventListener('message', handleBridgeMessage);
+  clearTicketRefreshTimer();
+});
 
 watch(
   () => serviceId.value,
   () => {
-    ticket.value = '';
+    areaReady.value = false;
+    frameLoaded.value = false;
+    clearTicketRefreshTimer();
     errorText.value = '';
     void loadArea();
   },

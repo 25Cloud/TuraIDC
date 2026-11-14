@@ -8,7 +8,11 @@
 # 1. 进入本目录，准备环境变量（唯一需要配置的文件）
 cd deploy/docker
 cp .env.example .env
-# 编辑 .env：填四个公开地址、数据库密码、管理员初始密码、镜像仓库等
+# 编辑 .env：填四个公开地址、APP_KEY、数据库密码、管理员初始密码、镜像仓库等
+# 首次部署空库且没有宿主机 PHP 时，CI 镜像先执行 docker compose pull app；无镜像仓库时改用 docker compose build app，再执行：
+# docker compose run --rm --no-deps --entrypoint php app -r 'echo "base64:", base64_encode(random_bytes(32)), PHP_EOL;'
+# 已有数据库或升级旧版本必须恢复原 APP_KEY，不能生成新密钥。
+# 生产拉取模式必须启用仓库标签不可变策略，或每次部署核对实际镜像 digest；不要使用 latest。
 
 # 2a. 拉取模式（推荐，CI 已推送镜像到 GHCR）
 docker compose pull && docker compose up -d
@@ -34,7 +38,7 @@ curl http://127.0.0.1:8080/api/ready    # 就绪检查（DB/Cache/Storage/Schedu
 | 用户控制台 | http://127.0.0.1:8082          |
 | 管理端     | http://127.0.0.1:8083          |
 
-首次启动（空库）会自动执行 `install_db.py` 初始化，创建默认管理员 `cerbo`（密码为 `.env` 中 `INSTALL_ADMIN_PASSWORD`，仅首次生效）。
+生产部署必须在 `.env` 中设置持久化的 `APP_KEY`；容器重建时不会随机生成新密钥，缺失会直接退出。已有数据库或升级旧版本必须继续使用原密钥，不能重新生成。非生产环境的空库首次安装缺少 `APP_KEY` 时，入口脚本只生成一次并写入 `app-storage` 持久化卷。首次启动（空库）会自动执行 `install_db.py` 初始化，创建默认管理员 `cerbo`（密码为 `.env` 中 `INSTALL_ADMIN_PASSWORD`，仅首次生效）。
 
 ## 目录结构
 

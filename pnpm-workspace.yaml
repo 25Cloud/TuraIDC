@@ -10,3 +10,12 @@ allowBuilds:
   '@parcel/watcher': true
   core-js-pure: false
   esbuild: true
+
+overrides:
+  form-data: 4.0.6
+  js-yaml: 4.3.0
+  follow-redirects: 1.16.2
+  source-map-js: 1.2.2
+  decode-uri-component: 0.5.1
+  'brace-expansion@1.1.18': 1.1.21
+  '@babel/runtime-corejs3': 7.29.7

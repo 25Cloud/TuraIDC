@@ -38,6 +38,13 @@ final class VerifyTicketUpstreamCallbackSignature
         // 3.8.0 起上游默认用 v2 签名（HMAC-SHA256 + timestamp + nonce），
         // 3.7.6 及更早仍只有 legacy（id/token/rand_str 的 md5）。两条都收，
         // 按请求自己声明的 signature_version 走对应分支。
+        $signatureVersion = strtolower(trim((string) ($payload['signature_version'] ?? '')));
+        if ($signatureVersion !== '' && $signatureVersion !== ZjmfSyncSignature::VERSION_V2 && $signatureVersion !== 'legacy') {
+            $this->recordLegacyFailure($isTicketReply, $request, 'unsupported_signature_version', '上游回调签名版本不受支持');
+
+            return response()->json(['status' => 400, 'msg' => '签名验证失败'], 200);
+        }
+
         if (ZjmfSyncSignature::isV2($payload)) {
             return $this->verifySyncV2($request, $next, $isTicketReply);
         }
@@ -169,7 +176,19 @@ final class VerifyTicketUpstreamCallbackSignature
             return response()->json(['status' => 400, 'msg' => '签名验证失败'], 200);
         }
 
-        $nonceKey = sprintf('zjmf:sync:v2:nonce:%s', hash('sha256', $token.'|'.(string) $payload['nonce']));
+        // 工单回调继续用共享缓存做一次性消费；主机同步由 HostSyncPushReceiver
+        // 在服务更新事务内用 (service_id, nonce_hash) 唯一索引持久消费，避免
+        // 业务失败后缓存已占用而无法重试，也能覆盖缓存重启/多实例场景。
+        if ($request->is('api/host/sync')) {
+            return $next($request);
+        }
+
+        // 按回调路径隔离 nonce 命名空间，避免同一上游在工单与主机回调中复用
+        // nonce 时互相误判；Cache::add 在 Redis 等共享缓存后端上是原子消费。
+        $nonceKey = sprintf(
+            'zjmf:sync:v2:nonce:%s',
+            hash('sha256', $request->path().'|'.$token.'|'.(string) $payload['nonce'])
+        );
         if (! Cache::add($nonceKey, time(), 86400)) {
             $this->recordLegacyFailure($isTicketReply, $request, 'v2_nonce_replayed', '上游回调 v2 nonce 重放');
 

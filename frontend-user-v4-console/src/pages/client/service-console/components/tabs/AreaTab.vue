@@ -87,8 +87,9 @@ const { serviceId, activeTab, consoleAreaLabels, detail } = useServiceConsoleCon
 
 const loading = ref(false);
 const errorText = ref('');
-const ticket = ref('');
+const areaReady = ref(false);
 const loadingToken = ref(0);
+let ticketRefreshTimer: number | null = null;
 // 面板内容是否已真正渲染出来（iframe load：含其子资源加载完成）
 const frameLoaded = ref(false);
 // 用于校验 postMessage 来源，避免任意窗口借桥接打开外部地址
@@ -101,10 +102,36 @@ const panelTitle = computed(() =>
 const frameSrc = computed(() => {
   const id = serviceId.value;
   const key = moduleKey.value;
-  const token = ticket.value;
 
-  return id > 0 && key && token ? clientApi.serviceConsoleAreaContentUrl(id, token, key) : '';
+  return id > 0 && key && areaReady.value ? clientApi.serviceConsoleAreaContentUrl(id, key) : '';
 });
+
+function clearTicketRefreshTimer() {
+  if (ticketRefreshTimer !== null) {
+    window.clearTimeout(ticketRefreshTimer);
+    ticketRefreshTimer = null;
+  }
+}
+
+/**
+ * Cookie 票据快到期时静默续期，保证用户长时间停留在同一面板时动作仍可用。
+ * 多个预热 iframe 会共享 useConsoleAreaTicket 的 in-flight 去重，不会重复打签发请求。
+ */
+function scheduleTicketRefresh(serviceIdForRefresh: number, ttlMs = 180 * 1000) {
+  clearTicketRefreshTimer();
+
+  const refreshDelay = Math.max(15 * 1000, ttlMs - Math.min(30 * 1000, Math.floor(ttlMs / 4)));
+  ticketRefreshTimer = window.setTimeout(async () => {
+    if (serviceId.value !== serviceIdForRefresh) return;
+
+    try {
+      const nextTtlMs = await ensureAreaTicket(serviceIdForRefresh);
+      scheduleTicketRefresh(serviceIdForRefresh, nextTtlMs);
+    } catch {
+      // 下次用户切换/刷新面板时会再次尝试；预热续期失败不打扰当前内容。
+    }
+  }, refreshDelay);
+}
 
 async function loadArea() {
   const id = serviceId.value;
@@ -116,9 +143,10 @@ async function loadArea() {
   errorText.value = '';
 
   try {
-    const next = await ensureAreaTicket(id);
+    const ttlMs = await ensureAreaTicket(id);
     if (token !== loadingToken.value) return;
-    ticket.value = next;
+    areaReady.value = true;
+    scheduleTicketRefresh(id, ttlMs);
   } catch (error: unknown) {
     if (token !== loadingToken.value) return;
     // 预热失败不打扰用户：用户还没点到这个 tab，报错只会污染当前页面。
@@ -133,7 +161,7 @@ async function loadArea() {
 }
 
 function reloadArea() {
-  ticket.value = '';
+  areaReady.value = false;
   frameLoaded.value = false;
   errorText.value = '';
   if (serviceId.value > 0) {
@@ -175,6 +203,12 @@ function handleBridgeMessage(event: MessageEvent) {
   // 不校验来源等于把「代开任意网址」的能力交给了任何页面。
   const frame = frameRef.value;
   if (!frame || event.source !== frame.contentWindow) return;
+  try {
+    const expectedOrigin = new URL(frame.src, window.location.href).origin;
+    if (event.origin !== expectedOrigin) return;
+  } catch {
+    return;
+  }
 
   const data = event.data as { type?: string; id?: string; url?: string } | null;
   if (!data || data.type !== POPUP_BRIDGE_EVENT || !data.url) return;
@@ -201,7 +235,10 @@ function handleBridgeMessage(event: MessageEvent) {
 }
 
 onMounted(() => window.addEventListener('message', handleBridgeMessage));
-onUnmounted(() => window.removeEventListener('message', handleBridgeMessage));
+onUnmounted(() => {
+  window.removeEventListener('message', handleBridgeMessage);
+  clearTicketRefreshTimer();
+});
 
 watch(
   () => [serviceId.value, moduleKey.value] as const,
@@ -209,7 +246,7 @@ watch(
     const [prevId, prevKey] = previous ?? [0, ''];
     // 换服务或换区域时，旧票据与旧渲染结果都不能留用
     if (id !== prevId) {
-      ticket.value = '';
+      areaReady.value = false;
       frameLoaded.value = false;
     } else if (moduleKey.value !== prevKey) {
       frameLoaded.value = false;

@@ -7,8 +7,10 @@ namespace App\Services\ZjmfUpstream;
 use App\Constants\ServiceStatus;
 use App\Exceptions\BusinessException;
 use App\Models\Service;
+use App\Models\ZjmfHostSyncEvent;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Crypt;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -17,7 +19,7 @@ use Illuminate\Support\Facades\Log;
  * 协议对齐魔方 app/zjmf.php pushHostInfo：
  *   - 载荷：id=本系统服务 id（downstream_id）、host_id=上游主机 id，
  *     domain/username/password/dedicatedip/assignedips/port/os/os_url/nextduedate/domainstatus，可选 type 与 suspendreason；
- *   - 签名校验由中间件完成（id/token/rand_str 的 createSign 规则），token 为开通时经
+ *   - 签名校验由中间件完成（兼容 legacy createSign 与 v2 HMAC），token 为开通时经
  *     /host/setdownstream 登记的 downstream_token。
  *
  * 推送是上游权威状态的镜像：成功处理后返回 {status:200}，异常返回 {status:400}，
@@ -32,10 +34,139 @@ class HostSyncPushReceiver
             throw new BusinessException('推送缺少服务 ID', 42200);
         }
 
-        $service = Service::query()->find($serviceId);
-        if (! $service instanceof Service) {
-            throw new BusinessException('服务不存在', 42200);
+        $event = $this->eventDescriptor($payload, $serviceId);
+
+        $response = DB::transaction(function () use ($payload, $serviceId, $event): array {
+            $eventId = $this->claimEvent($serviceId, $event);
+            if ($eventId === null) {
+                return [
+                    'status' => 200,
+                    'msg' => 'duplicate',
+                    'service_id' => $serviceId,
+                    'duplicate' => true,
+                ];
+            }
+
+            $service = Service::query()->lockForUpdate()->find($serviceId);
+            if (! $service instanceof Service) {
+                throw new BusinessException('服务不存在', 42200);
+            }
+
+            $this->applyPayload($service, $payload);
+
+            $response = [
+                'status' => 200,
+                'msg' => 'ok',
+                'service_id' => $serviceId,
+                'duplicate' => false,
+            ];
+            ZjmfHostSyncEvent::query()->whereKey($eventId)->update([
+                'status' => 'processed',
+                'response_json' => json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES),
+                'processed_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return $response;
+        });
+
+        Log::info('[zjmf-downstream] 上游主机推送已同步', [
+            'service_id' => $serviceId,
+            'upstream_host_id' => (int) ($payload['host_id'] ?? 0),
+            'type' => trim((string) ($payload['type'] ?? '')),
+            'domainstatus' => strtolower(trim((string) ($payload['domainstatus'] ?? ''))),
+            'duplicate' => (bool) $response['duplicate'],
+        ]);
+
+        return $response;
+    }
+
+    /**
+     * @param  array{event_key: string, signature_version: string, nonce_hash: ?string, payload_hash: string}  $event
+     */
+    private function claimEvent(int $serviceId, array $event): ?int
+    {
+        $now = now();
+        $affected = DB::table((new ZjmfHostSyncEvent)->getTable())->insertOrIgnore([
+            'service_id' => $serviceId,
+            'event_key' => $event['event_key'],
+            'signature_version' => $event['signature_version'],
+            'nonce_hash' => $event['nonce_hash'],
+            'payload_hash' => $event['payload_hash'],
+            'status' => 'processing',
+            'received_at' => $now,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        if ((int) $affected > 0) {
+            return (int) ZjmfHostSyncEvent::query()
+                ->where('event_key', $event['event_key'])
+                ->value('id');
         }
+
+        if ($event['nonce_hash'] !== null && ZjmfHostSyncEvent::query()
+            ->where('service_id', $serviceId)
+            ->where('nonce_hash', $event['nonce_hash'])
+            ->lockForUpdate()
+            ->exists()) {
+            throw new BusinessException('签名验证失败', 42200);
+        }
+
+        $existing = ZjmfHostSyncEvent::query()
+            ->where('event_key', $event['event_key'])
+            ->lockForUpdate()
+            ->first();
+        if ($existing !== null) {
+            return null;
+        }
+
+        throw new \RuntimeException('主机同步事件未能原子抢占');
+    }
+
+    /**
+     * 事件键优先使用上游显式 event_id/request_id；v2 没有事件号时使用 nonce，
+     * legacy 没有 nonce 时才回退到去掉验签元数据后的业务载荷指纹。v2 与 legacy
+     * 通过版本前缀隔离。
+     *
+     * @param  array<string, mixed>  $payload
+     * @return array{event_key: string, signature_version: string, nonce_hash: ?string, payload_hash: string}
+     */
+    private function eventDescriptor(array $payload, int $serviceId): array
+    {
+        $isV2 = ZjmfSyncSignature::isV2($payload);
+        $signatureVersion = $isV2 ? ZjmfSyncSignature::VERSION_V2 : 'legacy';
+        $eventId = trim((string) ($payload['event_id'] ?? $payload['request_id'] ?? ''));
+
+        $businessPayload = $payload;
+        unset(
+            $businessPayload['signature'],
+            $businessPayload['token'],
+            $businessPayload['signature_version'],
+            $businessPayload['timestamp'],
+            $businessPayload['nonce'],
+            $businessPayload['rand_str'],
+        );
+        $businessHash = hash('sha256', ZjmfSyncSignature::canonicalPayload($businessPayload));
+        $payloadHash = hash('sha256', ZjmfSyncSignature::canonicalPayload($payload));
+        $nonce = strtolower(trim((string) ($payload['nonce'] ?? '')));
+        $identity = $eventId !== ''
+            ? 'event:'.$eventId
+            : ($isV2 && $nonce !== '' ? 'nonce:'.$nonce : 'payload:'.$businessHash);
+        $eventKey = hash('sha256', 'host-sync|'.$signatureVersion.'|'.$serviceId.'|'.$identity);
+
+        return [
+            'event_key' => $eventKey,
+            'signature_version' => $signatureVersion,
+            'nonce_hash' => $isV2 && $nonce !== '' ? hash('sha256', $nonce) : null,
+            'payload_hash' => $payloadHash,
+        ];
+    }
+
+    /** @param array<string, mixed> $payload */
+    private function applyPayload(Service $service, array $payload): void
+    {
+        $serviceId = (int) $service->id;
 
         $provisionData = is_array($service->provision_data ?? null) ? $service->provision_data : [];
 
@@ -87,15 +218,6 @@ class HostSyncPushReceiver
         }
 
         $service->fill($updates)->save();
-
-        Log::info('[zjmf-downstream] 上游主机推送已同步', [
-            'service_id' => $serviceId,
-            'upstream_host_id' => (int) ($payload['host_id'] ?? 0),
-            'type' => trim((string) ($payload['type'] ?? '')),
-            'domainstatus' => $domainStatus,
-        ]);
-
-        return ['status' => 200, 'msg' => 'ok', 'service_id' => $serviceId];
     }
 
     private function mapStatus(string $domainStatus): int

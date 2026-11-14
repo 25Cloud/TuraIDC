@@ -44,10 +44,9 @@ class ServiceVncTokenSecurityTest extends TestCase
         $this->assertArrayNotHasKey('password', $relayParams);
     }
 
-    public function test_public_vnc_token_stays_exchangeable_within_ttl(): void
+    public function test_public_vnc_token_is_consumed_after_exchange(): void
     {
-        // 兑换必须幂等：noVNC 页面刷新、重连、多设备打开都会重复兑换同一个公开 token。
-        // 若首次兑换即销毁缓存的 token，后续请求全部 404，页面表现为「打开就灰屏」。
+        // 公开 URL bearer token 只允许启动一次 relay；页面重连会重新申请启动 token。
         Cache::store('redis_volatile')->put('vnc_token:reusable-token', [
             'service_id' => 12,
             'password' => 'secret-password',
@@ -58,12 +57,14 @@ class ServiceVncTokenSecurityTest extends TestCase
 
         $service = $this->makeVncService();
 
-        $first = $service->resolveVncToken('reusable-token');
-        $second = $service->resolveVncToken('reusable-token');
+        $first = $service->resolvePublicVncTokenPayload('reusable-token');
+        $this->assertSame(12, $first['service_id']);
+        $relay = $service->resolveVncToken((string) $first['token']);
+        $this->assertArrayNotHasKey('password', $relay);
+        $this->assertFalse(Cache::store('redis_volatile')->has('vnc_token:reusable-token'));
 
-        $this->assertSame('secret-password', $first['password']);
-        $this->assertSame('secret-password', $second['password']);
-        $this->assertTrue(Cache::store('redis_volatile')->has('vnc_token:reusable-token'));
+        $this->expectException(BusinessException::class);
+        $service->resolvePublicVncTokenPayload('reusable-token');
     }
 
     public function test_expired_public_vnc_token_is_rejected(): void
@@ -108,9 +109,55 @@ class ServiceVncTokenSecurityTest extends TestCase
             'Origin' => 'https://evil.example.com',
         ])->assertForbidden();
 
-        // 无 Origin（同源或非浏览器客户端）放行，交由 token 校验（无效 token 返回 404）。
+        Cache::store('redis_volatile')->put('vnc_token:referer-token', [
+            'service_id' => 12,
+            'username' => 'root',
+            'target' => '10.0.0.8:5900',
+            'token_scope' => 'public',
+        ], now()->addMinutes(5));
+
+        // 同源 GET 可能没有 Origin，但 Referer 仍能可靠确认控制台来源，应允许兑换。
+        $this->getJson('/api/v2/client/vnc-tokens/referer-token', [
+            'Referer' => 'http://console.example.test/vnc/vnc.html',
+        ])->assertOk();
+
+        // 缺少 Origin 的非浏览器回放请求必须在读取 token 前拒绝。
         $this->getJson('/api/v2/client/vnc-tokens/test-token')
-            ->assertStatus(404);
+            ->assertForbidden();
+    }
+
+    public function test_vnc_token_exchange_matches_console_origin_without_path(): void
+    {
+        config(['app.client_console_url' => 'https://console.example.test:443/console']);
+        Cache::store('redis_volatile')->put('vnc_token:path-console-token', [
+            'service_id' => 12,
+            'username' => 'root',
+            'target' => '10.0.0.8:5900',
+            'token_scope' => 'public',
+        ], now()->addMinutes(5));
+
+        $this->getJson('/api/v2/client/vnc-tokens/path-console-token', [
+            'Origin' => 'https://console.example.test',
+        ])->assertOk();
+    }
+
+    public function test_vnc_token_exchange_keeps_non_default_console_port_distinct(): void
+    {
+        config(['app.client_console_url' => 'https://console.example.test:8443/console']);
+        Cache::store('redis_volatile')->put('vnc_token:non-default-port-token', [
+            'service_id' => 12,
+            'username' => 'root',
+            'target' => '10.0.0.8:5900',
+            'token_scope' => 'public',
+        ], now()->addMinutes(5));
+
+        $this->getJson('/api/v2/client/vnc-tokens/non-default-port-token', [
+            'Origin' => 'https://console.example.test',
+        ])->assertForbidden();
+
+        $this->getJson('/api/v2/client/vnc-tokens/non-default-port-token', [
+            'Origin' => 'https://console.example.test:8443',
+        ])->assertOk();
     }
 
     public function test_public_vnc_token_exchange_log_never_contains_raw_token_or_password(): void
@@ -145,6 +192,7 @@ class ServiceVncTokenSecurityTest extends TestCase
             'password' => 'relay-secret',
             'username' => 'administrator',
             'target' => '10.0.0.10:5900',
+            'token_scope' => 'relay',
         ], now()->addMinutes(5));
 
         $service = $this->makeVncService();

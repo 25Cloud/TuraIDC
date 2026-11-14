@@ -1,6 +1,6 @@
 ---
 source: develop/api/catalog-navigation.md
-sourceHash: b99feef6fcccf934b514c0181eb883fe38548c4627c958f16e491ab95f11a1b1
+sourceHash: b4af823af671403a604bfbef55b5157315a24a263f3b173ea6d4355245cde4cd
 translatedAt: 2026-10-26
 ---
 
@@ -125,15 +125,15 @@ Business domain × read/write scope combined authorization (`products/orders/ser
 
 Custom tabs issued by the upstream (for example ZJMF Finance) for panel-type products are rendered by this system in an isolated iframe; content and actions go through the same short-lived ticket, the browser no longer holds upstream credentials, and upstream domains and static assets are also reverse-proxied through this system:
 
-| Step                                            | Endpoint                                                                  |
-| ----------------------------------------------- | ------------------------------------------------------------------------- |
-| Query available tabs / capabilities             | `GET /api/v2/client/services/{id}/console/capabilities`                   |
-| Exchange for a short-lived ticket               | `POST /api/v2/client/services/{id}/console/tickets`                       |
-| Fetch the module page HTML                      | `GET /api/v2/client/services/{id}/console-area/content?ticket=…&module=…` |
-| Reverse-proxy upstream static assets and images | `GET /api/v2/client/services/{id}/console-area/asset?ticket=…&path=…`     |
-| Post back module actions                        | `POST /api/v2/client/services/{id}/console-area/actions?ticket=…`         |
+| Step                                            | Endpoint                                                                      |
+| ----------------------------------------------- | ----------------------------------------------------------------------------- |
+| Query available tabs / capabilities             | `GET /api/v2/client/services/{id}/console/capabilities`                       |
+| Exchange for a short-lived ticket               | `POST /api/v2/client/services/{id}/console/tickets` (sets an HttpOnly Cookie) |
+| Fetch the module page HTML                      | `GET /api/v2/client/services/{id}/console-area/content?module=…`              |
+| Reverse-proxy upstream static assets and images | `GET /api/v2/client/services/{id}/console-area/asset?path=…`                  |
+| Post back module actions                        | `POST /api/v2/client/services/{id}/console-area/actions`                      |
 
-The `asset` endpoint only accepts paths starting with `/`, and the target host is derived from the supplier bound to the service, so it cannot be used as an open reverse proxy for arbitrary URLs. When this endpoint returns CSS, it rewrites the relative `url()` references inside the file into root-relative addresses of the same endpoint: the cross-origin reverse proxy replaces the base against which relative references are resolved (browsers resolve them against the proxied URL), so passing them through verbatim would make images in the CSS request a path that does not exist on this site. The rewrite applies to CSS only — relative paths inside JS have no statically parseable form.
+The `content`, `asset`, and `actions` endpoints receive the ticket from the service-path-scoped short-lived HttpOnly Cookie; non-iframe callers may use an `Authorization: Bearer` header. Their URLs never carry a ticket, responses are not cached, and they set `Referrer-Policy: no-referrer`. The `asset` endpoint only accepts paths starting with `/`, and the target host is derived from the supplier bound to the service, so it cannot be used as an open reverse proxy for arbitrary URLs. When this endpoint returns CSS, it rewrites the relative `url()` references inside the file into root-relative addresses of the same endpoint: the cross-origin reverse proxy replaces the base against which relative references are resolved (browsers resolve them against the proxied URL), so passing them through verbatim would make images in the CSS request a path that does not exist on this site. The rewrite applies to CSS only — relative paths inside JS have no statically parseable form.
 
 `area_preload_all` returned by `capabilities` indicates whether all custom panel areas are preloaded on the first screen (treated as enabled by default). The panel content endpoint is `no-store`, so the browser cache cannot be reused, and panels can only be preloaded by keeping their iframes resident: when enabled, each custom area mounts one instance, so switching tabs no longer waits and there is no need to switch back and forth hitting the upstream repeatedly. It is controlled by the backend setting `system.console_area_preload_all_enabled` (admin side "Integration plugins → Upstream → Panel area first-screen preload"), and is deliberately not written into the capability cache — a change made by an administrator takes effect immediately, without waiting for the 300-second capability cache to expire.
 

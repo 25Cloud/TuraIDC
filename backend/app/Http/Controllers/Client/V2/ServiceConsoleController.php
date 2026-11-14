@@ -616,29 +616,70 @@ class ServiceConsoleController extends Controller
     }
 
     /**
-     * VNC 兑换端点 Origin 纵深校验：请求带 Origin 且不在本站白名单（console/api/admin 域）时拒绝。
-     * 同源请求或非浏览器客户端不带 Origin 时放行，避免误伤。
+     * VNC 兑换端点来源纵深校验：公开启动 token 只能由受信任的控制台页面兑换。
+     * 浏览器 GET 可能没有 Origin，此时仅接受能解析为受信任来源的 Referer。
      */
     private function assertVncTokenOriginAllowed(Request $request): void
     {
         $origin = trim((string) $request->headers->get('Origin', ''));
-        if ($origin === '') {
-            return;
-        }
-
         $allowed = array_values(array_filter([
             PublicUrl::console(),
             PublicUrl::api(),
             PublicUrl::admin(),
         ]));
 
+        if ($origin === '') {
+            $referer = trim((string) $request->headers->get('Referer', ''));
+            $origin = $this->normalizeVncOrigin($referer);
+            if ($origin === null) {
+                throw new BusinessException('VNC 兑换请求缺少可验证来源', 40300, 403);
+            }
+        } else {
+            $origin = $this->normalizeVncOrigin($origin);
+            if ($origin === null) {
+                throw new BusinessException('VNC 兑换请求缺少可验证来源', 40300, 403);
+            }
+        }
+
         foreach ($allowed as $allowedOrigin) {
-            if (strcasecmp(rtrim((string) $allowedOrigin, '/'), rtrim($origin, '/')) === 0) {
+            $allowedOrigin = $this->normalizeVncOrigin((string) $allowedOrigin);
+            if ($allowedOrigin === null) {
+                continue;
+            }
+
+            if (strcasecmp($allowedOrigin, $origin) === 0) {
                 return;
             }
         }
 
         throw new BusinessException('VNC 兑换来源未获授权', 40300, 403);
+    }
+
+    private function normalizeVncOrigin(string $value): ?string
+    {
+        $parts = parse_url(trim($value));
+        if (! is_array($parts)) {
+            return null;
+        }
+
+        $scheme = strtolower(trim((string) ($parts['scheme'] ?? '')));
+        $host = strtolower(trim((string) ($parts['host'] ?? '')));
+
+        if (! in_array($scheme, ['http', 'https'], true) || $host === '') {
+            return null;
+        }
+
+        $port = isset($parts['port']) ? (int) $parts['port'] : null;
+        if ($port !== null && $port < 1) {
+            return null;
+        }
+
+        $defaultPort = $scheme === 'https' ? 443 : 80;
+        if ($port === null || $port === $defaultPort) {
+            return $scheme.'://'.$host;
+        }
+
+        return $scheme.'://'.$host.':'.$port;
     }
 
     private function buildOperationContext(Request $request, string $actorType = 'client'): array

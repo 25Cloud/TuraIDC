@@ -10,6 +10,7 @@ use App\Services\OpenApi\ApiKeyUsageLogService;
 use App\Support\UpstreamJwt;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -36,7 +37,24 @@ class ZjmfUpstreamService
 
     public function jwtKey(): string
     {
-        return (string) config('app.key');
+        return trim((string) config('app.key', ''));
+    }
+
+    public function jwtIssuer(): string
+    {
+        $issuer = trim((string) config('services.zjmf_upstream.jwt_issuer', ''));
+
+        return $issuer !== '' ? $issuer : trim((string) config('app.url', ''));
+    }
+
+    public function jwtAudience(): string
+    {
+        return trim((string) config('services.zjmf_upstream.jwt_audience', 'zjmf-upstream'));
+    }
+
+    public function jwtTtl(): int
+    {
+        return min(self::JWT_TTL, max(1, (int) config('services.zjmf_upstream.jwt_ttl', self::JWT_TTL)));
     }
 
     /**
@@ -47,6 +65,12 @@ class ZjmfUpstreamService
     {
         if (! $this->enabled()) {
             return ['status' => 400, 'msg' => '上游 API 未开放'];
+        }
+
+        if (! UpstreamJwt::isUsableKey($this->jwtKey()) || $this->jwtIssuer() === '' || $this->jwtAudience() === '') {
+            Log::error('[zjmf-upstream] JWT 配置无效，拒绝签发');
+
+            return ['status' => 400, 'msg' => '上游 API 配置无效'];
         }
 
         $username = trim($username);
@@ -87,17 +111,23 @@ class ZjmfUpstreamService
             'is_api' => 1,
             'iat' => $now,
             'nbf' => $now,
-            'exp' => $now + self::JWT_TTL,
+            'exp' => $now + $this->jwtTtl(),
+            'iss' => $this->jwtIssuer(),
+            'aud' => $this->jwtAudience(),
         ];
+
+        try {
+            $jwt = UpstreamJwt::encode($claims, $this->jwtKey());
+        } catch (InvalidArgumentException $exception) {
+            Log::error('[zjmf-upstream] JWT 签发失败', ['error' => $exception->getMessage()]);
+
+            return ['status' => 400, 'msg' => '上游 API 配置无效'];
+        }
 
         $this->credentials->touchLastUsed($user);
         $this->recordLogin($user, $ip, 200);
 
-        return [
-            'jwt' => UpstreamJwt::encode($claims, $this->jwtKey()),
-            'status' => 200,
-            'msg' => '鉴权成功',
-        ];
+        return ['jwt' => $jwt, 'status' => 200, 'msg' => '鉴权成功'];
     }
 
     /**

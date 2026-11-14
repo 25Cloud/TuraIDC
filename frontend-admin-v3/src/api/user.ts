@@ -368,21 +368,15 @@ export const userApi = {
   serviceConsoleCapabilities: (id: number | string, serviceId: number | string) =>
     request.get<Record<string, unknown>>({ url: `/v2/admin/users/${id}/services/${serviceId}/console/capabilities` }),
   createConsoleAreaTicket: (id: number | string, serviceId: number | string) =>
-    request.post<{ ticket?: string; expires_at?: string }>({
+    request.post<{ ticket?: string; expires_in?: number; expires_at?: string }>({
       url: `/v2/admin/users/${id}/services/${serviceId}/console/tickets`,
+      withCredentials: true,
     }),
-  serviceConsoleAreaContentUrl: (
-    id: number | string,
-    serviceId: number | string,
-    ticket: string,
-    moduleKey: string,
-  ) => {
+  serviceConsoleAreaContentUrl: (id: number | string, serviceId: number | string, moduleKey: string) => {
     const apiBase = String(import.meta.env.VITE_API_BASE_URL || '')
       .trim()
       .replace(/\/+$/, '');
-    return `${apiBase}/v2/client/services/${serviceId}/console-area/content?ticket=${encodeURIComponent(
-      ticket,
-    )}&module=${encodeURIComponent(moduleKey)}`;
+    return `${apiBase}/v2/client/services/${serviceId}/console-area/content?module=${encodeURIComponent(moduleKey)}`;
   },
   serviceModuleStatus: (id: number | string, serviceId: number | string, params?: PageParams) =>
     request.get<Record<string, unknown>>(

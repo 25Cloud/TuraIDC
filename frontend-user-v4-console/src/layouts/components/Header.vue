@@ -159,7 +159,6 @@ import {
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import type { PropType } from 'vue';
 import { computed, onMounted, ref } from 'vue';
-import type { RouteLocationRaw } from 'vue-router';
 import { useRoute, useRouter } from 'vue-router';
 
 import clientApi from '@/api/client';
@@ -228,23 +227,25 @@ const { isMobile } = useDeviceLayout();
 
 const active = computed(() => getActive());
 const breadcrumbs = computed(() => {
-  return route.matched.reduce<Array<{ key: string; to: RouteLocationRaw; title: string }>>(
-    (breadcrumbArray, matchedRoute) => {
-      const { meta, path } = matchedRoute;
-      if (path === '/client' || meta?.hiddenBreadcrumb) {
-        return breadcrumbArray;
-      }
-
-      const title = meta?.title as LocalizedTitle | undefined;
-      const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || title?.zh_CN || '';
-      if (renderedTitle) {
-        const to: RouteLocationRaw = matchedRoute.name ? { name: matchedRoute.name, params: route.params } : path;
-        breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
-      }
+  return route.matched.reduce<Array<{ key: string; to: string; title: string }>>((breadcrumbArray, matchedRoute) => {
+    const { meta, path } = matchedRoute;
+    if (path === '/client' || meta?.hiddenBreadcrumb) {
       return breadcrumbArray;
-    },
-    [],
-  );
+    }
+
+    const title = meta?.title as LocalizedTitle | undefined;
+    const renderedTitle = title?.[locale.value as keyof LocalizedTitle] || title?.zh_CN || '';
+    if (renderedTitle) {
+      // TDesign BreadcrumbItem 只接受字符串或自身的 Route 结构；Vue Router 的
+      // RouteLocationRaw 还允许 symbol name 与 query 对象，直接绑定会让 vue-tsc
+      // 在升级依赖后拒绝构建。面包屑只需稳定的当前路径文本即可。
+      const to: string = matchedRoute.name
+        ? router.resolve({ name: matchedRoute.name, params: route.params }).path
+        : path;
+      breadcrumbArray.push({ key: matchedRoute.name?.toString() || path, to, title: renderedTitle });
+    }
+    return breadcrumbArray;
+  }, []);
 });
 const accountName = computed(() => user.userInfo.name || t('layout.header.accountFallback'));
 const userInitials = computed(() => {

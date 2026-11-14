@@ -88,7 +88,7 @@ export interface ServiceConsoleApi {
   updateServiceName: (id: number, data: Record<string, unknown>) => Promise<ApiEnvelope<ServiceNameUpdatePayload>>;
   updateServiceRemark: (id: number, data: Record<string, unknown>) => Promise<ApiEnvelope<ServiceRemarkUpdatePayload>>;
   createServiceConsoleAreaTicket: (id: number) => Promise<ApiEnvelope<ServiceConsoleAreaTicket>>;
-  serviceConsoleAreaContentUrl: (id: number, ticket: string, moduleKey: string) => string;
+  serviceConsoleAreaContentUrl: (id: number, moduleKey: string) => string;
   financeLedger: (
     params?: Record<string, unknown>,
   ) => Promise<ApiEnvelope<PagedList<FinanceLedgerRecord> & { summary?: FinanceLedgerSummary }>>;
@@ -191,8 +191,7 @@ export function createServiceConsoleApi(userId: number | string): ServiceConsole
         .then((result) => envelope((result || {}) as ServiceRemarkUpdatePayload)),
     createServiceConsoleAreaTicket: (id) =>
       userApi.createConsoleAreaTicket(uid, id).then((data) => envelope((data || {}) as ServiceConsoleAreaTicket)),
-    serviceConsoleAreaContentUrl: (id, ticket, moduleKey) =>
-      userApi.serviceConsoleAreaContentUrl(uid, id, ticket, moduleKey),
+    serviceConsoleAreaContentUrl: (id, moduleKey) => userApi.serviceConsoleAreaContentUrl(uid, id, moduleKey),
     financeLedger: (params) => {
       const query: { page?: number; page_size?: number; event_type?: string; type?: string } = {
         page: Number(params?.page || 1),

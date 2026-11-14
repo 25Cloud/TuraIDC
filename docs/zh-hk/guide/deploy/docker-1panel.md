@@ -1,6 +1,6 @@
 ---
 source: guide/deploy/docker-1panel.md
-sourceHash: 2e06393b03e23d045a10ddfe6e2b2a4f297ce856cc73ddb43f88653fe79daeba
+sourceHash: 2fca07f7cf72bbbdc6ea0b74c128e4a5d4818476fce2febe8393222fdd30a14d
 generated: zh-hk
 ---
 
@@ -56,29 +56,50 @@ cp .env.example .env
 vim .env
 ```
 
-| 配置項                                                             | 必填 | 説明                                                                                                                                                                |
-| ------------------------------------------------------------------ | ---- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四個公開地址，互不相同、同一協議、無路徑；`https://api.example.com` 形式                                                                                            |
-| `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官網/控制台跨子域共享登錄態時填父域如 `.example.com`；單域留空                                                                                                      |
-| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 鏡像倉庫地址，默認 `ghcr.io` / `25cloud` / `latest`，與 CI 推送目標一致                                                                                             |
-| `APP_KEY`                                                          | 否   | **不要在此文件設置**。容器啟動時自動生成並寫入 `backend/.env`。若在此設空值，Docker env_file 會注入容器環境變量，Dotenv 不覆蓋已存在環境變量，導致生成的 key 被忽略 |
-| `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默認管理員 `cerbo` 的密碼，至少 12 位強密碼，僅空庫首次生效                                                                                               |
-| `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 環境 `true`，純 HTTP 環境 `false`                                                                                                                             |
-| `DB_HOST` / `DB_PORT`                                              | 否   | 數據庫來源：留空使用編排內 mysql 容器（默認）；填寫遠程地址則本地 mysql 不拉取不啟動，app 直連遠程庫，端口默認 3306                                                 |
-| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是   | 數據庫名與賬號；同時用於 mysql 容器和 app 容器（遠程模式仍需填寫供 app 連接）                                                                                       |
-| `REDIS_HOST` / `REDIS_PORT`                                        | 否   | Redis 來源：留空使用編排內 redis 容器（默認）；填寫遠程地址則本地 redis 不拉取不啟動，app 直連遠程，端口默認 6379                                                   |
-| `REDIS_PASSWORD`                                                   | 否   | Redis 密碼；默認空。公網切勿放行 6379；遠程模式必須與遠程實例一致                                                                                                   |
-| `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT`            | 否   | 宿主機映射端口，默認 8080/8081/8082/8083                                                                                                                            |
-| `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | 否   | 與現網口徑一致：redis / database / file，一般不用改                                                                                                                 |
-| `SENTRY_LARAVEL_DSN`                                               | 否   | Sentry DSN，留空關閉                                                                                                                                                |
-| `MAIL_FROM_ADDRESS`                                                | 否   | 默認發件人；SMTP 憑據由管理端"郵件插件"配置                                                                                                                         |
-| `SEO_SITE_URL`                                                     | 否   | 官網公開地址，用於 canonical / sitemap / JSON-LD；默認取 `APP_URL`，多域名部署時建議顯式填官網域名                                                                  |
-| `SEO_FRONTEND_SHELL_URL`                                           | 否   | 官網 index.html 模板地址，默認 `http://frontends:8081/index.html`（compose 內部網絡，一般無需配置）                                                                 |
-| `SEO_SHELL_CACHE_TTL` / `SEO_CACHE_TTL`                            | 否   | shell 模板 / 頁面渲染結果快取秒數，默認 600 / 300；前端重新構建後最長延遲對應時長才生效                                                                             |
+| 配置項                                                             | 必填 | 説明                                                                                                                                                                                                                              |
+| ------------------------------------------------------------------ | ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `APP_URL` / `FRONTEND_URL` / `CLIENT_CONSOLE_URL` / `ADMIN_URL`    | 是   | 四個公開地址，互不相同、同一協議、無路徑；`https://api.example.com` 形式                                                                                                                                                          |
+| `CLIENT_SESSION_COOKIE_DOMAIN`                                     | 否   | 官網/控制台跨子域共享登錄態時填父域如 `.example.com`；單域留空                                                                                                                                                                    |
+| `REGISTRY` / `IMAGE_NAMESPACE` / `IMAGE_TAG`                       | 否   | 鏡像倉庫地址；Compose 當前按 `:${IMAGE_TAG}` 拼接鏡像名。提交 SHA 或版本 tag 只是標籤，本身不保證不可變；生產必須用倉庫策略強制標籤不可變，或每次部署校驗實際鏡像 digest。不要把完整 digest 填進 `IMAGE_TAG`，也不要使用 `latest` |
+| `APP_KEY`                                                          | 是   | 生產部署必須顯式填寫並持久化保存。僅首次部署的空庫可按下方命令從 app 鏡像生成 `base64:...` 值；已有數據庫或升級舊版本必須繼續使用原密鑰，不得生成新密鑰。容器重建不會隨機換鑰，缺失時 entrypoint 直接退出                         |
+| `INSTALL_ADMIN_PASSWORD`                                           | 是   | 首次初始化默認管理員 `cerbo` 的密碼，至少 12 位強密碼，僅空庫首次生效                                                                                                                                                             |
+| `SESSION_SECURE_COOKIE`                                            | 是   | HTTPS 環境 `true`，純 HTTP 環境 `false`                                                                                                                                                                                           |
+| `DB_HOST` / `DB_PORT`                                              | 否   | 數據庫來源：留空使用編排內 mysql 容器（默認）；填寫遠程地址則本地 mysql 不拉取不啟動，app 直連遠程庫，端口默認 3306                                                                                                               |
+| `DB_DATABASE` / `DB_USERNAME` / `DB_PASSWORD` / `DB_ROOT_PASSWORD` | 是   | 數據庫名與賬號；同時用於 mysql 容器和 app 容器（遠程模式仍需填寫供 app 連接）                                                                                                                                                     |
+| `REDIS_HOST` / `REDIS_PORT`                                        | 否   | Redis 來源：留空使用編排內 redis 容器（默認）；填寫遠程地址則本地 redis 不拉取不啟動，app 直連遠程，端口默認 6379                                                                                                                 |
+| `REDIS_PASSWORD`                                                   | 否   | Redis 密碼；默認空。公網切勿放行 6379；遠程模式必須與遠程實例一致                                                                                                                                                                 |
+| `API_PORT` / `WWW_PORT` / `CONSOLE_PORT` / `ADMIN_PORT`            | 否   | 宿主機映射端口，默認 8080/8081/8082/8083                                                                                                                                                                                          |
+| `CACHE_STORE` / `QUEUE_CONNECTION` / `SESSION_DRIVER`              | 否   | 與現網口徑一致：redis / database / file，一般不用改                                                                                                                                                                               |
+| `SENTRY_LARAVEL_DSN`                                               | 否   | Sentry DSN，留空關閉                                                                                                                                                                                                              |
+| `MAIL_FROM_ADDRESS`                                                | 否   | 默認發件人；SMTP 憑據由管理端"郵件插件"配置                                                                                                                                                                                       |
+| `SEO_SITE_URL`                                                     | 否   | 官網公開地址，用於 canonical / sitemap / JSON-LD；默認取 `APP_URL`，多域名部署時建議顯式填官網域名                                                                                                                                |
+| `SEO_FRONTEND_SHELL_URL`                                           | 否   | 官網 index.html 模板地址，默認 `http://frontends:8081/index.html`（compose 內部網絡，一般無需配置）                                                                                                                               |
+| `SEO_SHELL_CACHE_TTL` / `SEO_CACHE_TTL`                            | 否   | shell 模板 / 頁面渲染結果快取秒數，默認 600 / 300；前端重新構建後最長延遲對應時長才生效                                                                                                                                           |
 
 > 約束：密碼與地址值不要包含雙引號 `"` 和反斜槓 `\`，避免破壞 `.env` 解析。`.env` 已被 `.dockerignore` 排除，不會進鏡像、不會入庫。
 >
 > 遠程數據庫 / Redis 模式：`DB_HOST` 或 `REDIS_HOST` 填寫遠程地址後，對應本地容器不會被創建，`docker compose pull` 也不拉取其鏡像。要求伺服器 Compose v2.20+（依賴跳過用 `required: false`）；遠程庫需自行建庫、對伺服器 IP 授權；數據庫結構與初始化仍由 app 容器 entrypoint 在啟動時執行。
+
+首次部署且使用空庫時，宿主機沒有 PHP 或倉庫尚未安裝 `backend/vendor/`，可在 `deploy/docker` 目錄先準備 app 鏡像，再執行下面的命令生成密鑰；把輸出的整行寫入 `.env` 的 `APP_KEY=` 後再啟動 Compose。使用 CI 鏡像時執行 `docker compose pull app`；沒有鏡像倉庫時改用 `docker compose build app`：
+
+```bash
+# CI 镜像
+docker compose pull app
+# 无镜像仓库时改用：docker compose build app
+docker compose run --rm --no-deps --entrypoint php app -r 'echo "base64:", base64_encode(random_bytes(32)), PHP_EOL;'
+```
+
+提交 SHA 或版本 tag 不能單獨證明鏡像內容未被替換。生產環境應在鏡像倉庫啟用標籤不可變策略；若倉庫不支持該策略，每次部署前都要讀取並核對實際鏡像 digest，再執行 `docker compose up -d`。
+
+### 3.1 已有數據庫或舊版本升級
+
+已有數據庫或從舊版本升級時，不能執行上面的密鑰生成命令。重建舊容器前，先從仍在運行的舊 app 容器讀取原密鑰：
+
+```bash
+docker compose exec app sh -lc "grep '^APP_KEY=' /var/www/backend/.env"
+```
+
+將輸出的完整 `APP_KEY=...` 寫入宿主機 `deploy/docker/.env`，再重建或升級容器。舊容器已經銷燬時，應從與數據庫同批次的備份或密鑰記錄恢復；沒有原密鑰時不要生成新值，否則歷史密文將無法解密。
 
 ## 4. CI 自動打包推送
 
@@ -134,8 +155,8 @@ git clone <你的仓库地址> /opt/turaidc && cd /opt/turaidc
 
 ```bash
 cd deploy/docker
-cp .env.example .env
-vim .env            # 填写四个地址、密码等
+test -f .env || cp .env.example .env  # 不覆盖已有配置
+vim .env            # 填写四个地址、APP_KEY、密码等
 
 # 拉取 CI 推送的镜像并启动（推荐）
 docker compose pull && docker compose up -d
@@ -143,7 +164,7 @@ docker compose pull && docker compose up -d
 docker compose up -d --build
 ```
 
-首次啟動（空庫）自動執行 `install_db.py`：導入 schema baseline、執行增量遷移、寫入默認配置、創建管理員 `cerbo`。
+生產環境啟動前必須先在 `.env` 配置與數據庫備份同批次保存的 `APP_KEY`。首次啟動（空庫）自動執行 `install_db.py`：導入 schema baseline、執行增量遷移、寫入默認配置、創建管理員 `cerbo`。非生產環境空庫安裝態缺少 `APP_KEY` 時入口腳本只生成一次並寫入 `app-storage` 持久化卷；已有數據缺失密鑰會直接退出。
 
 ### 5.3 驗證
 
@@ -366,7 +387,7 @@ docker compose restart app               # 重启后端
 
 - 查看 `docker compose logs app`：php-fpm 未隨 supervisor 拉起、或 MySQL 未就緒導致 entrypoint 卡住時表現為 502
 - 確認 `mysql` 容器 healthcheck 通過（`docker compose ps` 中 healthy）
-- `APP_KEY` 缺失會導致 Laravel 500：確認 `docker compose exec app sh -c 'grep ^APP_KEY= .env'` 有值
+- `APP_KEY` 缺失時 entrypoint 會拒絕啟動：確認宿主機 `deploy/docker/.env` 中已設置與數據庫同批次保存的密鑰，再執行 `docker compose up -d --force-recreate app`。不要執行 `php artisan key:generate` 替換已有生產密鑰，否則歷史密文將無法解密。
 
 ### 11.3 拉取鏡像 401 / 拉不下來
 

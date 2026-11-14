@@ -36,6 +36,10 @@ class EnsureZjmfUpstreamAuthenticated
             return $this->unauthorized($request, 'disabled', 0, '上游 API 未开放');
         }
 
+        if (! UpstreamJwt::isUsableKey($this->service->jwtKey())) {
+            return $this->unauthorized($request, 'jwt_config_invalid', 0, '上游 API 配置无效');
+        }
+
         $claims = $this->resolveClaims($request);
         if ($claims === []) {
             return $this->unauthorized($request, 'jwt_invalid', 0, 'JWT 无效或已过期');
@@ -67,7 +71,7 @@ class EnsureZjmfUpstreamAuthenticated
     private function resolveClaims(Request $request): array
     {
         $header = (string) $request->header('Authorization', '');
-        if (! preg_match('/Bearer\s+(.+)/i', $header, $matches)) {
+        if (! preg_match('/^\s*Bearer\s+(\S+)\s*$/i', $header, $matches)) {
             return [];
         }
 

@@ -2,7 +2,7 @@
 # ============================================================================
 # TuraIDC 后端容器入口：
 #   1. 由容器环境变量生成 backend/.env（单一配置源 = deploy/docker/.env）
-#   2. 等待 MySQL 就绪，补 APP_KEY
+#   2. 等待 MySQL 就绪；非生产空库首次安装生成的 APP_KEY 写入持久化卷
 #   3. 空库 -> install_db.py 全量初始化（含默认管理员）；有数据 -> migrate --force
 #   4. 建目录、修权限、装 crontab、生成生产配置缓存
 #   5. 交给 Supervisor 拉起 php-fpm / nginx / cron / vnc:relay
@@ -12,6 +12,39 @@ set -euo pipefail
 log() { echo "[entrypoint] $*"; }
 
 BACKEND_DIR=/var/www/backend
+
+# APP_KEY 用于解密数据库中的敏感字段，生产容器绝不能在缺失时随机生成。
+# APP_ENV 留空时 Laravel 默认按 production 运行，按生产规则拒绝启动。
+APP_ENV_VAL="$(printenv APP_ENV || true)"
+APP_ENV_VAL="${APP_ENV_VAL:-production}"
+APP_KEY_VAL="$(printenv APP_KEY || true)"
+if [ "$APP_ENV_VAL" = "production" ] && [ -z "$APP_KEY_VAL" ]; then
+  log "错误：生产环境必须显式设置 APP_KEY；为避免重建后更换密钥，拒绝自动生成并退出。"
+  exit 1
+fi
+
+# 非生产空库允许首次生成，但必须写入 app-storage 卷；代码目录是 tmpfs，
+# 不能把密钥只写进 /var/www/backend/.env，否则容器重建后会生成新钥匙。
+APP_KEY_FILE="$BACKEND_DIR/storage/app/app.key"
+mkdir -p "$(dirname "$APP_KEY_FILE")"
+if [ "$APP_ENV_VAL" != "production" ] && [ -z "$APP_KEY_VAL" ] && [ -s "$APP_KEY_FILE" ]; then
+  APP_KEY_VAL="$(cat "$APP_KEY_FILE")"
+fi
+
+if [ "$APP_ENV_VAL" = "production" ]; then
+  case "$APP_KEY_VAL" in
+    base64:*)
+      APP_KEY_BYTES="$(printf '%s' "${APP_KEY_VAL#base64:}" | base64 -d 2>/dev/null | wc -c | tr -d ' ')"
+      ;;
+    *)
+      APP_KEY_BYTES="${#APP_KEY_VAL}"
+      ;;
+  esac
+  if [ "${APP_KEY_BYTES:-0}" -lt 32 ]; then
+    log "错误：生产 APP_KEY 解码后必须至少包含 32 字节随机密钥；拒绝启动。"
+    exit 1
+  fi
+fi
 
 # ---------------------------------------------------------------------------
 # 0. 拷贝代码到可写层（Docker Desktop Windows overlayfs workaround）
@@ -76,8 +109,7 @@ export SESSION_DRIVER="${SESSION_DRIVER:-file}"
 export TURAIDC_BUSINESS_QUEUES="${TURAIDC_BUSINESS_QUEUES:-referral,notification,coupon,default}"
 export TURAIDC_PROVISION_QUEUES="${TURAIDC_PROVISION_QUEUES:-provision}"
 export TURAIDC_SCHEDULE_QUEUE="${TURAIDC_SCHEDULE_QUEUE:-automation}"
-# APP_KEY 不走引号模板：key:generate 用正则 ^APP_KEY=.* 替换整行，
-# 引号包裹会导致替换后残留 "" 使 key 损坏。单独写裸值。
+# APP_KEY 不走引号模板：Laravel 读取 base64:... 时必须保留原值，单独写裸值。
 for var in \
   APP_NAME APP_ENV APP_DEBUG \
   APP_URL FRONTEND_URL CLIENT_CONSOLE_URL ADMIN_URL CLIENT_SESSION_COOKIE_DOMAIN \
@@ -91,8 +123,7 @@ for var in \
   printf '%s="%s"\n' "$var" "$val" >> .env
 done
 
-# APP_KEY 裸值写入（不用引号），后续 key:generate 能正确替换
-APP_KEY_VAL="$(printenv APP_KEY || true)"
+# APP_KEY 裸值写入（不用引号）
 printf 'APP_KEY=%s\n' "$APP_KEY_VAL" >> .env
 
 # 数据库与 Redis 指向：优先保留编排注入的值（远程模式为远程地址与端口），
@@ -149,9 +180,25 @@ log "MySQL 已就绪"
 # ---------------------------------------------------------------------------
 # 3. APP_KEY
 # ---------------------------------------------------------------------------
+# 生产环境已在写入 .env 前拒绝缺失 APP_KEY。非生产环境只允许空库首次安装
+# 生成一次并写入持久化卷；已有数据仍缺失密钥时直接退出，禁止重建容器随机换钥。
+if ! TABLE_COUNT="$(mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" "${DB_AUTH[@]}" -N -s \
+  -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_DATABASE';" 2>/dev/null)"; then
+  log "错误：无法确认数据库表数量，为避免误判安装态，拒绝启动。"
+  exit 1
+fi
+
 if [ -z "$(grep '^APP_KEY=' .env | cut -d'=' -f2-)" ]; then
-  log "APP_KEY 为空，生成中..."
-  php artisan key:generate --force
+  if [ "${TABLE_COUNT:-0}" != "0" ]; then
+    log "错误：已有数据但 APP_KEY 缺失，拒绝随机生成新密钥；请恢复与数据库同批次的 APP_KEY。"
+    exit 1
+  fi
+
+  log "非生产空库安装态 APP_KEY 为空，生成并持久化一次..."
+  APP_KEY_VAL="base64:$(openssl rand -base64 32 | tr -d '\n')"
+  printf 'APP_KEY=%s\n' "$APP_KEY_VAL" > "$APP_KEY_FILE"
+  chmod 600 "$APP_KEY_FILE"
+  sed -i "s|^APP_KEY=.*$|APP_KEY=$APP_KEY_VAL|" .env
 fi
 
 # ---------------------------------------------------------------------------
@@ -178,9 +225,6 @@ chown -R www-data:www-data storage bootstrap/cache public/uploads
 #   空库  -> install_db.py（导入 baseline + 增量迁移 + 默认管理员）
 #   有数据 -> 只做增量迁移（与现网宝塔口径一致）
 # ---------------------------------------------------------------------------
-TABLE_COUNT="$(mysql -h"$DB_HOST" -P"$DB_PORT" -u"$DB_USERNAME" "${DB_AUTH[@]}" -N -s \
-  -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='$DB_DATABASE';" 2>/dev/null || echo 0)"
-
 if [ "${TABLE_COUNT:-0}" = "0" ]; then
   log "空库，执行 install_db.py 全量初始化（首次运行会创建默认管理员 cerbo）..."
   INSTALL_ADMIN_PASSWORD="$(grep '^INSTALL_ADMIN_PASSWORD=' .env | cut -d'"' -f2)" \

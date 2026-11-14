@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+
 import type { Page, Route } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
@@ -42,7 +44,7 @@ function serviceDetail(): Record<string, unknown> {
  * @param page       Playwright 页面对象
  * @param preloadAll 缺省传 undefined，模拟后端不下发该字段（缺省按开启处理）。
  */
-async function mockConsoleApi(page: Page, preloadAll?: boolean) {
+async function mockConsoleApi(page: Page, preloadAll?: boolean, contentHtml?: string) {
   await page.addInitScript(() => {
     window.localStorage.setItem('client_token', 'area-preload-test-token');
     window.localStorage.setItem('client_last_active_at', String(Date.now()));
@@ -82,11 +84,17 @@ async function mockConsoleApi(page: Page, preloadAll?: boolean) {
       return respond(capabilities);
     }
     if (url.pathname.endsWith(`/services/${SERVICE_ID}/console/tickets`)) {
-      return respond({ ticket: 'area-ticket-1', expires_in: 600 });
+      return respond({ ticket: 'area-ticket-1', expires_in: 180 });
+    }
+    if (url.pathname.endsWith(`/services/${SERVICE_ID}/console-area/actions`)) {
+      return respond({ status: 200, msg: '操作已提交', data: [] });
     }
     if (url.pathname.endsWith(`/services/${SERVICE_ID}/console-area/content`)) {
       const module = url.searchParams.get('module') || '';
-      return respond({ html: `<!DOCTYPE html><html><body><p>面板 ${module}</p></body></html>` });
+      return route.fulfill({
+        contentType: 'text/html',
+        body: contentHtml || `<!DOCTYPE html><html><body><p>面板 ${module}</p></body></html>`,
+      });
     }
 
     return respond({});
@@ -123,10 +131,35 @@ test('切换 tab 不重建 iframe 实例', async ({ page }) => {
 
   await expect(areaFrames(page)).toHaveCount(2);
   const before = await areaFrames(page).evaluateAll((nodes) => nodes.map((node) => (node as HTMLIFrameElement).src));
+  expect(
+    before.every((src) => !new URL(src).searchParams.has('ticket')),
+    'iframe 地址不得携带区域票据，票据应仅通过 HttpOnly Cookie 传递',
+  ).toBe(true);
 
   await sidebarItem(page, '管理面板').click();
   await expect(areaFrames(page), '切 tab 后实例数量不变').toHaveCount(2);
 
   const after = await areaFrames(page).evaluateAll((nodes) => nodes.map((node) => (node as HTMLIFrameElement).src));
   expect(after, '切 tab 后各实例的 src 不应变化，否则等于重新回源上游').toEqual(before);
+});
+
+test('净化后的面板仍可通过本地运行时提交表单动作', async ({ page }) => {
+  const runtime = readFileSync(
+    new URL('../../../backend/public/media/console-panel/panel-runtime.js', import.meta.url),
+    'utf8',
+  );
+  await page.route('**/media/console-panel/panel-runtime.js', (route) =>
+    route.fulfill({ contentType: 'application/javascript', body: runtime }),
+  );
+
+  await mockConsoleApi(
+    page,
+    false,
+    '<!DOCTYPE html><html><body><form action="actions" method="post"><input name="func" value="fixture"><button type="submit">提交动作</button><output data-tura-result></output></form><script src="/media/console-panel/panel-runtime.js"></script></body></html>',
+  );
+  await page.goto(`/client/services/${SERVICE_ID}`, { waitUntil: 'domcontentloaded' });
+
+  const panel = page.frameLocator('iframe.area-frame').first();
+  await panel.getByRole('button', { name: '提交动作' }).click();
+  await expect(panel.locator('[data-tura-result]')).toHaveText('操作已提交');
 });

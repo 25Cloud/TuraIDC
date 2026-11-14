@@ -20,7 +20,7 @@ x-proxy-env: &proxy-env
 
 services:
   mysql:
-    image: mysql:8.0
+    image: mysql:8.0@sha256:62fb722c78b24245ddff1796a0fcee4a49cc5b87e0aaaf20c92d1da9e0a2497b
     network_mode: host
     environment:
       MYSQL_DATABASE: finance
@@ -46,11 +46,12 @@ services:
     environment:
       <<: *proxy-env
       # 对齐 ci.yml backend env
+      APP_ENV: testing
       APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
       DB_CONNECTION: mysql
       DB_HOST: 127.0.0.1
       DB_PORT: '3306'
-      DB_DATABASE: finance
+      DB_DATABASE: idc_test
       DB_USERNAME: root
       DB_PASSWORD: root
     command: >-
@@ -59,13 +60,26 @@ services:
         mkdir -p /ci && git -C /repo archive HEAD | tar -x -C /ci
         cd /ci/backend
         composer validate --strict --no-check-publish
-        composer install --no-interaction --prefer-dist --no-progress
+        composer install --no-interaction --prefer-dist --no-progress --no-scripts
+        mkdir -p storage/app/public storage/framework/cache/data storage/framework/sessions \
+          storage/framework/views storage/logs bootstrap/cache
+        chmod -R u+rwX,g+rX,o-rwx storage bootstrap/cache
+        mysql -h127.0.0.1 -P3306 -uroot -proot \
+          -e "CREATE DATABASE IF NOT EXISTS idc_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+        mysql -h127.0.0.1 -P3306 -uroot -proot idc_test < database/schema/mysql-schema.sql
+        php artisan migrate --force
+        php artisan package:discover --ansi
         composer format:check
         composer analyse
+        composer audit --locked --no-dev --format=table
+        php artisan audit:admin-routes
+        php artisan test --testsuite=Plugins
+        php artisan test --testsuite=Unit
+        php artisan test --testsuite=Feature
       '
 
   frontend:
-    image: node:22
+    image: node:22-slim@sha256:5ec23b7c622b00547753bc6ffd78085dd868a68aeb41c8e0a1418f033e13d96d
     network_mode: host
     volumes:
       - ../../../:/repo:ro
@@ -81,6 +95,9 @@ services:
     command: >-
       bash -euxc '
         set -e
+        apt-get update
+        apt-get install -y --no-install-recommends git ca-certificates
+        rm -rf /var/lib/apt/lists/*
         git config --global --add safe.directory /repo
         mkdir -p /ci && git -C /repo archive HEAD | tar -x -C /ci
         cd /ci
