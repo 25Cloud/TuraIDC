@@ -12,8 +12,10 @@ import { defineConfig, devices } from "@playwright/test";
 export default defineConfig({
   testDir: "./tests/e2e",
   outputDir: "./test-results",
-  fullyParallel: false,
-  workers: 1,
+  // 并行跑：串行时 64 个用例要 3 分多钟，并行后实测 85 秒，失败集合不变。
+  // 并行度可用 PLAYWRIGHT_WORKERS 覆盖，CI 上按 4 核给 4。
+  fullyParallel: true,
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? (process.env.CI ? 4 : 8)),
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
   use: {

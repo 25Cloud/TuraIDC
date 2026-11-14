@@ -5,9 +5,10 @@ export default defineConfig({
   // 演示站冒烟单独一套配置（跑在构建产物上，需要 demo/dist），默认套件不掺进来
   testIgnore: ['**/demo/**'],
   outputDir: './test-results',
-  // 该套件共享一个 Vite 服务，测试之间保持串行，避免首屏模块编译竞争。
-  fullyParallel: false,
-  workers: 1,
+  // 并行跑：串行时 53 个用例要 2 分钟，并行后实测 55 秒，失败集合不变。
+  // 并行度可用 PLAYWRIGHT_WORKERS 覆盖，CI 上按 4 核给 4。
+  fullyParallel: true,
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? (process.env.CI ? 4 : 8)),
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {

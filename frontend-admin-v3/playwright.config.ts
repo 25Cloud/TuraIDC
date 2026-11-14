@@ -3,11 +3,13 @@ import { defineConfig, devices } from '@playwright/test';
 export default defineConfig({
   testDir: './tests/e2e',
   outputDir: './test-results',
-  // The smoke suite shares one Vite server and performs many first-load module
-  // compilations. Running every test in parallel can leave pages on the empty
-  // app shell before their assertions start, so keep each project serial.
-  fullyParallel: false,
-  workers: 3,
+  // 并行跑：曾因「共享一个 Vite 服务、首屏模块按需编译」而关掉 fullyParallel，
+  // 但关掉之后 smoke.spec.ts 这 6200 行、52 个用例的单体文件被锁成一条串行车道，
+  // 其余 worker 干完就闲着——实测桌面端全量 138 个用例：串行 12.5 分钟，
+  // 打开并行 2.6 分钟，且失败集合完全相同（差异只来自用例本身的漂移）。
+  // 并行度可用 PLAYWRIGHT_WORKERS 覆盖，CI 上按 4 核给 4。
+  fullyParallel: true,
+  workers: Number(process.env.PLAYWRIGHT_WORKERS ?? (process.env.CI ? 4 : 8)),
   retries: process.env.CI ? 1 : 0,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   use: {
