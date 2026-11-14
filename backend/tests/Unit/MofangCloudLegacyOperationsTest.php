@@ -263,6 +263,31 @@ class MofangCloudLegacyOperationsTest extends TestCase
             && (string) ($request['format_data_disk'] ?? '') === '1');
     }
 
+    public function test_create_nat_rule_treats_http_204_empty_body_as_success(): void
+    {
+        // 线上实测：上游创建 NAT 转发成功时回 HTTP 204 + 空响应体，曾被误报「不是有效 JSON」
+        $this->fakeUpstream([
+            '/v1/login?a=a' => '"'.self::TOKEN.'"',
+            '/v1/clouds/88/nat_acl' => [204, ''],
+        ]);
+
+        $result = $this->operations()->createNatRule(88, ['name' => 'web', 'ext_port' => '40000', 'int_port' => '80', 'protocol' => 1]);
+
+        $this->assertTrue($result['ok']);
+    }
+
+    public function test_empty_body_with_error_status_is_still_a_failure(): void
+    {
+        // 只放行 2xx 的空体；5xx 空体必须仍然报错，不能把真故障吞掉
+        $this->fakeUpstream([
+            '/v1/login?a=a' => '"'.self::TOKEN.'"',
+            '/v1/clouds/88/nat_acl' => [502, ''],
+        ]);
+
+        $this->expectException(\TuraIDC\Plugins\Servers\MofangCloud\Lib\CloudApiException::class);
+        $this->operations()->createNatRule(88, ['name' => 'web', 'ext_port' => '40000', 'int_port' => '80', 'protocol' => 1]);
+    }
+
     public function test_nat_rules_inject_host_ip_and_delete_passes_hostid(): void
     {
         $this->seedToken();

@@ -176,6 +176,13 @@ final class LegacyCloudClient implements CloudApiClient
     private function decode(Response $response): array
     {
         $raw = $response->body();
+
+        // 老接口的写操作（如创建 NAT 转发）成功时会回 HTTP 204 / 空响应体，这不是错误：
+        // 补成 `status=200` 的空体，让下游的「是否成功」判断照常通过；非 2xx 的空体仍按失败处理。
+        if (trim($raw) === '' && $response->status() >= 200 && $response->status() < 300) {
+            return ['status' => 200];
+        }
+
         $decoded = json_decode($raw, true);
 
         if (! is_array($decoded)) {
