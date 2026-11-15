@@ -6143,10 +6143,10 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     expect(loginAsRequestCount).toBe(0);
   });
 
-  test('opens user detail deep service and invoice actions', async ({ page }) => {
-    // 这条要跑「详情 → 添加实例 → 实例控制台 → 账单抽屉」四段，负载高时单段就接近默认
-    // 30 秒预算，按 Playwright 的 slow 语义放大三倍（不是给某个断言单独加 timeout）。
-    test.slow();
+  // 原来这里是「详情 → 添加实例 → 实例控制台 → 账单抽屉」四段串在一条用例里，
+  // CI 上（4 核 + 4 worker）任何一段抢跑都会让整条红，而且失败点每次都不一样。
+  // 拆成三条独立用例：各自 open 自己的页面，互不牵连，也能并行跑。
+  test('opens user detail add-instance dialog', async ({ page }) => {
     await mockAdminInfo(page);
     await mockUserDetail(page);
     await page.addInitScript(() => {
@@ -6166,34 +6166,45 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await userDetailTab(page, '实例').click();
     await page.getByRole('button', { name: '添加实例' }).click();
     const addServiceDialog = page.locator('.t-dialog:visible');
-    const selectedProductRequests: string[] = [];
-    page.on('request', (request) => {
-      if (new URL(request.url()).pathname.endsWith('/products/101')) {
-        selectedProductRequests.push(request.url());
-      }
-    });
     // 弹窗是 teleport + 动画，先等它真的挂上再断言字段，避免 CI 上抢在渲染之前
     await expect(addServiceDialog).toBeVisible({ timeout: 15000 });
-    await expect(addServiceDialog.getByText('选择商品')).toBeVisible();
-    await expect(addServiceDialog.getByText('自动创建订单', { exact: true })).toBeVisible();
-    await expect(addServiceDialog.getByText('自动创建账单', { exact: true })).toBeVisible();
-    await expect(addServiceDialog.getByText('从余额扣款', { exact: true })).toBeVisible();
-    // 「选择商品」这棵树在弹窗里会持续重渲染：Playwright 的 actionability 检查拿不到
-    // 稳定帧，force 点击也只能偶尔选中（连跑 5 次成功 1 次），说明这是产品侧的渲染问题
-    // 而不是选择器问题。这里只断言弹窗结构与树控件都在；树的选中行为由
-    // service-host-config / specs / cpu-models 等页面级用例覆盖（同一组件、页面内稳定）。
-    await expect(addServiceDialog.locator('.binding-tree-select')).toBeVisible();
-    // 弹窗内容比视口高，底部按钮落在视口外（Playwright 会判 outside of the viewport），
-    // 用 Esc 关闭最稳；t-dialog 默认 closeOnEscKeydown。
+    await expect(addServiceDialog.getByText('选择商品')).toBeVisible({ timeout: 15000 });
+    await expect(addServiceDialog.getByText('自动创建订单', { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(addServiceDialog.getByText('自动创建账单', { exact: true })).toBeVisible({ timeout: 15000 });
+    await expect(addServiceDialog.getByText('从余额扣款', { exact: true })).toBeVisible({ timeout: 15000 });
+    // 「选择商品」这棵树在弹窗里拿不到稳定帧（ScrollIntoView 与 popup 重定位互相触发），
+    // 选中行为由 service-host-config / specs / cpu-models 等页面级用例覆盖（同一组件、页面内稳定）。
+    await expect(addServiceDialog.locator('.binding-tree-select')).toBeVisible({ timeout: 15000 });
+    // 弹窗内容比视口高，底部按钮落在视口外，用 Esc 关闭最稳。
     await page.keyboard.press('Escape');
     await expect(page.locator('.t-dialog:visible')).toHaveCount(0);
+  });
 
+  test('opens user detail instance console entry', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockUserDetail(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
+
+    await page.goto('/admin/users/1', { waitUntil: 'domcontentloaded' });
+    await userDetailTab(page, '实例').click();
     // 「管理实例」已从抽屉改为跳转独立实例控制台页面
     const manageInstanceButton = page.locator('button', { hasText: '管理实例' }).last();
     await manageInstanceButton.scrollIntoViewIfNeeded();
     await manageInstanceButton.click();
     await expect(page).toHaveURL(/\/admin\/services\/11/);
     await expect(page.getByText('实例详情')).toBeVisible();
+  });
+
+  test('opens user detail invoice drawer', async ({ page }) => {
+    await mockAdminInfo(page);
+    await mockUserDetail(page);
+    await page.addInitScript(() => {
+      window.localStorage.setItem('admin_token', 'test-token');
+      window.localStorage.setItem('admin_last_active_at', String(Date.now()));
+    });
 
     await page.goto('/admin/users/1', { waitUntil: 'domcontentloaded' });
     await userDetailTab(page, '账单').click();
