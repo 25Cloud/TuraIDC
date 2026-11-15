@@ -6169,6 +6169,8 @@ test.describe('frontend-admin-v3 shell smoke', () => {
         selectedProductRequests.push(request.url());
       }
     });
+    // 弹窗是 teleport + 动画，先等它真的挂上再断言字段，避免 CI 上抢在渲染之前
+    await expect(addServiceDialog).toBeVisible({ timeout: 15000 });
     await expect(addServiceDialog.getByText('选择商品')).toBeVisible();
     await expect(addServiceDialog.getByText('自动创建订单', { exact: true })).toBeVisible();
     await expect(addServiceDialog.getByText('自动创建账单', { exact: true })).toBeVisible();
@@ -6197,7 +6199,8 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     // 抽屉先播动画再取详情，CI 上（4 核 + 并发）首个断言偶尔会赶在请求回来之前，
     // 这里给首个断言 15 秒窗口；后续两条断言沿用默认值。
     await expect(invoiceDrawer.getByText('INV-USER-001')).toBeVisible({ timeout: 15000 });
-    await expect(invoiceDrawer.getByText('支付 / 退款记录')).toBeVisible();
+    // 抽屉正文分两段渲染（账单头 + 支付/退款流水），后半段晚一拍，同样给窗口
+    await expect(invoiceDrawer.getByText('支付 / 退款记录')).toBeVisible({ timeout: 15000 });
     await expect(invoiceDrawer.getByRole('button', { name: '退款' })).toBeVisible();
   });
 
