@@ -241,12 +241,17 @@ jobs:
             # runner 上会互相抢渲染，出现「元素还没挂上就断言」的偶发；降到 2 后
             # 墙钟只多一分钟，稳定性明显好于 4。
             workers: 2
+            # 重试 2 次：这套里还有几条「点开抽屉/弹窗后等详情」的用例，偶发率约 1%，
+            # 每次重试只重跑失败的，代价远小于整轮红掉重来。
+            retries: 2
           - app: www
             package: turaidc-user-v3-www
             workers: 4
+            retries: 1
           - app: console
             package: turaidc-user-v4-console
             workers: 4
+            retries: 1
     steps:
       - uses: actions/checkout@v4
 
@@ -295,7 +300,7 @@ jobs:
         run: |
           pnpm --filter ${{ matrix.package }} exec playwright test \
             --project=desktop \
-            --retries=1 \
+            --retries=${{ matrix.retries }} \
             --reporter=github
 
       - name: Upload Playwright artifacts

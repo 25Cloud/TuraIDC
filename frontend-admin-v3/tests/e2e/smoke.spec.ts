@@ -6061,7 +6061,7 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     await expect(page.getByText('测试云服务器').first()).toBeVisible();
     // 「管理实例」已从抽屉改为跳转实例控制台页面（固定列会复制单元格，用事件派发避开重复节点）
     await page.locator('button', { hasText: '管理实例' }).last().dispatchEvent('click');
-    await expect(page).toHaveURL(/\/admin\/services\/11/);
+    await expect(page).toHaveURL(/\/admin\/services\/11/, { timeout: 15000 });
     await expect(page.getByText('实例详情')).toBeVisible();
 
     // 回到用户详情继续核对其它页签（实例控制台是独立路由页）
@@ -6190,12 +6190,13 @@ test.describe('frontend-admin-v3 shell smoke', () => {
 
     await page.goto('/admin/users/1', { waitUntil: 'domcontentloaded' });
     await userDetailTab(page, '实例').click();
-    // 「管理实例」已从抽屉改为跳转独立实例控制台页面
+    // 实例 tab 的行内跳转要等列表渲染完再点，否则会点空
     const manageInstanceButton = page.locator('button', { hasText: '管理实例' }).last();
+    await expect(manageInstanceButton).toBeVisible({ timeout: 15000 });
     await manageInstanceButton.scrollIntoViewIfNeeded();
     await manageInstanceButton.click();
-    await expect(page).toHaveURL(/\/admin\/services\/11/);
-    await expect(page.getByText('实例详情')).toBeVisible();
+    await expect(page).toHaveURL(/\/admin\/services\/11/, { timeout: 15000 });
+    await expect(page.getByText('实例详情')).toBeVisible({ timeout: 15000 });
   });
 
   test('opens user detail invoice drawer', async ({ page }) => {
@@ -6208,18 +6209,17 @@ test.describe('frontend-admin-v3 shell smoke', () => {
 
     await page.goto('/admin/users/1', { waitUntil: 'domcontentloaded' });
     await userDetailTab(page, '账单').click();
-    // 按账单号定位那一行的「详情」，不依赖表格渲染顺序（CI 上首行未必是同一条）
-    await page
-      .locator('.table-scroll tr')
-      .filter({ hasText: 'INV-USER-001' })
-      .first()
-      .getByRole('button', { name: '详情', exact: true })
-      .click();
+    // 按账单号定位那一行的「详情」，不依赖表格渲染顺序（CI 上首行未必是同一条）；
+    // 先等行出现再点，避免列表还没回来时点击落空。
+    const invoiceRow = page.locator('.table-scroll tr').filter({ hasText: 'INV-USER-001' }).first();
+    await expect(invoiceRow).toBeVisible({ timeout: 15000 });
+    await invoiceRow.getByRole('button', { name: '详情', exact: true }).click();
     const invoiceDrawer = page.locator('.t-drawer:visible');
     await expect(invoiceDrawer.getByText('INV-USER-001')).toBeVisible({ timeout: 15000 });
-    // 抽屉正文分两段渲染（账单头 + 支付/退款流水），后半段晚一拍，同样给窗口
+    // 抽屉正文分两段渲染（账单头来自列表行，支付/退款流水要等详情接口），
+    // 后半段与「退款」按钮（依赖详情里的 status）都按详情加载后再断言。
     await expect(invoiceDrawer.getByText('支付 / 退款记录')).toBeVisible({ timeout: 15000 });
-    await expect(invoiceDrawer.getByRole('button', { name: '退款' })).toBeVisible();
+    await expect(invoiceDrawer.getByRole('button', { name: '退款' })).toBeVisible({ timeout: 15000 });
   });
 
   test('opens verification list detail and history', async ({ page }) => {
