@@ -4607,8 +4607,11 @@ test.describe('frontend-admin-v3 shell smoke', () => {
     const trafficBindPopup = page.locator('.binding-tree-select-popup:visible');
     await expect(trafficBindPopup).toBeVisible();
     await expect(trafficBindPopup.getByText('襄阳', { exact: true }).first()).toBeVisible();
+    // 弹窗底部按钮在 CI 上会落在视口外（Playwright 报 outside of the viewport），
+    // 用 Esc 逐层关闭：先关下拉，再关弹窗。
     await page.keyboard.press('Escape');
-    await trafficGroupDialog.getByRole('button', { name: '取消' }).click();
+    await expect(trafficBindPopup).toBeHidden();
+    await page.keyboard.press('Escape');
     await expect(trafficGroupDialog).toBeHidden();
 
     // 编辑既有分组：只改名，绑定关系沿用，响应里应带上同样的 product_ids
@@ -6194,10 +6197,14 @@ test.describe('frontend-admin-v3 shell smoke', () => {
 
     await page.goto('/admin/users/1', { waitUntil: 'domcontentloaded' });
     await userDetailTab(page, '账单').click();
-    await page.locator('.table-scroll').getByRole('button', { name: '详情', exact: true }).first().click();
+    // 按账单号定位那一行的「详情」，不依赖表格渲染顺序（CI 上首行未必是同一条）
+    await page
+      .locator('.table-scroll tr')
+      .filter({ hasText: 'INV-USER-001' })
+      .first()
+      .getByRole('button', { name: '详情', exact: true })
+      .click();
     const invoiceDrawer = page.locator('.t-drawer:visible');
-    // 抽屉先播动画再取详情，CI 上（4 核 + 并发）首个断言偶尔会赶在请求回来之前，
-    // 这里给首个断言 15 秒窗口；后续两条断言沿用默认值。
     await expect(invoiceDrawer.getByText('INV-USER-001')).toBeVisible({ timeout: 15000 });
     // 抽屉正文分两段渲染（账单头 + 支付/退款流水），后半段晚一拍，同样给窗口
     await expect(invoiceDrawer.getByText('支付 / 退款记录')).toBeVisible({ timeout: 15000 });
