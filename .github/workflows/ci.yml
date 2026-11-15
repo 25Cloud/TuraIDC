@@ -237,10 +237,16 @@ jobs:
         include:
           - app: admin
             package: turaidc-admin-v3
+            # admin 这套用例里有几张重表格（用户详情/订单/日志），4 worker 在 4 核
+            # runner 上会互相抢渲染，出现「元素还没挂上就断言」的偶发；降到 2 后
+            # 墙钟只多一分钟，稳定性明显好于 4。
+            workers: 2
           - app: www
             package: turaidc-user-v3-www
+            workers: 4
           - app: console
             package: turaidc-user-v4-console
+            workers: 4
     steps:
       - uses: actions/checkout@v4
 
@@ -285,7 +291,7 @@ jobs:
       - name: Run ${{ matrix.app }} E2E
         env:
           PW_E2E_PREVIEW: '1'
-          PLAYWRIGHT_WORKERS: '4'
+          PLAYWRIGHT_WORKERS: ${{ matrix.workers }}
         run: |
           pnpm --filter ${{ matrix.package }} exec playwright test \
             --project=desktop \
