@@ -452,11 +452,16 @@ class ServiceVncService
         }
 
         // 情形一：含 base64 WSS（ZJMF/美得云格式）
+        // 上游存在两种写法：base64 原文，以及 base64 之后再 URL 编码一层（%2F、%3D）。
+        // parse_str 已经解掉一层编码，残留的 %2F/%3D 会让 base64_decode 严格模式直接失败，
+        // 因此先按 urldecode 再解，失败再退回原文解（枣庄铂金 dcimcloud 就是后者）。
         $encodedWssUrl = trim((string) ($queryParams['url'] ?? ''));
         if ($encodedWssUrl !== '') {
-            $wssUrl = base64_decode($encodedWssUrl, true);
-            if ($wssUrl !== false && preg_match('#^wss?://#i', trim($wssUrl))) {
-                return $this->parseWssUrlToParams(trim($wssUrl), $queryParams);
+            foreach ([urldecode($encodedWssUrl), $encodedWssUrl] as $candidate) {
+                $wssUrl = base64_decode($candidate, true);
+                if ($wssUrl !== false && preg_match('#^wss?://#i', trim($wssUrl))) {
+                    return $this->parseWssUrlToParams(trim($wssUrl), $queryParams);
+                }
             }
         }
 
