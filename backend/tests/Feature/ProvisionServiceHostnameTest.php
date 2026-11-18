@@ -129,7 +129,8 @@ class ProvisionServiceHostnameTest extends TestCase
         $rule = $this->invokeResolveUpstreamProvisionHostnameRule($service, $order);
 
         $this->assertSame('ser', $rule['prefix'] ?? null);
-        $this->assertSame(15, $rule['length'] ?? null);
+        // len_num 是「前缀 + 主机名」的总位数：12 就是总长 12，不是随机位 12
+        $this->assertSame(12, $rule['length'] ?? null);
         $this->assertSame('0123456789', $rule['pool'] ?? null);
     }
 
@@ -173,7 +174,8 @@ class ProvisionServiceHostnameTest extends TestCase
         $hostname = $this->invokeResolveProvisionHostname($service, $order);
 
         $this->assertStringStartsWith('ser', $hostname);
-        $this->assertSame(15, mb_strlen($hostname));
+        // 上游 len_num=12 是总位数，前缀 3 位 + 随机 9 位 = 12
+        $this->assertSame(12, mb_strlen($hostname));
         $this->assertNotSame('snapshot-host', $hostname);
         $this->assertSame($hostname, (string) (($order->config_snapshot ?? [])['hostname'] ?? ''));
     }

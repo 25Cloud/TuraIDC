@@ -8,6 +8,7 @@ use App\Models\SystemSetting;
 use App\Models\ThirdProductGroup;
 use App\Support\AutomationScheduleExpression;
 use App\Support\ContentPublishedCacheVersion;
+use App\Support\ProductProvisionHostname;
 use Illuminate\Support\Collection;
 
 class SettingService
@@ -255,19 +256,37 @@ class SettingService
     public function getProvisionHostnameConfig(): array
     {
         $enforce = $this->getBool('system', 'provision_hostname_enforce', false);
+        $unifyPrefix = $this->getBool('system', 'provision_hostname_unify_prefix', false);
         $prefix = $this->sanitizeHostnamePrefix(
             $this->getString('system', 'provision_hostname_prefix', 'srv')
         );
         $charsets = $this->parseProvisionHostnameCharsets(
             $this->getString('system', 'provision_hostname_charsets', 'number')
         );
-        $length = $this->getInt('system', 'provision_hostname_length', 12, 4, 200);
+        $length = $this->getInt(
+            'system',
+            'provision_hostname_length',
+            12,
+            ProductProvisionHostname::MIN_LENGTH,
+            ProductProvisionHostname::MAX_LENGTH_CEILING
+        );
+        $maxLength = $this->getInt(
+            'system',
+            'provision_hostname_max_length',
+            ProductProvisionHostname::DEFAULT_MAX_LENGTH,
+            ProductProvisionHostname::MIN_LENGTH,
+            ProductProvisionHostname::MAX_LENGTH_CEILING
+        );
         $prefix = $prefix !== '' ? $prefix : 'srv';
 
         return [
             'enforce' => $enforce,
+            'unify_prefix' => $unifyPrefix,
             'prefix' => $prefix,
-            'length' => max($length, mb_strlen($prefix)),
+            // 生成长度不得超过硬上限：这两项都可由商家在后台改，但长度必须让位给上限，
+            // 否则「MySQL 用户名 16 位」这条约束会被配置值自身绕过。
+            'length' => min(max($length, mb_strlen($prefix)), $maxLength),
+            'max_length' => $maxLength,
             'charsets' => $charsets,
             'pool' => $this->buildProvisionHostnamePool($charsets),
         ];
@@ -554,7 +573,16 @@ class SettingService
     private function getGroupFallbackSettings(string $group): array
     {
         return match ($group) {
-            'system' => [],
+            // 开通主机名这几个键必须始终回显默认值：管理端只有在列表里拿到 key 才会渲染输入框，
+            // 老库没有这两条新配置时，界面会整段消失，商家以为功能不存在。
+            'system' => [
+                'provision_hostname_enforce' => '0',
+                'provision_hostname_unify_prefix' => '0',
+                'provision_hostname_prefix' => 'srv',
+                'provision_hostname_charsets' => 'number',
+                'provision_hostname_length' => '12',
+                'provision_hostname_max_length' => (string) ProductProvisionHostname::DEFAULT_MAX_LENGTH,
+            ],
             'log_archive' => self::defaultLogArchiveConfig(),
             // 账户策略三个开关始终回显（默认关闭），管理端不必等有人保存过一次才看得到开关
             self::ACCOUNT_POLICY_GROUP => array_map(

@@ -1248,6 +1248,14 @@ class ProvisionService
             );
         }
 
+        // 最后一道收口：无论上面走的是系统规则、商品固定名还是上游规则，
+        // 都不能把超过上限的主机名发给上游。上游会把它当 MySQL 用户名下发，
+        // 超长直接导致虚拟主机的数据库管理登录失败（MySQL 5.6/5.7 用户名上限 16）。
+        $hostname = ProductProvisionHostname::clamp(
+            $hostname,
+            (int) ($hostnameConfig['max_length'] ?? ProductProvisionHostname::DEFAULT_MAX_LENGTH)
+        );
+
         if (($configSnapshot['hostname'] ?? '') !== $hostname) {
             $configSnapshot['hostname'] = $hostname;
             $order->forceFill([
@@ -1468,7 +1476,7 @@ class ProvisionService
 
         return [
             'prefix' => $prefix,
-            'length' => max(4, min(63, $length)),
+            'length' => max(ProductProvisionHostname::MIN_LENGTH, min(ProductProvisionHostname::MAX_LENGTH_CEILING, $length)),
             'pool' => $pool !== '' ? $pool : '0123456789',
         ];
     }
@@ -1488,6 +1496,18 @@ class ProvisionService
         return is_array($decoded) ? $decoded : [];
     }
 
+    /**
+     * 解析上游商品的主机名长度。
+     *
+     * 魔方财务产品设置里的 `len_num` 是「主机前缀 + 主机名长度」的**总位数**，
+     * 不是前缀之后的随机位数。历史实现按 `len_num + 前缀长度` 计算，等于把前缀
+     * 算了两遍：上游把前缀设成 `chengdumn`（8 位）再配 `len_num: 12` 时，
+     * 我们生成 20 位、实际落库 21 位主机名，直接撞穿 MySQL 用户名 16 位上限，
+     * 虚拟主机的数据库管理因此登录不了。
+     *
+     * 这里按总位数语义取值；最终上限由调用方 clamp，这里不再重复钳制，
+     * 以免「上游说要 21 位」这类信息被提前抹掉而无法在日志里看到。
+     */
     private function resolveUpstreamProvisionHostnameLength(
         array $hostRule,
         array $hostRuleRule,
@@ -1507,8 +1527,9 @@ class ProvisionService
             $hostRuleRule['length'] ?? null,
         ]);
 
+        // len_num 已是总位数：直接取它，不再叠加前缀长度。
         if ($ruleLength > 0) {
-            $length = max($length, $ruleLength + mb_strlen($prefix));
+            $length = max($length, $ruleLength);
         }
 
         if ($sampleHostname !== '') {
@@ -1551,8 +1572,11 @@ class ProvisionService
     private function generateProvisionHostname(Order $order, array $config): string
     {
         $prefix = (string) ($config['prefix'] ?? 'srv');
+        $maxLength = (int) ($config['max_length'] ?? ProductProvisionHostname::DEFAULT_MAX_LENGTH);
         $length = max((int) ($config['length'] ?? 12), mb_strlen($prefix));
         $pool = (string) ($config['pool'] ?? '0123456789');
+        // 前缀 + 随机位的总长度必须收在上限内，否则前缀越长越多，最终越界。
+        $length = min($length, max($maxLength, mb_strlen($prefix)));
         $randomLength = max($length - mb_strlen($prefix), 0);
 
         if ($randomLength === 0) {

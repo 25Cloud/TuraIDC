@@ -30,6 +30,14 @@ class SettingsSeeder extends Seeder
             'provision_hostname_prefix' => 'srv',
             'provision_hostname_charsets' => 'number',
             'provision_hostname_length' => '12',
+            // 开通主机名的硬上限。上游（魔方财务）会把主机名当虚拟主机的 MySQL 用户名下发，
+            // 而 MySQL 5.6/5.7 的用户名上限是 16 字符，超长会让客户在 phpMyAdmin 连不上库。
+            // 改大之前先确认上游库版本：只有 MySQL 8.0+ 才放宽到 32。
+            'provision_hostname_max_length' => '16',
+            // 开启后所有商品统一用上面的前缀 + 随机数生成主机名，忽略商品级与上游商品前缀。
+            // 上游商品前缀不可控（例如紫熙云的虚拟主机统一用 chengdumn），
+            // 一旦它改前缀，我们这边所有新开通实例的名字就跟着变，逐商品去改不可维护。
+            'provision_hostname_unify_prefix' => '0',
             // 上游为二次对接时，面板片段里的动作地址常指向再上游域名；
             // 默认开启同源检测，置 0 可放宽（仅跳过域名同源比对，路径仍须是同系统动作路由）。
             'console_module_origin_check_enabled' => '1',

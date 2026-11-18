@@ -1999,7 +1999,7 @@ class ProductAdminService
             return [
                 'mode' => ProductProvisionHostname::MODE_FIXED,
                 'value' => $value,
-                'length' => max(4, min(63, $rawLength)),
+                'length' => $this->clampHostnameRuleLength($rawLength, $value),
             ];
         }
 
@@ -2009,8 +2009,24 @@ class ProductAdminService
         return [
             'mode' => ProductProvisionHostname::MODE_PREFIX,
             'value' => $prefix,
-            'length' => max(max(4, min(63, $rawLength)), mb_strlen($prefix)),
+            'length' => $this->clampHostnameRuleLength($rawLength, $prefix),
         ];
+    }
+
+    /**
+     * 商品级主机名长度收口。
+     *
+     * 商品规则里的 length 是「前缀 + 随机位」的总长度，最终仍要服从系统上限
+     * （MySQL 用户名 16 位）。这里在写入时就钳住，避免管理端填了 30 之后
+     * 每次都靠开通阶段再截断——那种「配置看起来生效、实际被悄悄改掉」更难排查。
+     */
+    private function clampHostnameRuleLength(int $rawLength, string $prefix): int
+    {
+        $maxLength = (int) ($this->settingService->getProvisionHostnameConfig()['max_length']
+            ?? ProductProvisionHostname::DEFAULT_MAX_LENGTH);
+        $length = max(ProductProvisionHostname::MIN_LENGTH, min(ProductProvisionHostname::MAX_LENGTH_CEILING, $rawLength));
+
+        return max(min($length, $maxLength), min(mb_strlen($prefix), $maxLength));
     }
 
     private function resolveProductDisplayNameResolver(): ProductDisplayNameResolver
