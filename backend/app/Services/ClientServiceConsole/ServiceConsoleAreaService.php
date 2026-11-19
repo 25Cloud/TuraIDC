@@ -49,6 +49,14 @@ class ServiceConsoleAreaService
     private const NAT_CAPABILITY_MEMORY_TTL_SECONDS = 21600;
 
     /**
+     * 「已探过、这台主机确实没有 NAT」的负向标记时长。
+     *
+     * 只为避免每次进控制台都白探一次上游页面。定 10 分钟：既压住重复探测，
+     * 又保证上游之后给主机加上 NAT 模块时能在一刻钟内自动出现。
+     */
+    private const NAT_PROBE_MISS_TTL_SECONDS = 600;
+
+    /**
      * 探测 NAT 模块页面时，用来识别「假页面」的特征。
      *
      * 与 ServiceNatService::MODULE_PAGE_PLACEHOLDER_MARKERS 同一口径：上游对不存在的模块
@@ -700,17 +708,24 @@ class ServiceConsoleAreaService
         }
 
         $key = $this->buildNatCapabilityMemoryKey($supplierId, $hostId);
+        $probedKey = $this->buildNatProbedCacheKey($supplierId, $hostId);
 
         try {
             $remembered = $current ? true : Cache::get($key) === true;
 
-            if (! $current && ! $remembered) {
-                // 既没探到也没记忆：再给一次机会，直接探模块页面本身
+            // 首次没有记忆可用时才探页；探不到也要记一笔短时负向标记，
+            // 否则一台确实没有 NAT 的主机会被每次进控制台都白探一次上游页面。
+            if (! $current && ! $remembered && ! Cache::get($probedKey)) {
                 $current = $this->probeNatModulePage($runtime, $supplier, $hostId, $jwt);
+
+                if (! $current) {
+                    Cache::put($probedKey, true, now()->addSeconds(self::NAT_PROBE_MISS_TTL_SECONDS));
+                }
             }
 
             if ($current) {
                 Cache::put($key, true, now()->addSeconds(self::NAT_CAPABILITY_MEMORY_TTL_SECONDS));
+                Cache::forget($probedKey);
             }
         } catch (\Throwable) {
             // 缓存读写失败不该让控制台能力接口跟着挂：没有记忆就是没有记忆，
@@ -769,6 +784,15 @@ class ServiceConsoleAreaService
     private function buildNatCapabilityMemoryKey(int $supplierId, int $hostId): string
     {
         return 'service_console:nat_capability:'.$supplierId.':'.$hostId;
+    }
+
+    /**
+     * 与正向记忆分开一把键：正向是「有」，负向是「探过了、确实没有」。
+     * 混用同一个键会让负向标记在探到 NAT 后立刻变成正向记忆，语义就乱了。
+     */
+    private function buildNatProbedCacheKey(int $supplierId, int $hostId): string
+    {
+        return 'service_console:nat_probed_miss:'.$supplierId.':'.$hostId;
     }
 
     private function matchesNatModule(string $function, string $name, string $type): bool
