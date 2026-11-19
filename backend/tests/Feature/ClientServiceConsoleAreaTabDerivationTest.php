@@ -154,21 +154,29 @@ class ClientServiceConsoleAreaTabDerivationTest extends TestCase
     }
 
     /**
-     * 反向边界：nat_supported 为 false 时 header 里的 NAT 区域是唯一入口，必须保留。
-     * 无条件按关键字跳过会让 NAT 功能整个消失（supported_modules 没有 NAT 的上游）。
+     * NAT 一律收口到内置「端口转发」tab，不再降级成通用区域 iframe。
+     *
+     * 线上现象（客户反馈 3867）：端口转发面板时好时坏，坏的那次「没被解析成系统端口转发，
+     * 而是走了通用面板」。根因是上游 module_client_area 会抖动，抖到列表里没有 NAT 的那几次
+     * nat_supported 就是 false，于是 header 里的 NAT 被当成普通自定义区域渲染。
+     * 现在看到 NAT 就地认定具备 NAT 能力，由内置 tab 自己去探模块页面。
      */
     #[Test]
-    public function header_nat_area_survives_when_no_builtin_nat_tab_exists(): void
+    public function header_nat_area_promotes_builtin_nat_tab_instead_of_becoming_a_generic_area(): void
     {
         $capabilities = $this->merge(
             ['areas' => [], 'nat_supported' => false, 'monitor_supported' => false],
             ['module_client_area' => [['name' => 'NAT转发', 'key' => 'nat_acl']]]
         );
 
+        $this->assertTrue(
+            $capabilities['nat_supported'],
+            'header 里出现 NAT 模块就必须点亮 nat_supported，否则内置「端口转发」tab 会被摘掉'
+        );
         $this->assertSame(
-            [['key' => 'nat_acl', 'name' => 'NAT转发']],
+            [],
             $capabilities['areas'],
-            '内置「端口转发」tab 不存在时，header 里的 NAT 区域不能被分流掉'
+            'NAT 不能同时作为通用区域下发，否则同一个功能出现两个入口'
         );
     }
 
@@ -211,6 +219,31 @@ class ClientServiceConsoleAreaTabDerivationTest extends TestCase
                 '该取值应解释为关闭预热：'.var_export($value, true)
             );
         }
+    }
+
+    /**
+     * NAT 能力位的粘性口径：本次探测与历史记忆取并集，只做「有 → 有」的单向粘滞。
+     *
+     * 上游两个端点都会间歇性返回空（实测 3867 为 8/10、3797 为 2/10），抖一次就把
+     * nat_supported 判成 false，前端会立刻摘掉「端口转发」tab。粘住之后，只有真正
+     * 连续抖动到记忆过期才会掉；「本来就没有 NAT」的主机不会被反向固化，因为写入
+     * 只发生在探测为 true 的时候。
+     */
+    #[Test]
+    public function nat_capability_flag_is_sticky_once_detected(): void
+    {
+        $this->assertTrue(
+            ServiceConsoleAreaService::resolveNatSupportedFlag(true, false),
+            '本次探测到 NAT 就该下发 true'
+        );
+        $this->assertTrue(
+            ServiceConsoleAreaService::resolveNatSupportedFlag(false, true),
+            '本次抖动没探到、但历史探到过，仍要下发 true，否则 tab 会闪没'
+        );
+        $this->assertFalse(
+            ServiceConsoleAreaService::resolveNatSupportedFlag(false, false),
+            '从未探到过 NAT 的主机不能被凭空点亮'
+        );
     }
 
     private function interpretPreload(mixed $value): bool

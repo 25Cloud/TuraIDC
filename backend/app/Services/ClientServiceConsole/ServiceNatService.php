@@ -22,7 +22,55 @@ class ServiceNatService
 {
     private const NAT_ACL_CONTEXT_CACHE_TTL_SECONDS = 120;
 
-    private const CUSTOM_MODULE_CONTENT_UNAVAILABLE_TTL_SECONDS = 600;
+    /**
+     * 「页面取不到」标记的存活时长。
+     *
+     * 原值 600 秒：上游抖动一次返回空，面板就被锁十分钟，客户看到的是「时好时坏」。
+     * 现在标记不短路、也不削减重试次数，只把重试间隔拉长（见下面的 DELAY 常量），
+     * 一次抖动最多影响一分钟内几轮刷新的手感，绝不再放大成整段不可用。
+     */
+    private const CUSTOM_MODULE_CONTENT_UNAVAILABLE_TTL_SECONDS = 60;
+
+    /**
+     * 自定义模块页面为空时的重试次数（含首次），用于吃掉上游的间歇性空响应。
+     *
+     * 实测（服务 3867 / 主机 672）连打 20 次：9 次正常、11 次空，空响应是随机的。
+     * 按 55% 失败率算，3 次全空的概率约 17%，也就是每六次刷新就有一次面板报错；
+     * 6 次全空降到 2.8%，8 次降到 0.8%。取 6 是「够稳」与「不把接口拖慢」的折中。
+     */
+    private const CUSTOM_MODULE_FETCH_ATTEMPTS = 6;
+
+    /** 重试间隔（毫秒）。空响应多半是被上游负载均衡打到别的节点，换个时机就能拿到。 */
+    private const CUSTOM_MODULE_FETCH_RETRY_DELAY_MS = 250;
+
+    /**
+     * 已落「不可用」标记时的重试间隔（毫秒）。
+     *
+     * 标记期内上游多半仍在抖动，把间隔拉长一点换更高的单次命中率；
+     * 但尝试次数保持不变，不能用「减少机会」来省时间，那等于把抖动放大成故障。
+     */
+    private const CUSTOM_MODULE_FETCH_RETRY_DELAY_MS_WHEN_UNAVAILABLE = 500;
+
+    /**
+     * 解析 NAT 上下文时的重试轮数。
+     *
+     * 页面取到了但既无协议选项又无规则行，说明拿到的是残缺片段：这时缓存下来的上下文
+     * 会让客户在 120 秒里反复看到「未返回可用 NAT 协议选项」。多取几轮换个完整页面。
+     */
+    private const NAT_CONTEXT_PARSE_ATTEMPTS = 3;
+
+    /**
+     * 上游返回的「假页面」特征。
+     *
+     * 魔方财务对不存在的路由回的是自带 404 模板（HTTP 200 + 一整页 HTML），
+     * 长度 1297 字节、非空。按「非空即成功」判会把它当成真内容解析，
+     * 结果是协议选项为空、新增按钮不存在 —— 客户看到的就是「面板打开了但加不了端口」。
+     */
+    private const MODULE_PAGE_PLACEHOLDER_MARKERS = [
+        '抱歉找不到页面',
+        '<title>404</title>',
+        'maintain-box',
+    ];
 
     private const NAT_ACL_MODULE_KEYWORDS = ['nat_acl', 'natacl', 'nat转发', 'nat 转发', '端口转发', '端口映射', '端口转发规则'];
 
@@ -229,22 +277,62 @@ class ServiceNatService
         }
 
         $jwt = $runtime->login($supplier);
-        $modules = $this->detailService->fetchSupportedModules($supplier, $hostId, $jwt);
+
+        // 模块列表本身也会抖（/host/header 会间歇性返回只剩「安全组」甚至直接报错）。
+        // 拿不到列表不该让面板整个失败：退化成空列表，后面靠探模块页面定夺。
+        try {
+            $modules = $this->detailService->fetchSupportedModules($supplier, $hostId, $jwt);
+        } catch (\Throwable $exception) {
+            $modules = [];
+
+            Log::warning('[端口转发] 读取上游模块列表失败，改为直接探测 NAT 模块页面', [
+                'service_id' => (int) $service->id,
+                'host_id' => $hostId,
+                'message' => SensitiveDataSanitizer::sanitizeText($exception->getMessage()),
+            ]);
+        }
+
         $module = collect($modules)->first(fn ($item) => is_array($item) && $this->isNatAclModule($item));
 
-        throw_if(! is_array($module), new BusinessException('当前主机未开放 NAT 转发模块', 42200));
+        // 上游 host/header 的 module_client_area 会抖动：实测同一台主机连打 10 次，
+        // NAT 模块只在 2~8 次里出现，其余次只剩「安全组」。所以「模块列表里没有 NAT」
+        // 不能当成「没开放 NAT」——直接按默认 key 探模块页面，取到内容就说明模块在。
+        // 少了这一刀，客户看到的端口转发面板会时有时无，或者退化成一个通用 iframe。
+        $moduleKey = is_array($module) ? (trim((string) ($module['function'] ?? '')) ?: 'nat_acl') : 'nat_acl';
+        $moduleName = is_array($module) ? (trim((string) ($module['name'] ?? '')) ?: 'NAT 转发') : 'NAT 转发';
 
-        $moduleKey = trim((string) ($module['function'] ?? '')) ?: 'nat_acl';
-        $moduleName = trim((string) ($module['name'] ?? '')) ?: 'NAT 转发';
-        $html = is_callable([$runtime, 'fetchCustomModulePage'])
-            ? $runtime->fetchCustomModulePage($supplier, $hostId, $moduleKey, $jwt)
-            : $this->fetchCustomModulePage($runtime, $supplier, $hostId, $jwt, $moduleKey);
         // 动作地址优先取本系统同源路由（供应商根地址 + 本系统主机 ID）：
         // 面板片段里的 url 可能是中间层再上游的绝对地址，既跨域也带对方主机 ID，不能直接回发。
         $actionEndpoint = is_callable([$runtime, 'getCustomModuleActionEndpoint'])
             ? $runtime->getCustomModuleActionEndpoint($supplier, $hostId)
             : null;
-        $page = $this->parseNatAclPage($html, $actionEndpoint);
+
+        // 页面取回来还有第三种失败形态：非空、也不是 404 模板，但里面既没有协议选项
+        // 也没有规则行（上游偶发返回一段残缺片段）。这种页面解析出来的 context 加不了规则，
+        // 缓存下来就会让客户在一个 120 秒窗口里反复看到「未返回可用 NAT 协议选项」。
+        // 真页面一定有 select-protocol 或至少一行规则，据此再兜一层重试。
+        $page = [];
+        try {
+            for ($parseAttempt = 1; $parseAttempt <= self::NAT_CONTEXT_PARSE_ATTEMPTS; $parseAttempt++) {
+                $html = $this->fetchCustomModulePage($runtime, $supplier, $hostId, $jwt, $moduleKey);
+                $page = $this->parseNatAclPage($html, $actionEndpoint);
+
+                if (($page['protocols'] ?? []) !== [] || ($page['list'] ?? []) !== []) {
+                    break;
+                }
+
+                if ($parseAttempt < self::NAT_CONTEXT_PARSE_ATTEMPTS) {
+                    usleep(self::CUSTOM_MODULE_FETCH_RETRY_DELAY_MS * 1000);
+                }
+            }
+        } catch (\Throwable $exception) {
+            // 列表里有 NAT 却取不到页面 = 上游这一刻真的挂了，报可重试的错误；
+            // 列表里没有 NAT 且页面也探不到，才敢判定这台主机确实没开放 NAT。
+            throw new BusinessException(
+                is_array($module) ? '读取 NAT 转发面板失败，请稍后重试' : '当前主机未开放 NAT 转发模块',
+                is_array($module) ? 50000 : 42200
+            );
+        }
 
         throw_if(trim((string) ($page['endpoint'] ?? '')) === '', new BusinessException('未解析到 NAT 转发请求地址', 50000));
 
@@ -552,13 +640,33 @@ class ServiceNatService
 
     /**
      * 读取实例自定义模块页面 HTML，供 NAT / 安全组等模块复用。
+     *
+     * 上游这个端点有两种失败形态，都必须当成失败重试：
+     *   1) 返回空串 —— 实测服务 3867 连打 20 次：9 次正常、11 次空；
+     *   2) 返回魔方财务自带的 404 模板页（1297 字节、HTTP 200）—— 非空，但里面没有
+     *      select-protocol、没有新增按钮。按「非空即成功」判会把这张假页面当真内容解析，
+     *      结果就是客户反馈的「面板能打开但加不了端口（提示未返回可用协议选项）」。
+     *
+     * 原实现还只试一次就写 10 分钟「内容不可用」标记，一次抖动把面板锁死十分钟。
+     * 现在：多次重试 + 统一可用性判定，全部失败才落标记，且标记时长压到一分钟。
      */
     public function fetchCustomModulePage(object $runtime, Supplier $supplier, int $hostId, string $jwt, string $moduleKey): string
     {
         $html = '';
         $contentUnavailableCacheKey = $this->buildCustomModuleContentUnavailableCacheKey($supplier->id, $hostId, $moduleKey);
 
-        if (! Cache::get($contentUnavailableCacheKey)) {
+        $attempts = max(1, self::CUSTOM_MODULE_FETCH_ATTEMPTS);
+
+        // 「不可用」标记只用于让重试间隔更保守，不再削减尝试次数。
+        //
+        // 曾经削到 2 次：结果是标记一旦落下，窗口内每次刷新的成功率都只有 70%，
+        // 实测 10 轮里仍会掉 1 轮。真正稳妥的做法是保持同样的重试预算——
+        // 6 次 × 45% 失败率，整轮全空概率已低于 1%，标记存在的意义只剩「下次别再等太久」。
+        $retryDelayMs = Cache::get($contentUnavailableCacheKey)
+            ? self::CUSTOM_MODULE_FETCH_RETRY_DELAY_MS_WHEN_UNAVAILABLE
+            : self::CUSTOM_MODULE_FETCH_RETRY_DELAY_MS;
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
             try {
                 // 走上游 API 协议端点取自定义面板 HTML（魔方财务用 API JWT 鉴权）；
                 // 客户区路由 GET /provision/custom/content 只认客户区登录会话。
@@ -574,24 +682,65 @@ class ServiceNatService
                 $html = '';
             }
 
-            if (trim($html) === '') {
-                Cache::put($contentUnavailableCacheKey, true, now()->addSeconds(self::CUSTOM_MODULE_CONTENT_UNAVAILABLE_TTL_SECONDS));
+            if (self::isUsableModulePage($html)) {
+                // 拿到内容就撤掉「不可用」标记，避免上一次抖动残留继续压低后续重试预算
+                Cache::forget($contentUnavailableCacheKey);
+
+                break;
+            }
+
+            if ($attempt < $attempts) {
+                usleep($retryDelayMs * 1000);
             }
         }
 
-        if (trim($html) === '') {
-            $moduleResponse = $runtime->getText(
-                $supplier,
-                "/v1/hosts/{$hostId}/module/custom",
-                $jwt,
-                ['key' => $moduleKey]
-            );
-            $html = $this->normalizeModulePageBody($moduleResponse);
+        if (! self::isUsableModulePage($html)) {
+            Cache::put($contentUnavailableCacheKey, true, now()->addSeconds(self::CUSTOM_MODULE_CONTENT_UNAVAILABLE_TTL_SECONDS));
         }
 
-        throw_if(trim($html) === '', new BusinessException('自定义模块页面为空', 50000));
+        if (! self::isUsableModulePage($html)) {
+            // 另一套上游（魔方云 v1）的模块内容端点，魔方财务没有这个路由。
+            // 它失败时同样会回 404 模板页，所以必须用同一套可用性判定，不能只看非空。
+            try {
+                $html = $this->normalizeModulePageBody((string) $runtime->getText(
+                    $supplier,
+                    "/v1/hosts/{$hostId}/module/custom",
+                    $jwt,
+                    ['key' => $moduleKey]
+                ));
+            } catch (\Throwable) {
+                $html = '';
+            }
+
+            // 兜底源拿到内容同样要撤标记，否则标记会一直压低后续请求的重试预算
+            if (self::isUsableModulePage($html)) {
+                Cache::forget($contentUnavailableCacheKey);
+            }
+        }
+
+        throw_if(! self::isUsableModulePage($html), new BusinessException('自定义模块页面为空', 50000));
 
         return $html;
+    }
+
+    /**
+     * 判断一段上游响应是不是「真页面」。
+     *
+     * 抽成公开静态纯函数：它是「面板能不能用」的唯一判据，必须能脱离网络单测。
+     */
+    public static function isUsableModulePage(string $html): bool
+    {
+        if (trim($html) === '') {
+            return false;
+        }
+
+        foreach (self::MODULE_PAGE_PLACEHOLDER_MARKERS as $marker) {
+            if (str_contains($html, $marker)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     private function normalizeModulePageBody(string $body): string

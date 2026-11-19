@@ -40,6 +40,27 @@ class ServiceConsoleAreaService
 
     private const RAW_CONTENT_CACHE_TTL_SECONDS = 30;
 
+    /**
+     * 「这台主机具备 NAT 能力」的粘性记忆时长。
+     *
+     * 定 6 小时是为了压住上游间歇性空响应（实测抖动窗口以秒/分钟计），
+     * 同时保证真把 NAT 模块下线的主机不会永久顶着一个空面板。
+     */
+    private const NAT_CAPABILITY_MEMORY_TTL_SECONDS = 21600;
+
+    /**
+     * 探测 NAT 模块页面时，用来识别「假页面」的特征。
+     *
+     * 与 ServiceNatService::MODULE_PAGE_PLACEHOLDER_MARKERS 同一口径：上游对不存在的模块
+     * 回的是魔方财务自带 404 模板（HTTP 200、1297 字节、非空），按「非空即有」判会给
+     * 一台没有 NAT 的主机永久点亮一个空面板。
+     */
+    private const NAT_PROBE_PLACEHOLDER_MARKERS = [
+        '抱歉找不到页面',
+        '<title>404</title>',
+        'maintain-box',
+    ];
+
     private const NAT_MODULE_KEYWORDS = [
         'nat_acl', 'natacl', 'nat转发', 'nat 转发', '端口转发', '端口映射', '端口转发规则',
     ];
@@ -139,6 +160,7 @@ class ServiceConsoleAreaService
             $capabilities['fetchable'] = is_callable([$runtime, 'fetchCustomModulePage']);
             $capabilities['snapshot_supported'] = $snapshotSupported;
             $capabilities['iso_supported'] = $isoSupported;
+            $capabilities = $this->applyNatCapabilityMemory($runtime, $supplier, $hostId, $jwt, $capabilities);
 
             Cache::put($cacheKey, $capabilities, now()->addSeconds(self::CAPABILITIES_CACHE_TTL_SECONDS));
 
@@ -609,13 +631,18 @@ class ServiceConsoleAreaService
             // header 数据没有 type 字段，按空传即可让关键字生效（matchesNatModule 允许空 type）
             $isNatModule = $this->matchesNatModule($key, $name, '');
 
-            // NAT 转发：内置「端口转发」tab 已经承载（nat_supported）时，header 这一项
-            // 就是第二个入口。
+            // NAT 转发一律交给内置「端口转发」tab。
             //
-            // 这里必须以 nat_supported 为前提，不能只看关键字：nat_supported 为 false 说明
-            // supported_modules 里根本没有 NAT 模块，header 这一项就是唯一入口，跳掉会让
-            // NAT 功能整个消失。
-            if ($isNatModule && ($capabilities['nat_supported'] ?? false) === true) {
+            // 原实现只在 nat_supported 已为 true 时才跳过 header 里的 NAT 项，逻辑上没错——
+            // 那时它是「唯一入口」。但上游 host/header 的模块列表会抖动：同一台主机连打
+            // 10 次，NAT 模块只在 2~8 次里出现。抖动到「列表没有 NAT」的那几次，
+            // nat_supported 就是 false，于是 header 里的 NAT 被降级成一个通用区域 iframe，
+            // 客户看到的正是「没被解析成系统端口转发，而是走了通用面板」。
+            // 现在反过来收口：看到 NAT 就地认定具备 NAT 能力，内置 tab 会自己去探模块页面，
+            // 不再依赖这份抖动列表。
+            if ($isNatModule) {
+                $capabilities['nat_supported'] = true;
+
                 continue;
             }
 
@@ -637,6 +664,111 @@ class ServiceConsoleAreaService
         }
 
         return $capabilities;
+    }
+
+    /**
+     * 给「这台主机具备 NAT 能力」这件事一个粘性记忆。
+     *
+     * 上游 host/header 与 supported_modules 两个端点都会间歇性返回空或截断的结果：
+     * 同一台主机连打 10 次，NAT 模块可能只在 2~8 次里出现（实测服务 3867 为 8/10、
+     * 服务 3797 为 2/10）。只要有一次抖动到「列表里没有 NAT」，nat_supported 就是 false，
+     * 前端 resolveAvailableTabs 立刻把「端口转发」tab 摘掉，客户看到的就是
+     * 「端口转发面板不见了 / 走了通用面板」。
+     *
+     * 首次没有记忆可用时还要主动探一次模块页面：清缓存后的第一个请求正好落在抖动上，
+     * 客户看到的就是「刚进控制台没有端口转发 tab」。探到页面就说明模块在，直接点亮并落记忆。
+     *
+     * 只做「有 → 有」的单向粘滞，不做「无 → 无」的固化，所以真把 NAT 模块下线的主机
+     * 最多在 TTL 到期后自然收敛，不会永久卡住一个不存在的面板。
+     *
+     * @param  array<string, mixed>  $capabilities
+     * @return array<string, mixed>
+     */
+    private function applyNatCapabilityMemory(
+        object $runtime,
+        Supplier $supplier,
+        int $hostId,
+        string $jwt,
+        array $capabilities
+    ): array {
+        $supplierId = (int) ($supplier->id ?? 0);
+        $current = ($capabilities['nat_supported'] ?? false) === true;
+
+        // 上游 id 或主机 id 缺失时无从定位，按本次探测结果下发，不制造跨主机串味的记忆。
+        if ($supplierId <= 0 || $hostId <= 0) {
+            return $capabilities;
+        }
+
+        $key = $this->buildNatCapabilityMemoryKey($supplierId, $hostId);
+
+        try {
+            $remembered = $current ? true : Cache::get($key) === true;
+
+            if (! $current && ! $remembered) {
+                // 既没探到也没记忆：再给一次机会，直接探模块页面本身
+                $current = $this->probeNatModulePage($runtime, $supplier, $hostId, $jwt);
+            }
+
+            if ($current) {
+                Cache::put($key, true, now()->addSeconds(self::NAT_CAPABILITY_MEMORY_TTL_SECONDS));
+            }
+        } catch (\Throwable) {
+            // 缓存读写失败不该让控制台能力接口跟着挂：没有记忆就是没有记忆，
+            // 退回本次探测结果即可，行为等同修复前（但不会更差）。
+            return $capabilities;
+        }
+
+        $capabilities['nat_supported'] = self::resolveNatSupportedFlag($current, $remembered);
+
+        return $capabilities;
+    }
+
+    /**
+     * 探一次自定义模块页面，判断这台主机到底有没有 NAT 模块。
+     *
+     * 只取一次、失败就算没有：能力接口是进控制台的必经路径，不能在里面做长重试。
+     * 真正的重试由端口转发面板自己做（见 ServiceNatService::fetchCustomModulePage）。
+     */
+    private function probeNatModulePage(object $runtime, Supplier $supplier, int $hostId, string $jwt): bool
+    {
+        if (! is_callable([$runtime, 'fetchCustomModulePage'])) {
+            return false;
+        }
+
+        try {
+            $html = (string) $runtime->fetchCustomModulePage($supplier, $hostId, 'nat_acl', $jwt);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        if (trim($html) === '') {
+            return false;
+        }
+
+        // 上游对不存在的模块回 404 模板页（HTTP 200、非空），必须和真页面区分开，
+        // 否则会给一台没有 NAT 的主机永久点亮一个空面板。
+        foreach (self::NAT_PROBE_PLACEHOLDER_MARKERS as $marker) {
+            if (str_contains($html, $marker)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * 纯函数：本次探测结果与粘性记忆取并集。
+     *
+     * 抽成静态纯函数是为了能脱离缓存单测口径 —— 它是「NAT tab 会不会闪没」的唯一判据。
+     */
+    public static function resolveNatSupportedFlag(bool $current, bool $remembered): bool
+    {
+        return $current || $remembered;
+    }
+
+    private function buildNatCapabilityMemoryKey(int $supplierId, int $hostId): string
+    {
+        return 'service_console:nat_capability:'.$supplierId.':'.$hostId;
     }
 
     private function matchesNatModule(string $function, string $name, string $type): bool
