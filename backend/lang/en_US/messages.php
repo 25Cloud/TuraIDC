@@ -174,6 +174,7 @@ return [
     '当前账单状态不支持支付宝退款' => 'The current bill status does not allow Alipay refunds',
     '当前账号无权执行该供应商插件动作' => 'The current account is not allowed to perform this supplier plugin action',
     '当前支付方式不支持原路退款' => 'The current payment method does not support refunds to the original payment channel',
+    '读取 NAT 转发面板失败，请稍后重试' => 'Failed to read the NAT forwarding panel, please try again later',
     '当前主机未开放 NAT 转发模块' => 'NAT forwarding is not enabled on the current host',
     '当前主机未开放安全组模块' => 'The security group module is not enabled on the current host',
     '登录失败次数过多，请 30 分钟后再试' => 'Too many failed login attempts, please try again in 30 minutes',
