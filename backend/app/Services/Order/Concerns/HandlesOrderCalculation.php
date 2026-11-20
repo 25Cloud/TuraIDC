@@ -892,14 +892,21 @@ trait HandlesOrderCalculation
         }
 
         $rangeMin = (int) ($item['qty_minimum'] ?? 0);
+        $rangeMax = (int) ($item['qty_maximum'] ?? 0);
         $rangeStep = max((int) ($item['qty_stage'] ?? 1), 1);
         $value = max((int) ($config[$field] ?? $rangeMin), $rangeMin);
         $visibleSubCount = 0;
         // 上游把「首档免费」写成 qty_minimum=0、qty_maximum=0 的占位 sub（如数据盘 0GB），
-        // 而 0 在这里同时表示「无上限」。若先命中的是这种零价档位，它的 0 元会被直接返回，
-        // 后面真正的计费档（如「额外数据盘 1..300、每 10GB 3 元」）永远轮不到执行
+        // 若先命中的是这种零价档位，它的 0 元会被直接返回，后面真正的计费档
+        // （如「额外数据盘 1..300、每 10GB 3 元」）永远轮不到执行
         // —— 表现为加硬盘、加 IP 一律 0 元。所以零价档位只作兜底，有正价档位优先。
         $zeroPricedMatch = false;
+        // 可见的正价档位清单：用于「值落在档位空隙」时的兜底计价
+        $pricedTiers = [];
+        // 同组档位是否存在有界区间。没有时，0/0 档位承担整段父项范围（见 isSubRangeOpenEnded）。
+        $hasBoundedSibling = ProductConfigOptionPresenter::hasBoundedRangeTier(
+            (array) ($item['sub'] ?? [])
+        );
 
         foreach ((array) ($item['sub'] ?? []) as $sub) {
             if ((int) ($sub['hidden'] ?? 0) === 1) {
@@ -911,18 +918,31 @@ trait HandlesOrderCalculation
             $subMin = (int) ($sub['qty_minimum'] ?? 0);
             $subMax = (int) ($sub['qty_maximum'] ?? 0);
 
-            if ($value < $subMin) {
-                continue;
-            }
-            if ($subMax !== 0 && $value > $subMax) {
-                continue;
-            }
+            $openEnded = ProductConfigOptionPresenter::isSubRangeOpenEnded($sub, $hasBoundedSibling);
+            // 无上限档位仍受父项声明的上限约束：父项声明是商家对外的可选范围，
+            // 越过它就等于绕开定价（如「IP数量 1~5」按 0 元放开到任意数量）。
+            $covered = $value >= $subMin
+                && ($openEnded
+                    ? ($rangeMax <= 0 || $value <= $rangeMax)
+                    : $value <= $subMax);
 
             $pricing = $this->normalizePricing($sub['pricing'] ?? []);
             $stepPrice = $this->resolvePricingAmount($pricing, $billingCycle);
-            if ($stepPrice <= 0) {
-                $zeroPricedMatch = true;
 
+            if ($stepPrice <= 0) {
+                // 零价档位只在该值确实落在它覆盖区间内时才算兜底命中；
+                // 否则「0GB 免费」这类占位档会把越界取值也认成免费。
+                if ($covered) {
+                    $zeroPricedMatch = true;
+                }
+
+                continue;
+            }
+
+            // 正价档位不论是否覆盖当前值都先记下来：值落在档位空隙时要靠它兜底计价。
+            $pricedTiers[] = ['min' => $subMin, 'price' => $stepPrice];
+
+            if (! $covered) {
                 continue;
             }
 
@@ -942,6 +962,24 @@ trait HandlesOrderCalculation
             ];
         }
 
+        // 值仍落在配置项声明的可选范围内，却没被任何档位覆盖（上游「系统盘 120 免费 +
+        // 131 起每 G 0.8」的 121~130 就是这种空隙）：前台滑块按声明范围渲染，用户拖到
+        // 这些值就会拿到「超出可选范围」而无法下单。这里按紧邻档位计价——既不出现 0 元
+        // 放行，也不出现「选了却下不了单」。真正的越界篡改仍由下面的守卫拒绝。
+        if ($rangeMax > 0 && $value <= $rangeMax && $pricedTiers !== []) {
+            $tier = $this->resolveGapFallbackTier($pricedTiers, $value);
+
+            if ($tier !== null) {
+                $steps = $this->calculateRangeChargeSteps(max($value, $tier['min']), $tier['min'], $rangeStep);
+
+                return [
+                    'amount' => Money::multiply($tier['price'], $steps),
+                    'selected_value' => $value,
+                    'steps' => $steps,
+                ];
+            }
+        }
+
         // 超出所有阶梯且不存在"无上限"兜底段：拒绝按 0 元计费，防止超大配置值绕过定价。
         // 无可见阶梯的历史配置保持原行为（按 0 元），避免误伤既有产品。
         if ($visibleSubCount > 0) {
@@ -953,6 +991,38 @@ trait HandlesOrderCalculation
             'amount' => 0.0,
             'selected_value' => $value,
         ];
+    }
+
+    /**
+     * 档位空隙的兜底档位：优先最近的「起点高于该值」的档位，
+     * 找不到时退回起点最低的档位（按阶梯价继续往上算）。
+     *
+     * 例：系统盘 120G 免费、131~1024 每 G 0.8 元时，121~130 取 131 那一档，
+     * 计 1 个台阶（0.8 元），与 131 的价格连续且单调。
+     *
+     * @param  array<int, array{min:int, price:float}>  $pricedTiers
+     * @return array{min:int, price:float}|null
+     */
+    private function resolveGapFallbackTier(array $pricedTiers, int $value): ?array
+    {
+        $following = null;
+        $preceding = null;
+
+        foreach ($pricedTiers as $tier) {
+            if ($tier['min'] > $value) {
+                if ($following === null || $tier['min'] < $following['min']) {
+                    $following = $tier;
+                }
+
+                continue;
+            }
+
+            if ($preceding === null || $tier['min'] < $preceding['min']) {
+                $preceding = $tier;
+            }
+        }
+
+        return $following ?? $preceding;
     }
 
     private function findSelectedOptionPrice(array $item, string $selected, string $billingCycle): float

@@ -428,9 +428,70 @@ final class ProductConfigOptionPresenter
     }
 
     /**
+     * 子项是否是「无上限」档位。
+     *
+     * 上游用 qty_maximum = 0 表示无上限（如「额外流量 3..0」），但「首档免费」
+     * 写出来也是 0/0（如「数据盘 0GB」）。两者都带 0，含义却相反：前者对所有
+     * 大于起点的数量都成立，后者只覆盖数量 0。区分靠两点：
+     *   - 起点大于 0：就是无上限档位；
+     *   - 起点也是 0：同组没有别的有界档位时，它承担父项声明的整段范围；
+     *     同组已有有界档位时，它只是零数量占位。
+     *
+     * 把占位档当成无上限，会让它吞掉任何数量的溢出判定：既能让加硬盘一律算 0 元，
+     * 也能让「超出可选范围」的守卫失效。计价侧与呈现侧必须同一口径。
+     *
+     * 注意：无上限只是「档位不设上限」，计价侧仍受父项声明上限约束。
+     *
+     * @param  array<string, mixed>  $sub
+     */
+    public static function isSubRangeOpenEnded(array $sub, bool $hasBoundedSibling = true): bool
+    {
+        $max = (int) ($sub['qty_maximum'] ?? 0);
+
+        if ($max !== 0) {
+            return false;
+        }
+
+        if ((int) ($sub['qty_minimum'] ?? 0) > 0) {
+            return true;
+        }
+
+        // 0/0 档位：组内没有任何有界档位时，上游把整段范围写在父项声明里，
+        // 这个 0/0 就是整段范围的定价载体，必须按无上限读。
+        // 一旦组内出现有界档位，它只能是零数量占位（如「数据盘 0GB」免费档）——
+        // 按无上限读会让它吞掉任何数量，进而吞掉溢出校验。
+        return ! $hasBoundedSibling;
+    }
+
+    /**
+     * 该组里是否存在「有界档位」（qty_maximum > 0），即是否已用档位声明了正向区间。
+     *
+     * @param  iterable<int, array<string, mixed>>  $subOptions
+     */
+    public static function hasBoundedRangeTier(iterable $subOptions): bool
+    {
+        foreach ($subOptions as $sub) {
+            if (! is_array($sub) || (int) ($sub['hidden'] ?? 0) === 1) {
+                continue;
+            }
+
+            if ((int) ($sub['qty_maximum'] ?? 0) > 0) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
      * 区间范围既可能挂在父项上，也可能只挂在唯一子项上（上游「数据盘」
      * 就是父项为 0、子项带 0~500）。父项缺失时回退子项，
      * 否则后台编辑弹窗的「数据范围」会是空的。
+     *
+     * 有可见子项时，声明范围还要收缩到子项真实覆盖的包络：上游常把配置项范围
+     * 填成模板值（如「系统盘 40~512」），而子项只有一个 40G 免费档。前台按 512
+     * 渲染滑块，用户拖到 41 就因「无档位覆盖」而下不了单。按包络收缩后，
+     * 呈现出来的范围就是真正可买且可计价的区间。
      *
      * @param  array<int, array<string, mixed>>  $subOptions
      * @return array{0: int, 1: int}
@@ -440,15 +501,51 @@ final class ProductConfigOptionPresenter
         $min = (int) ($item['qty_minimum'] ?? 0);
         $max = (int) ($item['qty_maximum'] ?? 0);
 
-        if (! $isRange || $max > 0) {
+        if (! $isRange) {
             return [$min, $max];
         }
 
-        $onlySub = count($subOptions) === 1 ? $subOptions[0] : [];
-        $subMin = (int) ($onlySub['qty_minimum'] ?? 0);
-        $subMax = (int) ($onlySub['qty_maximum'] ?? 0);
+        $visible = array_values(array_filter(
+            $subOptions,
+            fn (mixed $sub): bool => is_array($sub) && (int) ($sub['hidden'] ?? 0) !== 1
+        ));
 
-        return $subMax > 0 ? [$subMin, $subMax] : [$min, $max];
+        if ($visible === []) {
+            return [$min, $max];
+        }
+
+        $coveredMin = null;
+        $coveredMax = 0;
+        $hasOpenEnded = false;
+        $hasBoundedSibling = self::hasBoundedRangeTier($visible);
+
+        foreach ($visible as $sub) {
+            $subMin = (int) ($sub['qty_minimum'] ?? 0);
+            $coveredMin = $coveredMin === null ? $subMin : min($coveredMin, $subMin);
+
+            if (self::isSubRangeOpenEnded($sub, $hasBoundedSibling)) {
+                $hasOpenEnded = true;
+
+                continue;
+            }
+
+            $coveredMax = max($coveredMax, (int) ($sub['qty_maximum'] ?? 0));
+        }
+
+        $min = max($min, (int) $coveredMin);
+
+        // 存在无上限档位时，上限不受子项约束，只按父项声明（父项 0 也表示无上限）。
+        if ($hasOpenEnded) {
+            return [$min, $max];
+        }
+
+        // 包络为空（收缩后上限低于下限）：说明档位没声明可用区间，无从收缩，
+        // 保留父项声明，交给计价侧按档位兜底计价。
+        if ($coveredMax < $min) {
+            return [$min, $max];
+        }
+
+        return [$min, $max > 0 ? min($max, $coveredMax) : $coveredMax];
     }
 
     /**
