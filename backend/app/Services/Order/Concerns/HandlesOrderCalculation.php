@@ -895,6 +895,11 @@ trait HandlesOrderCalculation
         $rangeStep = max((int) ($item['qty_stage'] ?? 1), 1);
         $value = max((int) ($config[$field] ?? $rangeMin), $rangeMin);
         $visibleSubCount = 0;
+        // 上游把「首档免费」写成 qty_minimum=0、qty_maximum=0 的占位 sub（如数据盘 0GB），
+        // 而 0 在这里同时表示「无上限」。若先命中的是这种零价档位，它的 0 元会被直接返回，
+        // 后面真正的计费档（如「额外数据盘 1..300、每 10GB 3 元」）永远轮不到执行
+        // —— 表现为加硬盘、加 IP 一律 0 元。所以零价档位只作兜底，有正价档位优先。
+        $zeroPricedMatch = false;
 
         foreach ((array) ($item['sub'] ?? []) as $sub) {
             if ((int) ($sub['hidden'] ?? 0) === 1) {
@@ -916,10 +921,9 @@ trait HandlesOrderCalculation
             $pricing = $this->normalizePricing($sub['pricing'] ?? []);
             $stepPrice = $this->resolvePricingAmount($pricing, $billingCycle);
             if ($stepPrice <= 0) {
-                return [
-                    'amount' => 0.0,
-                    'selected_value' => $value,
-                ];
+                $zeroPricedMatch = true;
+
+                continue;
             }
 
             $steps = $this->calculateRangeChargeSteps($value, $subMin, $rangeStep);
@@ -928,6 +932,13 @@ trait HandlesOrderCalculation
                 'amount' => Money::multiply($stepPrice, $steps),
                 'selected_value' => $value,
                 'steps' => $steps,
+            ];
+        }
+
+        if ($zeroPricedMatch) {
+            return [
+                'amount' => 0.0,
+                'selected_value' => $value,
             ];
         }
 
