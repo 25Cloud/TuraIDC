@@ -2041,6 +2041,15 @@ class ProductSyncService
                     $mergedOption['markup'] = $localOption['markup'];
                 }
 
+                // hidden=1 是商家在后台把某个配置项下架（不展示、不计价）的运营决定，
+                // 上游目录里没有本地运营状态。不保留它，每晚的配置同步都会把
+                // 已下架的配置项重新放出来，连带其加价重新参与计价。
+                // 只做「本地已下架则保持下架」的单向合并：上游自行下架的配置项
+                // 仍按远端走，商家取消下架后也不会被这条规则拦回去。
+                if ((int) ($localOption['hidden'] ?? 0) === 1) {
+                    $mergedOption['hidden'] = 1;
+                }
+
                 $localSubMap = collect($localOption['sub'] ?? [])
                     ->filter(fn ($sub) => is_array($sub))
                     ->keyBy(fn (array $sub, int $subIndex) => $this->resolveConfigSubOptionKey($sub, $subIndex));
