@@ -38,6 +38,15 @@ class ServiceConsoleAreaService
 
     private const CAPABILITIES_CACHE_TTL_SECONDS = 300;
 
+    /**
+     * 未点亮 NAT 能力时的能力缓存时长。
+     *
+     * 上游 host/header 与自定义模块页面会随机抖空，这一轮探不到不代表主机没有 NAT。
+     * 若把 false 也缓存满 300 秒，客户在 5 分钟里刷多少次都看不到「端口转发」tab，
+     * 探测重试全部作废。定 20 秒：压住瞬时并发重复探测，又让下一次刷新能立刻重试。
+     */
+    private const CAPABILITIES_CACHE_TTL_SECONDS_WITHOUT_NAT = 20;
+
     private const RAW_CONTENT_CACHE_TTL_SECONDS = 30;
 
     /**
@@ -51,10 +60,25 @@ class ServiceConsoleAreaService
     /**
      * 「已探过、这台主机确实没有 NAT」的负向标记时长。
      *
-     * 只为避免每次进控制台都白探一次上游页面。定 10 分钟：既压住重复探测，
-     * 又保证上游之后给主机加上 NAT 模块时能在一刻钟内自动出现。
+     * 只为避免每次进控制台都白探一次上游页面，因此必须短：实测服务 4002 的主机 858
+     * 上，header 与模块页面是**反相关**的（header 有 NAT 时页面为空，header 没有时页面可用），
+     * 单次探测失败很正常。标记要是活太久，一次探不到就会让 tab 消失整整那么久。
+     * 定 60 秒：既挡住同一秒内的重复探测，又保证下一次刷新就能重试。
      */
-    private const NAT_PROBE_MISS_TTL_SECONDS = 600;
+    private const NAT_PROBE_MISS_TTL_SECONDS = 60;
+
+    /**
+     * 冷启动探页次数。
+     *
+     * 上游 header 与模块页面会同时抖没。实测最差的主机（服务 4002 / 主机 858）
+     * 模块页面可用率只有 4/10，5 次全空的概率 7.8%，表现在客户侧就是「偶尔进控制台
+     * 没有端口转发 tab」。提到 8 次后降到 1.7%，加上 8 × 120ms 的等待上限（约 1 秒），
+     * 对能力接口的响应时间影响可以接受。
+     */
+    private const NAT_PROBE_ATTEMPTS = 8;
+
+    /** 探页重试间隔（毫秒）。 */
+    private const NAT_PROBE_RETRY_DELAY_MS = 120;
 
     /**
      * 探测 NAT 模块页面时，用来识别「假页面」的特征。
@@ -170,7 +194,14 @@ class ServiceConsoleAreaService
             $capabilities['iso_supported'] = $isoSupported;
             $capabilities = $this->applyNatCapabilityMemory($runtime, $supplier, $hostId, $jwt, $capabilities);
 
-            Cache::put($cacheKey, $capabilities, now()->addSeconds(self::CAPABILITIES_CACHE_TTL_SECONDS));
+            // nat_supported 为 false 时不能跟着缓存 300 秒：上游抖动会让这一轮探不到，
+            // 一旦被缓存，客户在接下来 5 分钟里刷新多少次都看不到端口转发 tab，
+            // 重试逻辑等于白做。这种「疑似缺能力」的结果只留很短一段时间，让下一次刷新重试。
+            $ttl = ($capabilities['nat_supported'] ?? false) === true
+                ? self::CAPABILITIES_CACHE_TTL_SECONDS
+                : self::CAPABILITIES_CACHE_TTL_SECONDS_WITHOUT_NAT;
+
+            Cache::put($cacheKey, $capabilities, now()->addSeconds($ttl));
 
             return $this->withPreloadPolicy($capabilities);
         } catch (\Throwable $exception) {
@@ -741,8 +772,12 @@ class ServiceConsoleAreaService
     /**
      * 探一次自定义模块页面，判断这台主机到底有没有 NAT 模块。
      *
-     * 只取一次、失败就算没有：能力接口是进控制台的必经路径，不能在里面做长重试。
-     * 真正的重试由端口转发面板自己做（见 ServiceNatService::fetchCustomModulePage）。
+     * 实测（服务 3617 / 主机 366）header 里出现「NAT转发」只有 2/6，同一时刻模块页面
+     * 可用的也只有 2/6；服务 4002 上两者甚至是反相关的。只探一次的话冷启动失败率约一半，
+     * 客户刷新几次才看到 tab。这里按 NAT_PROBE_ATTEMPTS 重试，把整轮全失败压到个位数百分比。
+     *
+     * 仍不做长重试：能力接口是进控制台的必经路径，8 × 120ms 的等待上限约 1 秒；
+     * 面板内部的取页重试另有 6 次预算（见 ServiceNatService::fetchCustomModulePage）。
      */
     private function probeNatModulePage(object $runtime, Supplier $supplier, int $hostId, string $jwt): bool
     {
@@ -750,18 +785,37 @@ class ServiceConsoleAreaService
             return false;
         }
 
-        try {
-            $html = (string) $runtime->fetchCustomModulePage($supplier, $hostId, 'nat_acl', $jwt);
-        } catch (\Throwable) {
-            return false;
+        for ($attempt = 1; $attempt <= self::NAT_PROBE_ATTEMPTS; $attempt++) {
+            try {
+                $html = (string) $runtime->fetchCustomModulePage($supplier, $hostId, 'nat_acl', $jwt);
+            } catch (\Throwable) {
+                $html = '';
+            }
+
+            if (self::isUsableNatModuleHtml($html)) {
+                return true;
+            }
+
+            if ($attempt < self::NAT_PROBE_ATTEMPTS) {
+                usleep(self::NAT_PROBE_RETRY_DELAY_MS * 1000);
+            }
         }
 
+        return false;
+    }
+
+    /**
+     * 判断一段自定义模块响应能不能说明「NAT 模块存在」。
+     *
+     * 空串是上游抖动；魔方财务对不存在的模块回的是自带 404 模板页（HTTP 200、非空），
+     * 必须和真页面区分开，否则会给一台没有 NAT 的主机永久点亮一个空面板。
+     */
+    private static function isUsableNatModuleHtml(string $html): bool
+    {
         if (trim($html) === '') {
             return false;
         }
 
-        // 上游对不存在的模块回 404 模板页（HTTP 200、非空），必须和真页面区分开，
-        // 否则会给一台没有 NAT 的主机永久点亮一个空面板。
         foreach (self::NAT_PROBE_PLACEHOLDER_MARKERS as $marker) {
             if (str_contains($html, $marker)) {
                 return false;
