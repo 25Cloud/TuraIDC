@@ -75,7 +75,18 @@ class AiSkillController extends Controller
             return null;
         }
 
-        return str_replace('{{base_url}}', rtrim(url('/'), '/'), $body);
+        return str_replace('{{base_url}}', $this->baseUrl(), $body);
+    }
+
+    /**
+     * 站点地址以配置为准：反代后 `url('/')` 会跟着请求 scheme 走，
+     * 在 https 站点上经内网 http 探测时可能写出 http 链接，装进 agent 后就一直错下去。
+     */
+    private function baseUrl(): string
+    {
+        $configured = trim((string) config('app.url'));
+
+        return rtrim($configured !== '' ? $configured : url('/'), '/');
     }
 
     /**
