@@ -259,17 +259,21 @@ class ServiceConsoleAreaService
     /**
      * 后台「集成插件 → 上游面板预热」开关（system.console_area_preload_all_enabled）。
      *
-     * 缺省为开启：默认拿「切换零等待」，要退回「只预热第一个区域」的管理员再显式关掉。
-     * 读不到设置时同样按开启处理，避免 settings 表异常导致全站面板突然变慢。
+     * 缺省为**关闭**（按需加载）：一次开页并发预热所有面板与所有自定义区域 iframe，
+     * 等于一屏几十年来回打上游；实测上游单次 5–25 秒，首屏就变成十几秒。
+     * 关掉后首屏不预热任何面板，切到哪个 tab 才调哪个接口。
+     *
+     * 想要「切换零等待」的管理员可以在后台显式打开；读不到设置时按关闭处理，
+     * 与「宁可少打上游，也不要一次开页打十几次」的取舍一致。
      */
     private function areaPreloadAllEnabled(): bool
     {
         try {
-            $value = Setting::getValue('system', 'console_area_preload_all_enabled', '1');
+            $value = Setting::getValue('system', 'console_area_preload_all_enabled', '0');
         } catch (\Throwable) {
             // capabilitiesForUser 的契约是「上游挂了也降级返回、不抛错」，设置读取同理：
-            // settings 表故障不该把整个控制台能力接口变成 500。降级为默认开启。
-            return true;
+            // settings 表故障不该把整个控制台能力接口变成 500。降级为按需加载。
+            return false;
         }
 
         return $this->interpretPreloadSetting($value);
@@ -287,10 +291,11 @@ class ServiceConsoleAreaService
 
         $normalized = strtolower(trim((string) $value));
 
-        // 空值等同于「未配置」：按开启处理。设置项被清空或 settings 表缺失时不该让
-        // 全站面板静默退回单区域预热。口径与管理端 integration-plugins 的开关一致。
+        // 空值等同于「未配置」：按**关闭**处理（按需加载）。
+        // 首屏全量预热要并发打十几条上游接口，上游单次 5–25 秒，代价很实在；
+        // 而「未配置」在运维视角就是没打算开它。想开的人在后台显式置 1 即可。
         if ($normalized === '') {
-            return true;
+            return false;
         }
 
         return in_array($normalized, ['1', 'true', 'on', 'yes'], true);

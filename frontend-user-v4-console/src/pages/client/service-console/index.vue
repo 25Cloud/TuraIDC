@@ -41,7 +41,7 @@
 </template>
 <script setup lang="ts">
 import LoadingState from '@shared/user-v3/components/LoadingState.vue';
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 
 import { isCdnConsole, isVirtualHostConsole } from '@/domains/services/console/useConsoleCore';
 import { useServiceConsole } from '@/domains/services/useServiceConsole';
@@ -98,21 +98,42 @@ const activeTabComponent = computed(() => resolveTabComponent(activeTab.value));
 const isAreaTab = computed(() => activeTabComponent.value === AreaTab);
 
 /**
- * 需要常驻挂载的面板区域 key 列表，每个 key 对应一个独立的 iframe 实例。
+ * 需要挂载的面板区域 key 列表，每个 key 对应一个独立的 iframe 实例。
  *
- * 开关打开（默认）：所有走 iframe 的自定义区域都在首屏预热，切换 tab 只做显隐，
- * 不再重建 iframe —— 内容接口是 no-store，浏览器缓存复用不了，重建就等于重新回源上游。
- * 开关关闭：只留第一个，其余按需加载，规避多个 iframe 同时回源对首屏带宽的占用。
+ * 开关打开：所有走 iframe 的自定义区域一次挂全，切换 tab 只做显隐。
+ * 开关关闭（按需加载）：**首屏一个都不挂**，切到哪个区域才挂哪个；
+ * 挂过的会记住，切回去只做显隐——内容接口是 no-store，重建 iframe 就等于重新回源上游。
+ *
+ * 这里是首屏并发的主要来源：一次开页挂 N 个 iframe 就是 N 次上游往返，
+ * 而上游单次动辄 5–25 秒。按需加载把它从「N 次」压到「0 次」。
  */
+const mountedAreaKeys = ref<string[]>([]);
+
 const areaModuleKeys = computed(() => {
   const keys = availableTabs.value.filter((key) => resolveTabComponent(key) === AreaTab);
 
   if (keys.length === 0) return [];
   if (areaPreloadAll.value) return keys;
 
-  const [first] = keys;
+  const active = activeTab.value;
 
-  return first === undefined ? [] : [first];
+  // 当前激活的区域一定挂：不依赖下面的 watch 时序，避免切过去先空白一帧
+  return keys.filter((key) => key === active || mountedAreaKeys.value.includes(key));
 });
+
+/**
+ * 记住访问过的区域：只增不减，保证切回去不重建 iframe（不重复回源上游）。
+ */
+watch(
+  [activeTab, availableTabs],
+  () => {
+    const key = activeTab.value;
+    if (!key || resolveTabComponent(key) !== AreaTab) return;
+    if (mountedAreaKeys.value.includes(key)) return;
+
+    mountedAreaKeys.value = [...mountedAreaKeys.value, key];
+  },
+  { immediate: true },
+);
 </script>
 <style src="./components/styles.less" lang="less"></style>

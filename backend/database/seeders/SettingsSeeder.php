@@ -41,11 +41,10 @@ class SettingsSeeder extends Seeder
             // 上游为二次对接时，面板片段里的动作地址常指向再上游域名；
             // 默认开启同源检测，置 0 可放宽（仅跳过域名同源比对，路径仍须是同系统动作路由）。
             'console_module_origin_check_enabled' => '1',
-            // 面板区域（魔方兼容 tab）首屏是否全量预热。默认开启：进入控制台就把所有
-            // 自定义区域的 iframe 拉起来，之后切换 tab 零等待。
-            // 置 0 回退到「只预热第一个自定义区域」——自定义区域多的产品可用它规避
-            // 多个 iframe 同时回源上游对首屏带宽的占用。
-            'console_area_preload_all_enabled' => '1',
+            // 面板区域（魔方兼容 tab）与数据面板是否首屏全量预热。默认**关闭**（按需加载）：
+            // 开启等于一次开页并发打十几条上游接口，上游单次 5–25 秒，首屏直接十几秒。
+            // 置 1 可换回「切换零等待」，代价是每次进控制台都要等最慢的那条上游返回。
+            'console_area_preload_all_enabled' => '0',
         ]);
 
         static::seedGroup('basic', [
