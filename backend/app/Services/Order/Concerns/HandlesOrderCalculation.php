@@ -48,27 +48,6 @@ trait HandlesOrderCalculation
         19 => 'system_disk_size',
     ];
 
-    public function calculateAmount(Product $product, string $billingCycle, array $config = []): float
-    {
-        $config = $this->normalizeConfig($product, $config);
-        $baseAmount = (float) $product->getPriceByBillingCycle($billingCycle);
-        if ($baseAmount <= 0) {
-            return 0;
-        }
-
-        $quote = $this->buildQuoteBreakdown($product, $billingCycle, $config);
-
-        $upstreamQuote = $this->resolveUpstreamConfigQuote($product, $config, $billingCycle);
-        if ($upstreamQuote !== null) {
-            $quote['config_amount'] = (float) ($upstreamQuote['config_amount'] ?? 0);
-            $quote['items'] = $this->mapUpstreamQuoteItems((array) ($upstreamQuote['items'] ?? []));
-        }
-
-        $setupFee = (float) $product->setup_fee;
-
-        return Money::add($baseAmount, $quote['config_amount'] ?? 0, $setupFee);
-    }
-
     public function quote(Product $product, string $billingCycle, array $config = [], int $quantity = 1): array
     {
         $config = $this->normalizeConfig($product, $config);
@@ -292,11 +271,6 @@ trait HandlesOrderCalculation
         }
 
         return $value;
-    }
-
-    private function calculateConfigExtra(Product $product, string $billingCycle, array $config): float
-    {
-        return (float) $this->buildQuoteBreakdown($product, $billingCycle, $config)['config_amount'];
     }
 
     private function buildConfigPricingBreakdown(Product $product, string $billingCycle, array $config): array
