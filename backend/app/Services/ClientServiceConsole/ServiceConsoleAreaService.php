@@ -157,6 +157,25 @@ class ServiceConsoleAreaService
             return $this->withPreloadPolicy($cached);
         }
 
+        // 单飞：缓存过期瞬间并发进来的请求只让一个去探上游，其余等它回填后直接读缓存。
+        // TTL 由下面按 nat 能力探测结果分档决定，所以只借互斥、不借固定 TTL。
+        return UpstreamReadCache::singleFlight($cacheKey, function () use ($service, $cacheKey) {
+            $again = Cache::get($cacheKey);
+            if (is_array($again)) {
+                return $this->withPreloadPolicy($again);
+            }
+
+            return $this->computeCapabilitiesForService($service, $cacheKey);
+        });
+    }
+
+    /**
+     * capabilities 真正去上游探测并回填缓存的部分（调用方已保证互斥）。
+     *
+     * @return array<string, mixed>
+     */
+    private function computeCapabilitiesForService(Service $service, string $cacheKey): array
+    {
         // 驱动级能力标志：无论后面模块解析成不成，都要按真实探测结果回填
         $snapshotSupported = false;
         $isoSupported = false;

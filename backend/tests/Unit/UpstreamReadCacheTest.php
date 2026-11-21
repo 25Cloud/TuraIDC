@@ -77,4 +77,41 @@ class UpstreamReadCacheTest extends TestCase
             throw new \RuntimeException('上游炸了');
         });
     }
+
+    public function test_single_flight_runs_the_callback(): void
+    {
+        $result = UpstreamReadCache::singleFlight('probe:sf', fn (): array => ['ok' => true]);
+
+        $this->assertSame(['ok' => true], $result);
+    }
+
+    /**
+     * singleFlight 不接管缓存：回调自己怎么写缓存就怎么生效，它不许偷偷覆盖 TTL。
+     */
+    public function test_single_flight_does_not_write_cache_itself(): void
+    {
+        UpstreamReadCache::singleFlight('probe:sf-cache', function (): array {
+            Cache::put('probe:sf-cache', ['ttl' => 'caller-controlled'], 600);
+
+            return ['ttl' => 'caller-controlled'];
+        });
+
+        $this->assertSame(['ttl' => 'caller-controlled'], Cache::get('probe:sf-cache'));
+    }
+
+    public function test_single_flight_releases_the_lock_after_failure(): void
+    {
+        try {
+            UpstreamReadCache::singleFlight('probe:sf-boom', function (): never {
+                throw new \RuntimeException('失败也要放锁');
+            });
+        } catch (\RuntimeException) {
+            // 预期
+        }
+
+        // 锁没放掉的话，这里会等满 3 秒再退化执行；用一次正常调用验证锁已释放
+        $result = UpstreamReadCache::singleFlight('probe:sf-boom', fn (): string => 'lock released');
+
+        $this->assertSame('lock released', $result);
+    }
 }

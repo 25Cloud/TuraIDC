@@ -29,6 +29,44 @@ final class UpstreamReadCache
     private const LOCK_WAIT_SECONDS = 3;
 
     /**
+     * 只做互斥、不接管缓存：给「自己按条件决定 TTL」的调用方用。
+     *
+     * 典型是控制台的 capabilities：它按 nat 能力探测结果分别缓存 300 秒 / 20 秒，
+     * 用固定 TTL 的 remember() 会把这个判断覆盖掉。这里只保证同一时刻只有一个
+     * 请求去上游，回调里想怎么缓存、缓存多久都由调用方自己决定。
+     *
+     * @template TValue
+     *
+     * @param  Closure(): TValue  $callback
+     * @return TValue
+     */
+    public static function singleFlight(string $key, Closure $callback): mixed
+    {
+        $lock = Cache::lock('upstream-read:'.sha1($key), self::LOCK_WAIT_SECONDS + 30);
+
+        try {
+            $lock->block(self::LOCK_WAIT_SECONDS);
+        } catch (LockTimeoutException) {
+            // 没抢到锁：自己算，保持原有可用性
+            return $callback();
+        } catch (Throwable $exception) {
+            report($exception);
+
+            return $callback();
+        }
+
+        try {
+            return $callback();
+        } finally {
+            try {
+                $lock->release();
+            } catch (Throwable) {
+                // 未持有锁时释放会抛，忽略
+            }
+        }
+    }
+
+    /**
      * @template TValue
      *
      * @param  Closure(): TValue  $fetch
