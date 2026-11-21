@@ -13,18 +13,15 @@ use Throwable;
  *
  * 为什么需要它：插件规范规定「插件不能自行注册管理端菜单、权限、迁移和任意路由」
  * （docs/develop/plugins/index.md 第 9 节），所以由插件提供的管理端页面必须是**核心页面**，
- * 路由与侧栏菜单都写在核心。可核心并不知道插件在不在：`addons/ai_assistant` 被停用或卸载后，
- * `/api/v2/admin/ai/*` 随插件 Provider 一起消失，而侧栏「AI 助手」还挂着——点进去就是
- * 一串 404。这不是插件违规，是核心少了「按插件状态收敛入口」这一步。
+ * 路由与侧栏菜单都写在核心。可核心并不知道插件在不在：`addons/auto_refund` 被停用或卸载后，
+ * 它的接口随插件 Provider 一起消失，而侧栏菜单还挂着——点进去就是一串 404。
+ * 这不是插件违规，是核心少了「按插件状态收敛入口」这一步。
  *
  * 口径：**装且启用**才算可用。停用与卸载都视为不可用（卸载会把登记行硬删掉）。
  * 表不存在（未安装/迁移没跑）一律视为不可用，且绝不抛异常——登录接口不能因此 500。
  */
 final class OptionalFeature
 {
-    /** AI 助手（插件 addons/ai_assistant） */
-    public const AI_ASSISTANT = 'ai_assistant';
-
     /** 自助退款（插件 addons/auto_refund） */
     public const AUTO_REFUND = 'auto_refund';
 
@@ -39,7 +36,6 @@ final class OptionalFeature
     public static function map(): array
     {
         return [
-            self::AI_ASSISTANT => self::pluginEnabled(PluginDomain::ADDONS, 'ai_assistant'),
             self::AUTO_REFUND => self::pluginEnabled(PluginDomain::ADDONS, 'auto_refund'),
         ];
     }

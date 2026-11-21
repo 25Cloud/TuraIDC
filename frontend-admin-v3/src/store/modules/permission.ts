@@ -6,7 +6,6 @@ import {
   DashboardIcon,
   FileIcon,
   GiftIcon,
-  RobotIcon,
   ServerIcon,
   ShopIcon,
   ToolsIcon,
@@ -261,18 +260,6 @@ const ADMIN_MENU_GROUPS: MenuGroupConfig[] = [
         children: ['/admin/system/database', '/admin/system/redis'],
       },
     ],
-  },
-  {
-    // AI 助手单独成组：设置与审计分别是 ai.manage / ai.view 两个权限码，
-    // 只有没有任一权限的角色看不到这个分组（菜单项由 canAccessMenuRoute 过滤）。
-    // 另加 requiresFeature：AI 的接口由 addons/ai_assistant 插件的 Provider 注册，
-    // 插件未启用/已卸载时这些接口整体 404，菜单必须一起消失。
-    path: '/admin/menu/ai-assistant',
-    title: { zh_CN: 'AI 助手', en_US: 'AI Assistant' },
-    icon: shallowRef(RobotIcon),
-    orderNo: 75,
-    requiresFeature: 'ai_assistant',
-    children: ['/admin/ai/settings', '/admin/ai/conversations'],
   },
   {
     path: '/admin/menu/log-center',

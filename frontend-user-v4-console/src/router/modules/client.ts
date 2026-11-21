@@ -18,7 +18,6 @@ import {
 import { shallowRef } from 'vue';
 import type { RouteRecordRaw } from 'vue-router';
 
-import AiRobotAvatar from '@/components/ai/AiRobotAvatar.vue';
 import Layout from '@/layouts/index.vue';
 
 // zh_HK 缺省跟随 zh_TW：香港用繁体，缺这一项时面包屑与菜单会回落到简体。
@@ -371,24 +370,6 @@ export default [
             meta: { title: title('API 凭据', 'API Credentials', 'API 憑據'), requireAuth: true, hidden: true },
           },
         ],
-      },
-      {
-        // AI 助手独立页：浮窗「在独立页打开」与侧边栏都进这里。
-        // 路径写成绝对形式（等价于 client/ai）：菜单直接用路由记录的 path 做导航，
-        // 相对路径会按当前页末级段解析，从详情页点进去会跳到错误地址。
-        // keepAlive 关闭，避免离开后仍挂着一份流式会话。
-        path: '/client/ai',
-        name: 'ClientAi',
-        component: () => import('@/pages/client/ai/index.vue'),
-        meta: {
-          title: title('AI 助手', 'AI Assistant', 'AI 助理'),
-          // 侧边栏图标与浮球、抽屉头部、消息头像统一用同一个机器人头 SVG，
-          // 不再用 tdesign 的对话气泡（AI 助手不是客服按钮）
-          icon: icon(AiRobotAvatar),
-          requireAuth: true,
-          orderNo: 110,
-          keepAlive: false,
-        },
       },
       {
         path: 'order/create',

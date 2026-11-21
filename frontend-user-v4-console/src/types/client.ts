@@ -108,7 +108,7 @@ export interface ClientUserInfo {
   roles?: string[];
   /**
    * 可选功能可用性（后端 App\Support\OptionalFeature::map() 下发）。
-   * 键名是插件 slug，例如 `ai_assistant`、`auto_refund`；缺键一律按不可用处理。
+   * 键名是插件 slug，例如 `auto_refund`；缺键一律按不可用处理。
    */
   features?: Record<string, boolean>;
   /** 账户策略（实名 / 手机 / 邮箱是否强制）；后端未下发时为 undefined */

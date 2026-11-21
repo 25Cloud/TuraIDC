@@ -43,7 +43,7 @@ class V2AdminAuthApiTest extends TestCase
         $this->assertSame(['token', 'admin', 'features'], array_keys($response->json('data')));
         $this->assertSame($this->adminProfileWhitelist(), array_keys($response->json('data.admin')));
         // 可选功能开关随登录一起下发，前端据此决定侧栏分组是否出现
-        $this->assertArrayHasKey(OptionalFeature::AI_ASSISTANT, $response->json('data.features'));
+        $this->assertArrayHasKey(OptionalFeature::AUTO_REFUND, $response->json('data.features'));
         $this->assertNoSensitiveKeys($response->json());
         $this->assertLessThan(100 * 1024, strlen((string) $response->getContent()));
     }
@@ -74,7 +74,7 @@ class V2AdminAuthApiTest extends TestCase
      * 可选功能开关必须跟着插件状态走。
      *
      * 「AI 助手」的管理端页面托管在核心（插件不能注册菜单与路由），能力来自
-     * addons/ai_assistant 插件：插件停用/卸载后 /api/v2/admin/ai/* 会 404。
+     * addons/auto_refund 插件：插件停用/卸载后 它的接口 会 404。
      * 前端靠这份开关隐藏侧栏分组，所以这里把它钉在插件状态上——不是写死的 true。
      */
     public function test_optional_feature_follows_the_plugin_status(): void
@@ -84,14 +84,14 @@ class V2AdminAuthApiTest extends TestCase
 
         $plugin = IntegrationPlugin::query()
             ->where('domain', PluginDomain::ADDONS)
-            ->where('slug', 'ai_assistant')
+            ->where('slug', 'auto_refund')
             ->first();
 
         if (! $plugin instanceof IntegrationPlugin) {
             // 干净测试库上没有这条登记：这时开关必须是 false，前端据此不显示入口
             $this->getJson('/api/v2/admin/auth/info')
                 ->assertOk()
-                ->assertJsonPath('data.features.'.OptionalFeature::AI_ASSISTANT, false);
+                ->assertJsonPath('data.features.'.OptionalFeature::AUTO_REFUND, false);
 
             return;
         }
@@ -103,13 +103,13 @@ class V2AdminAuthApiTest extends TestCase
             $plugin->save();
             $this->getJson('/api/v2/admin/auth/info')
                 ->assertOk()
-                ->assertJsonPath('data.features.'.OptionalFeature::AI_ASSISTANT, false);
+                ->assertJsonPath('data.features.'.OptionalFeature::AUTO_REFUND, false);
 
             $plugin->status = IntegrationPlugin::STATUS_ENABLED;
             $plugin->save();
             $this->getJson('/api/v2/admin/auth/info')
                 ->assertOk()
-                ->assertJsonPath('data.features.'.OptionalFeature::AI_ASSISTANT, true);
+                ->assertJsonPath('data.features.'.OptionalFeature::AUTO_REFUND, true);
         } finally {
             $plugin->status = $originalStatus;
             $plugin->save();

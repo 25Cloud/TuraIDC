@@ -22,8 +22,6 @@
     </template>
     <setting-com />
     <!-- AI 助手入口：side / no-side 两个分支之外各挂一份，保证任何布局下都只有一个实例 -->
-    <ai-assistant-launcher />
-    <ai-chat-drawer />
     <div id="aria-live-region" class="sr-only" aria-live="polite" role="status"></div>
   </div>
 </template>
@@ -34,8 +32,6 @@ import { storeToRefs } from 'pinia';
 import { computed, onMounted, watch } from 'vue';
 import { useRoute } from 'vue-router';
 
-import AiAssistantLauncher from '@/components/ai/AiAssistantLauncher.vue';
-import AiChatDrawer from '@/components/ai/AiChatDrawer.vue';
 import { prefix } from '@/config/global';
 import { useSettingStore, useTabsRouterStore } from '@/store';
 

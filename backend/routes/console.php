@@ -62,8 +62,8 @@ $pruneOpenApiUsageLogs = Schedule::command('open-api:prune-usage-logs')
     ->name('open-api-prune-usage-logs')
     ->runInBackground();
 
-// AI 会话保留期清理不在这里登记：它由 ai_assistant 插件清单的 extra.scheduled_tasks
-// 声明，走 PluginScheduledTaskProvider → 心跳派发（见插件规范第 7 节）。核心去 schedule
+// 插件自带命令的调度不在这里登记：由插件清单的 extra.scheduled_tasks 声明，
+// 走 PluginScheduledTaskProvider → 心跳派发（见插件规范第 7 节）。核心去 schedule
 // 插件命令会在插件停用/卸载后留下每天必然「命令不存在」的失败记录，而且核心得额外
 // 知道这个功能装没装。清单声明的话，插件不在，任务就没了，这里一行都不用改。
 
