@@ -877,6 +877,7 @@
         "scopeOrders": "訂單與賬單",
         "scopeServices": "例項",
         "scopeFinance": "餘額與財務",
+        "scopeTickets": "工單與售後",
         "nameRequired": "請輸入金鑰名稱",
         "updated": "金鑰已更新",
         "deleted": "金鑰已刪除",

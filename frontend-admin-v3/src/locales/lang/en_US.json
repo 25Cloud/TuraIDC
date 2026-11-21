@@ -1292,6 +1292,7 @@
       "scopeOrders": "Orders and invoices",
       "scopeServices": "Instances",
       "scopeFinance": "Balance and finance",
+      "scopeTickets": "Tickets and support",
       "configSaved": "Open API settings saved",
       "keyDeleted": "API key deleted",
       "keyName": "API key",

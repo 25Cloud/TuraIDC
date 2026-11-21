@@ -10,6 +10,7 @@ export const SCOPE_DOMAINS = [
   { key: 'orders', label: t('apiKeys.scopeOrders') },
   { key: 'services', label: t('apiKeys.scopeServices') },
   { key: 'finance', label: t('apiKeys.scopeFinance') },
+  { key: 'tickets', label: t('apiKeys.scopeTickets') },
 ] as const;
 
 export type ScopeLevel = 'read' | 'write';

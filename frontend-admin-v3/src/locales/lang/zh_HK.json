@@ -1292,6 +1292,7 @@
       "scopeOrders": "訂單與賬單",
       "scopeServices": "實例",
       "scopeFinance": "餘額與財務",
+      "scopeTickets": "工單與售後",
       "configSaved": "開放接口配置已保存",
       "keyDeleted": "密鑰已刪除",
       "keyName": "密鑰",

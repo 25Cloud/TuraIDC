@@ -13,7 +13,7 @@ use Illuminate\Support\Str;
 class ApiKeyService
 {
     /** 业务域 => 支持级别（write 蕴含 read） */
-    public const SCOPE_DOMAINS = ['products', 'orders', 'services', 'finance'];
+    public const SCOPE_DOMAINS = ['products', 'orders', 'services', 'finance', 'tickets'];
 
     /** last_used_at 回写节流窗口（分钟）：该字段仅用于控制台展示，无需逐请求精度 */
     public const LAST_USED_THROTTLE_MINUTES = 5;

@@ -13,6 +13,7 @@ use App\Services\ClientServiceConsole\ServiceDetailService;
 use App\Services\ClientServiceConsole\ServicePowerService;
 use App\Services\ClientServiceConsole\ServiceTrafficPackageService;
 use App\Services\ClientServiceConsole\ServiceUpgradeService;
+use App\Services\Client\V2\ClientActionV2Service;
 use App\Services\Finance\PaymentService;
 use App\Services\Provisioning\ServiceRenewService;
 use Illuminate\Http\JsonResponse;
@@ -33,6 +34,7 @@ class OpenServiceController extends Controller
         private readonly PaymentService $payments,
         private readonly ServiceUpgradeService $upgrades,
         private readonly ServiceTrafficPackageService $trafficPackages,
+        private readonly ClientActionV2Service $actions,
     ) {}
 
     public function index(Request $request): JsonResponse
@@ -111,6 +113,25 @@ class OpenServiceController extends Controller
         $result = $this->power->reinstallForUser($user, $service, $data, $this->context($request));
 
         return $this->success($result, '重装已提交');
+    }
+
+    /**
+     * POST /services/{service}/password-resets
+     *
+     * 重置实例密码。与用户控制台同一条服务链路（ClientActionV2Service::resetPassword），
+     * 归属校验、并发锁、上游指令下发全部复用；这里不重复校验 password_confirmation：
+     * 那是给网页表单防手误的，机器调用方没有手误问题。
+     */
+    public function resetPassword(Request $request, int $service): JsonResponse
+    {
+        $user = $request->attributes->get('api_key_user');
+        $data = $request->validate([
+            'password' => ['required', 'string', 'min:8', 'max:100'],
+        ]);
+
+        $result = $this->actions->resetPassword($user, $service, $data, $request);
+
+        return $this->success($result, '重置密码指令已提交');
     }
 
     /**

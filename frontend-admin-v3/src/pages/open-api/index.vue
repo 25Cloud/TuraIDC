@@ -273,6 +273,7 @@ const SCOPE_DOMAINS = [
   { key: 'orders', label: t('openApi.index.scopeOrders') },
   { key: 'services', label: t('openApi.index.scopeServices') },
   { key: 'finance', label: t('openApi.index.scopeFinance') },
+  { key: 'tickets', label: t('openApi.index.scopeTickets') },
 ] as const;
 
 const router = useRouter();
