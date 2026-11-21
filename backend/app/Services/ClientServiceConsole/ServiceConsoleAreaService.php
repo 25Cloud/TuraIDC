@@ -11,6 +11,7 @@ use App\Models\Supplier;
 use App\Models\User;
 use App\Services\Upstream\Contracts\ProvidesLocalConsoleActions;
 use App\Support\SensitiveDataSanitizer;
+use App\Support\UpstreamReadCache;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -328,9 +329,11 @@ class ServiceConsoleAreaService
         );
 
         $rawCacheKey = $this->buildRawContentCacheKey($service, $moduleKey);
-        $rawHtml = Cache::remember(
+        // 单飞：缓存过期瞬间会有 N 个并发请求同时 miss，不加锁就是 N 次同步上游调用，
+        // 上游单次动辄 5–25 秒，页面就卡成「刷新等二十秒」。
+        $rawHtml = (string) UpstreamReadCache::remember(
             $rawCacheKey,
-            now()->addSeconds(self::RAW_CONTENT_CACHE_TTL_SECONDS),
+            self::RAW_CONTENT_CACHE_TTL_SECONDS,
             function () use ($runtime, $supplier, $hostId, $jwt, $moduleKey): string {
                 return (string) $runtime->fetchCustomModulePage($supplier, $hostId, $moduleKey, $jwt);
             }
