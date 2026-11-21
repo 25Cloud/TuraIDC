@@ -76,4 +76,33 @@ class AiSkillEndpointTest extends TestCase
     {
         $this->get('/api/v2/site/ai-skill/..%2F..%2F.env/SKILL.md')->assertNotFound();
     }
+
+    public function test_install_json_describes_how_to_connect_an_agent(): void
+    {
+        $response = $this->get('/api/v2/site/ai-skill/turaidc/install.json')->assertOk();
+
+        $data = (array) $response->json('data');
+        $base = rtrim((string) config('app.url'), '/');
+
+        $this->assertSame('turaidc', $data['slug']);
+        $this->assertSame('1.0.0', $data['version']);
+        $this->assertSame($base.'/api/v2/site/ai-skill/turaidc/SKILL.md', $data['skill_url']);
+        $this->assertSame($base.'/api/v2/site/ai-skill/turaidc/manifest.json', $data['manifest_url']);
+        $this->assertSame($base.'/api/v2/open', $data['api_base_url']);
+
+        // 卡片上要能一键复制的两条命令，必须真的包含可用的 skill 地址
+        $this->assertStringContainsString($data['skill_url'], $data['commands']['install_by_url']);
+        $this->assertStringContainsString($data['skill_url'], $data['commands']['curl']);
+
+        // 需要的密钥作用域必须与 ApiKeyService 的域白名单一致，否则用户按卡片建 key 会少权限
+        foreach ($data['required_scopes'] as $scope) {
+            $this->assertContains($scope, \App\Services\OpenApi\ApiKeyService::SCOPE_DOMAINS);
+        }
+    }
+
+    #[Test]
+    public function test_install_json_404s_for_unknown_skill(): void
+    {
+        $this->get('/api/v2/site/ai-skill/no-such-skill/install.json')->assertNotFound();
+    }
 }

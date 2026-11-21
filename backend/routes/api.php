@@ -40,6 +40,7 @@ Route::middleware('throttle:60,1')->group(function (): void {
     Route::get('/v2/site/ai-skill/{skill}', [V2SiteAiSkillController::class, 'show']);
     Route::get('/v2/site/ai-skill/{skill}/SKILL.md', [V2SiteAiSkillController::class, 'show']);
     Route::get('/v2/site/ai-skill/{skill}/manifest.json', [V2SiteAiSkillController::class, 'manifest']);
+    Route::get('/v2/site/ai-skill/{skill}/install.json', [V2SiteAiSkillController::class, 'install']);
 });
 Route::get('/health', [HealthController::class, 'live']);
 Route::get('/ready', [HealthController::class, 'ready']);

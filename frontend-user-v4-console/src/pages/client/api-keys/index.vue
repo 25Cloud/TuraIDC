@@ -13,6 +13,41 @@
       </div>
     </t-card>
 
+    <t-card v-if="skillInfo" class="record-card api-skill-card" :bordered="false">
+      <div class="api-skill-card__head">
+        <h3 class="api-skill-card__title">{{ $t('apiKeys.skillTitle') }}</h3>
+        <t-tag v-if="skillInfo.version" size="small" variant="light">v{{ skillInfo.version }}</t-tag>
+      </div>
+      <p class="api-skill-card__desc">{{ $t('apiKeys.skillDesc') }}</p>
+
+      <div class="api-skill-card__row">
+        <span class="api-skill-card__label">{{ $t('apiKeys.skillUrlLabel') }}</span>
+        <code class="api-skill-card__code">{{ skillInfo.skill_url }}</code>
+        <t-button size="small" variant="text" theme="primary" @click="copySkillText(skillInfo.skill_url)">
+          {{ $t('apiKeys.skillCopy') }}
+        </t-button>
+      </div>
+
+      <div class="api-skill-card__row">
+        <span class="api-skill-card__label">{{ $t('apiKeys.skillCommandLabel') }}</span>
+        <code class="api-skill-card__code">{{ skillInfo.commands.install_by_url }}</code>
+        <t-button size="small" variant="text" theme="primary" @click="copySkillText(skillInfo.commands.install_by_url)">
+          {{ $t('apiKeys.skillCopy') }}
+        </t-button>
+      </div>
+
+      <p class="api-skill-card__hint">
+        {{ $t('apiKeys.skillScopesHint', { scopes: skillInfo.required_scopes.join(' / ') }) }}
+      </p>
+      <p class="api-skill-card__hint">
+        <a :href="skillInfo.manifest_url" target="_blank" rel="noopener noreferrer">
+          {{ $t('apiKeys.skillManifest') }}
+        </a>
+        <span class="api-skill-card__sep">·</span>
+        <span>{{ $t('apiKeys.skillApiBase') }}{{ skillInfo.api_base_url }}</span>
+      </p>
+    </t-card>
+
     <t-card class="record-card" :bordered="false">
       <t-tabs v-model="activeTab">
         <t-tab-panel value="keys" :label="$t('apiKeys.openApiLabel')">
@@ -213,7 +248,7 @@
 <script setup lang="ts">
 import DataState from '@shared/user-v3/components/DataState.vue';
 import type { PrimaryTableCol } from 'tdesign-vue-next';
-import { DialogPlugin } from 'tdesign-vue-next';
+import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
@@ -224,12 +259,25 @@ import {
   scopesDisplay,
   useApiKeys,
 } from '@/domains/developer/useApiKeys';
+import { useApiSkill } from '@/domains/developer/useApiSkill';
 import { t } from '@/locales';
 import type { ApiKeyRecord } from '@/types/client';
 
 import UpstreamApiPanel from './components/UpstreamApiPanel.vue';
 
 type CredentialTab = 'keys' | 'upstream';
+
+const { info: skillInfo } = useApiSkill();
+
+/** 复制成功/失败都给出明确反馈：静默失败会让用户以为没点到 */
+async function copySkillText(text: string) {
+  try {
+    await navigator.clipboard.writeText(text);
+    MessagePlugin.success(t('apiKeys.skillCopied'));
+  } catch {
+    MessagePlugin.warning(t('apiKeys.skillCopyFailed'));
+  }
+}
 
 const route = useRoute();
 const router = useRouter();
@@ -430,5 +478,62 @@ const logColumns: PrimaryTableCol[] = [
   margin-bottom: var(--td-comp-margin-l);
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-small);
+}
+
+.api-skill-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+  margin-bottom: var(--td-comp-margin-s);
+}
+
+.api-skill-card__title {
+  margin: 0;
+  font: var(--td-font-title-small);
+  color: var(--td-text-color-primary);
+}
+
+.api-skill-card__desc {
+  margin: 0 0 var(--td-comp-margin-l);
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-small);
+}
+
+.api-skill-card__row {
+  display: flex;
+  align-items: center;
+  gap: var(--td-comp-margin-s);
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-m);
+  margin-bottom: var(--td-comp-margin-s);
+  border-radius: var(--td-radius-medium);
+  background: var(--td-bg-color-secondarycontainer);
+  border: thin solid var(--td-component-border);
+}
+
+.api-skill-card__label {
+  flex: 0 0 auto;
+  color: var(--td-text-color-secondary);
+  font: var(--td-font-body-small);
+}
+
+.api-skill-card__code {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  white-space: nowrap;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 13px;
+  color: var(--td-text-color-primary);
+}
+
+.api-skill-card__hint {
+  margin: 0 0 var(--td-comp-margin-xs);
+  color: var(--td-text-color-placeholder);
+  font: var(--td-font-body-small);
+  word-break: break-all;
+}
+
+.api-skill-card__sep {
+  margin: 0 var(--td-comp-margin-xs);
 }
 </style>

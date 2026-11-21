@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Site\V2;
 
 use App\Http\Controllers\Controller;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
@@ -31,6 +32,38 @@ class AiSkillController extends Controller
     public function manifest(string $skill): Response
     {
         return $this->serve($skill, 'manifest.json', 'application/json; charset=UTF-8');
+    }
+
+    /**
+     * 接入信息：给控制台「AI Skill 接入」卡片用的一份自描述数据。
+     *
+     * 站点地址由后端按 config('app.url') 生成，前端不用猜域名；更换部署域名后
+     * 卡片里的链接会自动跟着变，不会出现「文档指向老域名」的漂移。
+     */
+    public function install(string $skill): JsonResponse
+    {
+        $body = $this->load($skill, 'SKILL.md');
+
+        if ($body === null) {
+            abort(404, 'skill 不存在');
+        }
+
+        $base = $this->baseUrl();
+        $skillUrl = $base.'/api/v2/site/ai-skill/'.$skill.'/SKILL.md';
+
+        return $this->success([
+            'slug' => $skill,
+            'version' => $this->resolveVersion($body),
+            'skill_url' => $skillUrl,
+            'manifest_url' => $base.'/api/v2/site/ai-skill/'.$skill.'/manifest.json',
+            'api_base_url' => $base.'/api/v2/open',
+            'required_scopes' => ['products', 'orders', 'services', 'finance', 'tickets'],
+            'commands' => [
+                'install_by_url' => '/skills install '.$skillUrl,
+                'curl' => 'mkdir -p ~/.claude/skills/'.$skill
+                    .' && curl -fsSL '.$skillUrl.' -o ~/.claude/skills/'.$skill.'/SKILL.md',
+            ],
+        ]);
     }
 
     private function serve(string $skill, string $filename, string $contentType): Response
