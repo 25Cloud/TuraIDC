@@ -1,0 +1,363 @@
+{
+  "name": "turaidc",
+  "version": "1.0.0",
+  "description": "在 TuraIDC 面板上替用户操作云服务器与账务：查询商品与报价、下单、续费、开关机、重装、重置密码、账单与余额、工单。",
+  "license": "AGPL-3.0-or-later",
+  "documentation": "{{base_url}}/api/v2/site/ai-skill/turaidc/SKILL.md",
+  "auth": {
+    "scheme": "bearer",
+    "header": "Authorization",
+    "prefix": "Bearer ",
+    "key_format": "tura_*",
+    "issue_at": "面板 → 开发者 → API 密钥（需勾选所需作用域）"
+  },
+  "base_url": "{{base_url}}/api/v2/open",
+  "scopes": {
+    "products": "查在售商品与报价",
+    "orders": "查账单；write 可下单与余额付款",
+    "services": "查实例与各类预览；write 可开关机、续费、重装、重置密码、升级与流量包下单",
+    "finance": "查余额",
+    "tickets": "查工单；write 可提交工单与追加回复"
+  },
+  "envelope": {
+    "success": { "code": 0, "msg": "string", "data": "object" },
+    "list": "data 含 list/total/page/page_size",
+    "errors": {
+      "401": { "code": 40100, "meaning": "缺少或错误密钥、密钥已停用" },
+      "403": { "code": 40300, "meaning": "缺作用域、IP 不在白名单、账号不可用" },
+      "404": { "code": 40400, "meaning": "对象不存在或不属于该账号" },
+      "422": { "meaning": "参数校验失败，errors 为逐字段原因" }
+    }
+  },
+  "safety": [
+    "所有 write 端点都必须先向用户复述对象、动作与金额并取得同意",
+    "POST /services/{service}/renew 会立即从余额扣款",
+    "下单 / 升级 / 流量包只落账单不扣款，付款需再调 POST /orders/{invoice}/pay",
+    "金额一律以接口返回为准，下单必须复用报价返回的 quote_token",
+    "下单必须带 idempotency_key，同一笔重试复用同一个值",
+    "重装会清空系统盘，必须让用户明确确认"
+  ],
+  "tools": [
+    {
+      "name": "list_products",
+      "description": "列在售商品（分页）。stock=-1 表示不限量。",
+      "method": "GET",
+      "path": "/products",
+      "scope": "products:read",
+      "risk": "read",
+      "params": {
+        "page": { "type": "integer", "minimum": 1, "default": 1 },
+        "page_size": { "type": "integer", "minimum": 1, "maximum": 200, "default": 100 }
+      }
+    },
+    {
+      "name": "get_product",
+      "description": "取单个在售商品。",
+      "method": "GET",
+      "path": "/products/{product}",
+      "scope": "products:read",
+      "risk": "read",
+      "params": { "product": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "quote_product",
+      "description": "按周期与配置项报价，返回总价与下单用的 quote_token。",
+      "method": "GET",
+      "path": "/products/{product}/quotes",
+      "scope": "products:read",
+      "risk": "read",
+      "params": {
+        "product": { "type": "integer", "in": "path", "required": true },
+        "billing_cycle": { "type": "string", "in": "query", "required": true, "examples": ["monthly", "quarterly", "semiannually", "annually"] },
+        "quantity": { "type": "integer", "minimum": 1, "in": "query" },
+        "config": { "type": "object", "in": "query", "description": "配置项键 => 数量或选项值" }
+      }
+    },
+    {
+      "name": "list_invoices",
+      "description": "列当前账号的账单（分页）。",
+      "method": "GET",
+      "path": "/orders",
+      "scope": "orders:read",
+      "risk": "read",
+      "params": {
+        "page": { "type": "integer", "minimum": 1, "default": 1 },
+        "page_size": { "type": "integer", "minimum": 1, "maximum": 200, "default": 50 }
+      }
+    },
+    {
+      "name": "get_invoice",
+      "description": "取单张账单。",
+      "method": "GET",
+      "path": "/orders/{invoice}",
+      "scope": "orders:read",
+      "risk": "read",
+      "params": { "invoice": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "create_order",
+      "description": "创建购买账单（不扣款）。",
+      "method": "POST",
+      "path": "/orders",
+      "scope": "orders:write",
+      "risk": "write",
+      "params": {
+        "product_id": { "type": "integer", "required": true },
+        "billing_cycle": { "type": "string", "required": true },
+        "quote_token": { "type": "string", "required": true },
+        "idempotency_key": { "type": "string", "required": true, "maxLength": 64 },
+        "quantity": { "type": "integer", "minimum": 1 },
+        "config": { "type": "object" }
+      }
+    },
+    {
+      "name": "pay_invoice_with_balance",
+      "description": "用账户余额支付账单。",
+      "method": "POST",
+      "path": "/orders/{invoice}/pay",
+      "scope": "orders:write",
+      "risk": "write",
+      "params": { "invoice": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "list_services",
+      "description": "列当前账号的实例（分页）。",
+      "method": "GET",
+      "path": "/services",
+      "scope": "services:read",
+      "risk": "read",
+      "params": {
+        "page": { "type": "integer", "minimum": 1, "default": 1 },
+        "page_size": { "type": "integer", "minimum": 1, "maximum": 200, "default": 100 }
+      }
+    },
+    {
+      "name": "get_service",
+      "description": "取实例详情。",
+      "method": "GET",
+      "path": "/services/{service}",
+      "scope": "services:read",
+      "risk": "read",
+      "params": { "service": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "preview_renewal",
+      "description": "续费预览，不产生账单。",
+      "method": "GET",
+      "path": "/services/{service}/renewals",
+      "scope": "services:read",
+      "risk": "read",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "billing_cycle": { "type": "string", "in": "query" }
+      }
+    },
+    {
+      "name": "renew_service",
+      "description": "续费并立即用余额支付。必须先取得用户同意。",
+      "method": "POST",
+      "path": "/services/{service}/renew",
+      "scope": "services:write",
+      "risk": "write",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "billing_cycle": { "type": "string", "required": true }
+      }
+    },
+    {
+      "name": "list_reinstall_options",
+      "description": "可重装的操作系统列表，取 os_id。",
+      "method": "GET",
+      "path": "/services/{service}/reinstall-options",
+      "scope": "services:read",
+      "risk": "read",
+      "params": { "service": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "reinstall_service",
+      "description": "重装系统，会清空系统盘数据。",
+      "method": "POST",
+      "path": "/services/{service}/reinstall",
+      "scope": "services:write",
+      "risk": "write",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "os_id": { "type": "string", "required": true, "maxLength": 50 }
+      }
+    },
+    {
+      "name": "reset_service_password",
+      "description": "重置实例登录密码。",
+      "method": "POST",
+      "path": "/services/{service}/password-resets",
+      "scope": "services:write",
+      "risk": "write",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "password": { "type": "string", "required": true, "minLength": 8, "maxLength": 100 }
+      }
+    },
+    {
+      "name": "power_service",
+      "description": "开关机与重启。",
+      "method": "POST",
+      "path": "/services/{service}/power",
+      "scope": "services:write",
+      "risk": "write",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "action": { "type": "string", "required": true, "enum": ["on", "off", "reboot", "hard_off", "hard_reboot"] }
+      }
+    },
+    {
+      "name": "preview_upgrade",
+      "description": "配置升级可选项预览。",
+      "method": "GET",
+      "path": "/services/{service}/upgrades",
+      "scope": "services:read",
+      "risk": "read",
+      "params": { "service": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "quote_upgrade",
+      "description": "升级差价报价。",
+      "method": "POST",
+      "path": "/services/{service}/upgrades/quotes",
+      "scope": "services:write",
+      "risk": "write",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "product_id": { "type": "integer", "required": true },
+        "billing_cycle": { "type": "string", "required": true, "maxLength": 30 },
+        "promo_code": { "type": "string", "maxLength": 100 }
+      }
+    },
+    {
+      "name": "create_upgrade_order",
+      "description": "生成升级账单（不扣款）。",
+      "method": "POST",
+      "path": "/services/{service}/upgrades/orders",
+      "scope": "services:write",
+      "risk": "write",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "product_id": { "type": "integer", "required": true },
+        "billing_cycle": { "type": "string", "required": true, "maxLength": 30 },
+        "promo_code": { "type": "string", "maxLength": 100 }
+      }
+    },
+    {
+      "name": "list_flow_packages",
+      "description": "可售流量包档位；supported=false 时看 message。",
+      "method": "GET",
+      "path": "/services/{service}/flow-packages",
+      "scope": "services:read",
+      "risk": "read",
+      "params": { "service": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "create_flow_package_order",
+      "description": "生成流量包账单（不扣款）。",
+      "method": "POST",
+      "path": "/services/{service}/flow-packages/orders",
+      "scope": "services:write",
+      "risk": "write",
+      "params": {
+        "service": { "type": "integer", "in": "path", "required": true },
+        "target_value": { "type": "integer", "minimum": 1, "required": true }
+      }
+    },
+    {
+      "name": "get_balance",
+      "description": "账户余额（元）。",
+      "method": "GET",
+      "path": "/balance",
+      "scope": "finance:read",
+      "risk": "read",
+      "params": {}
+    },
+    {
+      "name": "list_tickets",
+      "description": "列工单（分页）。",
+      "method": "GET",
+      "path": "/tickets",
+      "scope": "tickets:read",
+      "risk": "read",
+      "params": {
+        "keyword": { "type": "string", "maxLength": 100 },
+        "status": { "type": "integer", "enum": [0, 1, 2, 3] },
+        "page": { "type": "integer", "minimum": 1, "default": 1 },
+        "page_size": { "type": "integer", "minimum": 1, "maximum": 50, "default": 20 }
+      }
+    },
+    {
+      "name": "get_ticket",
+      "description": "工单详情。",
+      "method": "GET",
+      "path": "/tickets/{ticket}",
+      "scope": "tickets:read",
+      "risk": "read",
+      "params": { "ticket": { "type": "integer", "in": "path", "required": true } }
+    },
+    {
+      "name": "list_ticket_replies",
+      "description": "工单回复列表。",
+      "method": "GET",
+      "path": "/tickets/{ticket}/replies",
+      "scope": "tickets:read",
+      "risk": "read",
+      "params": {
+        "ticket": { "type": "integer", "in": "path", "required": true },
+        "page_size": { "type": "integer", "minimum": 1, "maximum": 100, "default": 20 }
+      }
+    },
+    {
+      "name": "create_ticket",
+      "description": "提交工单。",
+      "method": "POST",
+      "path": "/tickets",
+      "scope": "tickets:write",
+      "risk": "write",
+      "params": {
+        "department": { "type": "string", "required": true, "enum": ["sales", "support", "billing", "abuse"] },
+        "subject": { "type": "string", "required": true, "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 10000 },
+        "priority": { "type": "integer", "minimum": 1, "maximum": 4 },
+        "service_id": { "type": "integer" },
+        "attachments": { "type": "array", "maxItems": 9, "items": { "type": "string" } }
+      }
+    },
+    {
+      "name": "reply_ticket",
+      "description": "追加工单回复，content 与 attachments 至少一项。",
+      "method": "POST",
+      "path": "/tickets/{ticket}/replies",
+      "scope": "tickets:write",
+      "risk": "write",
+      "params": {
+        "ticket": { "type": "integer", "in": "path", "required": true },
+        "content": { "type": "string", "maxLength": 10000 },
+        "attachments": { "type": "array", "maxItems": 9, "items": { "type": "string" } },
+        "quote_reply_id": { "type": "integer" }
+      }
+    },
+    {
+      "name": "get_self_key",
+      "description": "当前密钥自身信息。",
+      "method": "GET",
+      "path": "/keys/self",
+      "scope": "any",
+      "risk": "read",
+      "params": {}
+    },
+    {
+      "name": "disable_self_key",
+      "description": "停用当前密钥（之后所有调用返回 401）。",
+      "method": "POST",
+      "path": "/keys/self/disable",
+      "scope": "any",
+      "risk": "write",
+      "params": {}
+    }
+  ]
+}
