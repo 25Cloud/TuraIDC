@@ -80,7 +80,13 @@ class UserService
                 'created_at',
             ])
             ->withCount([
-                'services as opened_product_count' => fn ($serviceQuery) => $serviceQuery->where('status', ServiceStatus::ACTIVE),
+                // 与详情页「现服务」、删除校验同口径：开通中/运行中/已暂停都算已开通实例，
+                // 只算运行中会让「刚下单未开完」和「已暂停」的用户在列表里显示 0 个服务
+                'services as opened_product_count' => fn ($serviceQuery) => $serviceQuery->whereIn('status', [
+                    ServiceStatus::PENDING,
+                    ServiceStatus::ACTIVE,
+                    ServiceStatus::SUSPENDED,
+                ]),
             ]);
 
         if (! empty($filters['user_id'])) {
@@ -290,7 +296,15 @@ class UserService
         $countStats = User::query()
             ->whereKey($user->id)
             ->withCount([
-                'services as service_active' => fn ($query) => $query->where('status', 1),
+                // 「现服务数」口径与管理端用户列表「已开通服务」、删除校验保持一致：
+                // 开通中/运行中/已暂停都算占用中的实例（已暂停只是暂时不可用，用户仍持有），
+                // 只有已删除(3) 与异常(4) 不计入。三处口径不一致会造成
+                // 「详情显示 0 个现服务，删除时却被拒」的矛盾。
+                'services as service_active' => fn ($query) => $query->whereIn('status', [
+                    ServiceStatus::PENDING,
+                    ServiceStatus::ACTIVE,
+                    ServiceStatus::SUSPENDED,
+                ]),
                 'services as service_total',
                 'orders as order_total',
                 'orders as order_pending' => fn ($query) => $query->where('status', 0),

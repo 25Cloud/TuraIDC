@@ -970,12 +970,28 @@ class ServiceRenewService
 
                             $recoveryJwt = $renewal->login($supplier);
 
-                            // 查询上游账单状态
+                            // 查询上游账单状态：上游把支付状态放在 data.invoices.status，
+                            // data.status / 顶层 status 是业务码（200/1001 这类数字），按它读
+                            // 会让已付账单永远不被识别，恢复链路只能走失败兜底。这里按
+                            // invoices.status → invoice.status → 顶层（非数字）的顺序取，
+                            // 数字业务码一律不算支付状态，缺失时留空走失败兜底。
                             $invoiceResponse = $renewal->get($supplier, "/v1/invoices/{$existingUpstreamInvoiceId}", $recoveryJwt);
                             $invoicePayload = $this->extractPayload($invoiceResponse);
-                            $upstreamStatus = (string) ($invoicePayload['status'] ?? '');
+                            $upstreamStatus = '';
+                            foreach ([
+                                $invoicePayload['invoices']['status'] ?? null,
+                                $invoicePayload['invoice']['status'] ?? null,
+                                $invoicePayload['status'] ?? null,
+                            ] as $statusCandidate) {
+                                $statusCandidate = is_string($statusCandidate) ? trim($statusCandidate) : '';
+                                if ($statusCandidate !== '' && ! is_numeric($statusCandidate)) {
+                                    $upstreamStatus = $statusCandidate;
+                                    break;
+                                }
+                            }
+                            $normalizedUpstreamStatus = mb_strtolower($upstreamStatus);
 
-                            if ($upstreamStatus === 'Paid') {
+                            if ($normalizedUpstreamStatus === 'paid') {
                                 // 上游已支付→本地完成履约
                                 $recoveryHostDetail = [];
                                 try {
@@ -1010,7 +1026,7 @@ class ServiceRenewService
                                 return $this->finalizeRenewInvoiceSuccess($currentService, $invoice, $currentProvisionData, $recoveredExpiresAt);
                             }
 
-                            if ($upstreamStatus === 'Unpaid') {
+                            if ($normalizedUpstreamStatus === 'unpaid') {
                                 // 上游账单未支付→重试余额支付
                                 $fundResponse = $renewal->post($supplier, "/v1/invoices/{$existingUpstreamInvoiceId}/fund", [], $recoveryJwt);
                                 $this->assertUpstreamSuccess($fundResponse, [200, 1001], '恢复：重试供应商余额支付续费账单', $this->resolveProviderKeyForService($currentService, $effectiveProduct));

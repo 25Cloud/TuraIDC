@@ -18,7 +18,11 @@ class SendEmailCodeRequest extends ClientFormRequest
     {
         return [
             'email' => 'required|email|max:100',
-            'purpose' => 'nullable|string|in:login,register,reset,generic,verify_bound_email,change_email',
+            // 用途口径与 SendPhoneCodeRequest 对齐：
+            // verify_bound_email = 发往当前已绑定邮箱（旧邮箱校验），
+            // bind_email = 发往待绑定的新邮箱（绑定/换绑第二步），
+            // reset_password/password_reset = 邮箱验证码重置密码。
+            'purpose' => 'nullable|string|in:login,register,reset,reset_password,password_reset,generic,verify_bound_email,change_email,bind_email',
         ];
     }
 }

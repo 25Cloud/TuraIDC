@@ -1074,6 +1074,30 @@
   }
 
   // ---- 主连接逻辑 ----
+
+  /**
+   * 旁听 RFB 底层 WebSocket 的 close 事件，取出 Relay 下发的关闭原因。
+   *
+   * noVNC 的 disconnect 事件只带 clean 标记，会把 code/reason 丢在日志里。Relay 在
+   * 「上游握手成功但一直没有 RFB 数据」时会以 1011 + 原因关闭，用户需要看到
+   * 「上游 VNC 无响应」而不是笼统的连接中断。RFB 实例在构造时同步建好 _sock，
+   * 这里挂到它内部 WebSocket 的 onclose 之前即可（noVNC 自身 handler 不变）。
+   */
+  function watchRelayCloseReason(rfbInstance, onReason) {
+    try {
+      const sock = rfbInstance?._sock?._websocket
+      if (!sock) return
+      sock.addEventListener('close', (event) => {
+        if (!event || event.wasClean === false) return
+        const reason = String(event.reason || '').trim()
+        if (!reason) return
+        onReason(reason)
+      })
+    } catch (_) {
+      // 旁听失败不影响主连接流程
+    }
+  }
+
   async function connectVnc() {
     if (rfb) { try { rfb.disconnect() } catch (_) {} rfb = null }
     hideError()
@@ -1087,8 +1111,12 @@
       if (!url) throw new Error('VNC 连接参数无效')
 
       const creds = buildInitialCredentials(params)
+      let disconnectMessage = ''
 
       rfb = new RFB(container, url, { credentials: creds })
+      // Relay 在上游长时间无数据时会带着原因关闭（1011）。noVNC 自身的 disconnect
+      // 事件里拿不到 reason，这里在底层 WebSocket 上旁听一次，把原因透给错误层。
+      watchRelayCloseReason(rfb, (message) => { disconnectMessage = message })
       rfb.scaleViewport = true
       // 部分上游 VNC 服务不支持 noVNC 的远程分辨率协商，开启后会持续警告 Invalid screen layout。
       // 保留本地缩放即可，避免向服务端发送 resize 请求。
@@ -1109,7 +1137,8 @@
           showStatus('已断开连接', 'normal', 4000)
         } else {
           // 上游网关有并发槽位限制，链接失效由 relay 侧自动重取（见 VncRelayCommand）。
-          showError('VNC 连接已中断，请点击「重新尝试」重新连接。')
+          // Relay 主动关闭时会带具体原因（如「上游 VNC 无响应」），优先展示。
+          showError(disconnectMessage || 'VNC 连接已中断，请点击「重新尝试」重新连接。')
         }
       })
 

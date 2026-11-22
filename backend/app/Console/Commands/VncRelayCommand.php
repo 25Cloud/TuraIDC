@@ -33,6 +33,18 @@ class VncRelayCommand extends Command
 
     private const IDLE_TIMEOUT_SECONDS = 300;
 
+    /**
+     * 上游握手成功后等待首帧 RFB 数据的上限。
+     *
+     * 上游 websockify 在 VNC 会话僵死时仍会回 101（校验 Sec-WebSocket-Accept 也通过），
+     * 但之后长时间零字节，直到被对端关闭。正常实例约 0.6 秒内就会推 RFB 版本号，
+     * 留足余量后在此主动断开并告知客户端真实原因。
+     */
+    private const UPSTREAM_FIRST_FRAME_TIMEOUT_SECONDS = 20;
+
+    /** 关闭码 1011 Internal Error：上游服务端异常，区别于干净断开（1000）。 */
+    private const CLOSE_UPSTREAM_SILENT = 1011;
+
     private const MAX_BUFFER_BYTES = 1048576;
 
     public function handle(ClientServiceConsoleService $consoleService): int
@@ -225,6 +237,26 @@ class VncRelayCommand extends Command
                 continue;
             }
 
+            // 首包超时：上游握手成功（101）后迟迟不推 RFB 数据，说明上游 VNC 会话已僵死
+            // （实测上游会回 101 然后长时间零字节，最后才断开）。不在这里主动收尾，用户
+            // 只能干等到空闲超时，页面一直显示笼统的「连接已中断」。这里带上关闭原因，
+            // 让 noVNC 直接把上游不可用与网络故障区分开。
+            if (($connection['handshake_done'] ?? false) && ! ($connection['upstream_alive'] ?? false)
+                && ! ($connection['first_frame_timeout_fired'] ?? false)
+                && ($now - (int) ($connection['upstream_connected_at'] ?? $createdAt)) > self::UPSTREAM_FIRST_FRAME_TIMEOUT_SECONDS) {
+                Log::warning('[VNC Relay] 上游握手后无数据，主动断开', [
+                    'token' => $this->maskToken((string) ($connection['token'] ?? '')),
+                    'waited_seconds' => $now - (int) ($connection['upstream_connected_at'] ?? $createdAt),
+                ]);
+                // 先置位再关：closeWithReason 会从 $this->connections 移除该连接，
+                // 但若 fwrite 失败导致移除未生效，置位可防止下一轮重复告警与重复写帧。
+                $connection['first_frame_timeout_fired'] = true;
+                $this->connections[$id] = $connection;
+                $this->closeWithReason($id, self::CLOSE_UPSTREAM_SILENT, '上游 VNC 无响应，请确认实例已开机且系统已完成引导');
+
+                continue;
+            }
+
             // 空闲超时：已建立的双向连接长时间无活动。
             if (($now - $lastActivity) > self::IDLE_TIMEOUT_SECONDS) {
                 $this->closeConnection($id);
@@ -276,6 +308,13 @@ class VncRelayCommand extends Command
 
         $chunk = @fread($connection['upstream'], 8192);
         if (($chunk === false || $chunk === '') && feof($connection['upstream'])) {
+            // 上游在推过数据后断开：把关闭原因带给浏览器，避免前端只看到笼统的「连接已中断」。
+            if (! ($connection['upstream_alive'] ?? false)) {
+                $this->closeWithReason($connectionId, self::CLOSE_UPSTREAM_SILENT, '上游 VNC 无响应，请确认实例已开机且系统已完成引导');
+
+                return;
+            }
+
             $this->closeConnection($connectionId);
 
             return;
@@ -287,6 +326,7 @@ class VncRelayCommand extends Command
 
         $connection['upstream_in'] .= $chunk;
         $connection['last_activity_at'] = time();
+        $connection['upstream_alive'] = true;
         $this->connections[$connectionId] = $connection;
 
         $this->forwardUpstreamFrames($connectionId);
@@ -392,6 +432,9 @@ class VncRelayCommand extends Command
         $connection['upstream_in'] = $upstreamExtra;
         $connection['handshake_done'] = true;
         $connection['token'] = $token;
+        $connection['upstream_connected_at'] = time();
+        // 握手阶段就可能带回首帧数据，此时算作上游已存活，避免首包超时误杀。
+        $connection['upstream_alive'] = $upstreamExtra !== '';
         $connection['client_out'] .= $this->buildClientHandshakeResponse($wsKey);
         $this->connections[$connectionId] = $connection;
 
@@ -1051,6 +1094,32 @@ class VncRelayCommand extends Command
         }
 
         return $result;
+    }
+
+    /**
+     * 带关闭码与原因的优雅关闭：先向浏览器发 close 帧（含 UTF-8 原因），再断开。
+     *
+     * 浏览器的 WebSocket `onclose` 能拿到 code/reason；noVNC 在「已连接」状态下
+     * 不会把 reason 透给界面，但在「连接中」失败会记录，便于排查。
+     */
+    private function closeWithReason(int $connectionId, int $code, string $reason): void
+    {
+        $connection = $this->connections[$connectionId] ?? null;
+        if (! is_array($connection)) {
+            return;
+        }
+
+        $client = $connection['client'] ?? null;
+        if (is_resource($client)) {
+            $payload = pack('n', $code).$reason;
+            $frame = $this->encodeFrame(0x8, $payload, false, true);
+            // 客户端 socket 是非阻塞的：先补上尚未写出的缓冲，再同步写关闭帧。
+            // 一次没写完就保留在 client_out 里，由事件循环继续 flush，避免关闭帧被吞掉。
+            $pending = (string) ($connection['client_out'] ?? '');
+            @fwrite($client, $pending.$frame);
+        }
+
+        $this->closeConnection($connectionId);
     }
 
     private function closeConnection(int $connectionId): void
