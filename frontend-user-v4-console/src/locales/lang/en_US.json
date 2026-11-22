@@ -2613,6 +2613,7 @@
             "scanToPay": "Scan with {method} to pay",
             "afterPaidTip": "Once the funds arrive you can continue purchasing or renewing instances.",
             "pollingTip": "Confirming the payment automatically, please do not pay twice.",
+            "checkoutAfterScanTip": "After scanning, finish the payment on the checkout page — this page refreshes automatically once paid. Please do not pay twice.",
             "chooseAmountTip": "Choose an amount and payment method to generate the QR code.",
             "createRechargeFailed": "Failed to create the top-up invoice",
             "payArrived": "Payment succeeded and the top-up has arrived",

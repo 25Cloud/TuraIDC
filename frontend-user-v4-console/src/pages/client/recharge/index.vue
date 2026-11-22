@@ -208,13 +208,20 @@
 
           <aside class="qrcode-panel">
             <div class="qrcode-frame" :class="{ 'is-ready': qrCodeValue, 'is-paid': rechargePaid }">
+              <img
+                v-if="qrCodeValue && isQrImageValue"
+                class="qrcode-image"
+                :src="qrCodeValue"
+                :alt="qrCodeTitle"
+              />
               <qrcode-vue
-                v-if="qrCodeValue"
+                v-else-if="qrCodeValue"
                 class="qrcode-svg"
                 :class="{ 'is-muted': rechargePaid }"
                 :value="qrCodeValue"
-                :size="160"
-                level="H"
+                :size="220"
+                level="M"
+                :margin="2"
                 render-as="svg"
               />
               <transition name="payment-success">
@@ -301,6 +308,17 @@ const {
 } = useRecharge();
 
 const mobileCustomSelected = computed(() => mobileCustomMode.value || activePreset.value === null);
+
+/**
+ * 上游可能把「二维码图片地址」直接塞进 qrcode 字段（data:image/… 或 .png 链接），
+ * 那时再拿它去生成二维码，印出来的是一串 base64/URL，用户扫到的就是图片地址而不是付款页。
+ * 所以先判断它是不是图片：是图片就直出 <img>，否则才交给 qrcode.vue 编码。
+ */
+const isQrImageValue = computed(
+  () =>
+    /^data:image\//i.test(qrCodeValue.value) ||
+    /\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(qrCodeValue.value),
+);
 const mobileSubmitText = computed(() =>
   rechargePaid.value ? t('recharge.continueRecharge') : t('recharge.rechargeNow'),
 );
@@ -726,9 +744,11 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 13.75rem;
-  height: 13.75rem;
-  padding: var(--td-comp-paddingTB-m);
+  /* 自适应：窄屏缩到可用宽度，宽屏最多 13.75rem，始终保持正方形 */
+  width: min(13.75rem, 100%);
+  height: auto;
+  aspect-ratio: 1 / 1;
+  padding: var(--td-comp-paddingTB-m) var(--td-comp-paddingLR-m);
   overflow: hidden;
   background: var(--td-bg-color-container);
   border: thin solid var(--td-border-color);
@@ -755,6 +775,8 @@ onMounted(() => {
   z-index: 1;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   transition:
     opacity var(--td-anim-duration-base) var(--td-anim-time-fn-easing),
     transform var(--td-anim-duration-base) var(--td-anim-time-fn-easing);
@@ -763,6 +785,16 @@ onMounted(() => {
     opacity: 0.12;
     transform: scale(0.92);
   }
+}
+
+/* 上游直接给图片时不要拉伸变形：等比装进方框，留白居中 */
+.qrcode-image {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: calc(var(--td-radius-medium) / 2);
 }
 
 .qrcode-success {
@@ -903,6 +935,15 @@ onMounted(() => {
   .recharge-mobile__hero {
     padding-top: 0;
   }
+
+  /* 二维码在小屏上别顶着卡片边，也别把两侧内容挤窄 */
+  .qrcode-panel {
+    gap: var(--td-comp-margin-s);
+  }
+
+  .qrcode-frame {
+    width: min(11.25rem, 100%);
+  }
 }
 
 @media (width <= 30rem) {
@@ -916,6 +957,11 @@ onMounted(() => {
 
   .recharge-mobile__hero h1 {
     font-size: 1.75rem;
+  }
+
+  /* 手机上二维码要够大才扫得动，但不能溢出屏幕 */
+  .qrcode-frame {
+    width: min(12.5rem, 100%);
   }
 }
 

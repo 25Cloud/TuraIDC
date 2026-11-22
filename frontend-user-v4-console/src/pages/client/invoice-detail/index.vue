@@ -309,11 +309,25 @@
       destroy-on-close
     >
       <div class="dialog-qrcode">
-        <qrcode-vue v-if="alipayQrCode" :value="alipayQrCode" :size="180" level="H" render-as="svg" />
+        <img
+          v-if="alipayQrCode && alipayQrIsImage"
+          class="dialog-qrcode-image"
+          :src="alipayQrCode"
+          :alt="$t('invoiceDetail.alipayPay')"
+        />
+        <qrcode-vue
+          v-else-if="alipayQrCode"
+          :value="alipayQrCode"
+          :size="240"
+          level="M"
+          :margin="2"
+          render-as="svg"
+        />
       </div>
       <div class="dialog-meta">
         <p>{{ $t('invoiceDetail.amount') }} ¥{{ alipayPayableAmount }}</p>
         <p>{{ $t('invoiceDetail.merchantOrderNo') }} {{ alipayPaymentNo || '--' }}</p>
+        <p v-if="alipayQrCode" class="dialog-meta__tip">{{ $t('finance.messages.checkoutAfterScanTip') }}</p>
       </div>
       <template #footer>
         <t-button theme="primary" :loading="polling" :disabled="!alipayPollingReady" @click="pollAlipayStatus(false)">
@@ -382,6 +396,16 @@ const {
   pollAlipayStatus,
   selectPayMethod,
 } = useInvoiceDetail();
+
+/**
+ * 上游可能把二维码图片地址直接塞进 qrcode 字段（data:image/… 或 .png 链接）。
+ * 那时再用它生成二维码，印出来是一串 URL，用户扫到的是图片地址而不是付款页。
+ */
+const alipayQrIsImage = computed(
+  () =>
+    /^data:image\//i.test(alipayQrCode.value) ||
+    /\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(alipayQrCode.value),
+);
 
 const now = ref(Date.now());
 let sessionCountdownTimer: number | null = null;
@@ -1641,8 +1665,23 @@ onBeforeUnmount(() => {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
   min-height: 13rem;
-  padding: var(--td-comp-paddingTB-s);
+  padding: var(--td-comp-paddingTB-s) var(--td-comp-paddingLR-s);
+  /* 二维码跟随弹窗宽度收缩，窄屏不溢出 */
+  overflow: hidden;
+
+  :deep(svg) {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+.dialog-qrcode-image {
+  max-width: 100%;
+  max-height: 15rem;
+  object-fit: contain;
+  border-radius: calc(var(--td-radius-medium) / 2);
 }
 
 .dialog-meta {
@@ -1657,6 +1696,16 @@ onBeforeUnmount(() => {
     color: var(--td-text-color-secondary);
     font: var(--td-font-body-small);
     word-break: break-all;
+  }
+
+  /* 扫码后还要在收银台走一步：这行提示要比金额/单号更醒目一点 */
+  .dialog-meta__tip {
+    margin-top: var(--td-comp-margin-xs);
+    padding: var(--td-comp-paddingTB-xs) var(--td-comp-paddingLR-s);
+    border-radius: var(--td-radius-default);
+    background: var(--td-bg-color-secondarycontainer);
+    color: var(--td-text-color-primary);
+    line-height: 1.6;
   }
 }
 

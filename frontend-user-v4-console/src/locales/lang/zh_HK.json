@@ -2613,6 +2613,7 @@
             "scanToPay": "請使用{method}掃碼支付",
             "afterPaidTip": "到賬完成後，可繼續購買或續費實例。",
             "pollingTip": "正在自動確認支付狀態，請勿重複支付。",
+            "checkoutAfterScanTip": "掃碼後按收銀台提示完成支付，付款成功本頁會自動重新整理；請勿重複支付。",
             "chooseAmountTip": "選擇金額和支付方式後生成二維碼。",
             "createRechargeFailed": "創建充值賬單失敗",
             "payArrived": "支付已成功，充值金額已到賬",

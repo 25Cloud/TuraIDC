@@ -134,8 +134,12 @@ export function useRecharge() {
   });
   const qrCodeSubtitle = computed(() => {
     if (rechargePaid.value) return t('finance.messages.afterPaidTip');
-    if (qrCodeValue.value && polling.value) return t('finance.messages.pollingTip');
-    return qrCodeValue.value ? '' : t('finance.messages.chooseAmountTip');
+    // 有二维码时优先说清楚「扫码后还要在收银台走完一步」：
+    // 易支付上游返回的是聚合收银台链接，不是微信/支付宝的最终付款码，
+    // 只写「扫码支付」会让用户扫完看不到付款码，以为没生效。
+    if (qrCodeValue.value) return t('finance.messages.checkoutAfterScanTip');
+
+    return t('finance.messages.chooseAmountTip');
   });
   const summaryCards = computed(() => [
     {
