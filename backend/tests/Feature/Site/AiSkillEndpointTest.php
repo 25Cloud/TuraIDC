@@ -140,11 +140,31 @@ class AiSkillEndpointTest extends TestCase
     #[Test]
     public function test_install_json_exposes_deployment_brand_and_console(): void
     {
+        config(['app.console_url' => 'https://console.example.test']);
+
         $data = (array) $this->get('/api/v2/site/ai-skill/turaidc/install.json')->assertOk()->json('data');
 
         $this->assertNotSame('', (string) $data['site_name'], '站点名不能为空');
         $this->assertSame(\App\Models\ApiKey::KEY_PREFIX, $data['key_prefix']);
-        $this->assertStringEndsWith('/client/api-keys', (string) $data['console_keys_url']);
-        $this->assertStringStartsWith('http', (string) $data['console_url']);
+        $this->assertSame('https://console.example.test', $data['console_url']);
+        $this->assertSame('https://console.example.test/client/api-keys', $data['console_keys_url']);
+    }
+
+    /**
+     * 没配控制台地址时不许拿官网地址兜底：官网 SPA 没有 /client/api-keys 这个页面，
+     * 兜出来的链接点进去是白页。此时 console_url 留空，文档只写相对路径。
+     */
+    #[Test]
+    public function test_console_url_is_empty_when_not_configured(): void
+    {
+        config(['app.console_url' => null]);
+
+        $data = (array) $this->get('/api/v2/site/ai-skill/turaidc/install.json')->assertOk()->json('data');
+        $this->assertSame('', $data['console_url']);
+        $this->assertSame('/client/api-keys', $data['console_keys_url']);
+
+        $markdown = $this->get('/api/v2/site/ai-skill/turaidc/SKILL.md')->assertOk()->getContent();
+        $this->assertStringContainsString('`/client/api-keys`', $markdown);
+        $this->assertStringNotContainsString((string) config('app.frontend_url').'/client/api-keys', $markdown);
     }
 }

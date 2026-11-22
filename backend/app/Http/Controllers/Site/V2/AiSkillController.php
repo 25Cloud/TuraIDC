@@ -167,14 +167,17 @@ class AiSkillController extends Controller
     }
 
     /**
-     * 控制台根地址：优先 app.frontend_url（控制台独立域名时与 API 不同域），
-     * 未配置则退回站点根地址。
+     * 控制台根地址：只认 app.console_url。
+     *
+     * 不能拿 app.frontend_url 兜底——那是官网地址，官网 SPA 上并没有 /client/api-keys
+     * 这个页面，兜出来的链接点进去是白页。没配置时返回空串，文档里就只剩相对路径
+     * `/client/api-keys`，用户在自己已登录的控制台里照样能找到，且不会指到错的域名。
      */
     private function consoleUrl(): string
     {
-        $configured = trim((string) config('app.frontend_url'));
+        $configured = trim((string) config('app.console_url'));
 
-        return rtrim($configured !== '' ? $configured : $this->baseUrl(), '/');
+        return $configured !== '' ? rtrim($configured, '/') : '';
     }
 
     /**
