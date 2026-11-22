@@ -167,13 +167,7 @@ class ServiceNatService
             ], $jwt);
             $this->detailService->assertSuccess($response, '创建端口转发');
         } else {
-            $payload = [
-                'func' => 'addNatAcl',
-                'name' => trim((string) ($data['name'] ?? '')),
-                'ext_port' => trim((string) ($data['ext_port'] ?? '')),
-                'int_port' => trim((string) ($data['int_port'] ?? '')),
-                'select-protocol' => $protocol,
-            ];
+            $payload = $this->buildNatCreatePayload($natContext, $data, $protocol);
             $response = is_callable([$runtime, 'submitCustomModuleAction'])
                 ? $runtime->submitCustomModuleAction($supplier, $natContext['endpoint'], $payload, $jwt)
                 : $runtime->post(
@@ -225,7 +219,7 @@ class ServiceNatService
             $response = $runtime->deleteNatRule($supplier, $hostId, (int) $forwardingId, $jwt);
             $this->detailService->assertSuccess($response, '删除端口转发');
         } else {
-            $payload = ['func' => 'delNatAcl', 'id' => $forwardingId];
+            $payload = $this->buildNatDeletePayload($natContext, (int) $forwardingId);
             $response = is_callable([$runtime, 'submitCustomModuleAction'])
                 ? $runtime->submitCustomModuleAction($supplier, $natContext['endpoint'], $payload, $jwt)
                 : $runtime->post(
@@ -339,6 +333,7 @@ class ServiceNatService
         $context = [
             'module_key' => $moduleKey,
             'module_name' => $moduleName,
+            'template' => (string) ($page['template'] ?? self::NAT_TEMPLATE_LEGACY),
             'endpoint' => (string) ($page['endpoint'] ?? ''),
             'protocols' => is_array($page['protocols'] ?? null) ? $page['protocols'] : [],
             'can_create' => (bool) ($page['can_create'] ?? false),
@@ -479,6 +474,133 @@ class ServiceNatService
 
     // ── NAT ACL HTML parsing ───────────────────────────────────────────────
 
+    /** 上游 NAT 面板模板：qzmf 系（魔方财务）与旧版弹窗模板，DOM 结构与请求体都不同 */
+    private const NAT_TEMPLATE_QZMF = 'qzmf';
+
+    private const NAT_TEMPLATE_LEGACY = 'legacy';
+
+    /**
+     * 判定面板模板。
+     *
+     * 界面上确实存在两套魔方 NAT 面板：旧版是「弹窗 + select-protocol + table-responsive」，
+     * qzmf 系是「页内表单 + table.qzmf-table（无 tbody）」。
+     * 只按旧结构解析，上游有规则也会被读成空列表，客户就会看到「暂无端口转发规则」。
+     */
+    private function resolveNatTemplate(string $html): string
+    {
+        return str_contains($html, 'qzmf-table') || str_contains($html, 'qzmf-nat-form')
+            ? self::NAT_TEMPLATE_QZMF
+            : self::NAT_TEMPLATE_LEGACY;
+    }
+
+    /**
+     * qzmf 模板的规则行。
+     *
+     * 与旧模板的差别：表格没有 table-responsive 容器、没有 tbody（<tr> 直接挂在 table 下）、
+     * 删除按钮 class 是 delete-nat。行内 5 列：名称 / 外网地址 / 内网端口 / 协议 / 操作。
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function extractQzmfNatAclRows(\DOMXPath $xpath): array
+    {
+        $rows = $xpath->query("//table[contains(concat(' ', normalize-space(@class), ' '), ' qzmf-table ')]//tr[td]");
+        if (! $rows) {
+            return [];
+        }
+
+        $list = [];
+        foreach ($rows as $row) {
+            $cells = $xpath->query('./td', $row);
+            if (! $cells || $cells->length < 4) {
+                continue;
+            }
+
+            $name = $this->normalizeHtmlNodeText($cells->item(0));
+            $externalAddress = $this->normalizeHtmlNodeText($cells->item(1));
+            $internalPort = $this->normalizeHtmlNodeText($cells->item(2));
+            $protocol = $this->normalizeHtmlNodeText($cells->item(3));
+
+            $deleteId = 0;
+            $deleteButton = $xpath->query(".//*[contains(concat(' ', normalize-space(@class), ' '), ' delete-nat ')]", $row);
+            if ($deleteButton && $deleteButton->length > 0) {
+                $button = $deleteButton->item(0);
+                $deleteId = (int) (($button?->attributes?->getNamedItem('data-id')?->nodeValue ?? 0) ?: 0);
+            }
+
+            [$externalHost, $externalPort] = $this->splitNatAclExternalAddress($externalAddress);
+
+            $list[] = [
+                'id' => $deleteId,
+                'name' => $name !== '' ? $name : ('转发 #'.(count($list) + 1)),
+                'external_address' => $externalAddress,
+                'external_host' => $externalHost,
+                'external_port' => $externalPort,
+                'internal_port' => $internalPort,
+                'protocol' => strtolower($protocol),
+                'protocol_label' => $protocol,
+                'can_delete' => $deleteId > 0,
+                'is_default' => preg_match('/^默认$/u', $name) === 1,
+            ];
+        }
+
+        return $list;
+    }
+
+    /**
+     * 创建请求体：两套模板的字段名与 func 大小写都不同，写死一套另一套必然失败。
+     *
+     * @param  array<string, mixed>  $context
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>
+     */
+    private function buildNatCreatePayload(array $context, array $data, string $protocol): array
+    {
+        $name = trim((string) ($data['name'] ?? ''));
+        $extPort = trim((string) ($data['ext_port'] ?? ''));
+        $intPort = trim((string) ($data['int_port'] ?? ''));
+
+        if (($context['template'] ?? '') === self::NAT_TEMPLATE_QZMF) {
+            // qzmf：sport 是外网端口（留空由上游自动分配），interior_port 是内网端口，
+            // 不收协议参数（协议固定 all）。
+            return [
+                'func' => 'AddNatAcl',
+                'name' => $name,
+                'interior_port' => $intPort,
+                'sport' => $extPort,
+            ];
+        }
+
+        return [
+            'func' => 'addNatAcl',
+            'name' => $name,
+            'ext_port' => $extPort,
+            'int_port' => $intPort,
+            'select-protocol' => $protocol,
+        ];
+    }
+
+    /**
+     * 删除请求体：qzmf 要带内网端口与外网端口，只给 id 上游不认。
+     *
+     * @param  array<string, mixed>  $context
+     * @return array<string, string>
+     */
+    private function buildNatDeletePayload(array $context, int $forwardingId): array
+    {
+        if (($context['template'] ?? '') !== self::NAT_TEMPLATE_QZMF) {
+            return ['func' => 'delNatAcl', 'id' => (string) $forwardingId];
+        }
+
+        $row = collect(is_array($context['list'] ?? null) ? $context['list'] : [])
+            ->first(fn ($item): bool => is_array($item) && (int) ($item['id'] ?? 0) === $forwardingId);
+
+        return [
+            'func' => 'DelNatAcl',
+            'natid' => (string) $forwardingId,
+            'dport' => trim((string) ($row['internal_port'] ?? '')),
+            'sport' => trim((string) ($row['external_port'] ?? '')),
+        ];
+    }
     private function parseNatAclPage(string $html, ?string $actionEndpoint = null): array
     {
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -489,6 +611,7 @@ class ServiceNatService
 
         return [
             'endpoint' => $endpoint,
+            'template' => $this->resolveNatTemplate($html),
             'can_create' => $this->canCreateNatAcl($html),
             'protocols' => $this->extractNatAclProtocolOptions($html),
             'list' => $this->extractNatAclRows($html),
@@ -502,6 +625,13 @@ class ServiceNatService
             return false;
         }
 
+        // qzmf 模板没有弹窗按钮：创建入口是页面里的表单与提交按钮
+        if ($this->resolveNatTemplate($html) === self::NAT_TEMPLATE_QZMF) {
+            $submit = $xpath->query("//*[@id='qzmf-nat-submit']");
+
+            return (bool) ($submit && $submit->length > 0);
+        }
+
         $buttons = $xpath->query("//button[contains(@data-target, 'natAclAddModal')]");
 
         return (bool) ($buttons && $buttons->length > 0);
@@ -512,6 +642,12 @@ class ServiceNatService
         $xpath = $this->createHtmlXPath($html);
         if (! $xpath) {
             return [];
+        }
+
+        // qzmf 模板没有协议下拉：创建时不收协议，规则里固定 all。
+        // 这里必须给一个可用协议，否则「协议不在允许范围内」会把创建整个挡掉。
+        if ($this->resolveNatTemplate($html) === self::NAT_TEMPLATE_QZMF) {
+            return [['value' => 'all', 'label' => 'all']];
         }
 
         $options = $xpath->query("//select[@name='select-protocol']/option");
@@ -539,6 +675,10 @@ class ServiceNatService
         $xpath = $this->createHtmlXPath($html);
         if (! $xpath) {
             return [];
+        }
+
+        if ($this->resolveNatTemplate($html) === self::NAT_TEMPLATE_QZMF) {
+            return $this->extractQzmfNatAclRows($xpath);
         }
 
         $rows = $xpath->query("//div[contains(concat(' ', normalize-space(@class), ' '), ' table-responsive ')]//table[1]/tbody/tr");
