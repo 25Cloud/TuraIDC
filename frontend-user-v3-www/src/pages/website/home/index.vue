@@ -14,6 +14,10 @@
 
     <template v-if="homeContentReady && mountDeferredSections">
       <DeferredHomeSection
+        :loader="loadAiSkillSection"
+        skeleton-type="solutions"
+      />
+      <DeferredHomeSection
         :loader="loadSolutionSection"
         skeleton-type="solutions"
       />
@@ -31,6 +35,7 @@
       <DeferredHomeSection :loader="loadRegisterBar" skeleton-type="register" />
     </template>
     <div v-else ref="deferredSkeletonRef">
+      <HomeSectionSkeleton type="solutions" />
       <HomeSectionSkeleton type="solutions" />
       <HomeSectionSkeleton type="partner" />
       <HomeSectionSkeleton v-if="notices.length > 0" type="news" />
@@ -51,6 +56,8 @@ import DeferredHomeSection from "@/views/website/Home/components/DeferredHomeSec
 
 // 延迟区块的 chunk loader 必须是模块级稳定引用：
 // 模板里写内联箭头函数会让 DeferredHomeSection 每次渲染都重新解析一次。
+const loadAiSkillSection = () =>
+  import("@/views/website/Home/components/HomeAiSkillSection.vue");
 const loadSolutionSection = () =>
   import("@/views/website/Home/components/HomeSolutionSection.vue");
 const loadPartnerSection = () =>

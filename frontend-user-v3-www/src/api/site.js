@@ -264,6 +264,9 @@ export default {
       ),
   // 复用 index.html 预热期 fetch 到的原始 /v2/site/home 响应，
   // 走与 home() 完全一致的 normalizer 管线，避免字段结构差异。
+  // AI Skill 接入信息：公开只读，首页特色位与控制台接入卡片共用同一份数据
+  aiSkillInstall: (slug = "turaidc", config = {}) =>
+    request.get(`/v2/site/ai-skill/${slug}/install.json`, config),
   homeFromRaw: (rawResponse) => {
     const response =
       rawResponse && typeof rawResponse === "object" ? rawResponse : {};

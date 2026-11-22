@@ -821,6 +821,20 @@
     "loading": "載入中…"
   },
   "home": {
+    "aiSkill": {
+        "title": "把你自己的 AI 助理接進來",
+        "subtitle": "不用打開面板也能管伺服器：把一條安裝連結交給你的 agent，它就能替你查價、下單、續費、開關機、提工單。",
+        "point1Title": "一條連結裝好",
+        "point1Desc": "Claude Code、Cursor、Codex 或任何支援 skill 的 harness，裝上即用，不用寫程式。",
+        "point2Title": "金鑰在你手裡",
+        "point2Desc": "用你自己的 API 金鑰授權，依作用域限權，隨時可停用，面板不碰你的模型。",
+        "point3Title": "能力全開放",
+        "point3Desc": "商品報價、下單續費、開關機、重裝、帳單餘額、工單回覆，開放介面一一對應。",
+        "commandLabel": "裝好後在終端機裡執行",
+        "cta": "取得我的接入金鑰",
+        "hint": "金鑰在控制台「API 憑證」頁建立"
+    },
+
     "partners": {
       "mediaAndReading": "愛奇藝、酷狗音樂、迅雷、掌閱 iReader 等合作方",
       "internetTech": "阿里巴巴、騰訊、字節跳動、美團 等合作方",

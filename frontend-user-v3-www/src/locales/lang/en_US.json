@@ -821,6 +821,20 @@
     "loading": "Loading…"
   },
   "home": {
+    "aiSkill": {
+        "title": "Plug in your own AI assistant",
+        "subtitle": "Manage servers without opening the panel: hand one install link to your agent and it can quote, order, renew, power-cycle and open tickets for you.",
+        "point1Title": "One link to install",
+        "point1Desc": "Claude Code, Cursor, Codex or any skill-aware harness. Install and go, no code required.",
+        "point2Title": "Your key, your control",
+        "point2Desc": "Authorize with your own API key, scoped per domain and revocable at any time. The panel never touches your model.",
+        "point3Title": "Every capability exposed",
+        "point3Desc": "Catalog and quotes, orders and renewals, power actions, reinstalls, balance, invoices and ticket replies.",
+        "commandLabel": "Run this after installing",
+        "cta": "Get my access key",
+        "hint": "Create the key under API credentials in the console"
+    },
+
     "partners": {
       "mediaAndReading": "iQIYI, KuGou Music, Xunlei, iReader and other partners",
       "internetTech": "Alibaba, Tencent, ByteDance, Meituan and other partners",
