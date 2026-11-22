@@ -26,6 +26,17 @@ class ServiceSecurityGroupService
 
     private const SECURITY_GROUP_MODULE_UNAVAILABLE_ERROR_CODE = 42201;
 
+    /** 上游安全组/防火墙面板模板：qzmf 系（魔方防火墙，单层规则）与旧版多组模板 */
+    private const SECURITY_TEMPLATE_QZMF = 'qzmf';
+
+    private const SECURITY_TEMPLATE_LEGACY = 'legacy';
+
+    /**
+     * qzmf 没有「安全组」这一层，只有一张防火墙规则表。
+     * 前端是「组 → 组内规则」两层导航，这里用一个哨兵组承接，避免为了一个模板改前端契约。
+     */
+    private const QZMF_SECURITY_GROUP_ID = 1;
+
     private const SECURITY_GROUP_MODULE_KEYWORDS = ['安全组', '安全', 'securitygroup', 'security_group', 'security-group', 'security', 'secgroup', 'firewall', 'acl'];
 
     public function __construct(
@@ -124,6 +135,17 @@ class ServiceSecurityGroupService
         // 原生驱动具备 getSecurityGroupRules 时直接读驱动，没有能力时由
         // callSecurityGroupAction 抛原来的「仅支持安全组列表和应用操作」。
         $this->assertSecurityGroupBoundToCurrentHost($service, $groupId);
+
+        // qzmf 上游没有 showSecurityRules：防火墙规则直接内嵌在面板 HTML 里，
+        // 再发一次请求只会拿到空列表，所以直接用上下文里已解析好的规则。
+        $qzmfContext = $this->resolveSecurityGroupContext($service, true);
+        if ($this->isQzmfSecurityContext($qzmfContext)) {
+            return [
+                'group_id' => $groupId,
+                'host_type' => (string) ($qzmfContext['host_type'] ?? 'host'),
+                'list' => array_values((array) ($qzmfContext['raw_rules'] ?? [])),
+            ];
+        }
 
         $result = $this->callSecurityGroupAction($service, 'showSecurityRules', ['id' => $groupId], '读取安全组规则');
         $payload = $this->detailService->extractPayload($result['response']);
@@ -251,17 +273,35 @@ class ServiceSecurityGroupService
 
         $this->assertSecurityRulePayload($securityGroupContext, $direction, $protocol, $port, $ip);
 
-        $result = $this->callSecurityGroupAction(
-            $service,
-            'createSecurityRule',
-            [
+        if ($this->isQzmfSecurityContext($securityGroupContext)) {
+            // qzmf：没有组 ID，动作在 method 字段里（面板表单未提供，固定 accept），
+            // 备注字段叫 remark，优先级默认 10。
+            $func = 'AddFirewallRule';
+            $payload = [
+                'direction' => $direction,
+                'method' => 'accept',
+                'protocol' => $protocol,
+                'port' => $port,
+                'ip' => $ip,
+                'priority' => 10,
+                'remark' => $description,
+            ];
+        } else {
+            $func = 'createSecurityRule';
+            $payload = [
                 'id' => $groupId,
                 'direction' => $direction,
                 'protocol' => $protocol,
                 'port' => $port,
                 'ip' => $ip,
                 'description' => $description,
-            ],
+            ];
+        }
+
+        $result = $this->callSecurityGroupAction(
+            $service,
+            $func,
+            $payload,
             '创建安全组规则',
             $securityGroupContext
         );
@@ -298,15 +338,24 @@ class ServiceSecurityGroupService
         $securityGroupContext = $this->assertSecurityGroupVisibleToCurrentHost($service, $groupId);
         // 服务端断言规则归属：ruleId 必须真的属于该 groupId，
         // 防止用自有 groupId + 他人组的 ruleId 借同主机上游删除他人规则。
-        $this->assertSecurityRuleBelongsToGroup($service, $securityGroupContext, $groupId, $ruleId);
+        if ($this->isQzmfSecurityContext($securityGroupContext)) {
+            // qzmf 没有 showSecurityRules，归属校验改成「规则确实在本次解析到的列表里」
+            $this->assertQzmfSecurityRuleExists($securityGroupContext, $ruleId);
+            $func = 'DeleteFirewallRule';
+            $payload = ['id' => $ruleId];
+        } else {
+            $this->assertSecurityRuleBelongsToGroup($service, $securityGroupContext, $groupId, $ruleId);
+            $func = 'delSecurityRule';
+            $payload = [
+                'id' => $ruleId,
+                'group' => $groupId,
+            ];
+        }
 
         $result = $this->callSecurityGroupAction(
             $service,
-            'delSecurityRule',
-            [
-                'id' => $ruleId,
-                'group' => $groupId,
-            ],
+            $func,
+            $payload,
             '删除安全组规则',
             $securityGroupContext
         );
@@ -412,6 +461,16 @@ class ServiceSecurityGroupService
             : null;
         $page = $this->parseSecurityGroupPage($service, $html, $actionEndpoint);
 
+        $template = (string) ($page['template'] ?? self::SECURITY_TEMPLATE_LEGACY);
+        $groups = $page['groups'];
+        $rawGroups = $page['raw_groups'];
+
+        // qzmf 只有规则、没有组：补一个哨兵组，让「组 → 组内规则」的前端契约继续成立。
+        if ($template === self::SECURITY_TEMPLATE_QZMF) {
+            $groups = [$this->buildQzmfSecurityGroup()];
+            $rawGroups = $groups;
+        }
+
         $context = [
             'mode' => 'custom',
             'supplier' => $supplier,
@@ -420,12 +479,14 @@ class ServiceSecurityGroupService
             'jwt' => $jwt,
             'module_key' => $moduleKey,
             'module_name' => $moduleName,
+            'template' => $template,
             'endpoint' => $page['endpoint'],
             'host_type' => $page['host_type'],
             'directions' => $page['directions'],
             'protocols' => $page['protocols'],
-            'raw_groups' => $page['raw_groups'],
-            'groups' => $page['groups'],
+            'raw_groups' => $rawGroups,
+            'groups' => $groups,
+            'raw_rules' => (array) ($page['raw_rules'] ?? []),
             'html' => $page['html'],
             'can_create' => true,
         ];
@@ -792,6 +853,12 @@ class ServiceSecurityGroupService
 
         $bindings = $this->resolveOwnedSecurityGroupBindingsForService($service);
         $context = $this->resolveSecurityGroupContext($service, true);
+
+        // qzmf 的组是本地哨兵，不在上游绑定关系里，按模板放行
+        if ($this->isQzmfSecurityContext($context) && $groupId === self::QZMF_SECURITY_GROUP_ID) {
+            return;
+        }
+
         throw_if(
             ! $this->isSecurityGroupBoundToBindings($bindings, $groupId, (array) ($context['raw_groups'] ?? [])),
             new BusinessException('安全组不存在或未绑定到当前主机', 42200)
@@ -897,6 +964,169 @@ class ServiceSecurityGroupService
         return preg_replace('/\s+/u', '', mb_strtolower(trim($value), 'UTF-8')) ?? '';
     }
 
+    /**
+     * 判定安全组/防火墙面板模板。
+     *
+     * 旧模板是「多安全组 + 弹窗 + select[name] + table-responsive」；
+     * qzmf 系是「单张防火墙规则表 + 页内表单 + select[id]」。
+     */
+    private function resolveSecurityTemplate(string $html): string
+    {
+        return str_contains($html, 'qzmf-table') || str_contains($html, 'qzmf-fw-form')
+            ? self::SECURITY_TEMPLATE_QZMF
+            : self::SECURITY_TEMPLATE_LEGACY;
+    }
+
+    private function isQzmfSecurityContext(array $context): bool
+    {
+        return ($context['template'] ?? '') === self::SECURITY_TEMPLATE_QZMF;
+    }
+
+    /**
+     * qzmf 的下拉用 id 而不是 name，取值口径与旧模板一致。
+     *
+     * @return array<int, array<string, string>>
+     */
+    private function extractQzmfSelectOptions(string $html, string $selectId): array
+    {
+        $xpath = $this->createHtmlXPath($html);
+        if (! $xpath) {
+            return [];
+        }
+
+        $options = $xpath->query("//select[@id='{$selectId}']/option");
+        if (! $options) {
+            return [];
+        }
+
+        $normalized = [];
+        foreach ($options as $option) {
+            $value = trim((string) ($option->attributes?->getNamedItem('value')?->nodeValue ?? ''));
+            if ($value === '') {
+                continue;
+            }
+
+            $normalized[] = ['value' => $value, 'label' => $this->normalizeHtmlNodeText($option)];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * qzmf 防火墙规则行：7 列，空态是单格 colspan 行，靠列数不足自然跳过。
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    private function extractQzmfSecurityRules(string $html): array
+    {
+        $xpath = $this->createHtmlXPath($html);
+        if (! $xpath) {
+            return [];
+        }
+
+        $rows = $xpath->query("//table[contains(concat(' ', normalize-space(@class), ' '), ' qzmf-table ')]//tr[td]");
+        if (! $rows) {
+            return [];
+        }
+
+        $list = [];
+        foreach ($rows as $row) {
+            $cells = $xpath->query('./td', $row);
+            if (! $cells || $cells->length < 6) {
+                continue;
+            }
+
+            $deleteId = 0;
+            $deleteButton = $xpath->query(".//*[contains(concat(' ', normalize-space(@class), ' '), ' delete-fw ')]", $row);
+            if ($deleteButton && $deleteButton->length > 0) {
+                $deleteId = (int) (($deleteButton->item(0)?->attributes?->getNamedItem('data-id')?->nodeValue ?? 0) ?: 0);
+            }
+
+            $directionText = $this->normalizeHtmlNodeText($cells->item(0));
+            $methodText = $this->normalizeHtmlNodeText($cells->item(1));
+
+            $list[] = $this->normalizeSecurityRuleItem([
+                'id' => $deleteId,
+                'description' => '',
+                'direction' => $this->normalizeQzmfDirection($directionText),
+                'protocol' => strtoupper($this->normalizeHtmlNodeText($cells->item(2))),
+                'port' => $this->normalizeHtmlNodeText($cells->item(3)),
+                'ip' => $this->normalizeHtmlNodeText($cells->item(4)),
+                'action' => $this->normalizeQzmfAction($methodText),
+                'priority' => (int) $this->normalizeHtmlNodeText($cells->item(5)),
+            ], 'host');
+        }
+
+        return $list;
+    }
+
+    /** 上游方向列是中文（入站/出站），归一成旧模板的 in/out，前端标签逻辑才能复用 */
+    private function normalizeQzmfDirection(string $text): string
+    {
+        $normalized = $this->normalizeKeywordText($text);
+
+        if (str_contains($normalized, 'in') || str_contains($text, '入')) {
+            return 'in';
+        }
+
+        if (str_contains($normalized, 'out') || str_contains($text, '出')) {
+            return 'out';
+        }
+
+        return $normalized;
+    }
+
+    /** 动作列同样归一：drop 映射成 deny，前端只认 accept/deny 两个标签 */
+    private function normalizeQzmfAction(string $text): string
+    {
+        $normalized = $this->normalizeKeywordText($text);
+
+        if (str_contains($normalized, 'accept') || str_contains($text, '允许')) {
+            return 'accept';
+        }
+
+        if (str_contains($normalized, 'drop') || str_contains($normalized, 'deny') || str_contains($text, '拒绝')) {
+            return 'deny';
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * qzmf 的哨兵组：把单层防火墙规则包装成「一个安全组」，前端不用改。
+     *
+     * @return array<string, mixed>
+     */
+    private function buildQzmfSecurityGroup(): array
+    {
+        return [
+            'id' => self::QZMF_SECURITY_GROUP_ID,
+            'name' => '防火墙规则',
+            'description' => '主机防火墙规则',
+            'can_view' => true,
+            'can_add_rule' => true,
+            'can_apply' => false,
+            'can_delete' => false,
+            'apply_disabled' => true,
+            'delete_disabled' => true,
+            'apply_text' => '',
+            'delete_text' => '',
+            'view_text' => '查看',
+            'add_rule_text' => '添加规则',
+            'is_applied' => true,
+        ];
+    }
+
+    /**
+     * qzmf 删除规则前的归属校验：规则必须真的在本次解析到的列表里。
+     */
+    private function assertQzmfSecurityRuleExists(array $context, int $ruleId): void
+    {
+        $exists = collect((array) ($context['raw_rules'] ?? []))
+            ->contains(fn ($item): bool => is_array($item) && (int) ($item['id'] ?? 0) === $ruleId);
+
+        throw_if(! $exists, new BusinessException('安全组规则不存在或不属于当前安全组', 40400, 404));
+    }
     private function parseSecurityGroupPage(Service $service, string $html, ?string $actionEndpoint = null): array
     {
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
@@ -908,9 +1138,28 @@ class ServiceSecurityGroupService
 
         throw_if($endpoint === '', new BusinessException('已发现安全组模块，但未解析到上游请求地址', 50000));
 
+        $template = $this->resolveSecurityTemplate($html);
+
+        // qzmf（魔方防火墙）没有安全组这一层：页面里只有一张规则表 + 创建表单。
+        // 这里直接按单层解析，组由 resolveSecurityGroupContext 注入哨兵虚拟组。
+        if ($template === self::SECURITY_TEMPLATE_QZMF) {
+            return [
+                'html' => $html,
+                'endpoint' => $endpoint,
+                'template' => $template,
+                'host_type' => 'host',
+                'directions' => $this->extractQzmfSelectOptions($html, 'qzmf-fw-direction'),
+                'protocols' => $this->extractQzmfSelectOptions($html, 'qzmf-fw-protocol'),
+                'raw_groups' => [],
+                'groups' => [],
+                'raw_rules' => $this->extractQzmfSecurityRules($html),
+            ];
+        }
+
         return [
             'html' => $html,
             'endpoint' => $endpoint,
+            'template' => $template,
             'host_type' => $this->extractSecurityGroupHostType($html),
             'directions' => $this->extractSecuritySelectOptions($html, 'direction'),
             'protocols' => $this->extractSecuritySelectOptions($html, 'protocol'),
