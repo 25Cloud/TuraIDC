@@ -105,4 +105,46 @@ class AiSkillEndpointTest extends TestCase
     {
         $this->get('/api/v2/site/ai-skill/no-such-skill/install.json')->assertNotFound();
     }
+
+    /**
+     * 部署方可换：品牌名、控制台地址、接口基址、密钥前缀全部由部署配置决定，
+     * 出站文档里不许残留占位符，也不许出现写死的项目品牌。
+     */
+    #[Test]
+    public function test_documents_are_brand_neutral_and_fully_rendered(): void
+    {
+        $base = rtrim((string) config('app.url'), '/');
+
+        $markdown = $this->get('/api/v2/site/ai-skill/turaidc/SKILL.md')->assertOk()->getContent();
+        $manifest = $this->get('/api/v2/site/ai-skill/turaidc/manifest.json')->assertOk()->getContent();
+
+        foreach (['SKILL.md' => $markdown, 'manifest.json' => $manifest] as $label => $body) {
+            $this->assertStringNotContainsString('{{', $body, $label.' 里不能残留未替换的占位符');
+            $this->assertStringNotContainsString('TuraIDC', $body, $label.' 里不能写死项目品牌');
+        }
+
+        // 接口基址、密钥前缀都必须来自当前部署
+        $this->assertStringContainsString($base.'/api/v2/open', $markdown);
+        $this->assertStringContainsString(\App\Models\ApiKey::KEY_PREFIX, $markdown);
+
+        $decoded = json_decode($manifest, true);
+        $this->assertIsArray($decoded, 'manifest.json 必须是合法 JSON');
+        $this->assertSame('turaidc', $decoded['name'], 'manifest 的 name 应等于 skill slug');
+        $this->assertSame($base.'/api/v2/open', $decoded['base_url']);
+        $this->assertSame(\App\Models\ApiKey::KEY_PREFIX.'*', $decoded['auth']['key_format']);
+    }
+
+    /**
+     * 接入卡片要能显示当前站点自己的名字与控制台地址，而不是固定文案。
+     */
+    #[Test]
+    public function test_install_json_exposes_deployment_brand_and_console(): void
+    {
+        $data = (array) $this->get('/api/v2/site/ai-skill/turaidc/install.json')->assertOk()->json('data');
+
+        $this->assertNotSame('', (string) $data['site_name'], '站点名不能为空');
+        $this->assertSame(\App\Models\ApiKey::KEY_PREFIX, $data['key_prefix']);
+        $this->assertStringEndsWith('/client/api-keys', (string) $data['console_keys_url']);
+        $this->assertStringStartsWith('http', (string) $data['console_url']);
+    }
 }

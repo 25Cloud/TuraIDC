@@ -1,21 +1,20 @@
 ---
-name: turaidc
-description: 在 TuraIDC 面板上替用户操作云服务器与账务——查询在售商品与报价、下单、续费、开关机、重装、重置密码、查看账单与余额、提交与回复工单。使用时需要用户自己的 tura_ API 密钥。
+name: {{skill_slug}}
+description: 在 {{site_name}} 面板上替用户操作云服务器与账务——查询在售商品与报价、下单、续费、开关机、重装、重置密码、查看账单与余额、提交与回复工单。使用时需要用户自己的 {{key_prefix}} API 密钥。
 version: 1.0.0
 license: AGPL-3.0-or-later
 ---
 
-# TuraIDC 面板操作 skill
+# {{site_name}} 面板操作 skill
 
-这是一个**给用户自己的 agent 用的** skill：把 TuraIDC 面板的业务能力当工具调用，
+这是一个**给用户自己的 agent 用的** skill：把 {{site_name}} 面板的业务能力当工具调用，
 由用户自己的 harness / agent 决定要做什么，服务端只负责鉴权、计价、下发与审计。
 
-- 接口基址：`{{base_url}}`
-- 接口前缀：`/api/v2/open`
-- 鉴权：`Authorization: Bearer <用户自己的 tura_ 密钥>`
-- 完整机器可读清单：`{{base_url}}/api/v2/site/ai-skill/turaidc/manifest.json`
+- 接口基址：`{{api_base}}`
+- 鉴权：`Authorization: Bearer <用户自己的 {{key_prefix}} 密钥>`
+- 完整机器可读清单：`{{base_url}}/api/v2/site/ai-skill/{{skill_slug}}/manifest.json`
 
-密钥由**用户本人**在面板「开发者 → API 密钥」创建，并勾选所需作用域：
+密钥由**用户本人**在面板 `{{console_url}}{{console_keys_path}}` 创建，并勾选所需作用域：
 
 | 作用域 | 能做什么 |
 | --- | --- |
@@ -157,5 +156,5 @@ license: AGPL-3.0-or-later
 
 ## 版本
 
-本文件版本 `1.0.0`。安装来源：`{{base_url}}/api/v2/site/ai-skill/turaidc/SKILL.md`
-接口清单（含参数 schema）：`{{base_url}}/api/v2/site/ai-skill/turaidc/manifest.json`
+本文件版本 `1.0.0`。安装来源：`{{base_url}}/api/v2/site/ai-skill/{{skill_slug}}/SKILL.md`
+接口清单（含参数 schema）：`{{base_url}}/api/v2/site/ai-skill/{{skill_slug}}/manifest.json`

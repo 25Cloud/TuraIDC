@@ -1,17 +1,17 @@
 {
-  "name": "turaidc",
+  "name": "{{skill_slug}}",
   "version": "1.0.0",
-  "description": "在 TuraIDC 面板上替用户操作云服务器与账务：查询商品与报价、下单、续费、开关机、重装、重置密码、账单与余额、工单。",
+  "description": "在 {{site_name}} 面板上替用户操作云服务器与账务：查询商品与报价、下单、续费、开关机、重装、重置密码、账单与余额、工单。",
   "license": "AGPL-3.0-or-later",
-  "documentation": "{{base_url}}/api/v2/site/ai-skill/turaidc/SKILL.md",
+  "documentation": "{{base_url}}/api/v2/site/ai-skill/{{skill_slug}}/SKILL.md",
   "auth": {
     "scheme": "bearer",
     "header": "Authorization",
     "prefix": "Bearer ",
-    "key_format": "tura_*",
-    "issue_at": "面板 → 开发者 → API 密钥（需勾选所需作用域）"
+    "key_format": "{{key_prefix}}*",
+    "issue_at": "在 {{console_url}}{{console_keys_path}} 创建（需勾选所需作用域）"
   },
-  "base_url": "{{base_url}}/api/v2/open",
+  "base_url": "{{api_base}}",
   "scopes": {
     "products": "查在售商品与报价",
     "orders": "查账单；write 可下单与余额付款",
