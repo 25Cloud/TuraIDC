@@ -12,6 +12,7 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    CookieConsentBanner: typeof import('./src/components/common/CookieConsentBanner.vue')['default']
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']
@@ -40,6 +41,7 @@ declare module 'vue' {
 
 // For TSX support
 declare global {
+  const CookieConsentBanner: typeof import('./src/components/common/CookieConsentBanner.vue')['default']
   const ElAlert: typeof import('element-plus/es')['ElAlert']
   const ElButton: typeof import('element-plus/es')['ElButton']
   const ElConfigProvider: typeof import('element-plus/es')['ElConfigProvider']

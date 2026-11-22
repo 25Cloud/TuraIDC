@@ -203,6 +203,13 @@ onUnmounted(() => {
 
 const goHome = () => {
   closeMobileSidebar();
+  // 左上角 logo 回官网首页（VITE_PUBLIC_SITE_URL 是四端独立部署下的官网地址约定）；
+  // 未配置或就在官网本域时退回管理端仪表盘。
+  const siteUrl = String(import.meta.env.VITE_PUBLIC_SITE_URL || '').trim();
+  if (siteUrl !== '' && !window.location.origin.startsWith(siteUrl)) {
+    window.location.href = siteUrl;
+    return;
+  }
   router.push('/admin/dashboard');
 };
 

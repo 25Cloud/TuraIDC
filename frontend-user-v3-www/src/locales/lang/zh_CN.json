@@ -352,7 +352,14 @@
       "serviceHoursLabel": "服务时间：",
       "serviceHoursFallback": "以站内通知为准",
       "officialGroupLabel": "官方群号：",
-      "notConfigured": "暂无配置"
+      "notConfigured": "暂无配置",
+      "platformIntro": "本平台基于 AGPL-3.0-or-later 开源的 TuraIDC 系统搭建，覆盖商品展示、在线购买、统一账单、自动开通、售后支持与实例控制台的完整链路，让买服务器像买水电一样简单透明。",
+      "openSourceTitle": "开源与透明",
+      "openSourceDesc": "整套系统的源码公开可查，接受社区监督；品牌、许可与源码链接在页脚与「开源与商业许可」页面维护，正式条款以 LICENSE 与商业授权文件为准。",
+      "opsCommitmentTitle": "运维承诺",
+      "opsCommitmentDesc": "核心服务可用性按商品页标注的 SLA 保障，财务账单每日自动对账、定时任务有运行契约校验；控制台提供重启、重装、VNC 与流量包等自助运维能力，减少工单等待。",
+      "supportCommitmentTitle": "售后支持",
+      "supportCommitmentDesc": "工单与站内信双通道受理，常见问题见帮助中心；账号、账单与实例的异常会通过站内通知主动告知，让每一次状态变化都有据可查。"
     },
     "legal": {
       "openOriginal": "打开原文",
@@ -822,17 +829,17 @@
   },
   "home": {
     "aiSkill": {
-        "title": "把你自己的 AI 助手接进来",
-        "subtitle": "不用打开面板也能管服务器：把一条安装链接交给你的 agent，它就能替你查价、下单、续费、开关机、提工单。",
-        "point1Title": "一条链接装好",
-        "point1Desc": "Claude Code、Cursor、Codex 或任何支持 skill 的 harness，装上即用，不用写代码。",
-        "point2Title": "密钥在你手里",
-        "point2Desc": "用你自己的 API 密钥授权，按作用域限权，随时可停用，面板不碰你的模型。",
-        "point3Title": "能力全开放",
-        "point3Desc": "商品报价、下单续费、开关机、重装、账单余额、工单回复，开放接口一一对应。",
-        "commandLabel": "装好后在终端里运行",
-        "cta": "获取我的接入密钥",
-        "hint": "密钥在控制台「API 凭据」页创建"
+      "title": "把你自己的 AI 助手接进来",
+      "subtitle": "不用打开面板也能管服务器：把一条安装链接交给你的 agent，它就能替你查价、下单、续费、开关机、提工单。",
+      "point1Title": "一条链接装好",
+      "point1Desc": "Claude Code、Cursor、Codex 或任何支持 skill 的 harness，装上即用，不用写代码。",
+      "point2Title": "密钥在你手里",
+      "point2Desc": "用你自己的 API 密钥授权，按作用域限权，随时可停用，面板不碰你的模型。",
+      "point3Title": "能力全开放",
+      "point3Desc": "商品报价、下单续费、开关机、重装、账单余额、工单回复，开放接口一一对应。",
+      "commandLabel": "装好后在终端里运行",
+      "cta": "获取我的接入密钥",
+      "hint": "密钥在控制台「API 凭据」页创建"
     },
 
     "partners": {
@@ -1132,4 +1139,13 @@
       "note": "以上联系方式为工程占位，正式渠道发布前可替换；商业许可与 CLA 条款为草案，签署前需法务复核。"
     },
     "notice": "本页为工程侧许可说明，不构成法律意见；正式条款以 LICENSE、LICENSE-COMMERCIAL.md 与双方签署的授权文件为准。"
-  }}
+  },
+  "cookieConsent": {
+    "title": "Cookie 使用说明",
+    "message": "{site} 使用 Cookie 与浏览器本地存储来维持登录状态、记住界面偏好并完成安全验证，不用于跨站跟踪。了解详情：",
+    "termsLink": "服务条款",
+    "privacyLink": "隐私政策",
+    "accept": "知道了",
+    "reject": "仅必要"
+  }
+}

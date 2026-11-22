@@ -711,3 +711,85 @@ ol {
 ::-webkit-scrollbar-corner {
   background: transparent;
 }
+
+/* ============================================================
+ * 官网动效层：入场 / hover / focus / 背景缓动。
+ * 全部包在 prefers-reduced-motion: no-preference 里——系统开启减弱动效时
+ * 一次性关闭本层所有动画，只保留静态外观。
+ * ============================================================ */
+@media (prefers-reduced-motion: no-preference) {
+  /* Hero 背景图缓慢漂移（Ken Burns）：只动 object-position，不碰 transform，
+   * 避免与背景图水平推挤切换（hero-bg-h-*）的 transform 过渡打架。 */
+  @keyframes hero-ken-burns {
+    from {
+      object-position: right center;
+    }
+    to {
+      object-position: 78% 42%;
+    }
+  }
+
+  .home-page .hero-bg__image {
+    animation: hero-ken-burns 22s ease-in-out infinite alternate;
+  }
+
+  /* Hero 首屏文案依次入场：侧栏导轨 → 标题区 → 特性条，各延迟 120ms。
+   * 只播放一次并定格，不干扰轮播切换自身的 hero-h-* 过渡。 */
+  @keyframes hero-rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(22px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .home-page .hero-rail,
+  .home-page .hero-body,
+  .home-page .hero-feature-strip {
+    animation: hero-rise-in 0.6s cubic-bezier(0.22, 1, 0.36, 1) backwards;
+  }
+
+  .home-page .hero-body {
+    animation-delay: 0.12s;
+  }
+
+  .home-page .hero-feature-strip {
+    animation-delay: 0.24s;
+  }
+
+  /* 卡片 hover：轻微上浮 + 阴影增强，统一官网卡片交互手感 */
+  .home-page .product-card,
+  .home-page .ai-skill-card,
+  .home-page .news-list__item,
+  .home-page .hero-feature,
+  .about-page .about-card,
+  .legal-page .legal-card {
+    transition:
+      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.25s ease,
+      border-color 0.25s ease;
+  }
+
+  .home-page .product-card:hover,
+  .home-page .ai-skill-card:hover,
+  .home-page .hero-feature:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 14px 34px rgba(15, 23, 42, 0.12);
+  }
+
+  .home-page .news-list__item:hover {
+    transform: translateY(-2px);
+  }
+
+  /* 键盘聚焦统一为主色 2px 外描边：此前只有 hero 轮播内部做了 focus-visible */
+  .home-page :is(a, button, [tabindex]):focus-visible,
+  .about-page :is(a, button, [tabindex]):focus-visible,
+  .legal-page :is(a, button, [tabindex]):focus-visible {
+    outline: 2px solid var(--el-color-primary, #165dff);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}

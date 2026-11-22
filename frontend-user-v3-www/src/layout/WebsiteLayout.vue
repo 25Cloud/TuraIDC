@@ -1092,6 +1092,7 @@
         </div>
       </div>
     </footer>
+    <CookieConsentBanner />
   </div>
 </template>
 
@@ -1121,6 +1122,7 @@ import { useNavProductMenu } from "./useNavProductMenu";
 import { useNavContentMenu } from "./useNavContentMenu";
 import MegaMenuSkeleton from "./MegaMenuSkeleton.vue";
 import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
+import CookieConsentBanner from "@/components/common/CookieConsentBanner.vue";
 import RouteLoadingFallback from "@/components/common/RouteLoadingFallback.vue";
 import { getToken } from "@/utils/auth";
 

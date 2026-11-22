@@ -352,7 +352,14 @@
       "serviceHoursLabel": "Service hours: ",
       "serviceHoursFallback": "Subject to on-site notices",
       "officialGroupLabel": "Official group: ",
-      "notConfigured": "Not configured yet"
+      "notConfigured": "Not configured yet",
+      "platformIntro": "Built on TuraIDC, an AGPL-3.0-or-later open-source IDC management system, this platform covers the full journey from catalog and checkout to unified billing, automated provisioning, after-sales support and an instance console — making server purchasing as simple and transparent as buying utilities.",
+      "openSourceTitle": "Open source & transparency",
+      "openSourceDesc": "The entire system is publicly auditable under community oversight. Branding, licensing and source links live in the footer and on the Open Source page; authoritative terms are the LICENSE and commercial license documents.",
+      "opsCommitmentTitle": "Operations commitment",
+      "opsCommitmentDesc": "Core availability follows the SLA stated on each product page. Finance ledgers are reconciled daily and scheduled tasks are contract-tested. The console offers reboot, reinstall, VNC and traffic packages as self-service operations to cut ticket waits.",
+      "supportCommitmentTitle": "After-sales support",
+      "supportCommitmentDesc": "Tickets and in-app messages are both monitored, with common questions answered in the Help Center. Account, billing and instance anomalies are proactively announced through in-app notifications, so every state change leaves a trail."
     },
     "legal": {
       "openOriginal": "Open original",
@@ -822,17 +829,17 @@
   },
   "home": {
     "aiSkill": {
-        "title": "Plug in your own AI assistant",
-        "subtitle": "Manage servers without opening the panel: hand one install link to your agent and it can quote, order, renew, power-cycle and open tickets for you.",
-        "point1Title": "One link to install",
-        "point1Desc": "Claude Code, Cursor, Codex or any skill-aware harness. Install and go, no code required.",
-        "point2Title": "Your key, your control",
-        "point2Desc": "Authorize with your own API key, scoped per domain and revocable at any time. The panel never touches your model.",
-        "point3Title": "Every capability exposed",
-        "point3Desc": "Catalog and quotes, orders and renewals, power actions, reinstalls, balance, invoices and ticket replies.",
-        "commandLabel": "Run this after installing",
-        "cta": "Get my access key",
-        "hint": "Create the key under API credentials in the console"
+      "title": "Plug in your own AI assistant",
+      "subtitle": "Manage servers without opening the panel: hand one install link to your agent and it can quote, order, renew, power-cycle and open tickets for you.",
+      "point1Title": "One link to install",
+      "point1Desc": "Claude Code, Cursor, Codex or any skill-aware harness. Install and go, no code required.",
+      "point2Title": "Your key, your control",
+      "point2Desc": "Authorize with your own API key, scoped per domain and revocable at any time. The panel never touches your model.",
+      "point3Title": "Every capability exposed",
+      "point3Desc": "Catalog and quotes, orders and renewals, power actions, reinstalls, balance, invoices and ticket replies.",
+      "commandLabel": "Run this after installing",
+      "cta": "Get my access key",
+      "hint": "Create the key under API credentials in the console"
     },
 
     "partners": {
@@ -1132,4 +1139,13 @@
       "note": "The contact details above are placeholders and may be replaced before the official channel launches. The commercial license and CLA are drafts and require legal review before signing."
     },
     "notice": "This page summarizes licensing for engineering purposes and is not legal advice. The formal terms are LICENSE, LICENSE-COMMERCIAL.md and the signed authorization documents."
-  }}
+  },
+  "cookieConsent": {
+    "title": "About cookies",
+    "message": "{site} uses cookies and browser local storage to keep you signed in, remember interface preferences and complete security checks. They are never used for cross-site tracking. Learn more:",
+    "termsLink": "Terms of Service",
+    "privacyLink": "Privacy Policy",
+    "accept": "Got it",
+    "reject": "Necessary only"
+  }
+}

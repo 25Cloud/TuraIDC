@@ -1,10 +1,17 @@
 <template>
-  <component
-    :is="resolvedComponent"
-    v-if="resolvedComponent"
-    v-bind="sectionProps"
-  />
-  <HomeSectionSkeleton v-else :type="skeletonType" />
+  <Transition name="home-section-reveal" appear>
+    <component
+      :is="resolvedComponent"
+      v-if="resolvedComponent"
+      v-bind="sectionProps"
+      class="home-deferred-section"
+    />
+    <HomeSectionSkeleton
+      v-else
+      :type="skeletonType"
+      class="home-deferred-section"
+    />
+  </Transition>
 </template>
 
 <script setup>
@@ -14,6 +21,10 @@
  * 之前用 defineAsyncComponent 直接挂载：首屏后滚动到解决方案/合作伙伴/新闻/注册条时，
  * 异步 chunk 还在下载，区块位置是纯空白（骨架已经被 v-if 切走），慢网下像页面缺了一块。
  * 现在 chunk 解析完成前继续显示对应形状的骨架，加载完成后再替换，高度不跳。
+ *
+ * 外面包一层 appear 过渡：区块就位时做一次 fade-up 入场（尊重系统减弱动效偏好，
+ * 关闭逻辑见 global.scss 的 prefers-reduced-motion），让「骨架 → 真区块」的替换
+ * 不再是硬切。
  */
 import { onBeforeUnmount, shallowRef, watch } from "vue";
 import HomeSectionSkeleton from "./HomeSectionSkeleton.vue";
@@ -56,3 +67,20 @@ onBeforeUnmount(() => {
   cancelled = true;
 });
 </script>
+
+<style scoped lang="scss">
+.home-deferred-section {
+  will-change: transform, opacity;
+}
+
+.home-section-reveal-enter-active {
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-section-reveal-enter-from {
+  opacity: 0;
+  transform: translateY(28px);
+}
+</style>
