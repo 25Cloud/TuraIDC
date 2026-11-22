@@ -28,6 +28,12 @@ for app in $APPS; do
   echo "== $app (api=$API_BASE console=$CONSOLE_URL)"
   [ -f "$ROOT/$app/package.json" ] || fail "$app 不存在"
 
+  # 本地 .env 里的模板演示域名不再进产物（下面注入的值优先），但要让部署者知道
+  # 自己机器上的 .env 还是模板值，否则换个域名部署时容易踩同一个坑。
+  if [ -f "$ROOT/$app/.env" ] && grep -qE 'coyjs\.cn|example\.com' "$ROOT/$app/.env"; then
+    echo "  ! 提示：$app/.env 仍是模板演示域名；本次构建已用注入值覆盖，无需改它" >&2
+  fi
+
   ( cd "$ROOT/$app" && VITE_API_BASE_URL="$API_BASE" VITE_CONSOLE_SITE_URL="$CONSOLE_URL" pnpm run build )
 
   entry=$(grep -o 'assets/js/index-[A-Za-z0-9_-]*\.js' "$ROOT/$app/dist/index.html" | head -1 || true)
