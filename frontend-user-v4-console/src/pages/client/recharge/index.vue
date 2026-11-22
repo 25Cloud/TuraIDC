@@ -863,7 +863,7 @@ onMounted(() => {
 
 .qrcode-meta {
   width: 100%;
-  max-width: 17.5rem;
+  max-width: min(17.5rem, 100%);
 }
 
 .qrcode-title,
@@ -882,6 +882,10 @@ onMounted(() => {
   margin: var(--td-comp-margin-xxs) 0 0;
   color: var(--td-text-color-secondary);
   font: var(--td-font-body-small);
+  /* 提示是一整句话，窄屏要能自然换行，不能被二维码区的固定宽度截断 */
+  line-height: 1.7;
+  text-wrap: pretty;
+  word-break: break-word;
 }
 
 .meta-row {
