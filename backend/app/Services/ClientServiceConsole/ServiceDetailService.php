@@ -1487,8 +1487,73 @@ class ServiceDetailService
         ]);
         $runtime = $this->resolveRuntimeCapabilityForSupplier($supplier);
         $html = $runtime->getText($supplier, $url, $jwt);
+        $parsed = $this->parseNatServiceDetailPage($html);
 
-        return $this->parseNatServiceDetailPage($html);
+        if (trim((string) ($parsed['remote_address'] ?? '')) !== '') {
+            return $parsed;
+        }
+
+        // 上游 /servicedetail?action=nat 在部分供应商（MC 系）直接返回空页，
+        // 而 NAT 模块页面里每条规则都带「外网地址:端口」，第一条就是本机的远程地址。
+        // 不回退的话 nat_remote_address 会一直是空，且 nat_remote_checked_at 已被写成
+        // 「查过了」，不会再自愈。
+        $fallback = $this->extractNatRemoteAddressFromModulePage($runtime, $supplier, $hostId, $jwt);
+
+        if ($fallback !== '') {
+            [$host, $port] = $this->splitNatAclExternalAddress($fallback);
+
+            return [
+                'checked' => true,
+                'checked_at' => now()->format('Y-m-d H:i:s'),
+                'remote_address' => $fallback,
+                'host' => $host,
+                'port' => (int) ($port !== '' ? $port : 0),
+            ];
+        }
+
+        return $parsed;
+    }
+
+    /**
+     * 从 NAT 模块页面（nat_acl）的规则行里取第一行的外网地址。
+     *
+     * 两套面板模板（旧版 table-responsive 与 qzmf 的 table.qzmf-table）都把
+     * 「外网地址:端口」放在规则行的单元格里，所以按「第一个含冒号的单元格」取即可，
+     * 不为模板差异再分一次支。
+     */
+    private function extractNatRemoteAddressFromModulePage(object $runtime, Supplier $supplier, int $hostId, string $jwt): string
+    {
+        if (! is_callable([$runtime, 'fetchCustomModulePage'])) {
+            return '';
+        }
+
+        try {
+            $html = (string) $runtime->fetchCustomModulePage($supplier, $hostId, 'nat_acl', $jwt);
+        } catch (\Throwable) {
+            return '';
+        }
+
+        $xpath = $this->createHtmlXPath(html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8'));
+
+        if (! $xpath) {
+            return '';
+        }
+
+        $cells = $xpath->query("//table//tr[td]//td[contains(., ':')]");
+
+        if (! $cells) {
+            return '';
+        }
+
+        foreach ($cells as $cell) {
+            $candidate = $this->normalizeNatRemoteAddressCandidate($this->normalizeHtmlNodeText($cell));
+
+            if ($candidate !== '') {
+                return $candidate;
+            }
+        }
+
+        return '';
     }
 
     public function resolveRuntimeCapabilityForSupplier(Supplier $supplier): object
