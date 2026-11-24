@@ -16,6 +16,16 @@
           <template #icon><close-circle-icon /></template>
           {{ $t('tickets.detail.closeTicket') }}
         </t-button>
+        <t-button
+          v-else-if="detail && isClosed(detail.status)"
+          theme="primary"
+          variant="outline"
+          :loading="reopenLoading"
+          @click="handleReopen"
+        >
+          <template #icon><refresh-icon /></template>
+          {{ $t('tickets.detail.reopenTicket') }}
+        </t-button>
       </div>
     </t-loading>
 
@@ -330,9 +340,9 @@
 <script setup lang="ts">
 import './index.less';
 
-import { ChevronLeftIcon, CloseCircleIcon, UploadIcon } from 'tdesign-icons-vue-next';
+import { ChevronLeftIcon, CloseCircleIcon, RefreshIcon, UploadIcon } from 'tdesign-icons-vue-next';
 import { DialogPlugin, MessagePlugin } from 'tdesign-vue-next';
-import { computed, onMounted, reactive, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import type {
@@ -379,6 +389,7 @@ const adminUsers = ref<TicketAdminUser[]>([]);
 const assignForm = reactive<{ assignee_id: number | string | null }>({ assignee_id: null });
 const assignLoading = ref(false);
 const closeLoading = ref(false);
+const reopenLoading = ref(false);
 const recallLoading = ref<number | string | null>(null);
 const replyLoading = ref(false);
 const uploadFiles = ref<UploadFileLike[]>([]);
@@ -644,6 +655,58 @@ function toggleLinkedServicePassword() {
   linkedServicePasswordVisible.value = !linkedServicePasswordVisible.value;
 }
 
+/** 详情页静默轮询间隔：与列表页保持一致 */
+const DETAIL_POLL_INTERVAL_MS = 30_000;
+
+let detailPollTimer: ReturnType<typeof setInterval> | null = null;
+
+/**
+ * 客户在客服开着详情页时回复消息，此前必须手刷才看得到。
+ * 这里只在新消息数变化或状态变化时替换 detail，避免无谓重渲染打断阅读和输入。
+ */
+async function pollDetailQuietly() {
+  const current = detail.value;
+
+  if (!current?.id || document.visibilityState !== 'visible') return;
+
+  try {
+    const response = await adminApi.tickets.detail(current.id);
+    const previousCount = (current.replies || []).length;
+    const nextCount = (response.replies || []).length;
+    const statusChanged = Number(current.status) !== Number(response.status);
+
+    if (nextCount === previousCount && !statusChanged) return;
+
+    detail.value = response;
+    linkedServicePasswordVisible.value = false;
+    assignForm.assignee_id = response.assignee_id || null;
+
+    if (nextCount > previousCount) {
+      MessagePlugin.info(t('tickets.detail.newReplyArrived'));
+    }
+  } catch {
+    // 静默失败：下一轮轮询会再试，不打扰正在处理的客服
+  }
+}
+
+function startDetailPolling() {
+  stopDetailPolling();
+  detailPollTimer = setInterval(() => {
+    void pollDetailQuietly();
+  }, DETAIL_POLL_INTERVAL_MS);
+}
+
+function stopDetailPolling() {
+  if (detailPollTimer !== null) {
+    clearInterval(detailPollTimer);
+    detailPollTimer = null;
+  }
+}
+
+function handleDetailVisibilityChange() {
+  if (document.visibilityState === 'visible') void pollDetailQuietly();
+}
+
 function goBack() {
   router.push('/admin/tickets');
 }
@@ -739,6 +802,31 @@ function handleClose() {
       }
     },
   });
+}
+
+/**
+ * 重新打开：客服误关、或客户在已关闭工单下补充新信息时使用。
+ * 后端一直有 reopen 端点，管理端此前没有入口，只能让客户自己重开一张新工单。
+ */
+function handleReopen() {
+  if (!detail.value?.id) return;
+  const ticketId = detail.value.id;
+
+  if (reopenLoading.value) return;
+
+  reopenLoading.value = true;
+  adminApi.tickets
+    .reopen(ticketId)
+    .then(async () => {
+      MessagePlugin.success(t('tickets.detail.reopened'));
+      await reloadCurrentDetail();
+    })
+    .catch((error) => {
+      MessagePlugin.error(errorMessage(error, t('tickets.detail.reopenFailed')));
+    })
+    .finally(() => {
+      reopenLoading.value = false;
+    });
 }
 
 function canRecall(reply: TicketReply) {
@@ -854,5 +942,12 @@ function previewAttachment(attachment: TicketAttachment) {
 
 onMounted(() => {
   void Promise.allSettled([loadAdmins(), loadDetail()]);
+  startDetailPolling();
+  document.addEventListener('visibilitychange', handleDetailVisibilityChange);
+});
+
+onBeforeUnmount(() => {
+  stopDetailPolling();
+  document.removeEventListener('visibilitychange', handleDetailVisibilityChange);
 });
 </script>

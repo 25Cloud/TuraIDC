@@ -1,6 +1,11 @@
 <template>
   <div class="tickets-page">
     <t-card :bordered="false">
+      <!-- 按「谁在等谁」分栏：客服关心的是哪张等自己回复，状态码本身不构成决策 -->
+      <t-tabs :value="activeBucket" class="tickets-buckets" @change="handleBucketChange">
+        <t-tab-panel v-for="bucket in BUCKETS" :key="bucket" :value="bucket" :label="bucketLabel(bucket)" />
+      </t-tabs>
+
       <div class="tickets-filter">
         <t-input
           v-model="filters.keyword"
@@ -11,14 +16,6 @@
         >
           <template #suffix-icon><search-icon /></template>
         </t-input>
-        <t-select
-          v-model="filters.status"
-          clearable
-          :placeholder="$t('tickets.index.statusPlaceholder')"
-          @change="handleSearch"
-        >
-          <t-option v-for="option in statusOptions" :key="option.value" :label="option.label" :value="option.value" />
-        </t-select>
         <t-select
           v-model="filters.priority"
           clearable
@@ -40,6 +37,10 @@
             :value="option.value"
           />
         </t-select>
+        <span class="tickets-refresh-hint">
+          <span class="tickets-refresh-dot" :class="{ 'is-active': syncing }" />
+          {{ $t('tickets.index.autoRefreshHint') }}
+        </span>
       </div>
 
       <div v-if="!isMobile" class="admin-list-toolbar">
@@ -97,7 +98,7 @@
           <template #updatedAt="{ row }">{{ formatDateTime(row.updated_at || row.created_at) }}</template>
         </t-table>
       </div>
-      <t-empty v-if="!list.length && !loading" :description="$t('tickets.index.empty')" />
+      <t-empty v-if="!list.length && !loading" :description="emptyDescription" />
     </t-loading>
 
     <div v-if="total > 0" class="ticket-pagination">
@@ -119,8 +120,8 @@ import { useMediaQuery } from '@vueuse/core';
 import { SearchIcon, UserIcon } from 'tdesign-icons-vue-next';
 import type { PageInfo, PrimaryTableCol, TableRowData } from 'tdesign-vue-next';
 import { MessagePlugin } from 'tdesign-vue-next';
-import { onMounted, reactive, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 
 import type { TicketRecord } from '@/api/admin';
 import { adminApi } from '@/api/admin';
@@ -132,9 +133,27 @@ import { errorMessage } from '@/utils/userMessage';
 
 defineOptions({ name: 'AdminTickets' });
 
-const DEFAULT_STATUS_FILTER = 'ongoing';
+/** 三个分桶：与后端 status=pending / handled / closed 一一对应 */
+const BUCKETS = ['pending', 'handled', 'closed'] as const;
+type TicketBucket = (typeof BUCKETS)[number];
+
+const BUCKET_HINT_KEY: Record<TicketBucket, string> = {
+  pending: 'tickets.index.bucketEmptyPending',
+  handled: 'tickets.index.bucketEmptyHandled',
+  closed: 'tickets.index.bucketEmptyClosed',
+};
+
+const BUCKET_LABEL_KEY: Record<TicketBucket, string> = {
+  pending: 'tickets.index.bucketPending',
+  handled: 'tickets.index.bucketHandled',
+  closed: 'tickets.index.bucketClosed',
+};
+
+/** 静默轮询间隔：客服看列表时不必手刷，又不至于把接口打满 */
+const POLL_INTERVAL_MS = 30_000;
 
 const router = useRouter();
+const route = useRoute();
 // 与其它列表页同一个断点（含 768px），避免平板横屏在「显示切换入口」与「卡片视图」之间错位
 const isMobile = useMediaQuery('(max-width: 768px)');
 // 工单原本只有卡片形态，默认值取 card，切换过之后按页面偏好记住
@@ -151,24 +170,26 @@ const columns: PrimaryTableCol<TableRowData>[] = [
 ];
 
 const loading = ref(false);
+/** 静默刷新中：只给刷新提示点打光，不整块 loading，避免翻页/阅读时列表闪白 */
+const syncing = ref(false);
 const list = ref<TicketRecord[]>([]);
 const total = ref(0);
 const page = ref(1);
 const pageSize = ref(20);
 const filters = reactive({
   keyword: '',
-  status: DEFAULT_STATUS_FILTER as string | number,
   priority: '' as string | number,
   department: '',
 });
 
-const statusOptions = [
-  { label: t('tickets.index.statusInProgress'), value: DEFAULT_STATUS_FILTER },
-  { label: t('tickets.index.statusOpen'), value: 0 },
-  { label: t('tickets.index.statusCustomerReply'), value: 1 },
-  { label: t('tickets.index.statusStaffReply'), value: 2 },
-  { label: t('tickets.index.statusClosed'), value: 3 },
-];
+/** 当前分桶：从 URL 读，保证从详情页返回时仍停在原来的栏 */
+const activeBucket = ref<TicketBucket>(normalizeBucket(route.query.bucket));
+
+/** 各栏角标：待处理要让人一眼看到积压量 */
+const counts = reactive<Record<TicketBucket, number>>({ pending: 0, handled: 0, closed: 0 });
+
+const emptyDescription = computed(() => t(BUCKET_HINT_KEY[activeBucket.value]));
+
 const priorityOptions = [
   { label: t('tickets.index.priorityLow'), value: 1 },
   { label: t('tickets.index.priorityMedium'), value: 2 },
@@ -182,35 +203,103 @@ const departmentOptions = [
   { label: t('tickets.index.departmentAbuse'), value: 'abuse' },
 ];
 
-// 请求竞态防护：状态页签与筛选可快速切换，慢的旧响应不得覆盖新列表
+// 请求竞态防护：分栏与筛选可快速切换，慢的旧响应不得覆盖新列表
 let loadRequestSeq = 0;
 
-async function loadList() {
+function bucketLabel(bucket: TicketBucket) {
+  const label = t(BUCKET_LABEL_KEY[bucket]);
+  const count = counts[bucket];
+
+  return count > 0 ? `${label} (${count})` : label;
+}
+
+async function loadSummary() {
+  try {
+    const summary = await adminApi.tickets.summary();
+    counts.pending = Number(summary.pending ?? 0);
+    counts.handled = Number(summary.handled ?? 0);
+    counts.closed = Number(summary.closed ?? 0);
+  } catch {
+    // 角标拉取失败不影响列表可用性，静默跳过，下一轮轮询会再试
+  }
+}
+
+async function loadList(options: { silent?: boolean } = {}) {
+  const silent = options.silent === true;
   const currentSeq = ++loadRequestSeq;
-  loading.value = true;
+
+  if (silent) {
+    syncing.value = true;
+  } else {
+    loading.value = true;
+  }
+
   try {
     const response = await adminApi.tickets.list({
       ...filters,
+      status: activeBucket.value,
       page: page.value,
       page_size: pageSize.value,
     });
     if (currentSeq !== loadRequestSeq) return;
-    list.value = Array.isArray(response.list) ? response.list : [];
-    total.value = Number(response.total || 0);
+
+    const nextList = Array.isArray(response.list) ? response.list : [];
+    const nextTotal = Number(response.total || 0);
+
+    // 静默刷新且顺序没变时不替换数组：避免表格重渲染把滚动位置顶回去
+    const orderUnchanged =
+      nextList.length === list.value.length &&
+      nextList.every((item, index) => String(item?.id) === String(list.value[index]?.id));
+
+    if (!silent || !orderUnchanged || nextTotal !== total.value) {
+      list.value = nextList;
+    }
+
+    total.value = nextTotal;
     page.value = Number(response.page || page.value);
     pageSize.value = Number(response.page_size || pageSize.value);
+
+    // 静默刷新时数据可能变少，当前页会越界成空页：退回最后一页，别让人以为工单被清空了
+    if (silent && !list.value.length && total.value > 0) {
+      const lastPage = Math.max(1, Math.ceil(total.value / pageSize.value));
+
+      if (lastPage < page.value) {
+        page.value = lastPage;
+        void loadList({ silent: true });
+      }
+    }
   } catch (error) {
     if (currentSeq !== loadRequestSeq) return;
+
+    // 静默刷新失败保持旧数据：每 30 秒弹一次报错比不刷新更烦
+    if (silent) return;
+
     list.value = [];
     total.value = 0;
     MessagePlugin.error(errorMessage(error, t('tickets.index.loadFailed')));
   } finally {
-    if (currentSeq === loadRequestSeq) loading.value = false;
+    if (currentSeq === loadRequestSeq) {
+      loading.value = false;
+      syncing.value = false;
+    }
   }
 }
 
 function handleSearch() {
   page.value = 1;
+  loadList();
+}
+
+/** 切栏：重置到第一页，并把栏位写进 URL，从详情页返回时不会跳回默认栏 */
+function handleBucketChange(value: unknown) {
+  const bucket = normalizeBucket(value);
+
+  if (bucket === activeBucket.value) return;
+
+  activeBucket.value = bucket;
+  page.value = 1;
+  void router.replace({ query: { ...route.query, bucket } });
+  loadSummary();
   loadList();
 }
 
@@ -282,5 +371,51 @@ function statusTheme(value: unknown): 'default' | 'success' | 'warning' | 'dange
   return 'default';
 }
 
-onMounted(loadList);
+/** 归一化分桶：非法/旧链接（例如 status=ongoing）一律回到待处理 */
+function normalizeBucket(value: unknown): TicketBucket {
+  const raw = String(value ?? '');
+
+  return (BUCKETS as readonly string[]).includes(raw) ? (raw as TicketBucket) : 'pending';
+}
+
+let pollTimer: ReturnType<typeof setInterval> | null = null;
+
+/** 静默对齐一次：角标与列表同时刷新，都不打断当前操作 */
+function syncQuietly() {
+  loadSummary();
+  loadList({ silent: true });
+}
+
+function startPolling() {
+  stopPolling();
+  pollTimer = setInterval(() => {
+    // 后台标签页不刷新，省掉无意义的请求
+    if (document.visibilityState !== 'visible') return;
+    syncQuietly();
+  }, POLL_INTERVAL_MS);
+}
+
+function stopPolling() {
+  if (pollTimer !== null) {
+    clearInterval(pollTimer);
+    pollTimer = null;
+  }
+}
+
+/** 切回本页立刻对齐，避免先看到一份过期列表 */
+function handleVisibilityChange() {
+  if (document.visibilityState === 'visible') syncQuietly();
+}
+
+onMounted(() => {
+  loadSummary();
+  loadList();
+  startPolling();
+  document.addEventListener('visibilitychange', handleVisibilityChange);
+});
+
+onBeforeUnmount(() => {
+  stopPolling();
+  document.removeEventListener('visibilitychange', handleVisibilityChange);
+});
 </script>

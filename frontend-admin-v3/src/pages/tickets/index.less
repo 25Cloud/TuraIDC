@@ -31,11 +31,40 @@
   line-height: 22px;
 }
 
+/* 分栏放在筛选之上：先选栏，再在栏内筛 */
+.tickets-buckets {
+  margin-bottom: var(--td-comp-margin-s);
+}
+
 .tickets-filter {
   display: grid;
-  grid-template-columns: minmax(240px, 1fr) 150px 120px 150px auto auto;
+  /* 状态筛选已被分栏取代，这里只剩关键词 / 优先级 / 分类 / 刷新提示 */
+  grid-template-columns: minmax(240px, 1fr) 150px 150px auto;
   gap: var(--td-comp-margin-m);
   align-items: stretch;
+}
+
+.tickets-refresh-hint {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  justify-content: flex-end;
+  color: var(--td-text-color-placeholder);
+  font: var(--td-font-body-small);
+  white-space: nowrap;
+}
+
+.tickets-refresh-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--td-gray-color-5);
+  border-radius: 50%;
+  transition: background 0.2s ease;
+}
+
+/* 静默刷新进行中：只让这个小点亮一下，列表本体不动、不闪 */
+.tickets-refresh-dot.is-active {
+  background: var(--td-brand-color);
 }
 
 .tickets-filter > * {
@@ -169,7 +198,7 @@
 
 @media (width <= 1024px) {
   .tickets-filter {
-    grid-template-columns: minmax(220px, 1fr) repeat(3, minmax(120px, 150px));
+    grid-template-columns: minmax(200px, 1fr) repeat(2, minmax(110px, 140px)) auto;
   }
 
   .tickets-filter .t-button {
@@ -182,8 +211,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-areas:
       "keyword keyword"
-      "status priority"
-      "department department";
+      "priority department"
+      "hint hint";
     align-items: stretch;
     gap: var(--td-comp-margin-s);
   }
@@ -197,15 +226,22 @@
   }
 
   .tickets-filter > :nth-child(2) {
-    grid-area: status;
-  }
-
-  .tickets-filter > :nth-child(3) {
     grid-area: priority;
   }
 
-  .tickets-filter > :nth-child(4) {
+  .tickets-filter > :nth-child(3) {
     grid-area: department;
+  }
+
+  .tickets-filter > :nth-child(4) {
+    grid-area: hint;
+  }
+
+  /* 窄屏把刷新提示居中，右对齐会显得被裁断 */
+  .tickets-refresh-hint {
+    justify-content: center;
+    white-space: normal;
+    text-align: center;
   }
 
   .ticket-grid {
@@ -233,9 +269,9 @@
     grid-template-columns: 1fr;
     grid-template-areas:
       "keyword"
-      "status"
       "priority"
-      "department";
+      "department"
+      "hint";
   }
 }
 

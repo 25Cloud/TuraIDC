@@ -274,7 +274,11 @@ class V2TicketApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('code', 0);
 
-        $this->assertSame(['open', 'client_reply', 'closed_today', 'total'], array_keys($summaryResponse->json('data')));
+        // 三个 tab 的角标依赖 pending / handled / closed，且口径必须与列表 status=pending 一致。
+        $this->assertSame(
+            ['open', 'client_reply', 'staff_reply', 'pending', 'handled', 'closed', 'closed_today', 'total'],
+            array_keys($summaryResponse->json('data'))
+        );
         $this->assertNoSensitiveKeys($summaryResponse->json());
         $this->assertLessThan(100 * 1024, strlen((string) $summaryResponse->getContent()));
 

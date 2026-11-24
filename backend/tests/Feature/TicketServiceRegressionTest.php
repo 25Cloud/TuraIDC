@@ -332,6 +332,51 @@ class TicketServiceRegressionTest extends TestCase
         $this->assertNotContains((int) $closedTicket->id, $ticketIds);
     }
 
+    /**
+     * 管理端三个分桶必须互斥且合起来正好覆盖全部工单：
+     * 待处理看"客户在等回复"，已处理看"球在客户那边"，已关闭单列。
+     */
+    public function test_admin_list_buckets_split_by_who_waits_for_whom(): void
+    {
+        $suffix = bin2hex(random_bytes(4));
+        $service = $this->makeTicketService();
+        $user = $this->createClientUser('ticket-buckets');
+
+        $makeTicket = function (int $status, string $label) use ($user, $suffix): Ticket {
+            return Ticket::query()->create([
+                'user_id' => (int) $user->id,
+                'department' => 'support',
+                'subject' => $label.' '.$suffix,
+                'priority' => 2,
+                'status' => $status,
+            ]);
+        };
+
+        $openTicket = $makeTicket(TicketService::STATUS_OPEN, 'Open');
+        $clientReplyTicket = $makeTicket(TicketService::STATUS_CLIENT_REPLY, 'ClientReply');
+        $staffReplyTicket = $makeTicket(TicketService::STATUS_STAFF_REPLY, 'StaffReply');
+        $closedTicket = $makeTicket(TicketService::STATUS_CLOSED, 'Closed');
+
+        $idsFor = function (string $bucket) use ($service, $suffix): array {
+            $result = $service->adminList(['status' => $bucket, 'keyword' => $suffix], 50);
+
+            return collect($result->items())->pluck('id')->map(fn ($id) => (int) $id)->values()->all();
+        };
+
+        $pending = $idsFor('pending');
+        $this->assertEqualsCanonicalizing([(int) $openTicket->id, (int) $clientReplyTicket->id], $pending);
+
+        $handled = $idsFor('handled');
+        $this->assertSame([(int) $staffReplyTicket->id], $handled);
+
+        $closed = $idsFor('closed');
+        $this->assertSame([(int) $closedTicket->id], $closed);
+
+        // 三桶不重叠，且合计等于全部工单数（当前筛选范围内共 4 张）
+        $this->assertCount(0, array_intersect($pending, $handled, $closed));
+        $this->assertCount(4, array_merge($pending, $handled, $closed));
+    }
+
     public function test_ticket_detail_only_depends_on_service_id_when_product_name_column_is_missing(): void
     {
         $service = $this->makeTicketService();

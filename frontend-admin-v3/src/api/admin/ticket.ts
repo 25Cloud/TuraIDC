@@ -70,6 +70,8 @@ export const ticketsApi = {
     request.post({ url: `/v2/admin/tickets/${id}/upstream-delivery/callback-registration` }),
   adminUsers: () => request.get<TicketV2AdminUsersPayload>({ url: '/v2/admin/tickets/admin-users' }),
   close: (id: number | string) => request.post({ url: `/v2/admin/tickets/${id}/closures` }),
+  // 后端一直有 reopen，但管理端此前没有入口：客服误关工单只能让客户重开。
+  reopen: (id: number | string) => request.post({ url: `/v2/admin/tickets/${id}/reopen` }),
   assign: (id: number | string, data: { assignee_id?: number | string | null }) =>
     request.put({ url: `/v2/admin/tickets/${id}/assignment`, data }),
   reply: (id: number | string, data: { content?: string; attachments?: string[]; quote_reply_id?: number | string }) =>

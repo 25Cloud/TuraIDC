@@ -401,12 +401,25 @@ class TicketService
         $query = Ticket::with(['user:id,email,nickname', 'assignee:id,username,nickname']);
 
         if (isset($filters['status']) && $filters['status'] !== '') {
-            if ((string) $filters['status'] === 'ongoing') {
+            // 管理端列表按「谁在等谁」分桶，三种桶正好覆盖全部未关闭工单：
+            //   pending = 客户最后说话（新建或客户回复）→ 该客服处理；
+            //   handled = 客服最后说话 → 球在客户那边，客服不必反复翻；
+            //   closed  = 已关闭。
+            // ongoing 是历史值（三态合并），保留以兼容旧链接与外部调用。
+            $statusBucket = (string) $filters['status'];
+
+            if ($statusBucket === 'ongoing') {
                 $query->whereIn('status', [
                     self::STATUS_OPEN,
                     self::STATUS_CLIENT_REPLY,
                     self::STATUS_STAFF_REPLY,
                 ]);
+            } elseif ($statusBucket === 'pending') {
+                $query->whereIn('status', [self::STATUS_OPEN, self::STATUS_CLIENT_REPLY]);
+            } elseif ($statusBucket === 'handled') {
+                $query->where('status', self::STATUS_STAFF_REPLY);
+            } elseif ($statusBucket === 'closed') {
+                $query->where('status', self::STATUS_CLOSED);
             } else {
                 $query->where('status', $filters['status']);
             }
@@ -598,12 +611,28 @@ class TicketService
      */
     public function adminSummary(): array
     {
+        // 分桶计数一次扫完，避免管理端每 30 秒轮询时打四次 count。
+        $counts = Ticket::query()
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+
+        $open = (int) ($counts[self::STATUS_OPEN] ?? 0);
+        $clientReply = (int) ($counts[self::STATUS_CLIENT_REPLY] ?? 0);
+        $staffReply = (int) ($counts[self::STATUS_STAFF_REPLY] ?? 0);
+        $closed = (int) ($counts[self::STATUS_CLOSED] ?? 0);
+
         return [
-            'open' => Ticket::where('status', self::STATUS_OPEN)->count(),
-            'client_reply' => Ticket::where('status', self::STATUS_CLIENT_REPLY)->count(),
+            'open' => $open,
+            'client_reply' => $clientReply,
+            'staff_reply' => $staffReply,
+            // 三个 tab 的角标：pending 与列表 status=pending 的口径必须一致
+            'pending' => $open + $clientReply,
+            'handled' => $staffReply,
+            'closed' => $closed,
             'closed_today' => Ticket::where('status', self::STATUS_CLOSED)
                 ->whereDate('updated_at', today())->count(),
-            'total' => Ticket::count(),
+            'total' => $open + $clientReply + $staffReply + $closed,
         ];
     }
 

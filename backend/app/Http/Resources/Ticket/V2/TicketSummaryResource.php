@@ -19,6 +19,11 @@ class TicketSummaryResource extends JsonResource
         return [
             'open' => (int) ($summary['open'] ?? 0),
             'client_reply' => (int) ($summary['client_reply'] ?? 0),
+            'staff_reply' => (int) ($summary['staff_reply'] ?? 0),
+            // 管理端三个 tab 的角标：pending = open + client_reply（客户在等回复）
+            'pending' => (int) ($summary['pending'] ?? 0),
+            'handled' => (int) ($summary['handled'] ?? 0),
+            'closed' => (int) ($summary['closed'] ?? 0),
             'closed_today' => (int) ($summary['closed_today'] ?? 0),
             'total' => (int) ($summary['total'] ?? 0),
         ];
