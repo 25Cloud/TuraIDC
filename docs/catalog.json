@@ -520,6 +520,11 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "internal/execution-plans/completed/backend-local-test-environment-2026-11-25.md",
+      "status": "completed",
+      "summary": "隔离本机后端测试环境，全量 2,605 项通过、6 项既有跳过及启动复用验证。"
+    },
+    {
       "path": "internal/execution-plans/completed/brand-terms-skeleton-license-2026-10-20.md",
       "status": "completed",
       "summary": "同步信息 42200 解耦、商品/实例术语统一、官网骨架、侧栏动画、图标库收口、CLA 与双许可。",
@@ -540,6 +545,11 @@
       "status": "completed",
       "summary": "账务金额、销售收入统计、单据明细投影与管理端财务回归修复。",
       "review_by": "2026-12-13"
+    },
+    {
+      "path": "internal/execution-plans/completed/frontend-build-cleanup-2026-11-25.md",
+      "status": "completed",
+      "summary": "三端构建去重、死代码清理、Windows 验证脚本修复与 1,042 个产物原版一致性验证。"
     },
     {
       "path": "internal/execution-plans/completed/local-idc-heterogeneous-data-migration-20260722.md",
