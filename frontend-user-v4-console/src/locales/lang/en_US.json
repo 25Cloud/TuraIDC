@@ -1552,6 +1552,7 @@
     },
     "serviceConsole": {
         "alerts": {
+            "expired": "The instance expired on {time}. Renew to restore service.",
             "expiringSoon": "The instance expires on {time}. Renew in advance to avoid interruption.",
             "readOnlyNotice": "This instance does not support full console control; basic information is shown read-only.",
             "renewNow": "Renew Now"

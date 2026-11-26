@@ -1378,6 +1378,7 @@
       "peak": "峰值",
       "lowest": "最低",
       "noMonitorData": "当前时间范围内暂无监控数据",
+      "expiredTip": "实例已于 {date} 到期，续费后可恢复业务。",
       "expiringTip": "实例将于 {date} 到期，建议提前续费避免业务中断。",
       "renewNow": "立即续费",
       "readOnlyTip": "当前实例未接入完整控制能力，页面将以只读模式展示基础信息。",

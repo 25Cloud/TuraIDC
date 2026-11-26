@@ -1378,6 +1378,7 @@
       "peak": "峰值",
       "lowest": "最低",
       "noMonitorData": "當前時間範圍內暫無監控資料",
+      "expiredTip": "例項已於 {date} 到期，續費後可恢復業務。",
       "expiringTip": "例項將於 {date} 到期，建議提前續費避免業務中斷。",
       "renewNow": "立即續費",
       "readOnlyTip": "當前例項未接入完整控制能力，頁面將以只讀模式展示基礎資訊。",

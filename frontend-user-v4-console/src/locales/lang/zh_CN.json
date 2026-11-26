@@ -1552,6 +1552,7 @@
     },
     "serviceConsole": {
         "alerts": {
+            "expired": "实例已于 {time} 到期，续费后可恢复业务。",
             "expiringSoon": "实例将于 {time} 到期，建议提前续费避免业务中断。",
             "readOnlyNotice": "当前实例未接入完整控制能力，页面将以只读模式展示基础信息。",
             "renewNow": "立即续费"

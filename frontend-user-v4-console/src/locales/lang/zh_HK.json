@@ -1552,6 +1552,7 @@
     },
     "serviceConsole": {
         "alerts": {
+            "expired": "實例已於 {time} 到期，續費後可恢復業務。",
             "expiringSoon": "實例將於 {time} 到期，建議提前續費避免業務中斷。",
             "readOnlyNotice": "當前實例未接入完整控制能力，頁面將以只讀模式展示基礎信息。",
             "renewNow": "立即續費"

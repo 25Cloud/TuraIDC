@@ -1378,6 +1378,7 @@
       "peak": "Peak",
       "lowest": "Lowest",
       "noMonitorData": "No monitoring data in the current time range",
+      "expiredTip": "The instance expired on {date}. Renew to restore service.",
       "expiringTip": "The instance expires on {date}. Renew in advance to avoid downtime.",
       "renewNow": "Renew now",
       "readOnlyTip": "This instance is not connected to the full console; the page shows basic information in read-only mode.",
