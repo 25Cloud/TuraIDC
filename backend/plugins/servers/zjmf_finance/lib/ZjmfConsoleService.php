@@ -44,7 +44,9 @@ final class ZjmfConsoleService
 
     public function getVncUrl(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
-        return $this->postDefaultModuleAction($supplier, $hostId, 'vnc', [], $jwt);
+        // more=1 让上游返回可直接进 noVNC 的参数（vnc_url/vnc_pass），
+        // 缺省返回的是上游面板页 URL，通用层的解析器读不出可用参数。
+        return $this->postDefaultModuleAction($supplier, $hostId, 'vnc', ['more' => 1], $jwt);
     }
 
     public function powerAction(Supplier $supplier, int $hostId, string $action, ?string $jwt = null): array
@@ -212,10 +214,13 @@ final class ZjmfConsoleService
         array $payload = [],
         ?string $jwt = null
     ): array {
+        // is_api=1 是魔方下游调用的固定契约：上游据此跳过操作二次验证、并决定
+        // VNC 是否返回可直连的 noVNC 参数（ProvisionController 对 more/is_api 双重判定）。
+        // 缺这个字段时，上游开启二次验证的账号所有指令都会被 400「请输入验证码」。
         return $this->transport->post(
             $supplier,
             '/provision/default',
-            array_merge(['id' => $hostId, 'func' => $func], $payload),
+            array_merge(['id' => $hostId, 'func' => $func, 'is_api' => 1], $payload),
             $this->resolveJwt($supplier, $jwt),
             self::FORM_HEADERS
         );
@@ -347,9 +352,11 @@ final class ZjmfConsoleService
 
     private function hasMonitorCharts(array $payload): bool
     {
+        // 魔方口径：module_chart 为空 = 上游没声明任何图表能力，客户区不渲染图表区。
+        // 此前把空数组也判成"有图表"，导致前端渲染出注定拿不到数据的假监控卡片。
         $value = $payload['module_chart'] ?? $payload['host_data']['module_chart'] ?? false;
 
-        return $value === true || $value === 1 || $value === '1' || is_array($value);
+        return $value === true || $value === 1 || $value === '1' || (is_array($value) && $value !== []);
     }
 
     /**
@@ -378,12 +385,7 @@ final class ZjmfConsoleService
             }
         }
 
-        return $options !== [] ? array_values($options) : [
-            ['value' => 'cpu', 'label' => 'CPU'],
-            ['value' => 'bw', 'label' => '带宽'],
-            ['value' => 'disk_io', 'label' => '磁盘 I/O'],
-            ['value' => 'memory', 'label' => '内存'],
-        ];
+        return $options !== [] ? array_values($options) : [];
     }
 
     private function normalizeMonitorType(string $type): string

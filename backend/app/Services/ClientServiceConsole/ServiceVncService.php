@@ -58,7 +58,10 @@ class ServiceVncService
         $this->assertVncSuccess($response);
 
         $payload = $this->detailService->extractPayload($response);
-        $upstreamVncUrl = trim((string) ($payload['url'] ?? $payload['vnc'] ?? $payload['link'] ?? ''));
+        // 上游 func=vnc&more=1 返回 vnc_url/vnc_pass（noVNC 直连参数）；
+        // 老面板形态或第三方模块可能回 url/vnc/link。两种形状都接受，缺直连参数
+        // 时按无凭据路径走（通用层自己拼 base url）。
+        $upstreamVncUrl = trim((string) ($payload['vnc_url'] ?? $payload['url'] ?? $payload['vnc'] ?? $payload['link'] ?? ''));
 
         if ($upstreamVncUrl === '') {
             throw new BusinessException('上游未返回VNC链接', 50000);
@@ -190,7 +193,7 @@ class ServiceVncService
             $this->assertVncSuccess($response);
 
             $payload = $this->detailService->extractPayload($response);
-            $upstreamVncUrl = trim((string) ($payload['url'] ?? $payload['vnc'] ?? $payload['link'] ?? ''));
+            $upstreamVncUrl = trim((string) ($payload['vnc_url'] ?? $payload['url'] ?? $payload['vnc'] ?? $payload['link'] ?? ''));
             if ($upstreamVncUrl === '') {
                 return $params;
             }

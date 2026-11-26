@@ -41,7 +41,7 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
                 $supplier,
                 'POST',
                 '/provision/default',
-                ['id' => 123, 'func' => 'vnc'],
+                ['id' => 123, 'func' => 'vnc', 'is_api' => 1, 'more' => 1],
                 'jwt-token',
                 ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
                 []
@@ -69,7 +69,7 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
                     $supplier,
                     'POST',
                     '/provision/default',
-                    ['id' => 123, 'func' => $action],
+                    ['id' => 123, 'func' => $action, 'is_api' => 1],
                     'jwt-token',
                     ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
                     []
@@ -84,7 +84,7 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
                 $supplier,
                 'POST',
                 '/provision/default',
-                ['id' => 123, 'func' => 'status'],
+                ['id' => 123, 'func' => 'status', 'is_api' => 1],
                 'jwt-token',
                 ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
                 []
@@ -113,7 +113,7 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
                 $supplier,
                 'POST',
                 '/provision/default',
-                ['id' => 123, 'func' => 'crack_pass', 'password' => 'NewPassw0rd!'],
+                ['id' => 123, 'func' => 'crack_pass', 'is_api' => 1, 'password' => 'NewPassw0rd!'],
                 'jwt-token',
                 ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
                 []
@@ -126,7 +126,7 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
                 $supplier,
                 'POST',
                 '/provision/default',
-                ['id' => 123, 'func' => 'reinstall', 'os' => '203'],
+                ['id' => 123, 'func' => 'reinstall', 'is_api' => 1, 'os' => '203'],
                 'jwt-token',
                 ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
                 []
