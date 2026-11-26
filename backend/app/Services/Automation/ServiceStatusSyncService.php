@@ -14,6 +14,7 @@ use App\Services\Integrations\Plugins\ServiceUpstreamBindingWriter;
 use App\Services\Integrations\Support\ProviderErrorMapper;
 use App\Services\Upstream\Contracts\ProvidesBatchStatusSync;
 use App\Services\Upstream\Contracts\ProvidesStatusSync;
+use App\Services\Upstream\Drivers\HostingPanelApi\HostingPanelApiTransport;
 use App\Services\Upstream\ProviderResolver;
 use App\Support\SensitiveDataSanitizer;
 use App\Support\ServiceHostname;
@@ -253,14 +254,42 @@ class ServiceStatusSyncService
             return;
         }
 
+        $rateLimited = false;
+
         $services
             ->chunk($supplierRequestChunkSize)
-            ->each(function (Collection $batch) use ($statusSync, $supplier, $serviceProductMap, $providerKey, &$jwt, &$summary): void {
+            ->each(function (Collection $batch) use ($statusSync, $supplier, $serviceProductMap, $providerKey, &$jwt, &$summary, &$rateLimited): void {
+                if ($rateLimited) {
+                    // 已判定限流：剩余分片不再发请求，等冷却后下一轮再同步
+                    $summary['skipped'] += $batch->count();
+
+                    return;
+                }
+
                 try {
                     $requestResult = $this->executeBatchRequests($statusSync, $supplier, $batch, $jwt);
                     $jwt = $requestResult['jwt'];
                     $responses = $requestResult['responses'];
                 } catch (\Throwable $exception) {
+                    if ($this->isEdgeRateLimited($exception)) {
+                        $rateLimited = true;
+                        $summary['failed'] += $batch->count();
+
+                        foreach ($batch as $service) {
+                            if ($service instanceof Service) {
+                                $this->markSyncFailure($service, $exception->getMessage());
+                            }
+                        }
+
+                        Log::error('[定时任务] 用户产品状态同步熔断：上游边缘网关限流，本轮剩余主机不再请求', [
+                            'supplier_id' => $supplier->id,
+                            'service_ids' => $batch->pluck('id')->values()->all(),
+                            'message' => $exception->getMessage(),
+                        ]);
+
+                        return;
+                    }
+
                     $summary['failed'] += $batch->count();
 
                     foreach ($batch as $service) {
@@ -323,9 +352,18 @@ class ServiceStatusSyncService
         array &$summary,
         Collection $serviceProductMap,
     ): void {
+        $rateLimited = false;
+
         $services
             ->chunk($supplierRequestChunkSize)
-            ->each(function (Collection $batch) use ($statusSync, $supplier, $serviceProductMap, $supplierRequestChunkSize, &$summary): void {
+            ->each(function (Collection $batch) use ($statusSync, $supplier, $serviceProductMap, $supplierRequestChunkSize, &$summary, &$rateLimited): void {
+                if ($rateLimited) {
+                    // 已判定限流：剩余分片不再发请求，等冷却后下一轮再同步
+                    $summary['skipped'] += $batch->count();
+
+                    return;
+                }
+
                 try {
                     $requestResult = $statusSync->syncServiceStatuses(
                         $supplier,
@@ -334,6 +372,25 @@ class ServiceStatusSyncService
                     );
                     $responses = is_array($requestResult['services'] ?? null) ? $requestResult['services'] : [];
                 } catch (\Throwable $exception) {
+                    if ($this->isEdgeRateLimited($exception)) {
+                        $rateLimited = true;
+                        $summary['failed'] += $batch->count();
+
+                        foreach ($batch as $service) {
+                            if ($service instanceof Service) {
+                                $this->markSyncFailure($service, $exception->getMessage());
+                            }
+                        }
+
+                        Log::error('[定时任务] 用户产品状态同步熔断：上游边缘网关限流，本轮剩余主机不再请求', [
+                            'supplier_id' => $supplier->id,
+                            'service_ids' => $batch->pluck('id')->values()->all(),
+                            'message' => $exception->getMessage(),
+                        ]);
+
+                        return;
+                    }
+
                     $summary['failed'] += $batch->count();
 
                     foreach ($batch as $service) {
@@ -741,6 +798,22 @@ class ServiceStatusSyncService
             'host_id' => $this->resolveHostId($service),
             'message' => $message,
         ]);
+    }
+
+    /**
+     * 判断异常是否为上游边缘网关限流（阿里云 ESA / Tengine 的 http_auto_ratelimit 等）。
+     *
+     * 限流期间继续请求只会延长封禁窗口，因此批量同步见到它必须停止该供应商本轮请求。
+     */
+    private function isEdgeRateLimited(\Throwable $exception): bool
+    {
+        if ((int) $exception->getCode() === HostingPanelApiTransport::ERROR_EDGE_RATE_LIMITED) {
+            return true;
+        }
+
+        $message = mb_strtolower($exception->getMessage());
+
+        return str_contains($message, '频次限制') || str_contains($message, 'ratelimit');
     }
 
     private function markSyncFailure(Service $service, string $message): void

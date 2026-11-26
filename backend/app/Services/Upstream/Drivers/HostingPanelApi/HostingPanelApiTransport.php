@@ -72,6 +72,14 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
      */
     private const SLOW_UPSTREAM_LOG_MS = 2000;
 
+    /**
+     * 边缘网关频次限制的业务错误码。
+     *
+     * 与普通接口失败（50000）分开，批量同步据此判定"该供应商本轮熔断"——
+     * 限流期间继续逐台重试只会延长封禁窗口。
+     */
+    public const ERROR_EDGE_RATE_LIMITED = 42900;
+
     private const CONFIG_OPTION_FIELD_MAP = [
         1 => null,
         2 => null,
@@ -853,6 +861,16 @@ class HostingPanelApiTransport implements ProvidesConsoleAccess, ProvidesConsole
         );
 
         if (! is_array($decoded)) {
+            // 阿里云 ESA / Tengine 系边缘网关会把超频请求伪装成 HTTP 200 + HTML，
+            // 只在响应头写 x-tengine-error: denied by http_auto_ratelimit。
+            // 必须单独识别：含糊的"异常页面"会让人误判成上游故障，而批量同步碰到它
+            // 继续重试只会让封禁窗口不断续期。
+            $edgeRateLimitMessage = $this->detectEdgeRateLimit($responseHeaders, $httpCode);
+
+            if ($edgeRateLimitMessage !== null) {
+                throw new BusinessException($edgeRateLimitMessage, self::ERROR_EDGE_RATE_LIMITED);
+            }
+
             throw new BusinessException($this->buildInvalidJsonMessage($httpCode, $contentType, $output), 50000);
         }
 
@@ -1431,6 +1449,29 @@ PHP;
         }
 
         return '';
+    }
+
+    /**
+     * 识别边缘网关（阿里云 ESA / Tengine 系）的频次限制响应。
+     *
+     * 这类网关在超频时会返回 HTTP 200 + HTML，只在响应头写
+     * `x-tengine-error: denied by http_auto_ratelimit`；也有节点走标准 429。
+     * 若不单独识别，上层只会拿到含糊的「异常页面」，且批量同步每轮重试都在给
+     * 封禁窗口续期——必须让调用方据这个错误码跳过本轮。
+     */
+    private function detectEdgeRateLimit(array $responseHeaders, int $httpCode): ?string
+    {
+        $tengineError = strtolower($this->resolveHeaderValue($responseHeaders, 'x-tengine-error'));
+
+        if (str_contains($tengineError, 'ratelimit') || str_contains($tengineError, 'rate_limit')) {
+            return '上游站点边缘网关触发自动频次限制（ESA ratelimit），本次请求被拦截：请让上游把出口 IP 加入频次控制例外名单，或降低请求频率';
+        }
+
+        if ($httpCode === 429) {
+            return '上游站点返回 429 频次限制，本次请求被拦截：请让上游放行出口 IP 或降低请求频率';
+        }
+
+        return null;
     }
 
     private function buildInvalidJsonMessage(int $httpCode, string $contentType, string $body): string
