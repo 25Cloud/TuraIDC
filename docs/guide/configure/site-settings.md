@@ -31,8 +31,11 @@
 | `service_hours` 服务时间                     | 空（该行不显示）                      | 官网页脚、「关于我们」页               |
 | `support_group_qr` 官方群聊二维码            | 空                                    | 官网与控制台的联系入口                 |
 | `support_group_link` 入群链接                | 空                                    | 同上                                   |
-| `icp_record` ICP 备案号                      | 空（页脚该行不显示）                  | 官网页脚                               |
-| `value_added_license` 增值电信业务经营许可证 | 空                                    | 官网页脚                               |
+| `icp_record` ICP 备案号                      | 空（页脚该行不显示）                  | 官网页脚，可点击                       |
+| `icp_record_url` ICP 备案号链接              | 空（自动链到工信部）                  | 官网页脚备案号点击目标                 |
+| `public_security_record` 公安备案号          | 空（页脚该行不显示）                  | 官网页脚，可点击                       |
+| `public_security_record_url` 公安备案号链接  | 空（自动链到公安部平台）              | 官网页脚公安备案号点击目标             |
+| `value_added_license` 增值电信业务经营许可证 | 空                                    | 官网页脚（纯文本）                     |
 | `terms_url` 服务条款链接                     | 空                                    | 注册与下单页的服务条款入口             |
 | `privacy_url` 隐私政策链接                   | 空                                    | 同上                                   |
 
@@ -43,6 +46,13 @@
 - `service_qq_group` 与 `service_phone` 是同一展示位的两个候选键，取值时先看 `service_qq_group`，为空再取 `service_phone`，都为空则显示占位文案「待补充群号」。官网页脚上那一行写着「待补充群号」就说明这里没填。
 
 `client_console_icon` 只在用户控制台生效；官网顶栏与页脚用的是站点 Logo 加站点名称。图片字段接受的是媒体库上传后的地址，也可以直接填 `/branding/` 下的静态文件名。
+
+备案号在官网页脚可点击，点击目标按下面顺序决定：
+
+- ICP 备案号：填了 `icp_record_url` 就用它，否则链到工信部备案系统 `https://beian.miit.gov.cn/`。
+- 公安备案号：填了 `public_security_record_url` 就用它，否则从 `public_security_record` 里提取 6 位以上的数字作为 `recordcode`，链到 `https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=<数字>`；提取不到数字时只链到平台首页。
+- 两个链接字段只接受 `http://` 与 `https://`，填其它协议会被忽略并回退到官方入口。
+- 三个备案字段都留空时页脚不渲染备案行；增值电信许可证号仍是纯文本。
 
 `product_display_mode` 只决定访客**第一次**打开选购页看到的形态。访客可以在选购页右上角切换「卡片式 / 列表式」（手机端同样有切换条），还可以在「页面宽度」面板里选固定宽度（1200 / 1280 / 1440 / 1600 / 1920）或撑满屏幕；两项偏好分别记在该浏览器的 `localStorage`（`turaidc:shop-display-mode`、`turaidc:shop-page-width`）里，换浏览器、换设备或清缓存后回到站点默认值。想确认站点默认值实际生效，请用无痕窗口打开选购页，或先清掉这两个键。
 

@@ -1221,16 +1221,16 @@ $site-header-height: 64px;
   -webkit-mask-image: linear-gradient(
     90deg,
     #000 0%,
-    #000 40%,
-    rgba(0, 0, 0, 0.72) 58%,
-    rgba(0, 0, 0, 0) 80%
+    #000 62%,
+    rgba(0, 0, 0, 0.72) 80%,
+    rgba(0, 0, 0, 0) 94%
   );
   mask-image: linear-gradient(
     90deg,
     #000 0%,
-    #000 40%,
-    rgba(0, 0, 0, 0.72) 58%,
-    rgba(0, 0, 0, 0) 80%
+    #000 62%,
+    rgba(0, 0, 0, 0.72) 80%,
+    rgba(0, 0, 0, 0) 94%
   );
 }
 
@@ -1392,6 +1392,9 @@ $site-header-height: 64px;
 }
 
 .hero-body {
+  // 宽屏下正文跨过右侧留白列，标题可以一行铺开而不被挤成两行；
+  // 1180px 以下网格只剩两列，媒体查询会把它收回第 2 列。
+  grid-column: 2 / 4;
   position: relative;
   display: flex;
   flex-direction: column;

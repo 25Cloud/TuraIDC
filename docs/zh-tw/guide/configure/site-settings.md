@@ -1,6 +1,6 @@
 ---
 source: guide/configure/site-settings.md
-sourceHash: effdc01a41d6013c4ba6edf580503dec6908c31128322482e5bd28b4b0279555
+sourceHash: dbdf01357291a7d631cc069199f0c60b7d90b86652d4d2d392c837b471436536
 generated: zh-tw
 ---
 
@@ -38,8 +38,11 @@ generated: zh-tw
 | `service_hours` 服務時間                     | 空（該行不顯示）                      | 官網頁尾、「關於我們」頁               |
 | `support_group_qr` 官方群聊二維碼            | 空                                    | 官網與控制台的聯絡入口                 |
 | `support_group_link` 入群連結                | 空                                    | 同上                                   |
-| `icp_record` ICP 備案號                      | 空（頁尾該行不顯示）                  | 官網頁尾                               |
-| `value_added_license` 增值電信業務經營許可證 | 空                                    | 官網頁尾                               |
+| `icp_record` ICP 備案號                      | 空（頁尾該行不顯示）                  | 官網頁尾，可點選                       |
+| `icp_record_url` ICP 備案號連結              | 空（自動鏈到工信部）                  | 官網頁尾備案號點選目標                 |
+| `public_security_record` 公安備案號          | 空（頁尾該行不顯示）                  | 官網頁尾，可點選                       |
+| `public_security_record_url` 公安備案號連結  | 空（自動鏈到公安部平臺）              | 官網頁尾公安備案號點選目標             |
+| `value_added_license` 增值電信業務經營許可證 | 空                                    | 官網頁尾（純文本）                     |
 | `terms_url` 服務條款連結                     | 空                                    | 註冊與下單頁的服務條款入口             |
 | `privacy_url` 隱私政策連結                   | 空                                    | 同上                                   |
 
@@ -50,6 +53,13 @@ generated: zh-tw
 - `service_qq_group` 與 `service_phone` 是同一展示位的兩個候選鍵，取值時先看 `service_qq_group`，為空再取 `service_phone`，都為空則顯示佔位文案「待補充群號」。官網頁尾上那一行寫著「待補充群號」就說明這裡沒填。
 
 `client_console_icon` 只在使用者控制台生效；官網頂欄與頁尾用的是站點 Logo 加站點名稱。圖片欄位接受的是媒體庫上傳後的地址，也可以直接填 `/branding/` 下的靜態檔名。
+
+備案號在官網頁尾可點選，點選目標按下面順序決定：
+
+- ICP 備案號：填了 `icp_record_url` 就用它，否則鏈到工信部備案系統 `https://beian.miit.gov.cn/`。
+- 公安備案號：填了 `public_security_record_url` 就用它，否則從 `public_security_record` 裡提取 6 位以上的數字作為 `recordcode`，鏈到 `https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=<数字>`；提取不到數字時只鏈到平臺首頁。
+- 兩個連結欄位只接受 `http://` 與 `https://`，填其它協議會被忽略並回退到官方入口。
+- 三個備案欄位都留空時頁尾不渲染備案行；增值電信許可證號仍是純文本。
 
 `product_display_mode` 只決定訪客**第一次**開啟選購頁看到的形態。訪客可以在選購頁右上角切換「卡片式 / 列表式」（手機端同樣有切換條），還可以在「頁面寬度」面板裡選固定寬度（1200 / 1280 / 1440 / 1600 / 1920）或撐滿螢幕；兩項偏好分別記在該瀏覽器的 `localStorage`（`turaidc:shop-display-mode`、`turaidc:shop-page-width`）裡，換瀏覽器、換裝置或清快取後回到站點預設值。想確認站點預設值實際生效，請用無痕視窗開啟選購頁，或先清掉這兩個鍵。
 

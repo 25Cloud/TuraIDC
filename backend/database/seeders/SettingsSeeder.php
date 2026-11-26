@@ -62,6 +62,9 @@ class SettingsSeeder extends Seeder
             // 备案号与增值电信业务经营许可证：官网页脚与用户控制台读取，
             // 键名与前端 siteBranding store 一致。
             'icp_record' => '',
+            'icp_record_url' => '',
+            'public_security_record' => '',
+            'public_security_record_url' => '',
             'value_added_license' => '',
             'terms_url' => '',
             'privacy_url' => '',

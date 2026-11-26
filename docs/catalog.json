@@ -424,6 +424,12 @@
       "review_by": "2026-12-13"
     },
     {
+      "path": "internal/execution-plans/active/compliance-filing-links-2026-11-27.md",
+      "status": "active",
+      "summary": "备案号字段补全与页脚合规链接：公安备案号字段、ICP 与公安备案号官方查询链接及自定义覆盖。",
+      "review_by": "2026-12-27"
+    },
+    {
       "path": "internal/execution-plans/active/database-expert-review-remediation-2026-08-13.md",
       "status": "active",
       "summary": "数据库结构专家团审查发现的分组修复与回归计划。",

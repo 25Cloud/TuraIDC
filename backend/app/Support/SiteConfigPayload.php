@@ -90,6 +90,9 @@ class SiteConfigPayload
             'terms_url' => self::read(self::SETTING_GROUP_BASIC, 'terms_url', ''),
             'privacy_url' => self::read(self::SETTING_GROUP_BASIC, 'privacy_url', ''),
             'icp_record' => self::read(self::SETTING_GROUP_BASIC, 'icp_record', ''),
+            'icp_record_url' => self::read(self::SETTING_GROUP_BASIC, 'icp_record_url', ''),
+            'public_security_record' => self::read(self::SETTING_GROUP_BASIC, 'public_security_record', ''),
+            'public_security_record_url' => self::read(self::SETTING_GROUP_BASIC, 'public_security_record_url', ''),
             'value_added_license' => self::read(self::SETTING_GROUP_BASIC, 'value_added_license', ''),
             'brand_primary_color' => self::normalizeColor(
                 self::read(self::SETTING_GROUP_BASIC, 'brand_primary_color', self::DEFAULT_BRAND_PRIMARY_COLOR)

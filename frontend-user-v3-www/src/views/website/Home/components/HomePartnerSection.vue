@@ -134,6 +134,10 @@ onBeforeUnmount(() => {
   margin: 0;
   padding: 0 0 2px;
   list-style: none;
+  // 双保险：内层 row 已裁剪跑马灯，这里再兜一层。
+  // 部分内置浏览器（QQ/微信 X5）对 mask-image + width:max-content 动画的
+  // 裁剪表现与标准内核不同，外层裁剪可防止 track 撑开页面造成横向滚动。
+  overflow: hidden;
 
   // 左右渐隐：条幅在容器边缘淡出，避免生硬切断。
   mask-image: linear-gradient(

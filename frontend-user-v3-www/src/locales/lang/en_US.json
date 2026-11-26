@@ -304,6 +304,7 @@
       "account": "Account",
       "valueAddedLicense": "Value-added telecom license: ",
       "icpRecord": "ICP filing number: ",
+      "publicSecurityRecord": "Public security filing number: ",
       "productCloudServer": "Cloud servers",
       "productHongKongServer": "Hong Kong servers",
       "productUsServer": "US servers",

@@ -1,6 +1,6 @@
 ---
 source: guide/configure/site-settings.md
-sourceHash: effdc01a41d6013c4ba6edf580503dec6908c31128322482e5bd28b4b0279555
+sourceHash: dbdf01357291a7d631cc069199f0c60b7d90b86652d4d2d392c837b471436536
 translatedAt: 2026-10-26
 ---
 
@@ -37,8 +37,11 @@ The config group is `basic`; the key name of each item below is the inline code 
 | `service_hours` Service hours                              | Empty (the row is not displayed)                          | Official site footer, "About us" page                                           |
 | `support_group_qr` Official group chat QR code             | Empty                                                     | Contact entry on the official site and console                                  |
 | `support_group_link` Group join link                       | Empty                                                     | Same as above                                                                   |
-| `icp_record` ICP filing number                             | Empty (the row is hidden in the footer)                   | Official site footer                                                            |
-| `value_added_license` Value-added telecom business license | Empty                                                     | Official site footer                                                            |
+| `icp_record` ICP filing number                             | Empty (the row is hidden in the footer)                   | Official site footer, clickable                                                 |
+| `icp_record_url` ICP filing number link                    | Empty (links to MIIT automatically)                       | Click target of the footer ICP number                                           |
+| `public_security_record` Public security filing number     | Empty (the row is hidden in the footer)                   | Official site footer, clickable                                                 |
+| `public_security_record_url` Public security filing link   | Empty (links to the public security platform)             | Click target of the footer public security number                               |
+| `value_added_license` Value-added telecom business license | Empty                                                     | Official site footer (plain text)                                               |
 | `terms_url` Terms of service link                          | Empty                                                     | Terms of service entry on the registration and order pages                      |
 | `privacy_url` Privacy policy link                          | Empty                                                     | Same as above                                                                   |
 
@@ -49,6 +52,13 @@ The brand primary color and corner radius are strictly validated; a wrong value 
 - `service_qq_group` and `service_phone` are two candidate keys for the same display slot: the value is read from `service_qq_group` first, then from `service_phone` when that is empty, and when both are empty the placeholder copy "Group number to be added" is shown. If that line in the official site footer says "Group number to be added", this field has not been filled in.
 
 `client_console_icon` takes effect only in the user console; the official site header and footer use the site logo plus the site name. Image fields accept the address produced by a media library upload, and you can also enter the static file name under `/branding/` directly.
+
+Filing numbers in the official site footer are clickable, and the click target is resolved in this order:
+
+- ICP filing number: `icp_record_url` wins when set; otherwise it links to the MIIT filing system at `https://beian.miit.gov.cn/`.
+- Public security filing number: `public_security_record_url` wins when set; otherwise 6 or more consecutive digits are extracted from `public_security_record` as `recordcode` and the link becomes `https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=<digits>`; if no digits are found, the link goes only to the platform home page.
+- Both link fields accept only `http://` and `https://`; other protocols are ignored and fall back to the official entry.
+- When all three filing fields are empty, the footer renders no filing row; the value-added telecom license number stays plain text.
 
 `product_display_mode` determines only the form a visitor sees **the first time** they open the ordering page. Visitors can switch between "card view / list view" in the top right of the ordering page (mobile has the same switch bar), and can also choose a fixed width (1200 / 1280 / 1440 / 1600 / 1920) or full screen in the "page width" panel; the two preferences are stored separately in that browser's `localStorage` (`turaidc:shop-display-mode`, `turaidc:shop-page-width`), and switching browsers or devices or clearing the cache returns to the site default. To confirm the site default actually takes effect, open the ordering page in a private window, or clear these two keys first.
 

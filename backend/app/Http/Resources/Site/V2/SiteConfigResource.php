@@ -26,6 +26,9 @@ class SiteConfigResource extends JsonResource
         'terms_url',
         'privacy_url',
         'icp_record',
+        'icp_record_url',
+        'public_security_record',
+        'public_security_record_url',
         'value_added_license',
         // 品牌主色与圆角：前端据此覆盖 TDesign / Element Plus 的 CSS 变量，
         // 值已在 SiteConfigPayload 做过严格格式校验，这里只做透传。

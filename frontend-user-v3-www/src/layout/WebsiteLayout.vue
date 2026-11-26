@@ -1078,16 +1078,37 @@
             rights reserved.
           </p>
           <p
-            v-if="appStore.valueAddedLicense || appStore.icpRecord"
+            v-if="
+              appStore.valueAddedLicense ||
+              appStore.icpRecord ||
+              appStore.publicSecurityRecord
+            "
             class="footer-bottom__meta"
           >
             <span v-if="appStore.valueAddedLicense"
               >{{ $t("layout.footer.valueAddedLicense")
               }}{{ appStore.valueAddedLicense }}</span
             >
-            <span v-if="appStore.icpRecord"
-              >{{ $t("layout.footer.icpRecord") }}{{ appStore.icpRecord }}</span
-            >
+            <span v-if="appStore.icpRecord">
+              {{ $t("layout.footer.icpRecord") }}
+              <a
+                class="footer-bottom__link"
+                :href="appStore.icpFilingLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ appStore.icpRecord }}</a
+              >
+            </span>
+            <span v-if="appStore.publicSecurityRecord">
+              {{ $t("layout.footer.publicSecurityRecord") }}
+              <a
+                class="footer-bottom__link"
+                :href="appStore.publicSecurityFilingLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ appStore.publicSecurityRecord }}</a
+              >
+            </span>
           </p>
         </div>
       </div>
@@ -2837,6 +2858,16 @@ onBeforeUnmount(() => {
   flex-wrap: wrap;
   gap: 8px 16px;
   color: $text-color-placeholder;
+}
+
+.footer-bottom__link {
+  color: inherit;
+  text-decoration: none;
+
+  &:hover {
+    color: $color-primary;
+    text-decoration: underline;
+  }
 }
 
 .mobile-menu-mask-enter-active,

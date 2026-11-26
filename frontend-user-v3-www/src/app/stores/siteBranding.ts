@@ -77,6 +77,20 @@ function pick(raw, keys, fallback) {
   return fallback;
 }
 
+const ICP_FILING_URL = "https://beian.miit.gov.cn/";
+const PUBLIC_SECURITY_FILING_URL = "https://www.beian.gov.cn/";
+
+/** 公安备案号形如「京公网安备 11010802000001号」，取其中数字作为查询参数 */
+function publicSecurityRecordCode(value) {
+  const match = String(value || "").match(/\d{6,}/);
+  return match ? match[0] : "";
+}
+
+/** 自定义链接只在 http/https 时生效，否则按备案号推导官方查询入口 */
+function resolveFilingLink(customUrl, fallbackUrl) {
+  return normalizeExternalLink(customUrl) || fallbackUrl;
+}
+
 function readBootstrappedSiteConfig() {
   if (typeof window === "undefined") {
     return {};
@@ -190,6 +204,26 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       String(import.meta.env.VITE_ICP_RECORD || ""),
     ),
   );
+  const icpRecordUrl = ref(
+    pick(initialSiteConfig, ["icp_record_url", "icpRecordUrl"], ""),
+  );
+  const publicSecurityRecord = ref(
+    pick(initialSiteConfig, ["public_security_record", "publicSecurityRecord"], ""),
+  );
+  const publicSecurityRecordUrl = ref(
+    pick(initialSiteConfig, ["public_security_record_url", "publicSecurityRecordUrl"], ""),
+  );
+  const icpFilingLink = computed(() =>
+    resolveFilingLink(icpRecordUrl.value, ICP_FILING_URL),
+  );
+  const publicSecurityFilingLink = computed(() => {
+    const custom = normalizeExternalLink(publicSecurityRecordUrl.value);
+    if (custom) return custom;
+    const code = publicSecurityRecordCode(publicSecurityRecord.value);
+    return code
+      ? `${PUBLIC_SECURITY_FILING_URL}portal/registerSystemInfo?recordcode=${code}`
+      : PUBLIC_SECURITY_FILING_URL;
+  });
   const valueAddedLicense = ref(
     pick(
       initialSiteConfig,
@@ -315,6 +349,21 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       ["icp_record", "icpRecord"],
       icpRecord.value || "",
     );
+    icpRecordUrl.value = pick(
+      data,
+      ["icp_record_url", "icpRecordUrl"],
+      icpRecordUrl.value || "",
+    );
+    publicSecurityRecord.value = pick(
+      data,
+      ["public_security_record", "publicSecurityRecord"],
+      publicSecurityRecord.value || "",
+    );
+    publicSecurityRecordUrl.value = pick(
+      data,
+      ["public_security_record_url", "publicSecurityRecordUrl"],
+      publicSecurityRecordUrl.value || "",
+    );
     valueAddedLicense.value = pick(
       data,
       [
@@ -412,6 +461,11 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     termsUrl,
     privacyUrl,
     icpRecord,
+    icpRecordUrl,
+    icpFilingLink,
+    publicSecurityRecord,
+    publicSecurityRecordUrl,
+    publicSecurityFilingLink,
     valueAddedLicense,
     productDisplayMode,
     productCardShowStock,

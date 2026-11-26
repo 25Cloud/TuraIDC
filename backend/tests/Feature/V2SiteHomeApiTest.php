@@ -53,6 +53,9 @@ class V2SiteHomeApiTest extends TestCase
             'terms_url',
             'privacy_url',
             'icp_record',
+            'icp_record_url',
+            'public_security_record',
+            'public_security_record_url',
             'value_added_license',
             // 品牌与展示方式：SiteConfigPayload 里算出来之后必须在 SiteConfigResource
             // 的白名单里再登记一次，漏登记就会「后台配了、接口不下发、前端永远默认值」。
@@ -116,6 +119,9 @@ class V2SiteHomeApiTest extends TestCase
     public function test_site_config_exposes_icp_record_and_value_added_license(): void
     {
         Setting::setValue('basic', 'icp_record', '京ICP备00000000号-1');
+        Setting::setValue('basic', 'icp_record_url', 'https://beian.miit.gov.cn/');
+        Setting::setValue('basic', 'public_security_record', '京公网安备 11010802000001号');
+        Setting::setValue('basic', 'public_security_record_url', 'https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010802000001');
         Setting::setValue('basic', 'value_added_license', '京B2-20000000');
 
         $response = $this->getJson('/api/v2/site/config')
@@ -123,6 +129,9 @@ class V2SiteHomeApiTest extends TestCase
             ->assertJsonPath('code', 0);
 
         $this->assertSame('京ICP备00000000号-1', $response->json('data.icp_record'));
+        $this->assertSame('https://beian.miit.gov.cn/', $response->json('data.icp_record_url'));
+        $this->assertSame('京公网安备 11010802000001号', $response->json('data.public_security_record'));
+        $this->assertSame('https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=11010802000001', $response->json('data.public_security_record_url'));
         $this->assertSame('京B2-20000000', $response->json('data.value_added_license'));
     }
 
