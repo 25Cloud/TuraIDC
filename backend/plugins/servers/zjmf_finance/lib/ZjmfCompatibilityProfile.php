@@ -45,11 +45,6 @@ final class ZjmfCompatibilityProfile
 
     public const INVOICE_PAY_V1_FUND = 'v1_fund';
 
-    /** 控制台指令通道 */
-    public const CONSOLE_PROVISION = 'provision';
-
-    public const CONSOLE_V1 = 'console_v1';
-
     private function __construct(
         private readonly string $version,
         private readonly string $v1,
@@ -141,51 +136,6 @@ final class ZjmfCompatibilityProfile
         }
 
         return [self::INVOICE_PAY_V1_FUND, self::INVOICE_PAY_APPLY_CREDIT];
-    }
-
-    /**
-     * 控制台指令（电源/重装/改密/VNC/状态）的通道候选顺序。
-     *
-     * 为什么不能一律走 /provision/default：上游对 dcimcloud / cloud 型实例，
-     * 在没有 server_group 时会直接返回 200 而不真正执行——用户看到「开机成功」
-     * 但机器毫无反应，属于静默假成功。这类实例必须优先走 v10 控制台 API。
-     *
-     * 反过来，只支持经典协议的站点（如 TL：/console/v1 三个模块前缀全 404）
-     * 必须保留 /provision/default 兜底，否则控制台整体不可用。
-     *
-     * @param  string|null  $productType  上游 host_data.type：cloud / dcimcloud / dcim / 其它
-     * @param  bool  $v1Available  实测该站点是否有 /console/v1（由调用方探测并缓存）
-     * @return list<string>
-     */
-    public function consoleChannels(?string $productType, bool $v1Available): array
-    {
-        $type = strtolower(trim((string) $productType));
-
-        // 明确关掉 /v1 的供应商：只走经典协议
-        if (! $this->allowsV1() || $this->v1 === self::V1_NEVER) {
-            return [self::CONSOLE_PROVISION];
-        }
-
-        // 只有云/DCIM 云类实例才存在「经典协议空操作」问题，v10 优先
-        if ($v1Available && in_array($type, ['cloud', 'dcimcloud'], true)) {
-            return [self::CONSOLE_V1, self::CONSOLE_PROVISION];
-        }
-
-        return [self::CONSOLE_PROVISION];
-    }
-
-    /**
-     * 上游产品类型到 v10 模块前缀的映射。
-     *
-     * 魔方 3.8.0 把控制台收敛成三个模块：mf_cloud（云产品）、mf_dcim（DCIM/物理机）、
-     * idcsmart_common（直属商品）。拿不到类型时按 mf_cloud 试。
-     */
-    public static function consoleV1Module(?string $productType): string
-    {
-        return match (strtolower(trim((string) $productType))) {
-            'dcimcloud', 'dcim' => 'mf_dcim',
-            default => 'mf_cloud',
-        };
     }
 
     /**

@@ -11,133 +11,9 @@ final class ZjmfConsoleService
 {
     private const FORM_HEADERS = ['content-type: application/x-www-form-urlencoded'];
 
-    /** 能力缓存键：该站点是否有 /console/v1（探一次，按供应商记 6 小时） */
-    private const CAPABILITY_CONSOLE_V1 = 'console_v1';
-
-    /** 能力缓存键前缀：上游 host_data.type（cloud/dcimcloud/dcim…） */
-    private const CAPABILITY_HOST_TYPE = 'host_type';
-
     public function __construct(
         private readonly ZjmfFinanceTransport $transport,
-        private readonly ?ZjmfCapabilityMemory $capabilityMemory = null,
     ) {}
-
-    private function capabilityMemory(): ZjmfCapabilityMemory
-    {
-        return $this->capabilityMemory ?? new ZjmfCapabilityMemory();
-    }
-
-    /**
-     * 该站点是否提供 /console/v1（魔方 3.8.0 新控制台协议）。
-     *
-     * 只支持经典协议的站点（如 TL）三个模块前缀全是 404，只能走 /provision/default；
-     * 而支持 v10 的站点对云类实例必须走 v10，否则经典协议会空操作返回 200。
-     */
-    private function consoleV1Available(Supplier $supplier, int $hostId, string $jwt): bool
-    {
-        $memory = $this->capabilityMemory();
-        $cached = $memory->recall((int) $supplier->id, self::CAPABILITY_CONSOLE_V1);
-
-        if ($cached !== null) {
-            return $cached === '1';
-        }
-
-        try {
-            $this->transport->get($supplier, "/console/v1/host/{$hostId}", $jwt);
-            $available = true;
-        } catch (\Throwable $exception) {
-            // 路由存在但鉴权/参数不通过时也会抛错，只有明确 404 才算「没有这族接口」
-            $available = ! str_contains($exception->getMessage(), 'HTTP 404');
-        }
-
-        $memory->remember((int) $supplier->id, self::CAPABILITY_CONSOLE_V1, $available ? '1' : '0');
-
-        return $available;
-    }
-
-    private function upstreamProductType(Supplier $supplier, int $hostId, string $jwt): ?string
-    {
-        $memory = $this->capabilityMemory();
-        $key = self::CAPABILITY_HOST_TYPE.':'.$hostId;
-        $cached = $memory->recall((int) $supplier->id, $key);
-
-        if ($cached !== null) {
-            return $cached;
-        }
-
-        try {
-            $response = $this->getHostHeader($supplier, $hostId, $jwt);
-            $payload = is_array($response['data'] ?? null) ? $response['data'] : [];
-            $type = trim((string) ($payload['host_data']['type'] ?? ''));
-
-            if ($type !== '') {
-                $memory->remember((int) $supplier->id, $key, $type);
-
-                return $type;
-            }
-        } catch (\Throwable) {
-            // 类型拿不到时按经典通道处理，不影响指令本身
-        }
-
-        return null;
-    }
-
-    /**
-     * 按代际档位执行控制台指令。
-     *
-     * 通道顺序来自 ZjmfCompatibilityProfile::consoleChannels()：
-     * - 云/DCIM 云类实例 + 站点支持 v10 → 先 v10（避免经典协议空操作假成功）
-     * - 其余（含只支持经典协议的站点）→ /provision/default
-     * 只有「通道根本不存在（404）」才换下一条，其它错误直接抛给调用方。
-     *
-     * @param  array<string, mixed>  $payload
-     * @return array<string, mixed>
-     */
-    private function dispatchConsoleAction(
-        Supplier $supplier,
-        int $hostId,
-        string $classicFunc,
-        array $payload,
-        ?string $jwt,
-        bool $isGet = false,
-        ?string $v1Action = null,
-        ?string $v1Method = null,
-    ): array {
-        $resolvedJwt = $this->resolveJwt($supplier, $jwt);
-        $profile = ZjmfCompatibilityProfile::fromSupplier($supplier);
-        $productType = $this->upstreamProductType($supplier, $hostId, $resolvedJwt);
-        $v1Available = $this->consoleV1Available($supplier, $hostId, $resolvedJwt);
-        $channels = $profile->consoleChannels($productType, $v1Available);
-
-        $lastError = null;
-
-        foreach ($channels as $channel) {
-            try {
-                if ($channel === ZjmfCompatibilityProfile::CONSOLE_V1) {
-                    $module = ZjmfCompatibilityProfile::consoleV1Module($productType);
-                    $uri = "/console/v1/{$module}/{$hostId}/".($v1Action ?? $classicFunc);
-                    $method = strtolower((string) ($v1Method ?? ($isGet ? 'get' : 'post')));
-
-                    return match ($method) {
-                        'put' => $this->transport->put($supplier, $uri, $payload, $resolvedJwt),
-                        'delete' => $this->transport->delete($supplier, $uri, $payload, $resolvedJwt),
-                        'get' => $this->transport->get($supplier, $uri, $resolvedJwt, $payload),
-                        default => $this->transport->post($supplier, $uri, $payload, $resolvedJwt),
-                    };
-                }
-
-                return $this->postDefaultModuleAction($supplier, $hostId, $classicFunc, $payload, $resolvedJwt);
-            } catch (\Throwable $exception) {
-                $lastError = $exception;
-
-                if (! str_contains($exception->getMessage(), 'HTTP 404')) {
-                    throw $exception;
-                }
-            }
-        }
-
-        throw $lastError ?? new BusinessException('上游控制台指令执行失败', 50000);
-    }
 
     /**
      * 上游 host/header 的原始 data 载荷（含 module_client_area /
@@ -168,14 +44,14 @@ final class ZjmfConsoleService
 
     public function getVncUrl(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
-        // more=1 让上游返回可直接进 noVNC 的参数（vnc_url/vnc_pass）；
-        // v10 通道不需要该参数，多余字段上游会忽略。
-        return $this->dispatchConsoleAction($supplier, $hostId, 'vnc', ['more' => 1], $jwt);
+        // more=1 让上游返回可直接进 noVNC 的参数（vnc_url/vnc_pass），
+        // 缺省返回的是上游面板页 URL，通用层的解析器读不出可用参数。
+        return $this->postDefaultModuleAction($supplier, $hostId, 'vnc', ['more' => 1], $jwt);
     }
 
     public function powerAction(Supplier $supplier, int $hostId, string $action, ?string $jwt = null): array
     {
-        return $this->dispatchConsoleAction($supplier, $hostId, $action, [], $jwt);
+        return $this->postDefaultModuleAction($supplier, $hostId, $action, [], $jwt);
     }
 
     /**
@@ -196,9 +72,7 @@ final class ZjmfConsoleService
 
     public function getModuleStatus(Supplier $supplier, int $hostId, string $type = 'host', ?string $jwt = null): array
     {
-        // v10 的电源状态是 GET /status；经典协议是 func=status。$type 目前只有 host 口径
-        // 走这条链路（重装进度是另一套接口，不能复用电源状态）。
-        return $this->dispatchConsoleAction($supplier, $hostId, 'status', [], $jwt, isGet: true);
+        return $this->postDefaultModuleAction($supplier, $hostId, 'status', [], $jwt);
     }
 
     public function getReinstallOptions(Supplier $supplier, int $hostId, ?string $jwt = null): array
@@ -212,15 +86,14 @@ final class ZjmfConsoleService
 
     public function resetPassword(Supplier $supplier, int $hostId, string $password, ?string $jwt = null): array
     {
-        // 经典协议动作名是 crack_pass，v10 是 reset_password
-        return $this->dispatchConsoleAction($supplier, $hostId, 'crack_pass', [
+        return $this->postDefaultModuleAction($supplier, $hostId, 'crack_pass', [
             'password' => $password,
-        ], $jwt, v1Action: 'reset_password');
+        ], $jwt);
     }
 
     public function reinstall(Supplier $supplier, int $hostId, string $osId, ?string $jwt = null): array
     {
-        return $this->dispatchConsoleAction($supplier, $hostId, 'reinstall', [
+        return $this->postDefaultModuleAction($supplier, $hostId, 'reinstall', [
             'os' => $osId,
         ], $jwt);
     }
