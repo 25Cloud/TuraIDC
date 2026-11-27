@@ -466,7 +466,7 @@ final class ProductConfigOptionPresenter
     /**
      * 该组里是否存在「有界档位」（qty_maximum > 0），即是否已用档位声明了正向区间。
      *
-     * @param  iterable<int, array<string, mixed>>  $subOptions
+     * @param  iterable<int, mixed>  $subOptions
      */
     public static function hasBoundedRangeTier(iterable $subOptions): bool
     {
@@ -493,7 +493,7 @@ final class ProductConfigOptionPresenter
      * 渲染滑块，用户拖到 41 就因「无档位覆盖」而下不了单。按包络收缩后，
      * 呈现出来的范围就是真正可买且可计价的区间。
      *
-     * @param  array<int, array<string, mixed>>  $subOptions
+     * @param  array<int, mixed>  $subOptions
      * @return array{0: int, 1: int}
      */
     private static function resolveRangeBounds(array $item, array $subOptions, bool $isRange): array

@@ -714,11 +714,8 @@ class ServiceConsoleAreaService
 
             // 安全组：由内置「安全组」tab 承载（BUILTIN_TABS_ORDER 固定下发），口径与
             // deriveModuleCapabilities 一致 —— 那里是无条件跳过的，这里跟着无条件跳过。
-            //
-            // 必须排除 NAT 模块：安全组关键字表里有 'acl'，会连 nat_acl 一起吃掉。
-            // deriveModuleCapabilities 里 NAT 分流排在安全组分流之前正是为了避开这一点，
-            // 这里保持同样的顺序语义，否则 nat_supported 为 false 时 NAT 区域会被误杀。
-            if (! $isNatModule && $this->matchesSecurityGroupModule($key, $name)) {
+            // NAT 已在上面 continue，不会走到这里；安全组关键字表里的 'acl' 不会再误吃 nat_acl。
+            if ($this->matchesSecurityGroupModule($key, $name)) {
                 continue;
             }
 

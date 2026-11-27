@@ -2685,7 +2685,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>nodeValue" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 2
+			count: 3
 			path: app/Services/ClientServiceConsole/ServiceNatService.php
 
 		-
@@ -2841,7 +2841,7 @@ parameters:
 		-
 			message: '#^Using nullsafe property access "\?\-\>nodeValue" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
-			count: 6
+			count: 8
 			path: app/Services/ClientServiceConsole/ServiceSecurityGroupService.php
 
 		-

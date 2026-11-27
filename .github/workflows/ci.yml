@@ -291,7 +291,18 @@ jobs:
           VITE_PUBLIC_SITE_URL: https://www.example.com
           VITE_CONSOLE_SITE_URL: https://console.example.com
           VITE_CONSOLE_BASE_PATH: /console
-        run: pnpm --filter ${{ matrix.package }} build
+        # 单一 less worker 在 4 核 runner 上偶发 "Failed to receive message from sync port"，
+        # 本地同款构建连跑多次均通过，属于 runner 侧瞬时故障；重试一次即可，不再放大为整轮红。
+        run: |
+          for attempt in 1 2; do
+            if pnpm --filter ${{ matrix.package }} build; then
+              exit 0
+            fi
+            if [ "$attempt" -eq 2 ]; then
+              exit 1
+            fi
+            echo "构建失败，可能为 less worker 瞬时故障，重试一次"
+          done
 
       - name: Run ${{ matrix.app }} E2E
         env:

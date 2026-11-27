@@ -53,15 +53,13 @@ const appStore = useAppStore();
 const visible = ref(false);
 
 onMounted(() => {
-  let stored = "";
   try {
-    stored = window.localStorage.getItem(STORAGE_KEY) || "";
+    const stored = window.localStorage.getItem(STORAGE_KEY) || "";
+    if (stored === "") {
+      visible.value = true;
+    }
   } catch {
     // 隐私模式等 localStorage 不可用的场景：本次会话不再显示，避免每次刷新都弹
-    return;
-  }
-  if (stored === "") {
-    visible.value = true;
   }
 });
 

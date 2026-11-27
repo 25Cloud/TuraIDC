@@ -2,7 +2,7 @@
 // 各包的真实 lint（规则集、Vue/TS 插件）以各自目录下的 eslint.config.* 为准，
 // 根配置不重复定义规则，只保证 CLI 能找到合法的 flat config。
 import js from '@eslint/js';
-import tseslint from 'typescript-eslint';
+import tsParser from '@typescript-eslint/parser';
 import vueParser from 'vue-eslint-parser';
 import globals from 'globals';
 
@@ -43,7 +43,7 @@ export default [
     // TypeScript 文件需要专用解析器，否则提交钩子解析失败
     files: ['**/*.{ts,mts,cts}'],
     languageOptions: {
-      parser: tseslint.parser,
+      parser: tsParser,
     },
   },
   {
@@ -54,7 +54,7 @@ export default [
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
-        parser: tseslint.parser,
+        parser: tsParser,
       },
     },
   },
