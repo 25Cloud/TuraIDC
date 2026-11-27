@@ -22,6 +22,17 @@ export default defineConfig({
     // 钉住语言：应用首屏按浏览器偏好自适应，而本套 spec 的断言写的是中文。
     // 不钉的话，宿主语言是英文时页面就渲染英文，整批用例会以「看起来像回归」的形式变红。
     locale: 'zh-CN',
+    // Cookie 告知横幅不是本套用例的验证对象；移动端抽屉选项会被它挡住。
+    // 统一以「已确认」状态启动，避免每个用例各自处理，也不污染视觉快照。
+    storageState: {
+      cookies: [],
+      origins: [
+        {
+          origin: "http://127.0.0.1:5176",
+          localStorage: [{ name: "www_cookie_consent", value: "accepted" }],
+        },
+      ],
+    },
     // 本机没下载 Playwright 自带 chromium 时，可用 PW_E2E_CHANNEL=chrome 走系统 Chrome
     channel: process.env.PW_E2E_CHANNEL || undefined,
     baseURL: "http://127.0.0.1:5176",

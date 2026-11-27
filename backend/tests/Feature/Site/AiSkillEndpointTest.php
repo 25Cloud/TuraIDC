@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Site;
 
+use App\Models\ApiKey;
+use App\Services\OpenApi\ApiKeyService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Tests\TestCase;
 
@@ -96,7 +98,7 @@ class AiSkillEndpointTest extends TestCase
 
         // 需要的密钥作用域必须与 ApiKeyService 的域白名单一致，否则用户按卡片建 key 会少权限
         foreach ($data['required_scopes'] as $scope) {
-            $this->assertContains($scope, \App\Services\OpenApi\ApiKeyService::SCOPE_DOMAINS);
+            $this->assertContains($scope, ApiKeyService::SCOPE_DOMAINS);
         }
     }
 
@@ -125,13 +127,13 @@ class AiSkillEndpointTest extends TestCase
 
         // 接口基址、密钥前缀都必须来自当前部署
         $this->assertStringContainsString($base.'/api/v2/open', $markdown);
-        $this->assertStringContainsString(\App\Models\ApiKey::KEY_PREFIX, $markdown);
+        $this->assertStringContainsString(ApiKey::KEY_PREFIX, $markdown);
 
         $decoded = json_decode($manifest, true);
         $this->assertIsArray($decoded, 'manifest.json 必须是合法 JSON');
         $this->assertSame('turaidc', $decoded['name'], 'manifest 的 name 应等于 skill slug');
         $this->assertSame($base.'/api/v2/open', $decoded['base_url']);
-        $this->assertSame(\App\Models\ApiKey::KEY_PREFIX.'*', $decoded['auth']['key_format']);
+        $this->assertSame(ApiKey::KEY_PREFIX.'*', $decoded['auth']['key_format']);
     }
 
     /**
@@ -145,7 +147,7 @@ class AiSkillEndpointTest extends TestCase
         $data = (array) $this->get('/api/v2/site/ai-skill/turaidc/install.json')->assertOk()->json('data');
 
         $this->assertNotSame('', (string) $data['site_name'], '站点名不能为空');
-        $this->assertSame(\App\Models\ApiKey::KEY_PREFIX, $data['key_prefix']);
+        $this->assertSame(ApiKey::KEY_PREFIX, $data['key_prefix']);
         $this->assertSame('https://console.example.test', $data['console_url']);
         $this->assertSame('https://console.example.test/client/api-keys', $data['console_keys_url']);
     }

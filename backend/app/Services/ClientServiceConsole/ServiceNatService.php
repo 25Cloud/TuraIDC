@@ -601,6 +601,7 @@ class ServiceNatService
             'sport' => trim((string) ($row['external_port'] ?? '')),
         ];
     }
+
     private function parseNatAclPage(string $html, ?string $actionEndpoint = null): array
     {
         $html = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');

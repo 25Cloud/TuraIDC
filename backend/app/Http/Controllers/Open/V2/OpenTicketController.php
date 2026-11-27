@@ -7,7 +7,6 @@ namespace App\Http\Controllers\Open\V2;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\Ticket\V2\TicketReplyResource;
 use App\Models\Ticket;
-use App\Services\OpenApi\ApiKeyService;
 use App\Services\Ticket\TicketService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;

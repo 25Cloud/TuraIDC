@@ -1366,7 +1366,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             group: 'system',
             placeholder: 'srv',
             help: t('settings.index.provisionHostnamePrefixHint'),
-            pattern: /^[a-zA-Z]{1,10}$/,
+            pattern: /^[a-z]{1,10}$/i,
             patternMessage: t('settings.index.provisionHostnamePrefixPattern'),
           },
           {

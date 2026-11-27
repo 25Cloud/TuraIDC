@@ -47,6 +47,14 @@ router.beforeEach(async (to, from, next) => {
       if (!permissionStore.routesBuilt || !userStore.userInfo?.name) {
         await userStore.getUserInfo();
 
+        const requiredFeature = to.meta?.requiresFeature as string | undefined;
+        if (requiredFeature && userStore.userInfo?.features?.[requiredFeature] !== true) {
+          MessagePlugin.warning(t('permission.featureUnavailable'));
+          next({ path: resolveAdminHomePath(userStore.userInfo?.permissions || []), replace: true });
+          NProgress.done();
+          return;
+        }
+
         const routeList = await permissionStore.buildAsyncRoutes(
           userStore.userInfo?.permissions || [],
           userStore.userInfo?.features || {},

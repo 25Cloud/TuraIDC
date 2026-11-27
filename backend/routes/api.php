@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\Client\V2\HostUpstreamSyncController;
 use App\Http\Controllers\Client\V2\TicketUpstreamCallbackController;
-use App\Http\Controllers\Site\V2\ContentController as V2SiteContentController;
 use App\Http\Controllers\Site\V2\AiSkillController as V2SiteAiSkillController;
+use App\Http\Controllers\Site\V2\ContentController as V2SiteContentController;
 use App\Http\Controllers\Site\V2\HomeController as V2SiteHomeController;
 use App\Http\Controllers\Site\V2\ProductController as V2SiteProductController;
 use App\Http\Controllers\Site\V2\ProductGroupController as V2SiteProductGroupController;
