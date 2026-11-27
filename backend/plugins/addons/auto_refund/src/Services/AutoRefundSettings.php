@@ -114,6 +114,17 @@ final class AutoRefundSettings
     }
 
     /**
+     * 结算成立后是否自动销毁上游实例。
+     *
+     * 默认开：本地退款入账而上游机器继续按周期计费，就是持续漏钱。
+     * 关掉只适合「上游另有独立退订流程」的站点。
+     */
+    public function terminateUpstreamOnSettle(): bool
+    {
+        return $this->boolValue('terminate_upstream_on_settle', true);
+    }
+
+    /**
      * 工单通道协议：`zjfm`（默认，智简魔方真上游）或 `tura`（上游也是 TuraIDC）。
      */
     public function ticketProtocol(): string

@@ -9,12 +9,14 @@ require_once __DIR__.'/../Support/InstallsAutoRefundAddon.php';
 use App\Models\AdminUser;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Support\AdminPermissions;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
 use Tests\Support\InstallsAutoRefundAddon;
 use Tests\TestCase;
 use TuraIDC\Plugins\Addons\AutoRefund\Models\AutoRefundApplication;
@@ -74,6 +76,87 @@ class AdminAutoRefundTest extends TestCase
             number_format((float) DB::table('user_accounts')->where('user_id', (int) $this->user->id)->value('cash_balance'), 2, '.', ''),
         );
         $this->assertSame('88.50', number_format((float) $this->user->fresh()->balance, 2, '.', ''));
+    }
+
+    /**
+     * 结算后退订上游：钱退回去而机器继续跑，等于商家替已退款客户承担上游成本。
+     */
+    public function test_settle_terminates_upstream_instance_by_default(): void
+    {
+        $fixture = $this->makeRefundService($this->user, ['amount' => '100.00']);
+        $application = $this->makePendingApplication($fixture['service']->id, '100.00');
+
+        $suspension = Mockery::mock(ServiceSuspensionService::class);
+        $suspension->shouldReceive('tryTerminateUpstream')
+            ->once()
+            ->withArgs(static fn ($service, $reason): bool => (int) $service->id === (int) $fixture['service']->id)
+            ->andReturn(true);
+        $this->app->instance(ServiceSuspensionService::class, $suspension);
+
+        Sanctum::actingAs($this->makeAdmin([
+            AdminPermissions::INVOICE_LIST,
+            AdminPermissions::INVOICE_MANAGE,
+        ]));
+
+        $this->postJson('/api/v2/admin/auto-refund/applications/'.$application->id.'/settle', [
+            'amount' => '88.50',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', AutoRefundApplication::STATUS_SETTLED);
+    }
+
+    /**
+     * 上游退订失败不回滚退款：钱已到账，只在台账留 pending 标记等人补做。
+     */
+    public function test_settle_marks_pending_when_upstream_termination_fails(): void
+    {
+        $fixture = $this->makeRefundService($this->user, ['amount' => '100.00']);
+        $application = $this->makePendingApplication($fixture['service']->id, '100.00');
+
+        $suspension = Mockery::mock(ServiceSuspensionService::class);
+        $suspension->shouldReceive('tryTerminateUpstream')->once()->andReturn(false);
+        $this->app->instance(ServiceSuspensionService::class, $suspension);
+
+        Sanctum::actingAs($this->makeAdmin([
+            AdminPermissions::INVOICE_LIST,
+            AdminPermissions::INVOICE_MANAGE,
+        ]));
+
+        $this->postJson('/api/v2/admin/auto-refund/applications/'.$application->id.'/settle', [
+            'amount' => '88.50',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.status', AutoRefundApplication::STATUS_SETTLED);
+
+        $meta = (array) (AutoRefundApplication::query()->findOrFail($application->id)->response_meta ?? []);
+        $this->assertTrue((bool) ($meta['upstream_termination_pending'] ?? false));
+    }
+
+    /**
+     * 关掉开关的站点（上游另有独立退订流程）不能被插件擅自销毁机器。
+     */
+    public function test_settle_skips_upstream_termination_when_disabled(): void
+    {
+        $fixture = $this->makeRefundService($this->user, ['amount' => '100.00']);
+        $application = $this->makePendingApplication($fixture['service']->id, '100.00');
+
+        $plugin = $this->installAutoRefundAddon(true, ['terminate_upstream_on_settle' => false]);
+
+        $suspension = Mockery::mock(ServiceSuspensionService::class);
+        $suspension->shouldReceive('tryTerminateUpstream')->never();
+        $this->app->instance(ServiceSuspensionService::class, $suspension);
+
+        Sanctum::actingAs($this->makeAdmin([
+            AdminPermissions::INVOICE_LIST,
+            AdminPermissions::INVOICE_MANAGE,
+        ]));
+
+        $this->postJson('/api/v2/admin/auto-refund/applications/'.$application->id.'/settle', [
+            'amount' => '88.50',
+        ])->assertOk();
+
+        $this->assertSame(AutoRefundApplication::STATUS_SETTLED, (string) AutoRefundApplication::query()->findOrFail($application->id)->status);
+        $this->assertNotNull($plugin->fresh());
     }
 
     public function test_settle_above_existing_refundable_limit_is_rejected(): void

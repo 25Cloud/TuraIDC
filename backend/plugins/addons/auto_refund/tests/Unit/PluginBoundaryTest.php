@@ -92,6 +92,7 @@ class PluginBoundaryTest extends TestCase
             'console_notice',
             'settle_remark',
             'upstream_precheck',
+            'terminate_upstream_on_settle',
             'ticket_protocol',
             'ticket_hostname',
             'ticket_username',

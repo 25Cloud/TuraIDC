@@ -16,6 +16,7 @@ use App\Models\Ticket;
 use App\Models\TicketReply;
 use App\Models\TicketUpstreamBinding;
 use App\Models\User;
+use App\Services\ClientServiceConsole\ServiceSuspensionService;
 use App\Services\Integrations\Plugins\PluginBindingResolver;
 use App\Services\ProductCatalog\ProductDisplayNameResolver;
 use App\Services\Ticket\TicketDeliveryService;
@@ -68,6 +69,7 @@ final class AutoRefundService
         private readonly ProductDisplayNameResolver $displayNames,
         private readonly TicketDeliveryService $ticketDelivery,
         private readonly PluginBindingResolver $bindings,
+        private readonly ServiceSuspensionService $suspensions,
     ) {}
 
     /**
@@ -389,7 +391,8 @@ final class AutoRefundService
             throw new BusinessException('结算金额必须大于 0', 42200);
         }
 
-        return DB::transaction(function () use ($admin, $applicationId, $settleAmount, $remark, $context): array {
+        $application = null;
+        $payload = DB::transaction(function () use ($admin, $applicationId, $settleAmount, $remark, $context, &$application): array {
             $application = $this->lockedApplication($applicationId);
 
             $this->assertSettleable($application);
@@ -439,10 +442,66 @@ final class AutoRefundService
                 'operator_id' => (int) $admin->id,
             ]);
 
-            return array_merge($this->presentApplication($application->fresh() ?? $application, true), [
+                        return array_merge($this->presentApplication($application->fresh() ?? $application, true), [
                 'refund' => $result['refund'] ?? [],
             ]);
         });
+
+        // 事务提交后再销毁上游实例：失败不阻塞退款，pending 标记留给人工补做。
+        if ($application instanceof AutoRefundApplication) {
+            $this->terminateUpstreamAfterSettle($application);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * 结算成立后销毁上游实例。
+     *
+     * 为什么必须做：本地账务退款成功只代表钱退了，上游机器仍在按周期计费，
+     * 等于商家替已退款客户继续付上游成本。这条路此前不存在，是漏钱的直接来源。
+     *
+     * 为什么放在事务外：销毁是 HTTP 调用，耗时不可控，不能把它关在账单事务里；
+     * 而且钱已经退出去，销毁失败绝不能回滚账务。
+     *
+     * 失败处理：`tryTerminateUpstream()` 幂等且不抛异常，失败返回 false。此时在
+     * 台账 `response_meta` 留 `upstream_termination_pending` 标记并告警，供人工或
+     * 到期自动化链路补做，不重复扣款、不阻塞用户。
+     */
+    private function terminateUpstreamAfterSettle(AutoRefundApplication $application): void
+    {
+        if (! $this->settings->terminateUpstreamOnSettle()) {
+            return;
+        }
+
+        $service = $application->service ?? Service::query()->find((int) $application->service_id);
+        if (! $service instanceof Service) {
+            return;
+        }
+
+        if ($this->suspensions->tryTerminateUpstream($service, '自助退款结算退订')) {
+            $this->logger->record('settle', 'upstream_terminated', [
+                'application_id' => (int) $application->id,
+                'application_no' => (string) $application->application_no,
+                'service_id' => (int) $application->service_id,
+            ]);
+
+            return;
+        }
+
+        $application->forceFill([
+            'response_meta' => $this->mergeMeta($application, [
+                'upstream_termination_pending' => true,
+                'upstream_termination_pending_at' => now()->format('Y-m-d H:i:s'),
+            ]),
+        ])->save();
+
+        $this->logger->record('settle', 'upstream_termination_pending', [
+            'application_id' => (int) $application->id,
+            'application_no' => (string) $application->application_no,
+            'service_id' => (int) $application->service_id,
+            'note' => '退款已入账，上游退订待补做',
+        ]);
     }
 
     /**
@@ -1149,6 +1208,9 @@ final class AutoRefundService
                 'application_no' => (string) $application->application_no,
                 'amount' => number_format($amount, 2, '.', ''),
             ]);
+
+            // 自动退款同样要退订上游：钱已到账而机器继续跑，就是持续漏钱。
+            $this->terminateUpstreamAfterSettle($application);
         } catch (Throwable $exception) {
             $application->forceFill([
                 'status' => AutoRefundApplication::STATUS_PENDING_REVIEW,

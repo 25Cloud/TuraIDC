@@ -131,6 +131,13 @@ return [
             'required' => false,
             'description' => '开启后，「插件间对接」类型提交前先调 query 确认该机器在上游可见，避免提交必然失败的申请。',
         ],
+        'terminate_upstream_on_settle' => [
+            'title' => '结算后销毁上游实例',
+            'type' => 'switch',
+            'value' => true,
+            'required' => false,
+            'description' => '开启后，退款入账成功即调用上游终止接口销毁机器。关闭只适合上游另有独立退订流程的站点；关闭时退款后上游仍按周期计费。',
+        ],
         'ticket_protocol' => [
             'title' => '上游工单协议',
             'type' => 'select',
