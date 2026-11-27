@@ -581,6 +581,57 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
         $this->assertSame(88, $result['host_detail']['productid']);
     }
 
+    public function test_network_service_falls_back_to_380_upgrade_product_routes_when_v1_is_gone(): void
+    {
+        // 魔方财务 3.8.0 删掉 /v1 整族：换套餐必须降级到
+        // /upgrade/upgrade_product_post + /upgrade/checkout_upgrade_product
+        // （参数一致 hid/pid/billingcycle），否则 3.8.0 上游的换套餐一律失败。
+        $supplier = $this->makeSupplier();
+        $hostingTransport = Mockery::mock(HostingPanelApiTransport::class);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with($supplier, 'POST', '/v1/hosts/77/actions/upgrade', ['product_id' => 88, 'billingcycle' => 'monthly'], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
+            ->andThrow(new \RuntimeException('上游接口返回异常页面（HTTP 404）'));
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with($supplier, 'POST', '/upgrade/upgrade_product_post', ['hid' => 77, 'pid' => 88, 'billingcycle' => 'monthly'], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
+            ->andReturn(['status' => 200, 'data' => []]);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with($supplier, 'POST', '/upgrade/checkout_upgrade_product', ['hid' => 77, 'pid' => 88, 'billingcycle' => 'monthly'], 'jwt-token', ['Authorization: Bearer jwt-token'], [])
+            ->andReturn(['status' => 200, 'data' => ['invoiceid' => 991]]);
+        $hostingTransport
+            ->shouldReceive('requestWithMeta')
+            ->once()
+            ->with($supplier, 'POST', '/apply_credit', Mockery::on(fn ($payload): bool => (int) ($payload['invoiceid'] ?? 0) === 991), 'jwt-token', Mockery::any(), [])
+            ->andReturn([
+                'response' => ['status' => 200, 'data' => []],
+                'headers' => [],
+                'http_code' => 200,
+                'content_type' => 'application/json',
+            ]);
+        $hostingTransport
+            ->shouldReceive('requestWithMeta')
+            ->once()
+            ->with($supplier, 'GET', '/host/header', [], 'jwt-token', ['Authorization: Bearer jwt-token'], ['host_id' => 77, 'source' => 'API'])
+            ->andReturn([
+                'response' => ['status' => 200, 'data' => ['host_data' => ['productid' => 88]]],
+                'headers' => [],
+                'http_code' => 200,
+                'content_type' => 'application/json',
+            ]);
+
+        $transport = $this->makeTransport($hostingTransport);
+        $networkService = new ZjmfNetworkService($transport, new ZjmfConsoleService($transport));
+
+        $result = $networkService->purchaseHostUpgrade($supplier, 77, 88, 'monthly', '', 'jwt-token');
+
+        $this->assertSame(991, $result['upstream_invoice_id']);
+    }
+
     public function test_network_service_does_not_read_host_or_report_success_while_fund_is_pending(): void
     {
         $supplier = $this->makeSupplier();

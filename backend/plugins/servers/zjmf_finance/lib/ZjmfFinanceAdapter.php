@@ -282,6 +282,24 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
         return $this->consoleService->cancelTask($supplier, $hostId, $jwt);
     }
 
+    /** 上游模块声明的按钮（含 custom 自定义功能，如退出救援）。 */
+    public function getModuleButtons(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->consoleService->getModuleButtons($supplier, $hostId, $jwt);
+    }
+
+    /** 按日流量用量（GET /host/trafficusage）。 */
+    public function getTrafficUsage(Supplier $supplier, int $hostId, array $query = [], ?string $jwt = null): array
+    {
+        return $this->consoleService->getTrafficUsage($supplier, $hostId, $query, $jwt);
+    }
+
+    /** 购买重装次数（POST /dcim/buy_reinstall_times）。 */
+    public function buyReinstallTimes(Supplier $supplier, int $hostId, int $quantity = 1, ?string $jwt = null): array
+    {
+        return $this->consoleService->buyReinstallTimes($supplier, $hostId, $quantity, $jwt);
+    }
+
     public function getSupportedModules(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         return $this->consoleService->getSupportedModules($supplier, $hostId, $jwt);
@@ -489,6 +507,9 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
             'exitRescue',
             'getReinstallStatus',
             'cancelTask',
+            'getModuleButtons',
+            'getTrafficUsage',
+            'buyReinstallTimes',
             'getSupportedModules',
             'getMonitorChart',
             'getMonitorCharts',

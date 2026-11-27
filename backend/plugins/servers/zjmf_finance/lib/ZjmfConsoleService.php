@@ -107,6 +107,78 @@ final class ZjmfConsoleService
         ], $this->resolveJwt($supplier, $jwt), self::FORM_HEADERS);
     }
 
+    /**
+     * 上游模块声明的按钮（含 custom 类型的自定义功能）。
+     *
+     * /host/header 的 module_button 里既有开机/关机这类 default 动作，也有
+     * custom 动作（典型如「退出救援系统」）。能力推导层此前只保留 default 动作，
+     * 自定义按钮被直接丢掉，用户看不到也点不到。
+     *
+     * @return array<int, array{func: string, type: string, name: string}>
+     */
+    public function getModuleButtons(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        $response = $this->getHostHeader($supplier, $hostId, $jwt);
+        $payload = is_array($response['data'] ?? null) ? $response['data'] : [];
+        $buttons = $payload['module_button'] ?? $payload['host_data']['module_button'] ?? [];
+
+        if (! is_array($buttons)) {
+            return [];
+        }
+
+        $normalized = [];
+
+        foreach ($buttons as $button) {
+            if (! is_array($button)) {
+                continue;
+            }
+
+            $func = trim((string) ($button['func'] ?? ''));
+            $name = trim((string) ($button['name'] ?? ''));
+
+            if ($func === '' || $name === '') {
+                continue;
+            }
+
+            $normalized[] = [
+                'func' => $func,
+                'type' => trim((string) ($button['type'] ?? 'default')),
+                'name' => $name,
+            ];
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * 按日流量用量：魔方财务 GET /host/trafficusage。
+     *
+     * 详情里的 bwusage/bwlimit 只是标量快照，账期口径由上游决定；
+     * 这个接口才能拿到按天/按方向的用量明细。
+     *
+     * @param  array<string, mixed>  $query
+     */
+    public function getTrafficUsage(Supplier $supplier, int $hostId, array $query = [], ?string $jwt = null): array
+    {
+        $params = array_merge(['id' => $hostId, 'is_api' => 1], $query);
+
+        return $this->transport->get($supplier, '/host/trafficusage', $this->resolveJwt($supplier, $jwt), $params);
+    }
+
+    /**
+     * 购买重装次数：魔方财务 POST /dcim/buy_reinstall_times {id, is_api, num}。
+     */
+    public function buyReinstallTimes(Supplier $supplier, int $hostId, int $quantity = 1, ?string $jwt = null): array
+    {
+        throw_if($quantity <= 0, new BusinessException('购买次数必须大于 0', 42200));
+
+        return $this->transport->post($supplier, '/dcim/buy_reinstall_times', [
+            'id' => $hostId,
+            'is_api' => 1,
+            'num' => $quantity,
+        ], $this->resolveJwt($supplier, $jwt), self::FORM_HEADERS);
+    }
+
     public function getReinstallOptions(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         $response = $this->getHostHeader($supplier, $hostId, $jwt);

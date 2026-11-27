@@ -194,18 +194,44 @@ final class ZjmfNetworkService
     public function purchaseHostUpgrade(Supplier $supplier, int $hostId, int $productId, string $billingCycle, string $promoCode = '', ?string $jwt = null): array
     {
         $resolvedJwt = $this->resolveJwt($supplier, $jwt);
-        $previewResponse = $this->previewHostUpgrade($supplier, $hostId, $productId, $billingCycle, $resolvedJwt);
-        $this->assertUpstreamSuccess($previewResponse, [200, 1001], '提交产品升降级预览');
+        $invoiceId = 0;
+        $checkoutResponse = null;
 
-        if (trim($promoCode) !== '') {
-            $promoResponse = $this->applyHostUpgradePromoCode($supplier, $hostId, $promoCode, $resolvedJwt);
-            $this->assertUpstreamSuccess($promoResponse, [200, 1001], '应用产品升降级优惠码');
+        try {
+            $previewResponse = $this->previewHostUpgrade($supplier, $hostId, $productId, $billingCycle, $resolvedJwt);
+            $this->assertUpstreamSuccess($previewResponse, [200, 1001], '提交产品升降级预览');
+
+            if (trim($promoCode) !== '') {
+                $promoResponse = $this->applyHostUpgradePromoCode($supplier, $hostId, $promoCode, $resolvedJwt);
+                $this->assertUpstreamSuccess($promoResponse, [200, 1001], '应用产品升降级优惠码');
+            }
+
+            $checkoutResponse = $this->checkoutHostUpgrade($supplier, $hostId, $resolvedJwt);
+            $this->assertUpstreamSuccess($checkoutResponse, [200, 1001], '生成产品升降级账单');
+        } catch (\Throwable $exception) {
+            // 魔方财务 3.8.0 删除了 /v1 整族。换套餐在老协议上的对应接口是
+            // /upgrade/upgrade_product_post + /upgrade/checkout_upgrade_product，
+            // 参数一致（hid/pid/billingcycle），直接作为不可用时的降级通道。
+            // 两种表现都要接住：档位判定先抛 ZjmfEndpointMissingException，
+            // 档位为 auto 时则是真正吃到 HTTP 404。
+            $v1Gone = $exception instanceof ZjmfEndpointMissingException
+                || str_contains($exception->getMessage(), 'HTTP 404')
+                || str_contains($exception->getMessage(), '已移除 /v1');
+
+            if (! $v1Gone) {
+                throw $exception;
+            }
+
+            $legacyPayload = ['hid' => $hostId, 'pid' => $productId, 'billingcycle' => trim($billingCycle)];
+            $legacyPost = $this->transport->post($supplier, '/upgrade/upgrade_product_post', $legacyPayload, $resolvedJwt);
+            $this->assertUpstreamSuccess($legacyPost, [200, 1001], '提交产品升降级');
+            $checkoutResponse = $this->transport->post($supplier, '/upgrade/checkout_upgrade_product', $legacyPayload, $resolvedJwt);
+            $this->assertUpstreamSuccess($checkoutResponse, [200, 1001], '生成产品升降级账单');
         }
 
-        $checkoutResponse = $this->checkoutHostUpgrade($supplier, $hostId, $resolvedJwt);
-        $this->assertUpstreamSuccess($checkoutResponse, [200, 1001], '生成产品升降级账单');
-        $invoiceId = $this->extractInvoiceId($checkoutResponse, $this->extractPayload($checkoutResponse));
+        $invoiceId = $this->extractInvoiceId($checkoutResponse ?? [], $this->extractPayload($checkoutResponse ?? []));
         throw_if($invoiceId <= 0, new BusinessException('上游未返回产品升降级账单 ID', 42200));
+        // fundInvoice 内部已是候选链（/v1 404 时走 /apply_credit），3.8.0 站点天然可用
         $fundResponse = $this->fundInvoice($supplier, $invoiceId, $resolvedJwt, '使用供应商余额支付产品升降级账单');
         $this->assertFundPaymentCompleted($fundResponse, '产品升降级账单');
 
