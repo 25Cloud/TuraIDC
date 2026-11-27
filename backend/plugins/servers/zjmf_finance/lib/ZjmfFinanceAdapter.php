@@ -270,6 +270,18 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
         return $this->consoleService->exitRescue($supplier, $hostId, $jwt);
     }
 
+    /** 重装任务进度（GET /dcim/resintall_status）。 */
+    public function getReinstallStatus(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->consoleService->getReinstallStatus($supplier, $hostId, $jwt);
+    }
+
+    /** 取消正在执行的任务（POST /dcim/cancel_task）。 */
+    public function cancelTask(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->consoleService->cancelTask($supplier, $hostId, $jwt);
+    }
+
     public function getSupportedModules(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         return $this->consoleService->getSupportedModules($supplier, $hostId, $jwt);
@@ -475,6 +487,8 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
             'reinstall',
             'rescue',
             'exitRescue',
+            'getReinstallStatus',
+            'cancelTask',
             'getSupportedModules',
             'getMonitorChart',
             'getMonitorCharts',

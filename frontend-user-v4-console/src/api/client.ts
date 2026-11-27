@@ -326,6 +326,12 @@ const clientApi = {
     postEnvelope<ServiceReinstallPayload>(`/v2/client/services/${id}/reinstallations`, data, config),
   serviceRescue: (id: number | string, data: Record<string, unknown>) =>
     postEnvelope<ServicePowerActionPayload>(`/v2/client/services/${id}/rescues`, data),
+  // 退出救援：魔方上游用 func=exit_rescue，不进这条链路用户排障完回不到正常系统。
+  serviceExitRescue: (id: number | string) =>
+    postEnvelope<ServicePowerActionPayload>(`/v2/client/services/${id}/rescues/exit`, {}),
+  // 取消正在执行的任务（重装/救援/改密），对应上游 /dcim/cancel_task。
+  serviceCancelTask: (id: number | string) =>
+    postEnvelope<ServicePowerActionPayload>(`/v2/client/services/${id}/task-cancellations`, {}),
   serviceOperationLogs: (id: number | string, params?: QueryParams) =>
     getEnvelope<ServiceOperationLogPayload>(`/v2/client/services/${id}/operation-logs`, { params }),
   serviceMonitor: (id: number | string, params?: QueryParams, config: Record<string, unknown> = {}) =>

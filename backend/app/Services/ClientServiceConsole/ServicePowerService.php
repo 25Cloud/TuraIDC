@@ -531,4 +531,88 @@ class ServicePowerService
             'detail' => $this->transformService->transformDetail($service),
         ];
     }
+
+    /**
+     * 退出救援系统。
+     *
+     * 魔方财务用 func=exit_rescue（自定义功能）而不是重启来退出救援；
+     * 没有这条链路时，用户排障完只能再发工单让上游手工切回来。
+     */
+    public function exitRescueForUser(User $user, int $serviceId, array $context = []): array
+    {
+        $service = $this->detailService->findUserService($user, $serviceId, [
+            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product.productGroup.secondProductGroup.firstProductGroup',
+            'product.supplier',
+            'order:id,order_no,status,paid_at,created_at',
+        ]);
+        throw_if(! $this->transformService->canExecuteConsoleActions($service), new BusinessException('当前实例状态不支持该操作', 42200));
+
+        [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+        $response = is_callable([$runtime, 'exitRescue'])
+            ? $runtime->exitRescue($supplier, $hostId, $jwt)
+            : $runtime->post(
+                $supplier,
+                '/provision/default',
+                ['id' => $hostId, 'func' => 'exit_rescue', 'is_api' => 1],
+                $jwt,
+                ['content-type: application/x-www-form-urlencoded']
+            );
+        $this->detailService->assertSuccess($response, '退出救援模式');
+
+        $message = trim((string) ($response['msg'] ?? '')) ?: '退出救援指令已提交';
+        $this->operationLogService->writeServiceConsoleLog($service, 'service.console.rescue.exit', [
+            'category' => 'reinstall',
+            'summary' => '提交退出救援模式请求',
+            'host_id' => $hostId,
+            'message' => $message,
+        ], $context);
+
+        return [
+            'message' => $message,
+            'second_verify' => $this->detailService->extractSecondVerify($response),
+            'detail' => $this->transformService->transformDetail($service),
+        ];
+    }
+
+    /**
+     * 取消正在执行的任务（重装 / 救援 / 重置密码）。
+     *
+     * 上游 DCIM 的 /dcim/cancel_task；没有它时用户发错重装只能等它跑完。
+     */
+    public function cancelTaskForUser(User $user, int $serviceId, array $context = []): array
+    {
+        $service = $this->detailService->findUserService($user, $serviceId, [
+            'product:id,product_type,service_type_code,product_group_id,config_options,purchase_requires',
+            'product.productGroup.secondProductGroup.firstProductGroup',
+            'product.supplier',
+            'order:id,order_no,status,paid_at,created_at',
+        ]);
+
+        [$runtime, $supplier, $hostId, $jwt] = $this->detailService->resolveUpstreamContext($service);
+        $response = is_callable([$runtime, 'cancelTask'])
+            ? $runtime->cancelTask($supplier, $hostId, $jwt)
+            : $runtime->post(
+                $supplier,
+                '/dcim/cancel_task',
+                ['id' => $hostId, 'is_api' => 1],
+                $jwt,
+                ['content-type: application/x-www-form-urlencoded']
+            );
+        $this->detailService->assertSuccess($response, '取消任务');
+
+        $message = trim((string) ($response['msg'] ?? '')) ?: '取消指令已提交';
+        $this->operationLogService->writeServiceConsoleLog($service, 'service.console.task.cancel', [
+            'category' => 'reinstall',
+            'summary' => '提交取消当前任务请求',
+            'host_id' => $hostId,
+            'message' => $message,
+        ], $context);
+
+        return [
+            'message' => $message,
+            'second_verify' => $this->detailService->extractSecondVerify($response),
+            'detail' => $this->transformService->transformDetail($service),
+        ];
+    }
 }

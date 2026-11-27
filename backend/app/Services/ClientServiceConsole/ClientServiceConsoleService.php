@@ -233,6 +233,18 @@ class ClientServiceConsoleService
         return $this->powerService->rescueForUser($user, $serviceId, $data, $context);
     }
 
+    /** 退出救援模式（魔方财务 func=exit_rescue）。 */
+    public function exitRescueForUser(User $user, int $serviceId, array $context = []): array
+    {
+        return $this->powerService->exitRescueForUser($user, $serviceId, $context);
+    }
+
+    /** 取消正在执行的任务（魔方财务 /dcim/cancel_task）。 */
+    public function cancelTaskForUser(User $user, int $serviceId, array $context = []): array
+    {
+        return $this->powerService->cancelTaskForUser($user, $serviceId, $context);
+    }
+
     public function suspendForUser(User $user, int $serviceId, array $data = [], array $context = []): array
     {
         return $this->suspensionService->suspendForUser($user, $serviceId, $data, $context);

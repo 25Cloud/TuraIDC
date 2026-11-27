@@ -17,6 +17,10 @@
     </div>
     <template #footer>
       <t-button variant="outline" @click="rescueVisible = false">{{ $t('common.cancel') }}</t-button>
+      <!-- 已经进过救援时，直接在同一个弹窗里给出退出入口，避免用户排障完无处可去 -->
+      <t-button theme="default" variant="outline" :loading="actionLoading" @click="submitExitRescue">
+        {{ $t('serviceConsole.rescue.exitConfirmBtn') }}
+      </t-button>
       <t-button theme="warning" :loading="actionLoading" @click="submitRescue">{{
         $t('serviceConsole.rescue.confirm')
       }}</t-button>
@@ -26,5 +30,5 @@
 <script setup lang="ts">
 import { useServiceConsoleContext } from '../context';
 
-const { rescueVisible, rescueState, actionLoading, submitRescue } = useServiceConsoleContext();
+const { rescueVisible, rescueState, actionLoading, submitRescue, submitExitRescue } = useServiceConsoleContext();
 </script>

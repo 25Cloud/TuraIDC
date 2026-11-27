@@ -77,6 +77,22 @@ class ActionController extends Controller
         )->resolve(), '救援模式指令已提交');
     }
 
+    /** 退出救援模式：魔方财务 func=exit_rescue。 */
+    public function exitRescue(Request $request, int $service)
+    {
+        return $this->success(ClientActionResultResource::make(
+            $this->actionService->exitRescue($request->user(), $service, $request)
+        )->resolve(), '退出救援指令已提交');
+    }
+
+    /** 取消正在执行的任务（重装/救援/改密）：魔方财务 /dcim/cancel_task。 */
+    public function cancelTask(Request $request, int $service)
+    {
+        return $this->success(ClientActionResultResource::make(
+            $this->actionService->cancelTask($request->user(), $service, $request)
+        )->resolve(), '取消指令已提交');
+    }
+
     public function recallTicketReply(ClientActionRequest $request, int $ticket, int $reply)
     {
         return $this->success(ClientActionResultResource::make(

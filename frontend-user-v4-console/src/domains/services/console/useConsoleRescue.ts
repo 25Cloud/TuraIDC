@@ -68,10 +68,53 @@ export function useConsoleRescue(options: UseConsoleRescueOptions) {
     }
   }
 
+  /**
+   * 退出救援：上游把它做成独立动作（func=exit_rescue），
+   * 不点这个用户排障完只能等上游手工切回正常系统。
+   */
+  async function submitExitRescue() {
+    const confirmed = await new Promise<boolean>((resolve) => {
+      const dialog = DialogPlugin.confirm({
+        header: t('serviceConsole.rescue.exitConfirmHeader'),
+        body: t('serviceConsole.rescue.exitConfirmBody'),
+        theme: 'warning',
+        confirmBtn: { content: t('serviceConsole.rescue.exitConfirmBtn'), theme: 'warning' },
+        onConfirm: () => {
+          dialog.destroy();
+          resolve(true);
+        },
+        onCancel: () => {
+          dialog.destroy();
+          resolve(false);
+        },
+        onClose: () => {
+          dialog.destroy();
+          resolve(false);
+        },
+      });
+    });
+    if (!confirmed) return;
+
+    actionLoading.value = true;
+    try {
+      const res = await clientApi.serviceExitRescue(serviceId.value);
+      const payload = res.data || {};
+      setOperationStatus('rescue', t('serviceConsole.rescue.exiting'));
+      MessagePlugin.success(String(payload.message || t('serviceConsole.rescue.exitSubmitted')));
+      clearStatusSyncTimer();
+      scheduleStatusSync(() => loadRemoteStatus(true), 1500);
+    } catch (error: unknown) {
+      MessagePlugin.error(resolveErrorMessage(error, t('serviceConsole.rescue.exitFailed')));
+    } finally {
+      actionLoading.value = false;
+    }
+  }
+
   return {
     rescueVisible,
     rescueState,
     openRescueDialog,
     submitRescue,
+    submitExitRescue,
   };
 }

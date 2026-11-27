@@ -97,7 +97,8 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
             $this->assertSame($action, $service->powerAction($supplier, 123, $action, 'jwt-token')['data']['action']);
         }
 
-        $status = $service->getModuleStatus($supplier, 123, 'reinstall', 'jwt-token');
+        // 电源状态只应由 type=host 触发；type=reinstall 走重装进度接口（见下个用例）。
+        $status = $service->getModuleStatus($supplier, 123, 'host', 'jwt-token');
 
         $this->assertSame(['status' => 'on', 'des' => '开机'], $status['data']);
     }
@@ -137,6 +138,49 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
 
         $this->assertSame(200, $service->resetPassword($supplier, 123, 'NewPassw0rd!', 'jwt-token')['status']);
         $this->assertSame(200, $service->reinstall($supplier, 123, '203', 'jwt-token')['status']);
+    }
+
+    /**
+     * 重装进度与取消任务走魔方财务 DCIM 接口，不能复用电源状态。
+     * 此前 type=reinstall 一律发 func=status，用户提交重装后永远拿不到进度。
+     */
+    public function test_console_service_reads_reinstall_status_and_cancels_task(): void
+    {
+        $supplier = $this->makeSupplier();
+        $hostingTransport = Mockery::mock(HostingPanelApiTransport::class);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with(
+                $supplier,
+                'GET',
+                '/dcim/resintall_status',
+                [],
+                'jwt-token',
+                ['Authorization: Bearer jwt-token'],
+                ['id' => 123, 'is_api' => 1]
+            )
+            ->andReturn(['status' => 200, 'data' => ['progress' => 60, 'step' => '正在写入系统']]);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with(
+                $supplier,
+                'POST',
+                '/dcim/cancel_task',
+                ['id' => 123, 'is_api' => 1],
+                'jwt-token',
+                ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
+                []
+            )
+            ->andReturn(['status' => 200, 'msg' => '任务已取消']);
+
+        $service = new ZjmfConsoleService($this->makeTransport($hostingTransport));
+
+        $progress = $service->getModuleStatus($supplier, 123, 'reinstall', 'jwt-token');
+        $this->assertSame(60, $progress['data']['progress']);
+
+        $this->assertSame(200, $service->cancelTask($supplier, 123, 'jwt-token')['status']);
     }
 
     /**

@@ -1878,6 +1878,12 @@
             "entering": "Entering rescue mode",
             "submitted": "Rescue mode command submitted",
             "failed": "Failed to enter rescue mode",
+"exitConfirmHeader": "Leave rescue mode",
+"exitConfirmBody": "The instance will reboot back into its normal system. Continue?",
+"exitConfirmBtn": "Leave rescue",
+"exiting": "Leaving rescue mode",
+"exitSubmitted": "Exit rescue command submitted",
+"exitFailed": "Failed to leave rescue mode",
             "dialogHeader": "Enter rescue mode",
             "dialogMessage": "The instance will reboot into the rescue system for troubleshooting. When done, run \"exit rescue\" in the rescue system or reinstall the OS to exit."
         },

@@ -197,6 +197,52 @@ class ClientActionV2Service
     }
 
     /**
+     * 退出救援模式：客户排障完成后把实例切回正常系统。
+     *
+     * @return array<string, mixed>
+     */
+    public function exitRescue(User $user, int $serviceId, Request $request): array
+    {
+        $detail = $this->executeLockedServiceAction(
+            $request,
+            $serviceId,
+            'rescue_exit',
+            fn () => $this->clientServiceConsoleService->exitRescueForUser(
+                $user,
+                $serviceId,
+                $this->operationContext($request)
+            )
+        );
+
+        return $this->result($serviceId, 'queued', '退出救援指令已提交', [
+            'detail' => $this->compactOperationDetail($detail),
+        ]);
+    }
+
+    /**
+     * 取消正在执行的任务（重装/救援/改密）。
+     *
+     * @return array<string, mixed>
+     */
+    public function cancelTask(User $user, int $serviceId, Request $request): array
+    {
+        $detail = $this->executeLockedServiceAction(
+            $request,
+            $serviceId,
+            'task_cancel',
+            fn () => $this->clientServiceConsoleService->cancelTaskForUser(
+                $user,
+                $serviceId,
+                $this->operationContext($request)
+            )
+        );
+
+        return $this->result($serviceId, 'queued', '取消指令已提交', [
+            'detail' => $this->compactOperationDetail($detail),
+        ]);
+    }
+
+    /**
      * @return array<string, mixed>
      */
     public function recallTicketReply(User $user, int $ticketId, int $replyId): array

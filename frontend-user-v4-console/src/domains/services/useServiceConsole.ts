@@ -179,7 +179,7 @@ export function useServiceConsole() {
   });
 
   // Rescue mode dialog
-  const { rescueVisible, rescueState, openRescueDialog, submitRescue } = useConsoleRescue({
+  const { rescueVisible, rescueState, openRescueDialog, submitRescue, submitExitRescue } = useConsoleRescue({
     serviceId,
     actionLoading,
     setOperationStatus,
@@ -653,6 +653,7 @@ export function useServiceConsole() {
     submitReinstall,
     openRescueDialog,
     submitRescue,
+    submitExitRescue,
     handleToggleAutoRenew,
     loadMonitor,
     loadSecurityGroups,

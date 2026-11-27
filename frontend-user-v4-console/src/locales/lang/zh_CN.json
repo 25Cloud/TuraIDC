@@ -1878,6 +1878,12 @@
             "entering": "进入救援模式中",
             "submitted": "救援模式指令已提交",
             "failed": "进入救援模式失败",
+"exitConfirmHeader": "确认退出救援模式",
+"exitConfirmBody": "退出救援后实例会重启回到正常系统。确认继续吗？",
+"exitConfirmBtn": "退出救援",
+"exiting": "正在退出救援",
+"exitSubmitted": "退出救援指令已提交",
+"exitFailed": "退出救援失败",
             "dialogHeader": "进入救援模式",
             "dialogMessage": "进入救援模式后实例将重启并挂载救援系统，用于排查系统故障。完成后请在救援系统中执行“exit rescue”或重新安装系统退出。"
         },

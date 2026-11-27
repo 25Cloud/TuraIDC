@@ -72,7 +72,39 @@ final class ZjmfConsoleService
 
     public function getModuleStatus(Supplier $supplier, int $hostId, string $type = 'host', ?string $jwt = null): array
     {
+        // 重装进度与电源状态是两个上游接口：此前一律发 func=status，
+        // 导致重装提交后永远取不到 progress/step/error 等结果，用户只能盲等。
+        if (strtolower(trim($type)) === 'reinstall') {
+            return $this->getReinstallStatus($supplier, $hostId, $jwt);
+        }
+
         return $this->postDefaultModuleAction($supplier, $hostId, 'status', [], $jwt);
+    }
+
+    /**
+     * 重装任务进度（魔方财务 DCIM：GET /dcim/resintall_status）。
+     *
+     * 返回 progress / step / error_type / windows_finish 等字段；上游没有该路由时
+     * 调用方据 HTTP 404 降级为「仅显示电源状态」。
+     */
+    public function getReinstallStatus(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->transport->get($supplier, '/dcim/resintall_status', $this->resolveJwt($supplier, $jwt), [
+            'id' => $hostId,
+            'is_api' => 1,
+        ]);
+    }
+
+    /**
+     * 取消正在执行的任务（重装/救援/重置密码等）：
+     * 魔方财务 DCIM：POST /dcim/cancel_task {id, is_api}。
+     */
+    public function cancelTask(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->transport->post($supplier, '/dcim/cancel_task', [
+            'id' => $hostId,
+            'is_api' => 1,
+        ], $this->resolveJwt($supplier, $jwt), self::FORM_HEADERS);
     }
 
     public function getReinstallOptions(Supplier $supplier, int $hostId, ?string $jwt = null): array
