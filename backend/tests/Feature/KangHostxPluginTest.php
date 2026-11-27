@@ -392,6 +392,25 @@ class KangHostxPluginTest extends TestCase
         if (Schema::hasTable('integration_plugin_configs')) {
             DB::statement('SET FOREIGN_KEY_CHECKS=0');
             DB::table('integration_plugin_configs')->truncate();
+            // 插件表 truncate 会重置自增：绑定表若不同步清，残留行的 plugin_id 会与
+            // 后续用例新插件的 id 相撞，卸载校验误报「插件正在被使用」（测试间污染）。
+            // 插件表 truncate 会重置自增：所有按 plugin_id 引用的表若不同步清，残留行的
+            // plugin_id 会与后续用例新插件的 id 相撞，卸载校验误报「插件正在被使用」
+            // （测试间污染的实证根因）。清单对齐 IntegrationPluginService::pluginReferenceTables()。
+            foreach ([
+                'integration_plugin_bindings',
+                'product_upstream_bindings',
+                'service_upstream_bindings',
+                'supplier_plugin_bindings',
+                'integration_plugin_runtime_logs',
+                'service_runtime_snapshots',
+                'service_connection_snapshots',
+                'service_provision_attempts',
+            ] as $referenceTable) {
+                if (Schema::hasTable($referenceTable)) {
+                    DB::table($referenceTable)->truncate();
+                }
+            }
             DB::table('integration_plugins')->truncate();
             DB::statement('SET FOREIGN_KEY_CHECKS=1');
         }
