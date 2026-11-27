@@ -175,7 +175,12 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 条目可以指向一个**仓库内的子目录**，而不是独立仓库：
 
 ```json
-{ "repo": "25Cloud/TuraIDC", "path": "backend/plugins/addons/ai_assistant", "ref": "main", "version": "1.1.0" }
+{
+  "repo": "25Cloud/TuraIDC",
+  "path": "backend/plugins/addons/ai_assistant",
+  "ref": "main",
+  "version": "1.1.0"
+}
 ```
 
 规则：
@@ -197,7 +202,7 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 - 模板与 `plugin:make` 二选一即可，产物契约完全一致：模板用 addons/my_plugin 作占位，命令按实际 domain/slug 直接生成。
 - **模板本身有回归**：`backend/stubs/plugin/*.stub` 是主仓这一侧的模板产物，
   `tests/Feature/PluginMakeCommandTest.php` 会生成一份骨架并校验「文件齐全 / 清单能被 require /
-  `--task` 真的写进 `extra.scheduled_tasks` / README 不留 `{{...}}` 占位符」。改模板必须让这条
+  `--task` 真的写进 `extra.scheduled_tasks` / README 不留 <code v-pre>{{...}}</code> 占位符」。改模板必须让这条
   用例保持绿，独立模板仓库同步时以它的产物为对照。
 - 模板生成的 `README.md` 自带三块约定：配置在清单里（管理端按 schema 渲染表单，不用自己写页面）、
   周期任务走 `extra.scheduled_tasks`、以及「不要做的事」（不注册系统级路由/调度/中间件、

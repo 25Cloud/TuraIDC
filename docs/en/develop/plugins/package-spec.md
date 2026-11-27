@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: 1376bec7169e71b89f5a488206386bcdd1953d832d192de1b1a42e01fae1725a
+sourceHash: 84b63067d8f9aba5251f8307dfc22f5a40fc270e485844c4a9aa5ccc7f501596
 translatedAt: 2026-10-26
 ---
 
@@ -176,16 +176,21 @@ Both the index and the code download URLs accept an acceleration mirror prefix, 
 An entry may point at a **subdirectory of a repository** instead of a standalone repository:
 
 ```json
-{ "repo": "25Cloud/TuraIDC", "path": "backend/plugins/addons/ai_assistant", "ref": "main", "version": "1.1.0" }
+{
+  "repo": "25Cloud/TuraIDC",
+  "path": "backend/plugins/addons/ai_assistant",
+  "ref": "main",
+  "version": "1.1.0"
+}
 ```
 
 Rules:
 
 - **`path` is required and validated**: each segment may only contain `[A-Za-z0-9._-]`; `..`, empty segments and absolute paths are rejected. The index is remote data, so it must never be able to walk the install flow out of the extraction directory.
-- **Location comes from `path`, never from guessing**: in a monorepo archive every plugin has its own `config.php` and they all sit at the *same depth*, so picking "the shallowest one" can hand you **a different plugin**. With `path` the installer goes straight to `{extract root}/{repo snapshot dir}/{path}` and fails if it is missing — it never degrades into guessing.
+- **Location comes from `path`, never from guessing**: in a monorepo archive every plugin has its own `config.php` and they all sit at the _same depth_, so picking "the shallowest one" can hand you **a different plugin**. With `path` the installer goes straight to `{extract root}/{repo snapshot dir}/{path}` and fails if it is missing — it never degrades into guessing.
 - **`{ref}` resolution order**: `sha` → `refs/tags/{tag}` → `refs/heads/{ref}` (a full `refs/...` value is used verbatim). With none of them present it reports "missing tag/sha/ref".
-- **`ref` without `path` is rejected outright** ("ref must be used together with path"), and rejected before any request is sent. Otherwise the whole-repository snapshot is downloaded and placement falls back to "shallowest config.php", which may install a *different* plugin from the same repository — far worse than failing to install.
-- **`sha` may be combined with `path`**, and that is the strongest form: it selects the exact subdirectory *and* keeps the anti-tampering guarantees (audit pinning plus the top-level directory name check). `ref: main` alone follows a moving branch and is not recommended for an already-listed entry.
+- **`ref` without `path` is rejected outright** ("ref must be used together with path"), and rejected before any request is sent. Otherwise the whole-repository snapshot is downloaded and placement falls back to "shallowest config.php", which may install a _different_ plugin from the same repository — far worse than failing to install.
+- **`sha` may be combined with `path`**, and that is the strongest form: it selects the exact subdirectory _and_ keeps the anti-tampering guarantees (audit pinning plus the top-level directory name check). `ref: main` alone follows a moving branch and is not recommended for an already-listed entry.
 - **Download size differs by one to two orders of magnitude**: a monorepo entry downloads the whole repository snapshot (tens of MB), a standalone repository is usually a few hundred KB. The timeout is `max(PLUGIN_MARKET_TIMEOUT, PLUGIN_MARKET_MONOREPO_TIMEOUT)`, the latter defaulting to 120 seconds.
 - **A plugin shipped inside the main repository should still provide a standalone release repository**: point the entry at that repository's `tag` + `sha` — smaller download, stronger pinning, and no dependency on the main repository's branch state. The official AI assistant does exactly this (the main repository's `backend/plugins/addons/ai_assistant` is the single source of truth, while the release mirror [`25Cloud/turaidc-plugin-ai-assistant`](https://github.com/25Cloud/turaidc-plugin-ai-assistant) mirrors it byte for byte and tags each version). The monorepo form is there for "I don't want to run a second repository".
 
@@ -198,7 +203,7 @@ Regression: `tests/Feature/PluginMarketMonorepoEntryTest.php` locks down "path/r
 - The template and `plugin:make` are interchangeable, and the resulting contract is identical: the template uses addons/my_plugin as a placeholder, while the command generates directly from the actual domain/slug.
 - **The template itself has regression coverage**: `backend/stubs/plugin/*.stub` is the main repository's side of the template, and
   `tests/Feature/PluginMakeCommandTest.php` generates a skeleton and asserts "all files present / the manifest can be required /
-  `--task` really lands in `extra.scheduled_tasks` / the README has no `{{...}}` placeholders left". Any template change must keep
+  `--task` really lands in `extra.scheduled_tasks` / the README has no <code v-pre>{{...}}</code> placeholders left". Any template change must keep
   that test green, and a standalone template repository syncs against its output.
 - The `README.md` the template generates carries three standing conventions: configuration belongs in the manifest (the admin
   renders a form from the schema, so you do not write a page yourself), periodic tasks go through `extra.scheduled_tasks`, and

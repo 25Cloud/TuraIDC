@@ -16,13 +16,13 @@
   "hero": {
     "title": "TuraIDC",
     "titleTail": "billing and provisioning system",
-    "description": "The documentation is split by audience: site operators who deploy and run the system start with the operator guide, while developers who change code, integrate upstream APIs or maintain the repository start with the developer guide.",
+    "description": "To deploy and operate the system, start with the operator guide; developers who change code, integrate APIs or maintain the project should start with the developer guide.",
     "primary": {
-      "text": "I run the site · deploy and operate",
+      "text": "I run the site",
       "href": "/en/guide/"
     },
     "secondary": {
-      "text": "I write code · develop and integrate",
+      "text": "I write code",
       "href": "/en/develop/"
     }
   },
@@ -138,21 +138,21 @@
     {
       "kicker": "Generic",
       "title": "Generic deployment guide",
-      "description": "Not tied to a panel or container: install the backend, the front ends and the process supervisor by hand against the documented requirements.",
+      "description": "For deployments that must be performed manually.",
       "link": "/en/guide/deploy/generic",
       "action": "Read the generic guide"
     },
     {
       "kicker": "Panel",
       "title": "BaoTa Panel deployment",
-      "description": "For servers where BaoTa Panel manages PHP, Nginx and scheduled tasks.",
+      "description": "For servers managed with BaoTa Panel.",
       "link": "/en/guide/deploy/bt-panel",
       "action": "Read the BaoTa guide"
     },
     {
       "kicker": "Bare metal",
       "title": "Bare metal from source",
-      "description": "For servers without a panel or containers, running native nginx + PHP-FPM + systemd + cron.",
+      "description": "For servers without a panel or containers, running native services.",
       "link": "/en/guide/deploy/bare-metal",
       "action": "Read the bare metal guide"
     },

@@ -1,6 +1,6 @@
 ---
 source: develop/plugins/package-spec.md
-sourceHash: 1376bec7169e71b89f5a488206386bcdd1953d832d192de1b1a42e01fae1725a
+sourceHash: 84b63067d8f9aba5251f8307dfc22f5a40fc270e485844c4a9aa5ccc7f501596
 generated: zh-hk
 ---
 
@@ -182,7 +182,12 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 條目可以指向一個**倉庫內的子目錄**，而不是獨立倉庫：
 
 ```json
-{ "repo": "25Cloud/TuraIDC", "path": "backend/plugins/addons/ai_assistant", "ref": "main", "version": "1.1.0" }
+{
+  "repo": "25Cloud/TuraIDC",
+  "path": "backend/plugins/addons/ai_assistant",
+  "ref": "main",
+  "version": "1.1.0"
+}
 ```
 
 規則：
@@ -204,7 +209,7 @@ php artisan plugin:market:install my_sms --force  # 目标目录已存在时覆�
 - 模板與 `plugin:make` 二選一即可，產物契約完全一致：模板用 addons/my_plugin 作佔位，命令按實際 domain/slug 直接生成。
 - **模板本身有迴歸**：`backend/stubs/plugin/*.stub` 是主倉這一側的模板產物，
   `tests/Feature/PluginMakeCommandTest.php` 會生成一份骨架並校驗「文件齊全 / 清單能被 require /
-  `--task` 真的寫進 `extra.scheduled_tasks` / README 不留 `{{...}}` 佔位符」。改模板必須讓這條
+  `--task` 真的寫進 `extra.scheduled_tasks` / README 不留 <code v-pre>{{...}}</code> 佔位符」。改模板必須讓這條
   用例保持綠，獨立模板倉庫同步時以它的產物為對照。
 - 模板生成的 `README.md` 自帶三塊約定：配置在清單裡（管理端按 schema 渲染表單，不用自己寫頁面）、
   週期任務走 `extra.scheduled_tasks`、以及「不要做的事」（不註冊系統級路由/調度/中間件、
