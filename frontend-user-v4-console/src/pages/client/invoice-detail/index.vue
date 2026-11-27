@@ -315,14 +315,7 @@
           :src="alipayQrCode"
           :alt="$t('invoiceDetail.alipayPay')"
         />
-        <qrcode-vue
-          v-else-if="alipayQrCode"
-          :value="alipayQrCode"
-          :size="240"
-          level="M"
-          :margin="2"
-          render-as="svg"
-        />
+        <qrcode-vue v-else-if="alipayQrCode" :value="alipayQrCode" :size="240" level="M" :margin="2" render-as="svg" />
       </div>
       <div class="dialog-meta">
         <p>{{ $t('invoiceDetail.amount') }} ¥{{ alipayPayableAmount }}</p>
@@ -402,9 +395,7 @@ const {
  * 那时再用它生成二维码，印出来是一串 URL，用户扫到的是图片地址而不是付款页。
  */
 const alipayQrIsImage = computed(
-  () =>
-    /^data:image\//i.test(alipayQrCode.value) ||
-    /\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(alipayQrCode.value),
+  () => /^data:image\//i.test(alipayQrCode.value) || /\.(?:png|jpe?g|gif|webp|svg)(?:\?|#|$)/i.test(alipayQrCode.value),
 );
 
 const now = ref(Date.now());

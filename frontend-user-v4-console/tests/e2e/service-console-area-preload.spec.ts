@@ -11,8 +11,8 @@ import { expect, test } from '@playwright/test';
  * 现在后台开关 system.console_area_preload_all_enabled（缺省开启）打开时，
  * 每个自定义区域各挂一个实例并在首屏全部预热。这里钉住：
  *  1) 缺省（字段缺失/为 true）渲染全部自定义区域实例；
- *  2) 显式 false 只渲染一个 —— 这是带宽吃紧时的回退路径，不能被改坏；
- *  3) 切换 tab 不改变实例数量，iframe 不重建。
+ *  2) 显式 false 首屏一个都不挂，切到哪个区域才挂哪个（带宽回退路径）；
+ *  3) 预热开启时切换 tab 不改变实例数量，iframe 不重建。
  */
 
 const SERVICE_ID = 3915;
@@ -110,11 +110,17 @@ test('缺省预热：所有自定义区域各挂一个常驻实例', async ({ pa
   await expect(areaFrames(page), '两个自定义区域应各有一个 iframe 实例').toHaveCount(2);
 });
 
-test('显式关闭预热：只渲染第一个自定义区域实例', async ({ page }) => {
+test('显式关闭预热：首屏不挂实例，切到区域才按需挂载', async ({ page }) => {
   await mockConsoleApi(page, false);
   await page.goto(`/client/services/${SERVICE_ID}`, { waitUntil: 'domcontentloaded' });
 
-  await expect(areaFrames(page), '关闭预热后只保留一个实例（带宽回退路径）').toHaveCount(1);
+  await expect(areaFrames(page), '关闭预热后首屏零实例，避免多路上游并发回源').toHaveCount(0);
+
+  await sidebarItem(page, '管理面板').click();
+  await expect(areaFrames(page), '切到区域才挂实例').toHaveCount(1);
+
+  await sidebarItem(page, '设置').click();
+  await expect(areaFrames(page), '已挂过的实例保留，再切回来不重建').toHaveCount(2);
 });
 
 test('切换 tab 不重建 iframe 实例', async ({ page }) => {

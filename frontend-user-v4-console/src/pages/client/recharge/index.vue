@@ -208,12 +208,7 @@
 
           <aside class="qrcode-panel">
             <div class="qrcode-frame" :class="{ 'is-ready': qrCodeValue, 'is-paid': rechargePaid }">
-              <img
-                v-if="qrCodeValue && isQrImageValue"
-                class="qrcode-image"
-                :src="qrCodeValue"
-                :alt="qrCodeTitle"
-              />
+              <img v-if="qrCodeValue && isQrImageValue" class="qrcode-image" :src="qrCodeValue" :alt="qrCodeTitle" />
               <qrcode-vue
                 v-else-if="qrCodeValue"
                 class="qrcode-svg"
@@ -315,9 +310,7 @@ const mobileCustomSelected = computed(() => mobileCustomMode.value || activePres
  * 所以先判断它是不是图片：是图片就直出 <img>，否则才交给 qrcode.vue 编码。
  */
 const isQrImageValue = computed(
-  () =>
-    /^data:image\//i.test(qrCodeValue.value) ||
-    /\.(png|jpe?g|gif|webp|svg)(\?|#|$)/i.test(qrCodeValue.value),
+  () => /^data:image\//i.test(qrCodeValue.value) || /\.(?:png|jpe?g|gif|webp|svg)(?:\?|#|$)/i.test(qrCodeValue.value),
 );
 const mobileSubmitText = computed(() =>
   rechargePaid.value ? t('recharge.continueRecharge') : t('recharge.rechargeNow'),
