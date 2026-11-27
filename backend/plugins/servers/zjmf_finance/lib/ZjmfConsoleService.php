@@ -98,6 +98,33 @@ final class ZjmfConsoleService
         ], $jwt);
     }
 
+    /**
+     * 进入救援系统。
+     *
+     * 魔方财务同系统协议：/provision/default {id, func:rescue_system, system, temp_pass, is_api}
+     * system 取 1=Linux / 2=Windows，与上游模块的救援系统编号一致。
+     */
+    public function rescue(Supplier $supplier, int $hostId, string $system, ?string $jwt = null, ?string $tempPassword = null): array
+    {
+        $payload = ['system' => $system];
+        $tempPassword = trim((string) $tempPassword);
+
+        if ($tempPassword !== '') {
+            $payload['temp_pass'] = $tempPassword;
+        }
+
+        return $this->postDefaultModuleAction($supplier, $hostId, 'rescue_system', $payload, $jwt);
+    }
+
+    /**
+     * 退出救援系统。上游把它当作自定义功能处理（func=exit_rescue），
+     * 同样经 /provision/default 下发。
+     */
+    public function exitRescue(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->postDefaultModuleAction($supplier, $hostId, 'exit_rescue', [], $jwt);
+    }
+
     public function getSupportedModules(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         $response = $this->getHostHeader($supplier, $hostId, $jwt);

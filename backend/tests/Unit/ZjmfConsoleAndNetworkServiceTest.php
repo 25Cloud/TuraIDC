@@ -139,6 +139,48 @@ class ZjmfConsoleAndNetworkServiceTest extends TestCase
         $this->assertSame(200, $service->reinstall($supplier, 123, '203', 'jwt-token')['status']);
     }
 
+    /**
+     * 救援走魔方财务同系统协议：/provision/default {func:rescue_system|exit_rescue, is_api}。
+     * 此前驱动缺这两个方法，服务层会回退到我们自家的 /v1/hosts/{id}/module/rescue，
+     * 而魔方上游没有该路由——救援按钮必然 404。
+     */
+    public function test_console_service_posts_rescue_and_exit_rescue_via_default_module_action(): void
+    {
+        $supplier = $this->makeSupplier();
+        $hostingTransport = Mockery::mock(HostingPanelApiTransport::class);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with(
+                $supplier,
+                'POST',
+                '/provision/default',
+                ['id' => 123, 'func' => 'rescue_system', 'is_api' => 1, 'system' => '1'],
+                'jwt-token',
+                ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
+                []
+            )
+            ->andReturn(['status' => 200, 'msg' => '救援系统已启动']);
+        $hostingTransport
+            ->shouldReceive('request')
+            ->once()
+            ->with(
+                $supplier,
+                'POST',
+                '/provision/default',
+                ['id' => 123, 'func' => 'exit_rescue', 'is_api' => 1],
+                'jwt-token',
+                ['content-type: application/x-www-form-urlencoded', 'Authorization: Bearer jwt-token'],
+                []
+            )
+            ->andReturn(['status' => 200, 'msg' => '已退出救援']);
+
+        $service = new ZjmfConsoleService($this->makeTransport($hostingTransport));
+
+        $this->assertSame(200, $service->rescue($supplier, 123, '1', 'jwt-token')['status']);
+        $this->assertSame(200, $service->exitRescue($supplier, 123, 'jwt-token')['status']);
+    }
+
     public function test_console_service_builds_reinstall_options_from_host_header(): void
     {
         $supplier = $this->makeSupplier();

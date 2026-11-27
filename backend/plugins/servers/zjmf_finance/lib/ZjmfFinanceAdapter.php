@@ -253,6 +253,23 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
         return $this->consoleService->reinstall($supplier, $hostId, $osId, $jwt);
     }
 
+    /**
+     * 进入救援系统（魔方财务 func=rescue_system）。
+     *
+     * 服务层按 is_callable 探测方法名，此前驱动缺这个方法，救援按钮会回退到
+     * 我们自家的 /v1/hosts/{id}/module/rescue —— 魔方上游没有该路由，必然 404。
+     */
+    public function rescue(Supplier $supplier, int $hostId, string $system, ?string $jwt = null, ?string $tempPassword = null): array
+    {
+        return $this->consoleService->rescue($supplier, $hostId, $system, $jwt, $tempPassword);
+    }
+
+    /** 退出救援系统（魔方财务 func=exit_rescue）。 */
+    public function exitRescue(Supplier $supplier, int $hostId, ?string $jwt = null): array
+    {
+        return $this->consoleService->exitRescue($supplier, $hostId, $jwt);
+    }
+
     public function getSupportedModules(Supplier $supplier, int $hostId, ?string $jwt = null): array
     {
         return $this->consoleService->getSupportedModules($supplier, $hostId, $jwt);
@@ -456,6 +473,8 @@ final class ZjmfFinanceAdapter implements ProvidesBatchStatusSync, ProvidesConso
             'getReinstallOptions',
             'resetPassword',
             'reinstall',
+            'rescue',
+            'exitRescue',
             'getSupportedModules',
             'getMonitorChart',
             'getMonitorCharts',
