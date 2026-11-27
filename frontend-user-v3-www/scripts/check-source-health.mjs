@@ -1,5 +1,7 @@
 import fs from 'node:fs/promises'
 import path from 'node:path'
+import { pathToFileURL } from 'node:url'
+import { parse } from 'vue/compiler-sfc'
 
 const ROOT = process.cwd()
 const TARGETS = [
@@ -31,6 +33,17 @@ function inspectFile(relativePath, content, issues) {
     })
   }
 
+  // Vue 属性允许跨行；交给编译器检查，避免把合法绑定误报成缺少引号。
+  if (path.extname(relativePath) === '.vue') {
+    const { errors } = parse(content, { filename: relativePath })
+    for (const error of errors) {
+      issues.push({
+        file: relativePath,
+        problem: error.message || String(error),
+      })
+    }
+  }
+
   const lines = content.split(/\r?\n/)
   lines.forEach((line, index) => {
     const trimmed = line.trim()
@@ -44,13 +57,6 @@ function inspectFile(relativePath, content, issues) {
       issues.push({
         file: relativePath,
         problem: `第 ${index + 1} 行疑似缺失起始尖括号`,
-      })
-    }
-
-    if (/title="[^"]*$/.test(trimmed) || /label="[^"]*$/.test(trimmed) || /placeholder="[^"]*$/.test(trimmed)) {
-      issues.push({
-        file: relativePath,
-        problem: `第 ${index + 1} 行疑似存在未闭合属性引号`,
       })
     }
   })
@@ -111,7 +117,7 @@ async function main() {
   }
 }
 
-const isDirectRun = process.argv[1] && import.meta.url === new URL(process.argv[1], 'file:').href
+const isDirectRun = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href
 
 if (isDirectRun) {
   main().catch((error) => {

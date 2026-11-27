@@ -41,29 +41,6 @@ export function mapModuleRouterList(modules: Record<string, unknown>): Array<Rou
   return routerList;
 }
 
-/**
- *
- * @deprecated 未使用
- */
-export const getRoutesExpanded = () => {
-  const expandedRoutes: Array<string> = [];
-
-  fixedRouterList.forEach((item) => {
-    if (item.meta && item.meta.expanded) {
-      expandedRoutes.push(item.path);
-    }
-    if (item.children && item.children.length > 0) {
-      item.children
-        .filter((child) => child.meta && child.meta.expanded)
-        .forEach((child: RouteRecordRaw) => {
-          expandedRoutes.push(item.path);
-          expandedRoutes.push(`${item.path}/${child.path}`);
-        });
-    }
-  });
-  return Array.from(new Set(expandedRoutes));
-};
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
