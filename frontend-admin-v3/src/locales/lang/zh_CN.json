@@ -3752,13 +3752,11 @@
             "defaultTitle": "设置",
             "termsContent": "服务条款正文",
             "privacyContent": "隐私政策正文",
-            "legalContentPlaceholder": "## 一、协议的接受与变更\n本段正文……\n\n## 二、账号注册与安全\n本段正文……",
-            "legalContentHint": "每节以 ## 开头写标题，其余行是段落。可用占位：{{site_name}} 站点名、{{contact_email}} 服务邮箱、{{icp_record}} 备案号。留空则页面显示程序内置的默认条款。",
+            "legalContentHint": "每节以井号井号开头写标题，其余行是段落；可用占位符 site_name（站点名）、contact_email（服务邮箱）、icp_record（备案号），写成双层大括号包住字段名的形式即可。留空则页面显示程序内置的默认条款。",
             "sectionHomeLayout": "首页布局",
             "sectionHomeLayoutDesc": "控制官网首页显示哪些区块、按什么顺序。留空使用默认布局。",
             "homeSections": "区块编排（JSON）",
-            "homeSectionsPlaceholder": "[\n  {\"key\": \"hero\", \"enabled\": true, \"order\": 1},\n  {\"key\": \"products\", \"enabled\": true, \"order\": 2},\n  {\"key\": \"solutions\", \"enabled\": true, \"order\": 3}\n]",
-            "homeSectionsHint": "可用 key：hero 首屏、products 商品、ai_skill AI 接入、solutions 解决方案、partners 伙伴、news 动态、register 注册引导。order 越小越靠前，enabled=false 关闭该区块；没写到的区块会按默认顺序追加在后面。"
+            "homeSectionsHint": "可用 key：hero 首屏、products 商品、ai_skill AI 接入、solutions 解决方案、partners 伙伴、news 动态、register 注册引导。order 越小越靠前，enabled 设为 false 关闭该区块；没写到的区块会按默认顺序追加在后面。"
         }
     },
     "system": {

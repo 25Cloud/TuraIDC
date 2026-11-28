@@ -3752,13 +3752,11 @@
             "defaultTitle": "Settings",
             "termsContent": "Terms of Service body",
             "privacyContent": "Privacy Policy body",
-            "legalContentPlaceholder": "## 1. Acceptance and changes\nParagraph text...\n\n## 2. Accounts and security\nParagraph text...",
-            "legalContentHint": "Start each section with \"## \" for the heading; every other line is a paragraph. Supported placeholders: {{site_name}}, {{contact_email}}, {{icp_record}}. Leave blank to use the built-in default text.",
+            "legalContentHint": "Start each section with two hash marks for the heading; other lines are paragraphs. Placeholders site_name, contact_email and icp_record are supported when wrapped in double braces. Leave blank to use the built-in default text.",
             "sectionHomeLayout": "Home layout",
             "sectionHomeLayoutDesc": "Choose which sections appear on the home page and in what order. Leave blank for the default layout.",
             "homeSections": "Section layout (JSON)",
-            "homeSectionsPlaceholder": "[\n  {\"key\": \"hero\", \"enabled\": true, \"order\": 1},\n  {\"key\": \"products\", \"enabled\": true, \"order\": 2}\n]",
-            "homeSectionsHint": "Available keys: hero, products, ai_skill, solutions, partners, news, register. Lower order comes first; enabled=false hides the section. Sections you omit are appended in the default order."
+            "homeSectionsHint": "Available keys: hero, products, ai_skill, solutions, partners, news, register. Lower order comes first; set enabled to false to hide a section. Sections you omit are appended in the default order."
         }
     },
     "system": {

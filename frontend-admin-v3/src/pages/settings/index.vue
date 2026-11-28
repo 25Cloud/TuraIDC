@@ -630,6 +630,25 @@ import { errorMessage } from '@/utils/userMessage';
 defineOptions({ name: 'AdminSettings' });
 
 type SettingsTab = 'referral' | 'automation' | 'log_archive' | 'site_basic' | 'site_hero';
+
+/**
+ * 代码示例型占位文案不走 i18n。
+ *
+ * vue-i18n 用 { } 作插值语法，消息文本里出现裸 { } 或双层大括号（如 JSON 示例、
+ * 模板占位符）会在初始化解析阶段抛 "Message compilation error"，把整页渲染打断。
+ * 这类内容本来就是给站长看的格式样例，写在组件常量里最直接。
+ */
+const HOME_SECTIONS_PLACEHOLDER = `[
+  {"key": "hero", "enabled": true, "order": 1},
+  {"key": "products", "enabled": true, "order": 2},
+  {"key": "solutions", "enabled": true, "order": 3}
+]`;
+
+const LEGAL_CONTENT_PLACEHOLDER = `## 一、协议的接受与变更
+本段正文……
+
+## 二、账号注册与安全
+本段正文……`;
 type FieldType =
   | 'input'
   | 'password'
@@ -965,7 +984,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             maxlength: 40000,
             rows: 14,
             wide: true,
-            placeholder: t('settings.index.legalContentPlaceholder'),
+            placeholder: LEGAL_CONTENT_PLACEHOLDER,
             help: t('settings.index.legalContentHint'),
           },
           {
@@ -985,7 +1004,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             maxlength: 40000,
             rows: 14,
             wide: true,
-            placeholder: t('settings.index.legalContentPlaceholder'),
+            placeholder: LEGAL_CONTENT_PLACEHOLDER,
             help: t('settings.index.legalContentHint'),
           },
         ],
@@ -1003,7 +1022,7 @@ const configs: Record<Exclude<SettingsTab, 'site_hero'>, SettingsConfig> = {
             maxlength: 4000,
             rows: 12,
             wide: true,
-            placeholder: t('settings.index.homeSectionsPlaceholder'),
+            placeholder: HOME_SECTIONS_PLACEHOLDER,
             help: t('settings.index.homeSectionsHint'),
           },
         ],

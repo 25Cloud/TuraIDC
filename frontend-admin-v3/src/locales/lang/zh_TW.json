@@ -3752,13 +3752,11 @@
             "defaultTitle": "設定",
             "termsContent": "服務條款正文",
             "privacyContent": "隱私政策正文",
-            "legalContentPlaceholder": "## 一、協議的接受與變更\n本段正文……\n\n## 二、帳號註冊與安全\n本段正文……",
-            "legalContentHint": "每節以 ## 開頭寫標題，其餘行是段落。可用佔位：{{site_name}} 站點名、{{contact_email}} 服務郵箱、{{icp_record}} 備案號。留空則頁面顯示程式內建的預設條款。",
+            "legalContentHint": "每節以井號井號開頭寫標題，其餘行是段落；可用佔位符 site_name（站點名）、contact_email（服務郵箱）、icp_record（備案號），寫成雙層大括號包住欄位名的形式即可。留空則頁面顯示程式內建的預設條款。",
             "sectionHomeLayout": "首頁佈局",
             "sectionHomeLayoutDesc": "控制官網首頁顯示哪些區塊、依什麼順序。留空使用預設佈局。",
             "homeSections": "區塊編排（JSON）",
-            "homeSectionsPlaceholder": "[\n  {\"key\": \"hero\", \"enabled\": true, \"order\": 1},\n  {\"key\": \"products\", \"enabled\": true, \"order\": 2}\n]",
-            "homeSectionsHint": "可用 key：hero 首屏、products 商品、ai_skill AI 接入、solutions 解決方案、partners 夥伴、news 動態、register 註冊引導。order 越小越前面，enabled=false 關閉該區塊；未寫到的區塊會依預設順序附加在後。"
+            "homeSectionsHint": "可用 key：hero 首屏、products 商品、ai_skill AI 接入、solutions 解決方案、partners 夥伴、news 動態、register 註冊引導。order 越小越前面，enabled 設為 false 關閉該區塊；未寫到的區塊會依預設順序附加在後。"
         }
     },
     "system": {
