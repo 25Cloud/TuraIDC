@@ -30,6 +30,15 @@ class SiteConfigResource extends JsonResource
         'public_security_record',
         'public_security_record_url',
         'value_added_license',
+        // 关于我们页的站点级内容（后台可填，空值前端整块隐藏）
+        'about_company_name',
+        'about_founded_year',
+        'about_summary',
+        'about_team_size',
+        'about_customer_count',
+        'about_datacenter_count',
+        'about_milestones',
+        'about_sla',
         // 品牌主色与圆角：前端据此覆盖 TDesign / Element Plus 的 CSS 变量，
         // 值已在 SiteConfigPayload 做过严格格式校验，这里只做透传。
         'brand_primary_color',

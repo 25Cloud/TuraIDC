@@ -250,6 +250,35 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       String(import.meta.env.VITE_VALUE_ADDED_LICENSE || ""),
     ),
   );
+  // 关于我们的内容全部走站点配置，未配置时前端不渲染对应区块
+  const aboutCompanyName = ref(
+    pick(initialSiteConfig, ["about_company_name", "aboutCompanyName"], ""),
+  );
+  const aboutFoundedYear = ref(
+    pick(initialSiteConfig, ["about_founded_year", "aboutFoundedYear"], ""),
+  );
+  const aboutSummary = ref(
+    pick(initialSiteConfig, ["about_summary", "aboutSummary"], ""),
+  );
+  const aboutTeamSize = ref(
+    pick(initialSiteConfig, ["about_team_size", "aboutTeamSize"], ""),
+  );
+  const aboutCustomerCount = ref(
+    pick(initialSiteConfig, ["about_customer_count", "aboutCustomerCount"], ""),
+  );
+  const aboutDatacenterCount = ref(
+    pick(
+      initialSiteConfig,
+      ["about_datacenter_count", "aboutDatacenterCount"],
+      "",
+    ),
+  );
+  const aboutMilestones = ref(
+    pick(initialSiteConfig, ["about_milestones", "aboutMilestones"], ""),
+  );
+  const aboutSla = ref(
+    pick(initialSiteConfig, ["about_sla", "aboutSla"], ""),
+  );
   // 增值电信许可证的查询链接：配了证号就带 num 参数，没配就落到查询页首页
   const valueAddedLicenseLink = computed(() => {
     const custom = normalizeExternalLink(valueAddedLicenseUrl.value);
@@ -397,6 +426,47 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       ],
       valueAddedLicense.value || "",
     );
+    // 关于我们页的站点级内容：后台填，空值前端整块隐藏
+    aboutCompanyName.value = pick(
+      data,
+      ["about_company_name", "aboutCompanyName"],
+      aboutCompanyName.value || "",
+    );
+    aboutFoundedYear.value = pick(
+      data,
+      ["about_founded_year", "aboutFoundedYear"],
+      aboutFoundedYear.value || "",
+    );
+    aboutSummary.value = pick(
+      data,
+      ["about_summary", "aboutSummary"],
+      aboutSummary.value || "",
+    );
+    aboutTeamSize.value = pick(
+      data,
+      ["about_team_size", "aboutTeamSize"],
+      aboutTeamSize.value || "",
+    );
+    aboutCustomerCount.value = pick(
+      data,
+      ["about_customer_count", "aboutCustomerCount"],
+      aboutCustomerCount.value || "",
+    );
+    aboutDatacenterCount.value = pick(
+      data,
+      ["about_datacenter_count", "aboutDatacenterCount"],
+      aboutDatacenterCount.value || "",
+    );
+    aboutMilestones.value = pick(
+      data,
+      ["about_milestones", "aboutMilestones"],
+      aboutMilestones.value || "",
+    );
+    aboutSla.value = pick(
+      data,
+      ["about_sla", "aboutSla"],
+      aboutSla.value || "",
+    );
     productDisplayMode.value = normalizeDisplayMode(
       pick(data, ["product_display_mode"], productDisplayMode.value),
     );
@@ -493,6 +563,14 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     valueAddedLicense,
     valueAddedLicenseUrl,
     valueAddedLicenseLink,
+    aboutCompanyName,
+    aboutFoundedYear,
+    aboutSummary,
+    aboutTeamSize,
+    aboutCustomerCount,
+    aboutDatacenterCount,
+    aboutMilestones,
+    aboutSla,
     productDisplayMode,
     productCardShowStock,
     productDetailSpecCompare,

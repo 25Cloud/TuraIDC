@@ -133,6 +133,16 @@ class SiteConfigPayload
                     (string) self::DEFAULT_PRODUCT_PAGE_MAX_WIDTH
                 )
             ),
+            // 关于我们页的站点级内容：站长在后台填写，前端按空值整块隐藏。
+            // milestones 约定每行「年份|标题|说明」，用竖线分列，避免让站长手写 JSON。
+            'about_company_name' => self::read(self::SETTING_GROUP_BASIC, 'about_company_name', ''),
+            'about_founded_year' => self::read(self::SETTING_GROUP_BASIC, 'about_founded_year', ''),
+            'about_summary' => self::read(self::SETTING_GROUP_BASIC, 'about_summary', ''),
+            'about_team_size' => self::read(self::SETTING_GROUP_BASIC, 'about_team_size', ''),
+            'about_customer_count' => self::read(self::SETTING_GROUP_BASIC, 'about_customer_count', ''),
+            'about_datacenter_count' => self::read(self::SETTING_GROUP_BASIC, 'about_datacenter_count', ''),
+            'about_milestones' => self::read(self::SETTING_GROUP_BASIC, 'about_milestones', ''),
+            'about_sla' => self::read(self::SETTING_GROUP_BASIC, 'about_sla', ''),
             'frontend_url' => (string) config('app.frontend_url', ''),
         ];
     }
