@@ -18,7 +18,7 @@
         <!-- 关键数字：只在后台填了对应值时才出现，不留空占位 -->
         <dl v-if="stats.length > 0" class="about-stats">
           <div v-for="stat in stats" :key="stat.key" class="about-stat">
-            <dt>{{ stat.label }}</dt>
+            <dt>{{ $t(stat.label) }}</dt>
             <dd>{{ stat.value }}</dd>
           </div>
         </dl>
@@ -90,7 +90,7 @@
         <h2 class="about-section__title">{{ $t("content.about.credentialsTitle") }}</h2>
         <ul class="about-credentials">
           <li v-for="item in credentials" :key="item.label" class="about-credential">
-            <span class="about-credential__label">{{ item.label }}</span>
+            <span class="about-credential__label">{{ $t(item.label) }}</span>
             <a
               v-if="item.link"
               class="about-credential__value"
