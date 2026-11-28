@@ -130,9 +130,7 @@
         <t-checkbox v-model="form.agreed" class="client-auth-agree">
           <span>
             {{ t('clientAuth.register.agreePrefix') }}
-            <a :href="termsLink" target="_blank" rel="noopener noreferrer">{{
-              t('clientAuth.register.termsName')
-            }}</a>
+            <a :href="termsLink" target="_blank" rel="noopener noreferrer">{{ t('clientAuth.register.termsName') }}</a>
             {{ t('clientAuth.register.agreeAnd') }}
             <a :href="privacyLink" target="_blank" rel="noopener noreferrer">{{
               t('clientAuth.register.privacyName')
@@ -479,4 +477,5 @@ onBeforeUnmount(() => {
   margin: 0.25rem 0 0;
   color: var(--td-error-color, #d54941);
   font-size: 0.75rem;
-}</style>
+}
+</style>

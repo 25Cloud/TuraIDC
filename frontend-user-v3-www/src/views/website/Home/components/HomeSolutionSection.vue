@@ -225,19 +225,8 @@ onBeforeUnmount(stopAutoSwitch);
   height: 100%;
   object-fit: cover;
   filter: saturate(0.92) brightness(0.96);
-  /* 背景缓慢漂移：静止大图会让整屏看起来是截图，极慢的位移能带出"活"的感觉 */
-  animation: solution-stage-drift 26s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-@keyframes solution-stage-drift {
-  from {
-    transform: scale(1.03) translate3d(0, 0, 0);
-  }
-
-  to {
-    transform: scale(1.08) translate3d(0, -1.4%, 0);
-  }
+  /* 这里刻意不加缩放/位移动画：背景是大尺寸 SVG，scale 动画会让它在滚动和
+     切换时出现重采样撕裂（用户实测「背景图标崩溃」）。静态铺满即可。 */
 }
 
 .solution-stage__overlay {
@@ -460,10 +449,6 @@ onBeforeUnmount(stopAutoSwitch);
    注意这里必须把 enter-from / leave-to 的终态也拉回可见——
    只关 transition 而保留 opacity:0，元素会永久透明（headless 环境默认就是 reduced-motion）。 */
 @media (prefers-reduced-motion: reduce) {
-  .solution-stage__image {
-    animation: none;
-  }
-
   .solution-fade-enter-active,
   .solution-fade-leave-active,
   .solution-image-enter-active,

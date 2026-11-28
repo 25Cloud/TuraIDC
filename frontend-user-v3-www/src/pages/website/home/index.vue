@@ -27,9 +27,9 @@
         <DeferredHomeSection
           v-if="deferredReady"
           :loader="loadAiSkillSection"
-          skeleton-type="solutions"
+          skeleton-type="ai"
         />
-        <HomeSectionSkeleton v-else type="solutions" />
+        <HomeSectionSkeleton v-else type="ai" />
       </template>
 
       <template v-else-if="section.key === 'solutions'">
@@ -70,14 +70,11 @@
         <HomeSectionSkeleton v-else type="register" />
       </template>
     </template>
-
-    <!-- 延迟区块的统一挂载哨兵：进入视口后才开始加载下方各组件的 chunk -->
-    <div v-if="showDeferredSentinel" ref="deferredSkeletonRef" aria-hidden="true"></div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 import siteApi from "@/api/site";
 import { useAppStore } from "@/stores/app";
 import { t } from "@/locales";
@@ -133,8 +130,6 @@ const loading = ref(true);
 const homeLoaded = ref(false);
 const homeLoadSucceeded = ref(false);
 const mountDeferredSections = ref(false);
-const deferredSkeletonRef = ref<HTMLElement | null>(null);
-let deferredObserver: IntersectionObserver | null = null;
 const homeHero = ref<Record<string, unknown> | null>(null);
 const notices = ref<any[]>([]);
 const rootGroups = ref<any[]>([]);
@@ -232,17 +227,6 @@ const deferredReady = computed(
   () => homeContentReady.value && mountDeferredSections.value,
 );
 
-// 仍有未挂载的延迟区块时才需要哨兵元素
-const showDeferredSentinel = computed(
-  () =>
-    homeContentReady.value &&
-    !mountDeferredSections.value &&
-    renderedSections.value.some((section) =>
-      ["ai_skill", "solutions", "partners", "news", "register"].includes(
-        section.key,
-      ),
-    ),
-);
 
 function deriveProductTypesFromGroups(groups: any[]) {
   const map = new Map<string, ProductTypeItem>();
@@ -319,6 +303,33 @@ async function loadHomePage() {
   loading.value = false;
 }
 
+function mountDeferredSectionsSoon() {
+  const mount = () => {
+    mountDeferredSections.value = true;
+  };
+
+  // 让出首屏渲染后再挂载延迟区块：这些组件的 chunk 本身就是按需 import，
+  // 不会拖慢首屏；但若等「滚动到某处」才挂，骨架会长时间停在那里。
+  // 先取到局部引用再判断，避免 typeof window 收窄把后续 window 变成 never。
+  const host = typeof window === "undefined" ? null : window;
+
+  if (!host) {
+    mount();
+    return;
+  }
+
+  const idleCallback = (host as unknown as {
+    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => void;
+  }).requestIdleCallback;
+
+  if (typeof idleCallback === "function") {
+    idleCallback(mount, { timeout: 300 });
+    return;
+  }
+
+  host.setTimeout(mount, 0);
+}
+
 onMounted(async () => {
   await loadHomePage();
 
@@ -326,37 +337,6 @@ onMounted(async () => {
     return;
   }
 
-  // 使用 IntersectionObserver 在哨兵进入视口时才挂载延迟区域
-  if (typeof window !== "undefined" && "IntersectionObserver" in window) {
-    deferredObserver = new IntersectionObserver(
-      (entries) => {
-        if (entries[0]?.isIntersecting) {
-          mountDeferredSections.value = true;
-          if (deferredObserver) {
-            deferredObserver.disconnect();
-            deferredObserver = null;
-          }
-        }
-      },
-      { rootMargin: "200px" },
-    );
-
-    // 哨兵就绪后开始观察；没有延迟区块时直接放行
-    if (deferredSkeletonRef.value) {
-      deferredObserver.observe(deferredSkeletonRef.value);
-    } else {
-      mountDeferredSections.value = true;
-    }
-  } else {
-    // 不支持 IntersectionObserver 的旧浏览器直接挂载
-    mountDeferredSections.value = true;
-  }
-});
-
-onBeforeUnmount(() => {
-  if (deferredObserver) {
-    deferredObserver.disconnect();
-    deferredObserver = null;
-  }
+  mountDeferredSectionsSoon();
 });
 </script>

@@ -442,7 +442,7 @@ final class AutoRefundService
                 'operator_id' => (int) $admin->id,
             ]);
 
-                        return array_merge($this->presentApplication($application->fresh() ?? $application, true), [
+            return array_merge($this->presentApplication($application->fresh() ?? $application, true), [
                 'refund' => $result['refund'] ?? [],
             ]);
         });

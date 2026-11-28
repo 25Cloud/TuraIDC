@@ -111,16 +111,13 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
 
   const ICP_FILING_URL = 'https://beian.miit.gov.cn/';
   const PUBLIC_SECURITY_FILING_URL = 'https://www.beian.gov.cn/';
-  const VALUE_ADDED_LICENSE_URL =
-    'https://tsm.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyesearch.jsp';
+  const VALUE_ADDED_LICENSE_URL = 'https://tsm.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyesearch.jsp';
 
   function isHttpUrl(value: string): boolean {
     return /^https?:\/\//i.test(String(value || '').trim());
   }
 
-  const icpFilingLink = computed(() =>
-    isHttpUrl(icpRecordUrl.value) ? icpRecordUrl.value.trim() : ICP_FILING_URL,
-  );
+  const icpFilingLink = computed(() => (isHttpUrl(icpRecordUrl.value) ? icpRecordUrl.value.trim() : ICP_FILING_URL));
 
   const publicSecurityFilingLink = computed(() => {
     if (isHttpUrl(publicSecurityRecordUrl.value)) return publicSecurityRecordUrl.value.trim();

@@ -67,26 +67,17 @@
       </section>
 
       <footer class="auth-shell__footer">
-        <p class="auth-shell__copyright">
-          Copyright © {{ currentYear }} {{ siteBranding.siteName }}
-        </p>
+        <p class="auth-shell__copyright">Copyright © {{ currentYear }} {{ siteBranding.siteName }}</p>
         <!-- 备案与许可：登录/注册/忘记密码等所有认证页都要露出，属于合规硬要求 -->
         <p
-          v-if="
-            siteBranding.icpRecord ||
-            siteBranding.valueAddedLicense ||
-            siteBranding.publicSecurityRecord
-          "
+          v-if="siteBranding.icpRecord || siteBranding.valueAddedLicense || siteBranding.publicSecurityRecord"
           class="auth-shell__meta"
         >
           <span v-if="siteBranding.valueAddedLicense">
             {{ $t('layout.footer.valueAddedLicense') }}
-            <a
-              :href="siteBranding.valueAddedLicenseLink"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ siteBranding.valueAddedLicense }}</a
-            >
+            <a :href="siteBranding.valueAddedLicenseLink" target="_blank" rel="noopener noreferrer">{{
+              siteBranding.valueAddedLicense
+            }}</a>
           </span>
           <span v-if="siteBranding.icpRecord">
             {{ $t('layout.footer.icpRecord') }}
@@ -96,12 +87,9 @@
           </span>
           <span v-if="siteBranding.publicSecurityRecord">
             {{ $t('layout.footer.publicSecurityRecord') }}
-            <a
-              :href="siteBranding.publicSecurityFilingLink"
-              target="_blank"
-              rel="noopener noreferrer"
-              >{{ siteBranding.publicSecurityRecord }}</a
-            >
+            <a :href="siteBranding.publicSecurityFilingLink" target="_blank" rel="noopener noreferrer">{{
+              siteBranding.publicSecurityRecord
+            }}</a>
           </span>
         </p>
       </footer>

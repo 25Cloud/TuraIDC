@@ -135,6 +135,43 @@
         </div>
       </div>
 
+      <!-- AI 助手接入区：标题 + 三张说明卡 + 一条命令框 + 按钮 -->
+      <div v-else-if="type === 'ai'" class="home-section-skeleton__stack">
+        <div class="home-section-skeleton__heading">
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--title"
+          ></span>
+          <span
+            class="home-section-skeleton__line home-section-skeleton__line--desc"
+          ></span>
+        </div>
+
+        <div class="home-section-skeleton__ai-grid">
+          <div
+            v-for="item in 3"
+            :key="`ai-card-${item}`"
+            class="home-section-skeleton__ai-card"
+          >
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--panel-title"
+            ></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--panel-desc"
+            ></span>
+            <span
+              class="home-section-skeleton__line home-section-skeleton__line--panel-desc short"
+            ></span>
+          </div>
+        </div>
+
+        <div class="home-section-skeleton__ai-cta">
+          <span class="home-section-skeleton__line home-section-skeleton__line--console"></span>
+          <span
+            class="home-section-skeleton__pill home-section-skeleton__pill--button"
+          ></span>
+        </div>
+      </div>
+
       <div v-else-if="type === 'news'" class="home-section-skeleton__stack">
         <div class="home-section-skeleton__heading">
           <span
@@ -488,6 +525,40 @@ defineProps({
   width: min(420px, 72%);
   height: 22px;
   background: rgba(255, 255, 255, 0.35);
+}
+
+/* AI 助手接入区的骨架：三张说明卡 + 一条命令框 */
+.home-section-skeleton__ai-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.home-section-skeleton__ai-card {
+  display: grid;
+  gap: 10px;
+  padding: 24px 22px;
+  border: 1px solid #e5eaf3;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+.home-section-skeleton__ai-cta {
+  display: grid;
+  justify-items: center;
+  gap: 14px;
+}
+
+.home-section-skeleton__line--console {
+  width: min(760px, 100%);
+  height: 40px;
+  border-radius: 6px;
+}
+
+@media (max-width: 900px) {
+  .home-section-skeleton__ai-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .home-section-skeleton__pill {

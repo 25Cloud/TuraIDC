@@ -2,7 +2,6 @@
   <div class="solutions-index">
     <section class="si-hero">
       <div class="container">
-        <p class="si-kicker">{{ $t("home.solutions.detail.heroKicker") }}</p>
         <h1 class="si-title">{{ $t("home.solutions.title") }}</h1>
         <p class="si-desc">{{ $t("home.solutions.subtitle") }}</p>
       </div>

@@ -3,9 +3,6 @@
     <section class="sd-hero">
       <div class="container sd-hero__inner">
         <div class="sd-hero__copy">
-          <p class="sd-kicker">
-            {{ $t("home.solutions.detail.heroKicker") }} · {{ solution.label }}
-          </p>
           <h1 class="sd-title">{{ solution.title }}</h1>
           <p class="sd-desc">{{ solution.description }}</p>
           <div class="sd-actions">
@@ -123,9 +120,6 @@
             {{ item.label }}
           </router-link>
         </div>
-        <router-link class="sd-back" to="/about">
-          {{ $t("home.solutions.detail.backToList") }}
-        </router-link>
       </div>
     </section>
   </div>
@@ -414,13 +408,14 @@ const flowSteps = computed(() =>
 
 .sd-cta {
   padding: 64px 0;
-  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+  border-top: 1px solid #e5eaf3;
+  background: #ffffff;
   text-align: center;
 }
 
 .sd-cta__title {
   margin: 0;
-  color: #fff;
+  color: #0f172a;
   font-size: 26px;
   font-weight: 700;
 }
@@ -428,21 +423,9 @@ const flowSteps = computed(() =>
 .sd-cta__desc {
   max-width: 620px;
   margin: 14px auto 0;
-  color: rgba(255, 255, 255, 0.78);
+  color: #5b6b82;
   font-size: 14px;
   line-height: 1.9;
-}
-
-.sd-cta .sd-action {
-  border-color: rgba(255, 255, 255, 0.32);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-}
-
-.sd-cta .sd-action--primary {
-  border-color: #fff;
-  background: #fff;
-  color: #0f172a;
 }
 
 .sd-others {

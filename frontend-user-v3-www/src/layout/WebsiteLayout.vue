@@ -1536,7 +1536,7 @@ const navigationItems = computed(() => [
   },
   {
     to: "/about",
-    label: t("layout.nav.moreLinks"),
+    label: t("layout.nav.aboutUs"),
     match: ["WwwAbout"],
     menuId: "about",
   },
