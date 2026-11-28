@@ -463,6 +463,18 @@ onBeforeUnmount(() => {
   line-height: 1.5;
 }
 
+/* 条款链接与页面其他链接同一套：品牌色、无下划线，hover 才出现下划线 */
+.client-auth-agree a {
+  color: var(--td-brand-color);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.client-auth-agree a:hover {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 .client-auth-agree__error {
   margin: 0.25rem 0 0;
   color: var(--td-error-color, #d54941);

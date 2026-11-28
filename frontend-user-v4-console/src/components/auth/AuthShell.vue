@@ -648,6 +648,39 @@ onMounted(() => {
   line-height: 1.6;
 }
 
+.auth-shell__copyright {
+  margin: 0;
+}
+
+/* 备案与许可：跟页脚走同一套淡色排版，默认不画下划线，
+   hover 才给品牌色 + 下划线提示可点，避免一排蓝色原生链接跳出整体风格 */
+.auth-shell__meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.25rem 1rem;
+  margin: 0.125rem 0 0;
+}
+
+.auth-shell__meta > span {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.125rem;
+}
+
+.auth-shell__meta a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.auth-shell__meta a:hover {
+  color: var(--td-brand-color);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
 @media (max-width: @screen-lg-max) {
   .auth-shell__stage {
     width: min(78rem, calc(100% - 3.5rem));
@@ -769,26 +802,6 @@ onMounted(() => {
   .auth-shell__footer {
     text-align: left;
     font-size: 0.6875rem;
-  }
-
-  .auth-shell__copyright {
-    margin: 0;
-  }
-
-  .auth-shell__meta {
-    margin: 0.25rem 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.125rem 0.75rem;
-
-    a {
-      color: inherit;
-      text-decoration: none;
-
-      &:hover {
-        text-decoration: underline;
-      }
-    }
   }
 }
 
