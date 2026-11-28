@@ -456,7 +456,9 @@ onBeforeUnmount(stopAutoSwitch);
   transform: translateY(-6px);
 }
 
-/* 尊重系统的「减少动态效果」设置：关掉漂移与淡入位移，只留必要的可读性 */
+/* 尊重系统的「减少动态效果」设置：关掉漂移与淡入位移，只留必要的可读性。
+   注意这里必须把 enter-from / leave-to 的终态也拉回可见——
+   只关 transition 而保留 opacity:0，元素会永久透明（headless 环境默认就是 reduced-motion）。 */
 @media (prefers-reduced-motion: reduce) {
   .solution-stage__image {
     animation: none;
@@ -467,6 +469,14 @@ onBeforeUnmount(stopAutoSwitch);
   .solution-image-enter-active,
   .solution-image-leave-active {
     transition: none;
+  }
+
+  .solution-fade-enter-from,
+  .solution-fade-leave-to,
+  .solution-image-enter-from,
+  .solution-image-leave-to {
+    opacity: 1;
+    transform: none;
   }
 }
 
