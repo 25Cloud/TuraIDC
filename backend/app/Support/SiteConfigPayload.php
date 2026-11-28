@@ -143,6 +143,9 @@ class SiteConfigPayload
             'about_datacenter_count' => self::read(self::SETTING_GROUP_BASIC, 'about_datacenter_count', ''),
             'about_milestones' => self::read(self::SETTING_GROUP_BASIC, 'about_milestones', ''),
             'about_sla' => self::read(self::SETTING_GROUP_BASIC, 'about_sla', ''),
+            // 首页区块编排：JSON 数组，元素形如 {"key":"products","enabled":true,"variant":"tabs"}。
+            // 留空则前端按内置默认顺序渲染，站长不需要为了用默认值先填一遍。
+            'home_sections' => self::read(self::SETTING_GROUP_BASIC, 'home_sections', ''),
             'frontend_url' => (string) config('app.frontend_url', ''),
         ];
     }

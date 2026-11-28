@@ -41,6 +41,18 @@
           class="product-card"
           @click="router.push(card.path)"
         >
+          <!-- 分组图标：后台给分组配了图标就画图标，没配则用名称缩写兜底，不会是空白方块 -->
+          <span
+            v-if="card.icon"
+            class="product-card__icon"
+            :class="`product-card__icon--${card.icon.kind}`"
+            aria-hidden="true"
+          >
+            <el-icon v-if="card.icon.kind === 'icon'">
+              <component :is="card.icon.component" />
+            </el-icon>
+            <span v-else class="product-card__icon-text">{{ card.icon.text }}</span>
+          </span>
           <strong class="product-card__title">{{ card.title }}</strong>
           <p class="product-card__desc">{{ card.desc }}</p>
           <span class="product-card__cta">
@@ -58,6 +70,7 @@ import { computed, shallowRef, watch } from "vue";
 import { useRouter } from "vue-router";
 import { ElIcon } from "element-plus/es/components/icon/index.mjs";
 import { ArrowRight } from "@element-plus/icons-vue";
+import { resolveGroupIcon } from "@/utils/productGroupIcon";
 import { useAppStore } from "@/stores/app";
 // t 必须导入到 script 块里：模板下方用 t('home.products.emptyCategory') 直接取文案。
 // 之前这行 import 被写在了 <template> 之外（文件第 1 行），SFC 解析器直接忽略，
@@ -124,6 +137,7 @@ const activeEnterpriseCards = computed(() =>
 
     return {
       key: String(groupId || index + 1),
+      icon: resolveGroupIcon(group?.icon_resolved, group?.name || ""),
       title:
         group?.name || t("home.products.groupFallback", { index: index + 1 }),
       desc: resolveEnterpriseCategoryDesc(group, summary, primaryProduct),
@@ -429,6 +443,35 @@ watch(
 .product-card:hover {
   border-color: rgba($color-primary, 0.4);
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.08);
+}
+
+/* 卡片图标：图标模式画矢量图，文字模式用名称缩写兜底 */
+.product-card__icon {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
+  border-radius: 8px;
+  background: rgba($color-primary, 0.1);
+  color: $color-primary;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.product-card__icon-text {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.product-card:hover .product-card__icon {
+  background: rgba($color-primary, 0.16);
+  transform: translateY(-1px);
 }
 
 .product-card__title {

@@ -39,6 +39,8 @@ class SiteConfigResource extends JsonResource
         'about_datacenter_count',
         'about_milestones',
         'about_sla',
+        // 首页区块编排（JSON 字符串，留空按内置默认顺序）
+        'home_sections',
         // 品牌主色与圆角：前端据此覆盖 TDesign / Element Plus 的 CSS 变量，
         // 值已在 SiteConfigPayload 做过严格格式校验，这里只做透传。
         'brand_primary_color',

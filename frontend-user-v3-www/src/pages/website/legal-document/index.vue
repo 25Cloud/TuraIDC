@@ -38,10 +38,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { useAppStore } from "@/stores/app";
 import SkeletonBlock from "@/components/common/SkeletonBlock.vue";
+import siteApi from "@/api/site";
 import { t } from "@/locales";
 import { buildLegalSections } from "@/content/legalDocuments";
 
@@ -63,9 +64,12 @@ const pageDescription = computed(() =>
     : t("content.legal.termsDescription"),
 );
 
-// 站内默认正文的动态值：站点名 / 服务邮箱 / 备案号全部来自站点配置，
-// 后台改了配置这里自动跟随，无需改代码。
-const sections = computed(() =>
+// 后台可维护的正文；接口不可用或后台没填时回落内置文案，页面不会开天窗
+const remoteSections = ref<Array<{ title: string; paragraphs: string[] }> | null>(
+  null,
+);
+
+const fallbackSections = computed(() =>
   buildLegalSections(documentKey.value === "privacy" ? "privacy" : "terms", {
     siteName: appStore.siteName,
     serviceEmail: appStore.serviceEmail,
@@ -73,6 +77,25 @@ const sections = computed(() =>
     websiteOrigin: window.location.origin,
   }),
 );
+
+const sections = computed(() =>
+  remoteSections.value && remoteSections.value.length > 0
+    ? remoteSections.value
+    : fallbackSections.value,
+);
+
+onMounted(async () => {
+  try {
+    const list = await siteApi.legal(
+      documentKey.value === "privacy" ? "privacy" : "terms",
+    );
+    if (Array.isArray(list) && list.length > 0) {
+      remoteSections.value = list;
+    }
+  } catch {
+    // 接口不可用时保持内置文案，不做任何可见报错
+  }
+});
 
 function openDocument() {
   if (!targetUrl.value) {

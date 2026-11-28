@@ -1,46 +1,78 @@
 <template>
   <div class="home-page">
-    <HomeHeroCarousel v-if="homeHeroReady" :hero="homeHero || {}" />
-    <HomeSectionSkeleton v-else type="hero" />
+    <!--
+      区块由站点配置的 home_sections 编排（顺序 + 开关 + 变体），
+      没配置时按内置默认顺序渲染，站长不动配置也能正常显示。
+      每个区块的渲染条件（数据就绪 / 骨架 / 延迟挂载）保持原样，
+      配置层只决定「渲染哪一个、按什么顺序、开不开」。
+    -->
+    <template v-for="section in renderedSections" :key="section.key">
+      <template v-if="section.key === 'hero'">
+        <HomeHeroCarousel v-if="homeHeroReady" :hero="homeHero || {}" />
+        <HomeSectionSkeleton v-else type="hero" />
+      </template>
 
-    <HomeProductTabs
-      v-if="productContentReady"
-      :loading="loading"
-      :product-types="productTypes"
-      :root-groups="rootGroups"
-      :group-catalog-map="groupCatalogMap"
-    />
-    <HomeSectionSkeleton v-else type="products" />
+      <template v-else-if="section.key === 'products'">
+        <HomeProductTabs
+          v-if="productContentReady"
+          :loading="loading"
+          :product-types="productTypes"
+          :root-groups="rootGroups"
+          :group-catalog-map="groupCatalogMap"
+        />
+        <HomeSectionSkeleton v-else type="products" />
+      </template>
 
-    <template v-if="homeContentReady && mountDeferredSections">
-      <DeferredHomeSection
-        :loader="loadAiSkillSection"
-        skeleton-type="solutions"
-      />
-      <DeferredHomeSection
-        :loader="loadSolutionSection"
-        skeleton-type="solutions"
-      />
-      <DeferredHomeSection
-        :loader="loadPartnerSection"
-        skeleton-type="partner"
-      />
-      <!-- 没有公告时整段不挂：否则只剩「资讯动态」节头 + 查看更多，下面零卡片 -->
-      <DeferredHomeSection
-        v-if="notices.length > 0"
-        :loader="loadNewsSection"
-        skeleton-type="news"
-        :section-props="{ notices }"
-      />
-      <DeferredHomeSection :loader="loadRegisterBar" skeleton-type="register" />
+      <template v-else-if="section.key === 'ai_skill'">
+        <DeferredHomeSection
+          v-if="deferredReady"
+          :loader="loadAiSkillSection"
+          skeleton-type="solutions"
+        />
+        <HomeSectionSkeleton v-else type="solutions" />
+      </template>
+
+      <template v-else-if="section.key === 'solutions'">
+        <DeferredHomeSection
+          v-if="deferredReady"
+          :loader="loadSolutionSection"
+          skeleton-type="solutions"
+        />
+        <HomeSectionSkeleton v-else type="solutions" />
+      </template>
+
+      <template v-else-if="section.key === 'partners'">
+        <DeferredHomeSection
+          v-if="deferredReady"
+          :loader="loadPartnerSection"
+          skeleton-type="partner"
+        />
+        <HomeSectionSkeleton v-else type="partner" />
+      </template>
+
+      <template v-else-if="section.key === 'news'">
+        <!-- 没有公告时整段不挂：否则只剩「资讯动态」节头 + 查看更多，下面零卡片 -->
+        <DeferredHomeSection
+          v-if="deferredReady && notices.length > 0"
+          :loader="loadNewsSection"
+          skeleton-type="news"
+          :section-props="{ notices }"
+        />
+        <HomeSectionSkeleton v-else-if="notices.length > 0" type="news" />
+      </template>
+
+      <template v-else-if="section.key === 'register'">
+        <DeferredHomeSection
+          v-if="deferredReady"
+          :loader="loadRegisterBar"
+          skeleton-type="register"
+        />
+        <HomeSectionSkeleton v-else type="register" />
+      </template>
     </template>
-    <div v-else ref="deferredSkeletonRef">
-      <HomeSectionSkeleton type="solutions" />
-      <HomeSectionSkeleton type="solutions" />
-      <HomeSectionSkeleton type="partner" />
-      <HomeSectionSkeleton v-if="notices.length > 0" type="news" />
-      <HomeSectionSkeleton type="register" />
-    </div>
+
+    <!-- 延迟区块的统一挂载哨兵：进入视口后才开始加载下方各组件的 chunk -->
+    <div v-if="showDeferredSentinel" ref="deferredSkeletonRef" aria-hidden="true"></div>
   </div>
 </template>
 
@@ -74,6 +106,28 @@ interface ProductTypeItem {
   product_count?: number;
 }
 
+interface HomeSectionConfig {
+  key: string;
+  enabled: boolean;
+  variant: string;
+  order: number;
+}
+
+/**
+ * 默认区块顺序。站点配置留空时按这个渲染。
+ * 这里同时也是「合法 key 白名单」：配置里出现未知 key 直接丢弃，
+ * 避免拼错一个单词就整块消失。
+ */
+const DEFAULT_SECTIONS: HomeSectionConfig[] = [
+  { key: "hero", enabled: true, variant: "", order: 1 },
+  { key: "products", enabled: true, variant: "tabs", order: 2 },
+  { key: "ai_skill", enabled: true, variant: "", order: 3 },
+  { key: "solutions", enabled: true, variant: "tabs", order: 4 },
+  { key: "partners", enabled: true, variant: "", order: 5 },
+  { key: "news", enabled: true, variant: "", order: 6 },
+  { key: "register", enabled: true, variant: "", order: 7 },
+];
+
 const appStore = useAppStore();
 const loading = ref(true);
 const homeLoaded = ref(false);
@@ -103,6 +157,92 @@ const homeHeroReady = computed(() => {
   return slides === undefined || (Array.isArray(slides) && slides.length > 0);
 });
 const productContentReady = computed(() => homeContentReady.value);
+
+/**
+ * 解析站点配置的区块编排。
+ * - 未知 key 丢弃
+ * - 配置里没写到的已知区块追加到末尾（站长只写想挪的那几个即可，不用列全）
+ * - JSON 非法时退回默认，首页不能因为一处配置拼错就空掉
+ */
+function resolveHomeSections(raw: unknown): HomeSectionConfig[] {
+  const text = String(raw ?? "").trim();
+  if (text === "") {
+    return DEFAULT_SECTIONS;
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return DEFAULT_SECTIONS;
+  }
+
+  if (!Array.isArray(parsed)) {
+    return DEFAULT_SECTIONS;
+  }
+
+  const knownKeys = new Set(DEFAULT_SECTIONS.map((item) => item.key));
+  const configured: HomeSectionConfig[] = [];
+  const seen = new Set<string>();
+
+  parsed.forEach((entry, index) => {
+    if (!entry || typeof entry !== "object") {
+      return;
+    }
+
+    const item = entry as Record<string, unknown>;
+    const key = String(item.key ?? "").trim();
+
+    if (!knownKeys.has(key) || seen.has(key)) {
+      return;
+    }
+
+    seen.add(key);
+
+    const order = Number(item.order);
+
+    configured.push({
+      key,
+      enabled: item.enabled !== false,
+      variant: String(item.variant ?? "").trim(),
+      order: Number.isFinite(order) ? order : index + 1,
+    });
+  });
+
+  configured.sort((a, b) => a.order - b.order);
+
+  const missing = DEFAULT_SECTIONS.filter((item) => !seen.has(item.key)).map(
+    (item, index) => ({ ...item, order: configured.length + index + 1 }),
+  );
+
+  return [...configured, ...missing];
+}
+
+const sectionConfig = computed(() =>
+  resolveHomeSections(appStore.homeSections),
+);
+
+// 只渲染启用的区块
+const renderedSections = computed(() =>
+  sectionConfig.value.filter((section) => section.enabled),
+);
+
+// 延迟区块是否已经可以挂载：数据就绪 + 观察器已放行
+const deferredReady = computed(
+  () => homeContentReady.value && mountDeferredSections.value,
+);
+
+// 仍有未挂载的延迟区块时才需要哨兵元素
+const showDeferredSentinel = computed(
+  () =>
+    homeContentReady.value &&
+    !mountDeferredSections.value &&
+    renderedSections.value.some((section) =>
+      ["ai_skill", "solutions", "partners", "news", "register"].includes(
+        section.key,
+      ),
+    ),
+);
 
 function deriveProductTypesFromGroups(groups: any[]) {
   const map = new Map<string, ProductTypeItem>();
@@ -186,7 +326,7 @@ onMounted(async () => {
     return;
   }
 
-  // 使用 IntersectionObserver 在骨架屏进入视口时才挂载延迟区域
+  // 使用 IntersectionObserver 在哨兵进入视口时才挂载延迟区域
   if (typeof window !== "undefined" && "IntersectionObserver" in window) {
     deferredObserver = new IntersectionObserver(
       (entries) => {
@@ -201,11 +341,10 @@ onMounted(async () => {
       { rootMargin: "200px" },
     );
 
-    // 骨架屏 ref 就绪后开始观察
+    // 哨兵就绪后开始观察；没有延迟区块时直接放行
     if (deferredSkeletonRef.value) {
       deferredObserver.observe(deferredSkeletonRef.value);
     } else {
-      // ref 尚未挂载（数据就绪时骨架不会渲染），直接挂载
       mountDeferredSections.value = true;
     }
   } else {

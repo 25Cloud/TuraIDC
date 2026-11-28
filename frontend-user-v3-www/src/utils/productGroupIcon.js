@@ -127,6 +127,44 @@ export function abbrByWidth(label, maxUnits = 4) {
  * @param {string} fallbackLabel 没有图标数据时用于生成缩写的名称
  * @returns {{kind: 'text'|'icon', text?: string, component?: object}}
  */
+/**
+ * 分组名称 → 图标名。后台没给分组配图标时的兜底，
+ * 避免首页卡片清一色显示两字缩写，看着像没做完。
+ *
+ * 顺序敏感：更具体的词排前面，否则「轻量云」会先被「云」规则吃掉。
+ */
+const LABEL_ICON_HINTS = [
+  [/轻量/, "cloud"],
+  [/游戏/, "control-platform"],
+  [/高防|防护|安全/, "lock-on"],
+  [/虚拟主机|主机|托管/, "hard-disk-storage"],
+  [/CDN|加速|分发/, "internet"],
+  [/云电脑|桌面|电脑/, "desktop"],
+  [/物理|裸金属|独立服务器/, "server"],
+  [/住宅|ISP|双线路/, "link"],
+  [/数据库/, "data-base"],
+  [/建站|网站/, "shop"],
+  [/办公|企业|政务/, "building"],
+  [/运维|工具|面板/, "tools"],
+  [/云服务器|服务器|VPS/i, "server"],
+];
+
+function guessIconByLabel(label) {
+  const text = String(label || "").trim();
+
+  if (text === "") {
+    return null;
+  }
+
+  for (const [pattern, iconName] of LABEL_ICON_HINTS) {
+    if (pattern.test(text)) {
+      return ICON_NAME_MAP[iconName] || null;
+    }
+  }
+
+  return null;
+}
+
 export function resolveGroupIcon(iconResolved, fallbackLabel = "") {
   const resolved =
     iconResolved && typeof iconResolved === "object" ? iconResolved : null;
@@ -157,6 +195,13 @@ export function resolveGroupIcon(iconResolved, fallbackLabel = "") {
     if (text) {
       return { kind: "text", text };
     }
+  }
+
+  // 后台没给这个分组配图标时，按名称猜一个语义图标。
+  // 全是缩写看着像没做完，猜一个至少方向对；分组的显式配置永远优先。
+  const guessed = guessIconByLabel(fallbackLabel);
+  if (guessed) {
+    return { kind: "icon", component: guessed, text: abbrByWidth(fallbackLabel) };
   }
 
   return { kind: "text", text: abbrByWidth(fallbackLabel) };

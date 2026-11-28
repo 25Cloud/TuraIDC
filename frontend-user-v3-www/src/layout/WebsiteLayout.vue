@@ -323,6 +323,26 @@
                 </div>
               </template>
 
+              <template v-else-if="activeMenuId === 'solutions'">
+                <div class="mega-menu__types">
+                  <span class="mega-menu__col-title">{{ $t("layout.nav.solutions") }}</span>
+                  <div class="mega-type-desc">
+                    {{ $t("home.solutions.subtitle") }}
+                  </div>
+                </div>
+                <div class="mega-menu__groups">
+                  <router-link
+                    v-for="item in navSolutionItems"
+                    :key="item.key"
+                    :to="`/solutions/${item.key}`"
+                    class="mega-group-card"
+                  >
+                    <span class="mega-group-card__name">{{ item.title }}</span>
+                    <span class="mega-group-card__desc">{{ item.label }}</span>
+                  </router-link>
+                </div>
+              </template>
+
               <template v-else-if="activeMenuId === 'about'">
                 <div class="mega-menu__types">
                   <span class="mega-menu__col-title">{{
@@ -1138,6 +1158,7 @@ import {
 import { useAppStore } from "@/stores/app";
 import { useUserStore } from "@/stores/user";
 import { buildSupportContacts } from "@/data/supportContacts";
+import { buildIndustrySolutions } from "@/data/homeSolutions";
 import { seoLandingFooterLinks } from "@/data/seoLandingMeta";
 // t 必须在这里导入：script 里多处直接用 t('layout.nav.*') 构造导航与页脚文案。
 // 之前这行 import 被写在了 <template> 之外（文件第 1 行），Vue 的 SFC 解析器会直接忽略，
@@ -1496,6 +1517,12 @@ const navigationItems = computed(() => [
     menuId: "products",
   },
   {
+    to: "/solutions",
+    label: t("layout.nav.solutions"),
+    match: ["WwwSolutions", "WwwSolutionDetail"],
+    menuId: "solutions",
+  },
+  {
     to: "/notices",
     label: t("layout.nav.notices"),
     match: ["WwwNotices", "WwwNoticeDetail"],
@@ -1514,6 +1541,9 @@ const navigationItems = computed(() => [
     menuId: "about",
   },
 ]);
+
+// 顶栏「解决方案」下拉的条目，与首页方案区共用同一份数据
+const navSolutionItems = computed(() => buildIndustrySolutions());
 
 const aboutQuickLinks = computed(() => [
   {

@@ -279,6 +279,10 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
   const aboutSla = ref(
     pick(initialSiteConfig, ["about_sla", "aboutSla"], ""),
   );
+  // 首页区块编排（JSON 字符串）；留空由首页按内置默认顺序渲染
+  const homeSections = ref(
+    pick(initialSiteConfig, ["home_sections", "homeSections"], ""),
+  );
   // 增值电信许可证的查询链接：配了证号就带 num 参数，没配就落到查询页首页
   const valueAddedLicenseLink = computed(() => {
     const custom = normalizeExternalLink(valueAddedLicenseUrl.value);
@@ -467,6 +471,11 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       ["about_sla", "aboutSla"],
       aboutSla.value || "",
     );
+    homeSections.value = pick(
+      data,
+      ["home_sections", "homeSections"],
+      homeSections.value || "",
+    );
     productDisplayMode.value = normalizeDisplayMode(
       pick(data, ["product_display_mode"], productDisplayMode.value),
     );
@@ -571,6 +580,7 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     aboutDatacenterCount,
     aboutMilestones,
     aboutSla,
+    homeSections,
     productDisplayMode,
     productCardShowStock,
     productDetailSpecCompare,

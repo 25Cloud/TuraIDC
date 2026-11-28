@@ -35,6 +35,7 @@ export const useAppStore = defineStore("app", () => {
     aboutDatacenterCount: computed(() => siteBrandingStore.aboutDatacenterCount),
     aboutMilestones: computed(() => siteBrandingStore.aboutMilestones),
     aboutSla: computed(() => siteBrandingStore.aboutSla),
+    homeSections: computed(() => siteBrandingStore.homeSections),
     brandInitials: computed(() => siteBrandingStore.brandInitials),
     toggleSidebar: siteBrandingStore.toggleSidebar,
     applyPageTitle: siteBrandingStore.applyPageTitle,

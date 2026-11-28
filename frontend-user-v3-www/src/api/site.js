@@ -373,4 +373,10 @@ export default {
       .then((response) =>
         withNormalizedData(response, normalizeContentDetailPayload),
       ),
+  // 条款正文由后台维护；返回空数组时调用方回落内置文案
+  legal: (kind, config) =>
+    request.get(`/v2/site/legal/${kind}`, config).then((response) => {
+      const sections = response?.data?.sections;
+      return Array.isArray(sections) ? sections : [];
+    }),
 };
