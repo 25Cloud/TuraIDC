@@ -71,5 +71,7 @@ export const i18n = createI18n({
 });
 
 export const languageList = computed(() => langList);
-export const { t } = i18n.global;
+// tm/rt 用于读取语言包里的数组（如行业方案的适用场景列表）：
+// t() 只处理单条消息，数组必须先 tm 取出再逐项 rt 转成字符串。
+export const { t, tm, rt } = i18n.global;
 export default i18n;

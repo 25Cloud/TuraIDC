@@ -1,4 +1,20 @@
-import { t } from "@/locales";
+import { rt, t, tm } from "@/locales";
+
+/**
+ * 读取某个行业的「适用场景」列表。
+ * 语言包里存的是数组，t() 只能取单条消息，必须 tm 取出再逐项 rt 转字符串。
+ * government 的键结构与其他行业不同（它在语言包里是字符串标签而非对象），
+ * 场景单独放在 governmentScenarios 下，这里统一兼容。
+ */
+function readScenarios(key) {
+  const path =
+    key === "government"
+      ? "home.solutions.governmentScenarios"
+      : `home.solutions.${key}.scenarios`;
+
+  const list = tm(path);
+  return Array.isArray(list) ? list.map((item) => rt(item)) : [];
+}
 
 // 行业解决方案数据。用函数而不是模块级常量：文案要在渲染时取当前语言，
 // 模块顶层求值会把它钉死在首屏语言上，切到英文/繁体后这一块仍是中文。
@@ -138,8 +154,18 @@ export function buildIndustrySolutions() {
     solutions.map((solution) =>
       Object.freeze({
         ...solution,
+        // government 的场景键是 governmentScenarios，其余是 <key>.scenarios
+        scenariosKey: solution.key,
+        scenarios: Object.freeze(
+          readScenarios(solution.key === "government" ? "government" : solution.key),
+        ),
         points: Object.freeze([...solution.points]),
       }),
     ),
   );
+}
+
+/** 按 key 取单个行业方案；找不到返回 undefined */
+export function findIndustrySolution(key) {
+  return buildIndustrySolutions().find((item) => item.key === key);
 }

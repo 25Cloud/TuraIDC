@@ -116,6 +116,17 @@ export const clientRoutes: RouteRecordRaw[] = [
         meta: { title: t("seo.productDetail.title") },
       },
       {
+        path: "solutions/:key([a-z0-9-]+)",
+        name: "WwwSolutionDetail",
+        component: lazyRouteView(
+          () => import("@/pages/website/solutions/detail.vue"),
+        ),
+        meta: {
+          title: t("home.solutions.detail.heroKicker"),
+          description: t("home.solutions.detail.ctaDesc"),
+        },
+      },
+      {
         path: "about",
         name: "WwwAbout",
         component: lazyRouteView(

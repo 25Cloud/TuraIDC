@@ -86,7 +86,7 @@
                   <button
                     type="button"
                     class="solution-panel__action"
-                    @click="router.push(activeIndustrySolution.consultPath)"
+                    @click="router.push(`/solutions/${activeIndustrySolution.key}`)"
                   >
                     {{ $t("home.solutions.learnMore") }}
                   </button>

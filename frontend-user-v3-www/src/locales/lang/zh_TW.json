@@ -1,1164 +1,1221 @@
 {
-  "lang": "繁體中文（台灣）",
-  "product": {
-    "group": {
-      "level1": "一級分組",
-      "level2": "二級分組",
-      "level3": "三級分組"
-    },
-    "detail": {
-      "title": "商品詳情",
-      "serverSpecs": "機型配置",
-      "basePrice": "基礎價格",
-      "coupon": "優惠券",
-      "selectCoupon": "請選擇優惠券",
-      "totalCost": "合計費用",
-      "region": "區域",
-      "operatingSystem": "作業系統",
-      "network": "網路配置",
-      "purchaseNotes": "購買須知",
-      "baseSettings": "基礎設定",
-      "billingCycle": "計費週期",
-      "quantity": "購買數量",
-      "quantityHint": "1 臺（多臺請分次下單）",
-      "configFee": "配置費用",
-      "syncing": "同步中...",
-      "syncFailed": "同步失敗",
-      "costBreakdown": "費用明細",
-      "setupFee": "開通費",
-      "calculating": "計算中",
-      "category": "分類",
-      "selectOs": "請選擇系統",
-      "selectVersion": "請選擇版本",
-      "readyToBuy": "可直接購買",
-      "summary": "配置摘要",
-      "notFound": "商品不存在或已下架",
-      "backToProducts": "返回商品頁",
-      "cycle": "週期",
-      "description": "商品描述",
-      "skuCompare": "機型對比",
-      "skuCompareHint": "點選任意機型切換配置與報價",
-      "skuPrice": "價格",
-      "sortPriceAsc": "價格從低到高排序",
-      "sortPriceDesc": "價格從高到低排序",
-      "selectRegion": "請選擇地區",
-      "couponUsed": "已用券 -¥{amount}",
-      "cloudProductTitle": "雲商品詳情",
-      "cloudProductDescription": "雲商品詳情與即時購買報價",
-      "windowTitle": "{title} - 雲商品"
-    },
-    "osPicker": {
-      "version": "版本",
-      "system": "系統",
-      "selectOs": "選擇作業系統",
-      "noSystemAvailable": "暫無可用系統",
-      "selectSystemFirst": "請先選擇系統",
-      "noVersionAvailable": "暫無可用版本"
-    },
-    "checkout": {
-      "quoteExpired": "報價憑證已失效，請稍後重試",
-      "selectBillingCycle": "請選擇計費週期",
-      "pricingInProgress": "價格計算中，請稍候",
-      "consoleRedirectFailed": "跳轉控制台失敗，請重試",
-      "stockSyncing": "庫存同步中",
-      "stockSyncFailed": "庫存同步失敗",
-      "stockSyncingHint": "正在同步即時庫存，請稍候。",
-      "discountRate": "{rate}折",
-      "stockSufficient": "庫存充足",
-      "stockLow": "庫存緊張",
-      "stockOutOfStock": "暫無庫存",
-      "stockSyncRetryHint": "即時庫存同步失敗，請稍後重試。",
-      "stockSufficientHint": "當前庫存充足，可直接提交賬單。",
-      "stockRemainingHint": "剩餘 {stock} 臺，請儘快購買。",
-      "stockInsufficientHint": "當前庫存不足，請聯絡客服。",
-      "enteringConsole": "正在進入控制台繼續建立賬單",
-      "couponCode": "優惠碼",
-      "loginRequired": "請先登入後再購買該商品",
-      "sessionExpired": "登入狀態已失效，請重新登入",
-      "prerequisitesRequired": "請先完成購買前置要求",
-      "stockSyncingNotice": "庫存同步中，請稍候",
-      "stockSyncFailedNotice": "庫存同步失敗，請稍後重試",
-      "purchaseUnavailable": "當前庫存不足，暫時無法購買"
-    },
-    "requirements": {
-      "realNameVerification": "需實名認證",
-      "realNameVerificationHint": "購買前需完成實名認證",
-      "realNameVerificationBlocked": "該商品購買前需先完成實名認證。",
-      "goToRealNameVerification": "去實名認證",
-      "phoneBinding": "手機號繫結",
-      "phoneBindingRequired": "需繫結手機號",
-      "phoneBindingHint": "購買前需先繫結手機號",
-      "phoneBindingBlocked": "該商品購買前需先繫結手機號。",
-      "goToPhoneBinding": "去繫結手機號",
-      "statusIncomplete": "未完成",
-      "loginRequired": "請先登入",
-      "statusChecking": "校驗中",
-      "statusPassed": "已通過",
-      "listSeparator": "、"
-    },
-    "spec": {
-      "oneCore": "1 核",
-      "unitCore": "核",
-      "familyWithCode": "規格族 {code}"
-    },
-    "instanceFamily": {
-      "computeC9i": "計算型 c9i",
-      "generalPurposeG9i": "通用型 g9i",
-      "economyE": "經濟型 e",
-      "burstPerformanceT6": "突發性能例項 t6",
-      "general": "通用型"
-    },
-    "configurator": {
-      "systemDisk": "系統盤",
-      "dataDisk": "資料盤",
-      "disk": "硬碟",
-      "bandwidth": "頻寬",
-      "traffic": "流量",
-      "download": "下行",
-      "upload": "上行",
-      "quantity": "數量",
-      "selected": "已選",
-      "cpuModel": "CPU型號",
-      "unitCount": "{text}個"
-    },
-    "list": {
-      "osInstall": "系統安裝",
-      "memory": "記憶體",
-      "viewSpecNotes": "檢視例項規格說明",
-      "productIntro": "商品介紹",
-      "selectVersion": "選擇版本",
-      "processor": "處理器",
-      "specSelector": "商品規格選擇",
-      "instanceSpecs": "例項規格",
-      "sortVcpu": "vCPU 排序",
-      "sortVcpuAsc": "vCPU 從小到大排序",
-      "sortVcpuDesc": "vCPU 從大到小排序",
-      "sortMemory": "記憶體排序",
-      "sortMemoryAsc": "記憶體從小到大排序",
-      "sortMemoryDesc": "記憶體從大到小排序",
-      "clockSpeed": "主頻/睿頻",
-      "sortPrice": "基礎價格排序",
-      "sortPriceAsc": "基礎價格從小到大排序",
-      "sortPriceDesc": "基礎價格從大到小排序",
-      "otherConfig": "其他配置",
-      "selectCouponProduct": "請選擇需要使用優惠券的商品",
-      "empty": "當前分類暫無商品",
-      "cycle": "週期",
-      "totalCostLabel": "費用合計：",
-      "costDetailsLabel": "費用明細：",
-      "configName": "配置名稱",
-      "configDetail": "配置詳情",
-      "grandTotalLabel": "總價：",
-      "selectCoupon": "選擇優惠券",
-      "spec": "商品規格",
-      "selectSpec": "請選擇商品規格",
-      "noSwitchableOsVersion": "當前商品未提供可切換的系統版本",
-      "displayMode": "商品展示方式",
-      "displayCard": "卡片式",
-      "displayList": "列表式",
-      "productCount": "{count} 個商品",
-      "pageWidth": "頁面寬度",
-      "widthContained": "固定寬度",
-      "widthFull": "撐滿螢幕",
-      "widthHint": "僅寬屏生效，手機端始終鋪滿",
-      "widthReset": "恢復站點預設",
-      "groupNav": "分組導航",
-      "level1Nav": "一級分組",
-      "level2Nav": "二級分組",
-      "expandLevel1Nav": "展開一級分組",
-      "collapseLevel1Nav": "收起一級分組",
-      "hideCatalogNav": "收起目錄",
-      "showCatalogNav": "展開目錄",
-      "catalogTitle": "商品目錄",
-      "catalogBackUp": "返回上級",
-      "groupEmpty": "該分類下暫無可選分組",
-      "selectCpu": "請選擇 CPU",
-      "selectMemory": "請選擇記憶體",
-      "selectOption": "請選擇",
-      "stockLabel": "當前庫存",
-      "stockLeft": "剩餘 {count} 臺",
-      "purchaseRequirements": "購買要求：",
-      "agentDiscount": "代理折扣（{name}）",
-      "agentDiscountPercent": "代理折扣（{name}）{percent}",
-      "couponApplied": "已優惠 ¥{amount}",
-      "noDiscount": "無折扣",
-      "monthly": "月付",
-      "submitting": "提交中...",
-      "buyNow": "立即購買",
-      "addToCart": "加入購物車",
-      "costRowsCount": "共{count}項",
-      "priceDiscounted": "折後價已優惠",
-      "priceNoDiscount": "折後價無折扣",
-      "groupPath": "分組"
-    },
-    "cpuBadge": {
-      "coreShort": "酷",
-      "coreFull": "酷睿",
-      "platinumShort": "鉑",
-      "platinumFull": "鉑金",
-      "goldShort": "金",
-      "goldFull": "金牌",
-      "xeonShort": "至",
-      "xeonFull": "至強"
-    },
-    "card": {
-      "buyNow": "立即選購",
-      "soldOut": "已售罄",
-      "inStock": "有貨",
-      "stockLeft": "僅剩 {count} 臺",
-      "noDescription": "暫無商品描述",
-      "priceOnRequest": "價格面議",
-      "empty": "當前分類暫無商品"
-    },
-    "coupon": {
-      "remove": "移除",
-      "loading": "正在獲取可用優惠券…",
-      "noneAvailable": "當前暫無可用優惠券，登入後如有優惠券會自動展示在這裡。",
-      "selectProductFirst": "請選擇商品後檢視可用優惠券。",
-      "appliedTip": "{name}，{discount}，本次已減免 ¥{amount}",
-      "use": "使用優惠券",
-      "usedAmount": "使用優惠券 -¥{amount}"
-    }
-  },
-  "layout": {
-    "nav": {
-      "products": "商品",
-      "aboutUs": "關於我們",
-      "notices": "官方公告",
-      "helpCenter": "幫助中心",
-      "terms": "服務條款",
-      "privacy": "隱私政策",
-      "productCatalog": "商品目錄",
-      "noProductCatalog": "暫無商品目錄",
-      "solutions": "解決方案",
-      "viewAllProducts": "全部商品 →",
-      "moreLinks": "其他入口",
-      "moreLinksDesc": "關於、幫助與常用入口",
-      "productsAndServices": "商品與服務",
-      "home": "首頁",
-      "help": "幫助",
-      "all": "全部",
-      "viewDetail": "檢視詳情"
-    },
-    "navProductMenu": {
-      "categoryFallback": "分類 {index}"
-    },
-    "notice": {
-      "categoryTitle": "公告分類",
-      "viewAll": "檢視全部 →",
-      "categoryLoadFailed": "分類載入失敗",
-      "allAnnouncements": "全部公告",
-      "loadFailed": "公告載入失敗",
-      "viewAllMore": "檢視全部公告 →",
-      "empty": "暫無公告"
-    },
-    "user": {
-      "menuLabel": "使用者選單",
-      "registerFree": "免費註冊",
-      "realNameVerification": "實名認證",
-      "signIn": "登入",
-      "console": "控制台",
-      "signInOrRegister": "登入 / 註冊",
-      "account": "賬戶",
-      "accountLogin": "賬戶登入",
-      "enterConsole": "進入控制台",
-      "myServices": "我的例項",
-      "profile": "個人資料",
-      "recharge": "賬戶充值",
-      "signOut": "登出"
-    },
-    "a11y": {
-      "skipToMainContent": "跳到主內容",
-      "mainNavigation": "主導航"
-    },
-    "doc": {
-      "categoryTitle": "文件分類",
-      "allDocs": "全部文件",
-      "loadFailed": "文件載入失敗",
-      "viewAllMore": "檢視全部文件 →",
-      "empty": "暫無文件",
-      "viewAll": "檢視全部 →"
-    },
+    "lang": "繁體中文（台灣）",
     "product": {
-      "emptyCategories": "暫無商品分類",
-      "reload": "重新載入",
-      "productCount": "{count} 款商品"
+        "group": {
+            "level1": "一級分組",
+            "level2": "二級分組",
+            "level3": "三級分組"
+        },
+        "detail": {
+            "title": "商品詳情",
+            "serverSpecs": "機型配置",
+            "basePrice": "基礎價格",
+            "coupon": "優惠券",
+            "selectCoupon": "請選擇優惠券",
+            "totalCost": "合計費用",
+            "region": "區域",
+            "operatingSystem": "作業系統",
+            "network": "網路配置",
+            "purchaseNotes": "購買須知",
+            "baseSettings": "基礎設定",
+            "billingCycle": "計費週期",
+            "quantity": "購買數量",
+            "quantityHint": "1 臺（多臺請分次下單）",
+            "configFee": "配置費用",
+            "syncing": "同步中...",
+            "syncFailed": "同步失敗",
+            "costBreakdown": "費用明細",
+            "setupFee": "開通費",
+            "calculating": "計算中",
+            "category": "分類",
+            "selectOs": "請選擇系統",
+            "selectVersion": "請選擇版本",
+            "readyToBuy": "可直接購買",
+            "summary": "配置摘要",
+            "notFound": "商品不存在或已下架",
+            "backToProducts": "返回商品頁",
+            "cycle": "週期",
+            "description": "商品描述",
+            "skuCompare": "機型對比",
+            "skuCompareHint": "點選任意機型切換配置與報價",
+            "skuPrice": "價格",
+            "sortPriceAsc": "價格從低到高排序",
+            "sortPriceDesc": "價格從高到低排序",
+            "selectRegion": "請選擇地區",
+            "couponUsed": "已用券 -¥{amount}",
+            "cloudProductTitle": "雲商品詳情",
+            "cloudProductDescription": "雲商品詳情與即時購買報價",
+            "windowTitle": "{title} - 雲商品"
+        },
+        "osPicker": {
+            "version": "版本",
+            "system": "系統",
+            "selectOs": "選擇作業系統",
+            "noSystemAvailable": "暫無可用系統",
+            "selectSystemFirst": "請先選擇系統",
+            "noVersionAvailable": "暫無可用版本"
+        },
+        "checkout": {
+            "quoteExpired": "報價憑證已失效，請稍後重試",
+            "selectBillingCycle": "請選擇計費週期",
+            "pricingInProgress": "價格計算中，請稍候",
+            "consoleRedirectFailed": "跳轉控制台失敗，請重試",
+            "stockSyncing": "庫存同步中",
+            "stockSyncFailed": "庫存同步失敗",
+            "stockSyncingHint": "正在同步即時庫存，請稍候。",
+            "discountRate": "{rate}折",
+            "stockSufficient": "庫存充足",
+            "stockLow": "庫存緊張",
+            "stockOutOfStock": "暫無庫存",
+            "stockSyncRetryHint": "即時庫存同步失敗，請稍後重試。",
+            "stockSufficientHint": "當前庫存充足，可直接提交賬單。",
+            "stockRemainingHint": "剩餘 {stock} 臺，請儘快購買。",
+            "stockInsufficientHint": "當前庫存不足，請聯絡客服。",
+            "enteringConsole": "正在進入控制台繼續建立賬單",
+            "couponCode": "優惠碼",
+            "loginRequired": "請先登入後再購買該商品",
+            "sessionExpired": "登入狀態已失效，請重新登入",
+            "prerequisitesRequired": "請先完成購買前置要求",
+            "stockSyncingNotice": "庫存同步中，請稍候",
+            "stockSyncFailedNotice": "庫存同步失敗，請稍後重試",
+            "purchaseUnavailable": "當前庫存不足，暫時無法購買"
+        },
+        "requirements": {
+            "realNameVerification": "需實名認證",
+            "realNameVerificationHint": "購買前需完成實名認證",
+            "realNameVerificationBlocked": "該商品購買前需先完成實名認證。",
+            "goToRealNameVerification": "去實名認證",
+            "phoneBinding": "手機號繫結",
+            "phoneBindingRequired": "需繫結手機號",
+            "phoneBindingHint": "購買前需先繫結手機號",
+            "phoneBindingBlocked": "該商品購買前需先繫結手機號。",
+            "goToPhoneBinding": "去繫結手機號",
+            "statusIncomplete": "未完成",
+            "loginRequired": "請先登入",
+            "statusChecking": "校驗中",
+            "statusPassed": "已通過",
+            "listSeparator": "、"
+        },
+        "spec": {
+            "oneCore": "1 核",
+            "unitCore": "核",
+            "familyWithCode": "規格族 {code}"
+        },
+        "instanceFamily": {
+            "computeC9i": "計算型 c9i",
+            "generalPurposeG9i": "通用型 g9i",
+            "economyE": "經濟型 e",
+            "burstPerformanceT6": "突發性能例項 t6",
+            "general": "通用型"
+        },
+        "configurator": {
+            "systemDisk": "系統盤",
+            "dataDisk": "資料盤",
+            "disk": "硬碟",
+            "bandwidth": "頻寬",
+            "traffic": "流量",
+            "download": "下行",
+            "upload": "上行",
+            "quantity": "數量",
+            "selected": "已選",
+            "cpuModel": "CPU型號",
+            "unitCount": "{text}個"
+        },
+        "list": {
+            "osInstall": "系統安裝",
+            "memory": "記憶體",
+            "viewSpecNotes": "檢視例項規格說明",
+            "productIntro": "商品介紹",
+            "selectVersion": "選擇版本",
+            "processor": "處理器",
+            "specSelector": "商品規格選擇",
+            "instanceSpecs": "例項規格",
+            "sortVcpu": "vCPU 排序",
+            "sortVcpuAsc": "vCPU 從小到大排序",
+            "sortVcpuDesc": "vCPU 從大到小排序",
+            "sortMemory": "記憶體排序",
+            "sortMemoryAsc": "記憶體從小到大排序",
+            "sortMemoryDesc": "記憶體從大到小排序",
+            "clockSpeed": "主頻/睿頻",
+            "sortPrice": "基礎價格排序",
+            "sortPriceAsc": "基礎價格從小到大排序",
+            "sortPriceDesc": "基礎價格從大到小排序",
+            "otherConfig": "其他配置",
+            "selectCouponProduct": "請選擇需要使用優惠券的商品",
+            "empty": "當前分類暫無商品",
+            "cycle": "週期",
+            "totalCostLabel": "費用合計：",
+            "costDetailsLabel": "費用明細：",
+            "configName": "配置名稱",
+            "configDetail": "配置詳情",
+            "grandTotalLabel": "總價：",
+            "selectCoupon": "選擇優惠券",
+            "spec": "商品規格",
+            "selectSpec": "請選擇商品規格",
+            "noSwitchableOsVersion": "當前商品未提供可切換的系統版本",
+            "displayMode": "商品展示方式",
+            "displayCard": "卡片式",
+            "displayList": "列表式",
+            "productCount": "{count} 個商品",
+            "pageWidth": "頁面寬度",
+            "widthContained": "固定寬度",
+            "widthFull": "撐滿螢幕",
+            "widthHint": "僅寬屏生效，手機端始終鋪滿",
+            "widthReset": "恢復站點預設",
+            "groupNav": "分組導航",
+            "level1Nav": "一級分組",
+            "level2Nav": "二級分組",
+            "expandLevel1Nav": "展開一級分組",
+            "collapseLevel1Nav": "收起一級分組",
+            "hideCatalogNav": "收起目錄",
+            "showCatalogNav": "展開目錄",
+            "catalogTitle": "商品目錄",
+            "catalogBackUp": "返回上級",
+            "groupEmpty": "該分類下暫無可選分組",
+            "selectCpu": "請選擇 CPU",
+            "selectMemory": "請選擇記憶體",
+            "selectOption": "請選擇",
+            "stockLabel": "當前庫存",
+            "stockLeft": "剩餘 {count} 臺",
+            "purchaseRequirements": "購買要求：",
+            "agentDiscount": "代理折扣（{name}）",
+            "agentDiscountPercent": "代理折扣（{name}）{percent}",
+            "couponApplied": "已優惠 ¥{amount}",
+            "noDiscount": "無折扣",
+            "monthly": "月付",
+            "submitting": "提交中...",
+            "buyNow": "立即購買",
+            "addToCart": "加入購物車",
+            "costRowsCount": "共{count}項",
+            "priceDiscounted": "折後價已優惠",
+            "priceNoDiscount": "折後價無折扣",
+            "groupPath": "分組"
+        },
+        "cpuBadge": {
+            "coreShort": "酷",
+            "coreFull": "酷睿",
+            "platinumShort": "鉑",
+            "platinumFull": "鉑金",
+            "goldShort": "金",
+            "goldFull": "金牌",
+            "xeonShort": "至",
+            "xeonFull": "至強"
+        },
+        "card": {
+            "buyNow": "立即選購",
+            "soldOut": "已售罄",
+            "inStock": "有貨",
+            "stockLeft": "僅剩 {count} 臺",
+            "noDescription": "暫無商品描述",
+            "priceOnRequest": "價格面議",
+            "empty": "當前分類暫無商品"
+        },
+        "coupon": {
+            "remove": "移除",
+            "loading": "正在獲取可用優惠券…",
+            "noneAvailable": "當前暫無可用優惠券，登入後如有優惠券會自動展示在這裡。",
+            "selectProductFirst": "請選擇商品後檢視可用優惠券。",
+            "appliedTip": "{name}，{discount}，本次已減免 ¥{amount}",
+            "use": "使用優惠券",
+            "usedAmount": "使用優惠券 -¥{amount}"
+        }
     },
-    "solutions": {
-      "ecommerce": "電商行業",
-      "gaming": "遊戲行業",
-      "finance": "金融行業",
-      "overseas": "出海業務"
+    "layout": {
+        "nav": {
+            "products": "商品",
+            "aboutUs": "關於我們",
+            "notices": "官方公告",
+            "helpCenter": "幫助中心",
+            "terms": "服務條款",
+            "privacy": "隱私政策",
+            "productCatalog": "商品目錄",
+            "noProductCatalog": "暫無商品目錄",
+            "solutions": "解決方案",
+            "viewAllProducts": "全部商品 →",
+            "moreLinks": "其他入口",
+            "moreLinksDesc": "關於、幫助與常用入口",
+            "productsAndServices": "商品與服務",
+            "home": "首頁",
+            "help": "幫助",
+            "all": "全部",
+            "viewDetail": "檢視詳情"
+        },
+        "navProductMenu": {
+            "categoryFallback": "分類 {index}"
+        },
+        "notice": {
+            "categoryTitle": "公告分類",
+            "viewAll": "檢視全部 →",
+            "categoryLoadFailed": "分類載入失敗",
+            "allAnnouncements": "全部公告",
+            "loadFailed": "公告載入失敗",
+            "viewAllMore": "檢視全部公告 →",
+            "empty": "暫無公告"
+        },
+        "user": {
+            "menuLabel": "使用者選單",
+            "registerFree": "免費註冊",
+            "realNameVerification": "實名認證",
+            "signIn": "登入",
+            "console": "控制台",
+            "signInOrRegister": "登入 / 註冊",
+            "account": "賬戶",
+            "accountLogin": "賬戶登入",
+            "enterConsole": "進入控制台",
+            "myServices": "我的例項",
+            "profile": "個人資料",
+            "recharge": "賬戶充值",
+            "signOut": "登出"
+        },
+        "a11y": {
+            "skipToMainContent": "跳到主內容",
+            "mainNavigation": "主導航"
+        },
+        "doc": {
+            "categoryTitle": "文件分類",
+            "allDocs": "全部文件",
+            "loadFailed": "文件載入失敗",
+            "viewAllMore": "檢視全部文件 →",
+            "empty": "暫無文件",
+            "viewAll": "檢視全部 →"
+        },
+        "product": {
+            "emptyCategories": "暫無商品分類",
+            "reload": "重新載入",
+            "productCount": "{count} 款商品"
+        },
+        "solutions": {
+            "ecommerce": "電商行業",
+            "gaming": "遊戲行業",
+            "finance": "金融行業",
+            "overseas": "出海業務"
+        },
+        "footer": {
+            "support": "支援",
+            "siteAnnouncements": "站點公告",
+            "ticketSystem": "工單系統",
+            "ticketSupport": "工單支援",
+            "helpDocs": "幫助文件",
+            "noticeUpdates": "公告動態",
+            "aboutIntro": "企業簡介、發展願景與服務承諾",
+            "helpGuide": "常見問題與使用指南",
+            "supportTicket": "提交售後工單，獲得 1v1 響應",
+            "brandDesc": "為企業與開發者提供穩定、安全、高性價比的雲端計算與 IDC 服務。",
+            "account": "賬戶",
+            "valueAddedLicense": "增值電信業務經營許可證：",
+            "icpRecord": "ICP 備案號：",
+            "publicSecurityRecord": "公安備案號：",
+            "productCloudServer": "雲伺服器",
+            "productHongKongServer": "香港伺服器",
+            "productUsServer": "美國伺服器",
+            "productHighDefenseServer": "高防伺服器",
+            "productCloudPc": "雲電腦"
+        },
+        "navContent": {
+            "uncategorized": "未分類"
+        },
+        "mobileMenu": {
+            "open": "開啟選單",
+            "close": "關閉選單"
+        }
     },
-    "footer": {
-      "support": "支援",
-      "siteAnnouncements": "站點公告",
-      "ticketSystem": "工單系統",
-      "ticketSupport": "工單支援",
-      "helpDocs": "幫助文件",
-      "noticeUpdates": "公告動態",
-      "aboutIntro": "企業簡介、發展願景與服務承諾",
-      "helpGuide": "常見問題與使用指南",
-      "supportTicket": "提交售後工單，獲得 1v1 響應",
-      "brandDesc": "為企業與開發者提供穩定、安全、高性價比的雲端計算與 IDC 服務。",
-      "account": "賬戶",
-      "valueAddedLicense": "增值電信業務經營許可證：",
-      "icpRecord": "ICP 備案號：",
-      "publicSecurityRecord": "公安備案號：",
-      "productCloudServer": "雲伺服器",
-      "productHongKongServer": "香港伺服器",
-      "productUsServer": "美國伺服器",
-      "productHighDefenseServer": "高防伺服器",
-      "productCloudPc": "雲電腦"
-    },
-    "navContent": {
-      "uncategorized": "未分類"
-    },
-    "mobileMenu": {
-      "open": "開啟選單",
-      "close": "關閉選單"
-    }
-  },
-  "content": {
-    "notice": {
-      "detailTitle": "公告詳情",
-      "empty": "暫無公告內容",
-      "title": "公告通知",
-      "pageTitle": "官方公告"
-    },
-    "help": {
-      "detailTitle": "幫助詳情",
-      "category": {
-        "container": "容器系統",
-        "gettingStarted": "新手入門",
-        "billing": "支付賬單",
-        "serviceManagement": "例項管理",
-        "renewal": "續費說明",
-        "console": "例項控制台"
-      },
-      "subtitle": "快速查詢購買、支付、續費、例項管理等常見操作指引。",
-      "searchPlaceholder": "搜尋幫助文件、賬單說明、續費規則",
-      "empty": "暫無幫助內容",
-      "hotDocuments": "熱門文件",
-      "recentlyUpdated": "最近更新",
-      "categories": "幫助分類",
-      "pageTitle": "幫助中心"
-    },
-    "about": {
-"companyProfileTitle": "公司簡介",
-      "milestonesTitle": "發展歷程",
-      "serviceCommitmentTitle": "服務承諾",
-      "credentialsTitle": "資質與許可",
-      "statFoundedYear": "成立於",
-      "statTeamSize": "團隊規模",
-      "statCustomerCount": "服務客戶",
-      "statDatacenterCount": "可用節點",
-      "credentialLicense": "營業執照",
-      "credentialTelecom": "增值電信業務經營許可證",
-      "credentialIcp": "ICP 備案號",
-      "milestonesEmpty": "發展歷程待補充",
+    "content": {
+        "notice": {
+            "detailTitle": "公告詳情",
+            "empty": "暫無公告內容",
+            "title": "公告通知",
+            "pageTitle": "官方公告"
+        },
+        "help": {
+            "detailTitle": "幫助詳情",
+            "category": {
+                "container": "容器系統",
+                "gettingStarted": "新手入門",
+                "billing": "支付賬單",
+                "serviceManagement": "例項管理",
+                "renewal": "續費說明",
+                "console": "例項控制台"
+            },
+            "subtitle": "快速查詢購買、支付、續費、例項管理等常見操作指引。",
+            "searchPlaceholder": "搜尋幫助文件、賬單說明、續費規則",
+            "empty": "暫無幫助內容",
+            "hotDocuments": "熱門文件",
+            "recentlyUpdated": "最近更新",
+            "categories": "幫助分類",
+            "pageTitle": "幫助中心"
+        },
+        "about": {
+            "companyProfileTitle": "公司簡介",
+            "milestonesTitle": "發展歷程",
+            "serviceCommitmentTitle": "服務承諾",
+            "credentialsTitle": "資質與許可",
+            "statFoundedYear": "成立於",
+            "statTeamSize": "團隊規模",
+            "statCustomerCount": "服務客戶",
+            "statDatacenterCount": "可用節點",
+            "credentialLicense": "營業執照",
+            "credentialTelecom": "增值電信業務經營許可證",
+            "credentialIcp": "ICP 備案號",
+            "milestonesEmpty": "發展歷程待補充",
             "serviceCapabilities": "服務能力",
-      "contactInformation": "聯絡方式",
-      "intro": "我們專注於雲伺服器、獨立伺服器與相關基礎設施服務，提供從選型、購買、開通到運維支援的一體化體驗。",
-      "serviceCapabilitiesDesc": "覆蓋商品展示、線上購買、統一賬單、自動開通、售後支援與例項控制台。",
-      "serviceEmailLabel": "客服電子郵件：",
-      "serviceHoursLabel": "服務時間：",
-      "serviceHoursFallback": "以站內通知為準",
-      "officialGroupLabel": "官方群號：",
-      "notConfigured": "暫無配置",
-      "platformIntro": "本平台基於 AGPL-3.0-or-later 開源的 TuraIDC 系統搭建，覆蓋商品展示、線上購買、統一帳單、自動開通、售後支援與實例控制台的完整鏈路，讓買伺服器像買水電一樣簡單透明。",
-      "openSourceTitle": "開源與透明",
-      "openSourceDesc": "整套系統的原始碼公開可查，接受社群監督；品牌、許可與原始碼連結在頁腳與「開源與商業授權」頁面維護，正式條款以 LICENSE 與商業授權文件為準。",
-      "opsCommitmentTitle": "營運承諾",
-      "opsCommitmentDesc": "核心服務可用性按商品頁標註的 SLA 保障，財務帳單每日自動對帳、定時任務有執行契約校驗；控制台提供重啟、重裝、VNC 與流量包等自助營運能力，減少工單等待。",
-      "supportCommitmentTitle": "售後支援",
-      "supportCommitmentDesc": "工單與站內信雙通道受理，常見問題見幫助中心；帳號、帳單與實例的異常會透過站內通知主動告知，讓每一次狀態變化都有據可查。"
-    },
-    "legal": {
-      "openOriginal": "開啟原文",
-      "documentUrlMissing": "站點暫未配置該文件地址",
-      "termsDescription": "檢視平臺的服務條款、使用約定與相關說明。",
-      "privacyDescription": "檢視平臺的隱私政策與個人資訊處理說明。"
-    },
-    "detail": {
-      "tableOfContents": "目錄結構",
-      "fullText": "全文",
-      "updatedAt": "更新時間",
-      "publishedAt": "釋出時間",
-      "jumpTo": "跳轉到 {name}",
-      "retry": "重新載入",
-      "loadFailed": "{title}載入失敗，請稍後重試"
-    },
-    "nav": {
-      "news": "新聞動態",
-      "docs": "文件中心",
-      "allCategories": "全部分類",
-      "moreSections": "更多欄目",
-      "downloads": "下載中心",
-      "newsDesc": "檢視平臺最新通知、維護公告、商品更新與重要業務提醒。"
-    },
-    "search": {
-      "placeholder": "請輸入您要搜尋的關鍵詞"
-    },
-    "article": {
-      "hot": "熱門文章",
-      "publisher": "釋出人：",
-      "views": "閱讀量：",
-      "categoryCount": "{name}，共 {count} 篇",
-      "officialSupport": "官方客服",
-      "figureCaption": "相關配圖"
-    },
-    "activity": {
-      "latest": "最新活動"
-    },
-    "list": {
-      "empty": "暫無內容",
-      "loadFailed": "內容載入失敗，請稍後重試",
-      "retry": "重新載入",
-      "hotSearches": "熱門搜尋:",
-      "search": "搜尋",
-      "pinned": "置頂",
-      "views": "瀏覽量: "
-    }
-  },
-  "seo": {
-    "home": {
-      "description": "提供雲伺服器、獨立伺服器、雲電腦與 IDC 服務，覆蓋香港、美國與國內多地節點。"
-    },
-    "products": {
-      "description": "瀏覽雲伺服器、獨立伺服器、雲電腦與 IDC 商品方案。",
-      "title": "商品與服務"
-    },
-    "about": {
-      "description": "瞭解 IDC 服務能力、節點覆蓋和平臺優勢。",
-      "title": "關於我們"
-    },
-    "terms": {
-      "description": "檢視服務條款。",
-      "title": "服務條款"
-    },
-    "privacy": {
-      "description": "檢視隱私政策。",
-      "title": "隱私政策"
-    },
-    "notices": {
-      "description": "檢視平臺公告和服務通知。",
-      "title": "官方公告"
-    },
-    "help": {
-      "description": "檢視商品購買、賬單支付和例項管理幫助。",
-      "title": "幫助中心"
-    },
-    "productDetail": {
-      "title": "商品詳情"
-    },
-    "noticeDetail": {
-      "title": "公告詳情"
-    },
-    "helpDetail": {
-      "title": "幫助詳情"
-    }
-  },
-  "seoLanding": {
-    "cloudServer": {
-      "keyword": "雲伺服器",
-      "title": "雲伺服器 - 穩定彈性計算與 IDC 雲主機",
-      "description": "雲伺服器面向企業網站、業務系統和開發測試場景，提供穩定彈性計算、靈活配置和 IDC 運維支援。",
-      "keywords": "雲伺服器,雲主機,彈性雲伺服器,IDC 雲伺服器",
-      "heroTitle": "穩定易用的雲伺服器",
-      "heroSummary": "面向網站託管、業務系統、介面服務和開發測試，按實際業務規模選擇 CPU、記憶體、頻寬和系統映象，減少前期硬體投入。",
-      "hero": {
-        "points": {
-          "fastDelivery": "快速交付",
-          "ticketSupport": "工單支援"
+            "contactInformation": "聯絡方式",
+            "intro": "我們專注於雲伺服器、獨立伺服器與相關基礎設施服務，提供從選型、購買、開通到運維支援的一體化體驗。",
+            "serviceCapabilitiesDesc": "覆蓋商品展示、線上購買、統一賬單、自動開通、售後支援與例項控制台。",
+            "serviceEmailLabel": "客服電子郵件：",
+            "serviceHoursLabel": "服務時間：",
+            "serviceHoursFallback": "以站內通知為準",
+            "officialGroupLabel": "官方群號：",
+            "notConfigured": "暫無配置",
+            "platformIntro": "本平台基於 AGPL-3.0-or-later 開源的 TuraIDC 系統搭建，覆蓋商品展示、線上購買、統一帳單、自動開通、售後支援與實例控制台的完整鏈路，讓買伺服器像買水電一樣簡單透明。",
+            "openSourceTitle": "開源與透明",
+            "openSourceDesc": "整套系統的原始碼公開可查，接受社群監督；品牌、許可與原始碼連結在頁腳與「開源與商業授權」頁面維護，正式條款以 LICENSE 與商業授權文件為準。",
+            "opsCommitmentTitle": "營運承諾",
+            "opsCommitmentDesc": "核心服務可用性按商品頁標註的 SLA 保障，財務帳單每日自動對帳、定時任務有執行契約校驗；控制台提供重啟、重裝、VNC 與流量包等自助營運能力，減少工單等待。",
+            "supportCommitmentTitle": "售後支援",
+            "supportCommitmentDesc": "工單與站內信雙通道受理，常見問題見幫助中心；帳號、帳單與實例的異常會透過站內通知主動告知，讓每一次狀態變化都有據可查。"
         },
-        "stats": {
-          "specs": {
-            "value": "多規格",
-            "label": "CPU / 記憶體 / 頻寬組合"
-          },
-          "os": {
-            "value": "多系統",
-            "label": "Linux 與 Windows 映象"
-          },
-          "onDemand": {
-            "value": "按需選",
-            "label": "適配測試到生產環境"
-          }
+        "legal": {
+            "openOriginal": "開啟原文",
+            "documentUrlMissing": "站點暫未配置該文件地址",
+            "termsDescription": "檢視平臺的服務條款、使用約定與相關說明。",
+            "privacyDescription": "檢視平臺的隱私政策與個人資訊處理說明。"
         },
-        "visualAlt": "雲伺服器業務部署示意"
-      },
-      "features": {
-        "scalable": {
-          "title": "配置可按業務階段調整",
-          "description": "從輕量網站到業務應用都能選擇合適規格，後續擴容時減少重複遷移成本。"
+        "detail": {
+            "tableOfContents": "目錄結構",
+            "fullText": "全文",
+            "updatedAt": "更新時間",
+            "publishedAt": "釋出時間",
+            "jumpTo": "跳轉到 {name}",
+            "retry": "重新載入",
+            "loadFailed": "{title}載入失敗，請稍後重試"
         },
-        "standardized": {
-          "title": "適合標準化部署",
-          "description": "常用系統映象、網路和安全配置集中管理，方便新業務快速上線。"
+        "nav": {
+            "news": "新聞動態",
+            "docs": "文件中心",
+            "allCategories": "全部分類",
+            "moreSections": "更多欄目",
+            "downloads": "下載中心",
+            "newsDesc": "檢視平臺最新通知、維護公告、商品更新與重要業務提醒。"
         },
-        "support": {
-          "title": "售後路徑清晰",
-          "description": "通過賬號與工單體系沉澱問題記錄，便於排查網路、系統和費用相關問題。"
-        }
-      },
-      "scenarios": {
-        "marketingSite": {
-          "title": "企業官網與營銷站",
-          "description": "承載官網、專題頁、表單提交和輕量後臺，適合穩定展示與日常維護。"
+        "search": {
+            "placeholder": "請輸入您要搜尋的關鍵詞"
         },
-        "devTest": {
-          "title": "開發測試環境",
-          "description": "為專案測試、介面聯調和臨時演示提供獨立環境，減少本地環境差異。"
-        },
-        "smbSystem": {
-          "title": "中小型業務系統",
-          "description": "適用於管理後臺、API 服務、資料看板等需要獨立執行環境的業務。"
-        }
-      },
-      "faqs": {
-        "useCases": {
-          "question": "雲伺服器適合哪些業務？",
-          "answer": "適合企業官網、業務後臺、介面服務、開發測試和輕量資料庫等常見網際網路業務。"
-        },
-        "sizing": {
-          "question": "新業務應該怎麼選配置？",
-          "answer": "可以先從較小規格開始，根據訪問量、CPU、記憶體和頻寬使用情況再調整。"
-        },
-        "vsDedicated": {
-          "question": "雲伺服器和獨立伺服器有什麼區別？",
-          "answer": "雲伺服器更適合彈性和快速交付，獨立伺服器更適合對物理資源獨佔要求更高的場景。"
-        }
-      },
-      "relatedLinks": {
-        "helpCenter": "閱讀幫助中心",
-        "aboutUs": "瞭解我們"
-      },
-      "cta": {
-        "title": "按業務規模選擇雲伺服器",
-        "description": "先檢視可售商品和配置，再進入控制台完成賬號註冊與下單。"
-      }
-    },
-    "hongKongServer": {
-      "keyword": "香港伺服器",
-      "title": "香港伺服器 - 面向出海與跨境訪問的雲伺服器",
-      "description": "香港伺服器適合跨境網站、外貿業務和亞太訪問場景，提供雲伺服器配置選擇與工單支援。",
-      "keywords": "香港伺服器,香港雲伺服器,香港雲主機,跨境伺服器",
-      "heroTitle": "面向亞太業務的香港伺服器",
-      "heroSummary": "適用於外貿站點、跨境業務、亞太使用者訪問和業務中轉場景，兼顧部署效率、訪問體驗和日常運維支援。"
-    },
-    "meta": {
-      "usServer": {
-        "keyword": "美國伺服器",
-        "title": "美國伺服器 - 海外業務部署與網站託管",
-        "description": "美國伺服器面向海外網站、跨境業務和開發測試場景，提供雲伺服器配置選擇、系統部署和售後支援。",
-        "keywords": "美國伺服器,美國雲伺服器,海外伺服器,海外雲主機",
-        "heroTitle": "適合海外部署的美國伺服器",
-        "heroSummary": "面向海外展示站、應用服務、跨境業務和測試環境，幫助團隊用較低門檻部署海外訪問入口。"
-      },
-      "highDefenseServer": {
-        "keyword": "高防伺服器",
-        "title": "高防伺服器 - 面向攻擊防護場景的雲伺服器",
-        "description": "高防伺服器適合遊戲、業務介面和高風險網站等防護需求場景，提供配置選擇與運維支援。",
-        "keywords": "高防伺服器,高防雲伺服器,防護伺服器,遊戲伺服器防護",
-        "heroTitle": "面向防護需求的高防伺服器",
-        "heroSummary": "適用於容易受到異常流量影響的網站、遊戲和介面服務，幫助業務在風險場景下保持更清晰的資源與工單管理路徑。"
-      },
-      "cloudPc": {
-        "keyword": "雲電腦",
-        "title": "雲電腦 - 遠端辦公與輕量桌面雲方案",
-        "description": "雲電腦適合遠端辦公、輕量桌面、軟體測試和臨時工作環境，提供雲端資源選擇與賬號管理能力。",
-        "keywords": "雲電腦,雲桌面,遠端辦公雲電腦,桌面雲",
-        "heroTitle": "靈活可用的雲電腦",
-        "heroSummary": "為遠端辦公、軟體測試、臨時桌面和輕量操作環境提供雲端資源，減少本地裝置差異帶來的維護成本。"
-      }
-    },
-    "breadcrumb": {
-      "home": "首頁",
-      "productsServices": "商品與服務"
-    },
-    "pages": {
-      "relatedLinks": {
-        "viewProductsServices": "檢視商品與服務",
-        "viewCloudServer": "檢視雲伺服器",
-        "viewHelpCenter": "檢視幫助中心"
-      },
-      "cta": {
-        "viewProductConfig": "檢視商品配置",
-        "registerAccount": "註冊賬號",
-        "submitConsultationTicket": "提交諮詢工單"
-      },
-      "common": {
-        "flexibleConfig": "靈活配置",
-        "productsTitle": "安全、穩定、可信賴的{keyword}服務",
-        "productsIntro": "圍繞真實業務選型整理商品能力、適用場景和開通入口，讓搜尋進入的使用者能直接完成判斷。",
-        "solutionTitle": "為不同業務場景提供{keyword}方案",
-        "solutionIntro": "從訪問區域、系統環境、頻寬需求和售後協同出發，先明確場景，再選擇資源。",
-        "processTitle": "從搜尋瞭解，到開通{keyword}",
-        "processIntro": "把官網內容、商品列表、註冊入口和工單諮詢連起來，減少使用者在多個頁面之間反覆尋找。",
-        "faqBadge": "FAQ",
-        "faqTitle": "選擇{keyword}前的常見問題",
-        "faqIntro": "使用真實搜尋問題組織，避免堆砌關鍵詞，讓頁面正文更容易被理解和收錄。"
-      },
-      "cloudServer": {
-        "hero": {
-          "eyebrow": "彈性計算"
-        }
-      }
-    },
-    "tag": {
-      "crossBorderAccess": "跨境訪問",
-      "apacAccess": "亞太訪問",
-      "foreignTradeSite": "外貿建站",
-      "flexibleDeployment": "部署靈活",
-      "hongKongNode": "香港節點",
-      "multipleBandwidth": "多頻寬",
-      "ticketSupport": "工單協同"
-    },
-    "highlight": {
-      "apacAccessScenario": "適合亞太訪問場景",
-      "selectBySiteTraffic": "按站點訪問量選擇",
-      "networkSystemTroubleshooting": "支援網路與系統問題排查",
-      "crossBorderEntry": "適合跨境訪問入口",
-      "shorterDeploymentChain": "部署鏈路更短",
-      "easyToScaleLater": "便於後續擴充套件"
-    },
-    "figure": {
-      "crossBorderScenario": "香港伺服器跨境業務示意"
-    },
-    "paragraph": {
-      "hongKongNodeCommonUse": "香港節點常用於面向亞太使用者的網站、介面服務和輕量業務入口。",
-      "migrationInOneFlow": "網站、證書、應用和資料遷移可以在同一業務流程中逐步完成。",
-      "growthUpgrade": "業務增長後可繼續選擇更高配置或調整頻寬，減少一次性投入壓力。"
-    },
-    "scenario": {
-      "foreignTradeShowcase": "外貿展示站",
-      "foreignTradeShowcaseDesc": "承載企業介紹、商品目錄、詢盤表單和多語言頁面。",
-      "crossBorderEntry": "跨境業務入口",
-      "crossBorderEntryDesc": "作為面向亞太使用者的應用入口、介面服務或輕量後臺。",
-      "overseasStaging": "海外測試環境",
-      "overseasStagingDesc": "用於驗證海外線路、業務訪問和不同區域使用者體驗。"
-    },
-    "faq": {
-      "suitableWorkloadsQ": "香港伺服器適合什麼業務？",
-      "suitableWorkloadsA": "適合外貿網站、亞太使用者訪問、跨境業務入口和海外測試環境。",
-      "mainlandAccessQ": "香港伺服器是否適合國內使用者訪問？",
-      "mainlandAccessA": "具體體驗受線路、頻寬和訪問區域影響，建議按業務主要使用者所在地選擇配置。",
-      "bandwidthSelectionQ": "如何選擇香港伺服器頻寬？",
-      "bandwidthSelectionA": "展示型網站通常先按基礎頻寬試執行，影片、下載或高併發業務需要預留更高頻寬。",
-      "usServerForDomesticBusinessQuestion": "美國伺服器適合國內業務嗎？",
-      "usServerForDomesticBusinessAnswer": "如果主要使用者在海外，美國伺服器更合適；如果主要使用者在國內，應優先評估國內或香港節點。",
-      "usServerAsTestEnvironmentQuestion": "美國伺服器可以做測試環境嗎？",
-      "usServerAsTestEnvironmentAnswer": "可以，適合驗證海外訪問、系統部署和跨境業務流程。",
-      "chooseOverseasServerQuestion": "海外伺服器選擇時最先看什麼？",
-      "chooseOverseasServerAnswer": "優先看使用者所在地、頻寬需求、系統環境和後續運維方式。",
-      "ddosVsCloud": "高防伺服器和普通雲伺服器有什麼區別？",
-      "ddosVsCloudAnswer": "高防伺服器更偏向異常流量防護場景，普通雲伺服器更適合常規計算和託管需求。",
-      "ddosForEverySite": "所有網站都需要高防伺服器嗎？",
-      "ddosForEverySiteAnswer": "不一定。普通企業站通常先用常規雲伺服器，遊戲、活動和高風險業務再評估高防需求。",
-      "ddosPreparation": "選擇高防伺服器前要準備什麼？",
-      "ddosPreparationAnswer": "需要明確業務型別、訪問峰值、攻擊風險、系統環境和可接受的恢復時間。"
-    },
-    "cta": {
-      "viewUsServers": "檢視美國伺服器",
-      "chooseHongKongForCrossBorder": "為跨境業務選擇香港伺服器",
-      "chooseHongKongTip": "先確認訪問區域、頻寬需求和系統環境，再選擇合適配置。",
-      "viewHongKongServers": "檢視香港伺服器"
-    },
-    "related": {
-      "overseasNode": "海外節點",
-      "overseasDeployment": "海外部署",
-      "websiteHosting": "網站託管",
-      "serviceTesting": "業務測試",
-      "overseasAccess": "海外訪問",
-      "fitOverseasAudience": "適合目標使用者在海外的業務",
-      "selectBySystemBandwidth": "按系統與頻寬需求選擇"
-    },
-    "feature": {
-      "unifiedManagement": "統一管理",
-      "unifiedManagementDescription": "訂單、賬單和工單集中處理",
-      "easyTrialRun": "方便業務試執行",
-      "easyTrialRunDescription": "先部署測試環境，再根據訪問資料調整配置和頻寬。",
-      "unifiedBilling": "統一賬單管理",
-      "unifiedBillingDescription": "海外節點資源可與其他商品一起在賬戶內檢視和續費。",
-      "overseasWebsite": "海外官網",
-      "overseasWebsiteDescription": "承載英文站、多語言站和麵向海外市場的企業展示內容。",
-      "crossBorderAppService": "跨境應用服務",
-      "crossBorderAppServiceDescription": "部署 API、中轉服務、輕量業務後臺和運營工具。",
-      "overseasLinkValidation": "海外鏈路驗證",
-      "overseasLinkValidationDescription": "用於測試不同區域訪問、系統相容和業務延遲。",
-      "overseasBusinessEntry": "部署海外業務入口",
-      "overseasBusinessEntryDescription": "根據目標使用者區域選擇節點和頻寬，先小規模上線再持續最佳化。",
-      "centralizedTroubleshooting": "減少排查分散",
-      "centralizedManagement": "資源、賬單和工單在賬戶內集中管理，便於復盤問題。"
-    },
-    "diagram": {
-      "usServerOverseasDeployment": "美國伺服器海外部署示意",
-      "usServerOverseasDeploymentLabel": "面向海外使用者訪問",
-      "usServerOverseasDeploymentDescription": "適合服務海外使用者的網站、介面服務和輕量應用。",
-      "ddosProtectionScenarios": "高防伺服器防護場景示意",
-      "ddosProtectionScenariosLabel": "適配攻擊風險更高的業務",
-      "ddosProtectionScenariosDescription": "遊戲、活動站、介面服務等更容易遇到異常流量，需要提前規劃防護方案。"
-    },
-    "ddos": {
-      "scenarioProtection": "防護場景",
-      "scenarioBusinessContinuity": "業務連續性",
-      "scenarioIssueTracking": "問題追蹤",
-      "scenarioHighRiskBusiness": "高風險業務",
-      "scenarioGameAndApi": "適合遊戲與介面服務",
-      "tagTraceable": "可追蹤",
-      "tagTraceableDescription": "通過工單沉澱問題記錄",
-      "tagCombinable": "可組合",
-      "tagCombinableDescription": "按伺服器規格與頻寬選擇",
-      "highRiskPlan": "為高風險業務準備伺服器方案",
-      "highRiskPlanDesc": "先梳理業務峰值、攻擊風險和系統配置，再選擇合適資源。"
-    },
-    "serverPlan": {
-      "matchWorkload": "按業務承壓選擇配置",
-      "matchWorkloadDesc": "根據業務型別、流量規模和系統負載選擇伺服器規格。"
-    },
-    "game": {
-      "workloadEntry": "遊戲業務入口",
-      "workloadEntryDesc": "面向遊戲登入、介面和官網等對可用性敏感的業務。"
-    },
-    "campaign": {
-      "pages": "活動與營銷頁面",
-      "pagesDesc": "適合短期訪問波動明顯、需要提前準備防護預案的頁面。"
-    },
-    "api": {
-      "services": "業務介面服務",
-      "servicesDesc": "承載 API、回撥服務和對外介面，減少異常流量對主業務影響。"
-    },
-    "cloudDesktop": {
-      "cloudDesktop": "雲端桌面",
-      "remoteAccess": "遠端訪問",
-      "lightweightDesktop": "輕量桌面",
-      "accountManagement": "賬號管理",
-      "runsInCloud": "雲端執行",
-      "lessLocalDependency": "減少本地裝置依賴",
-      "flexibleUse": "靈活使用",
-      "shortAndLongTerm": "適合臨時與長期場景",
-      "singleEntry": "統一入口",
-      "consoleAndRenewal": "控制台管理與續費",
-      "remoteWorkAlt": "雲電腦遠端辦公示意",
-      "lowerDeviceBarrier": "降低本地裝置門檻",
-      "cloudResourceDesc": "常用軟體、測試環境和輕量桌面可執行在雲端資源上。",
-      "temporaryProject": "適合臨時專案",
-      "temporaryProjectDesc": "短期測試、外包協作和演示環境可以快速準備。",
-      "easyAccountManagement": "方便賬號管理"
-    },
-    "cloudPc": {
-      "unifiedAccount": {
-        "desc": "通過統一賬戶檢視例項、續費和售後記錄。"
-      },
-      "remoteWork": {
-        "title": "遠端辦公",
-        "desc": "為員工或臨時協作者提供相對統一的雲端操作環境。"
-      },
-      "softwareTesting": {
-        "title": "軟體測試",
-        "desc": "隔離測試環境，減少對個人電腦配置和系統版本的依賴。"
-      },
-      "demoTraining": {
-        "title": "演示與培訓",
-        "desc": "在短期活動、培訓和客戶演示中快速準備可用桌面。"
-      },
-      "faq": {
-        "whoIsItFor": {
-          "question": "雲電腦適合哪些人使用？",
-          "answer": "適合遠端辦公、軟體測試、臨時專案、培訓演示和輕量桌面使用場景。"
-        },
-        "replaceAllLocalPc": {
-          "question": "雲電腦能替代所有本地電腦嗎？",
-          "answer": "不一定。高效能圖形、專業硬體和低延遲外設場景需要單獨評估。"
-        },
-        "vsCloudServer": {
-          "question": "雲電腦和雲伺服器有什麼區別？",
-          "answer": "雲電腦更偏桌面操作體驗，雲伺服器更偏業務系統和服務端應用執行。"
-        }
-      },
-      "section": {
-        "remoteWorkDesktop": {
-          "title": "為遠端辦公準備雲端桌面",
-          "desc": "先確認軟體、系統和使用週期，再選擇合適的雲電腦資源。"
-        }
-      }
-    },
-    "productCategories": "商品分類",
-    "coreSellingPoints": "核心賣點",
-    "serviceCapabilitySummary": "服務能力摘要",
-    "viewAllProducts": "檢視全部商品 &gt;",
-    "buyNow": "立即選購",
-    "productDetails": "商品詳情",
-    "scenarioList": "場景列表",
-    "relatedProducts": "相關商品：",
-    "process": {
-      "step1Title": "明確場景",
-      "step1Description": "確認業務訪問區域、系統環境、頻寬需求和預算範圍。",
-      "step2Title": "檢視配置",
-      "step2Description": "在商品列表中篩選合適的規格、節點和服務週期。",
-      "step3Title": "註冊開通",
-      "step3Description": "進入控制台完成賬號註冊、下單、支付和例項管理。",
-      "step4Title": "持續維護",
-      "step4Description": "通過公告、幫助中心和工單體系跟蹤使用與售後問題。"
-    }
-  },
-  "common": {
-    "request": {
-      "apiBaseUrlRequired": "VITE_API_BASE_URL 必須配置",
-      "failed": "請求失敗",
-      "networkError": "網路異常",
-      "connectionLost": "網路連線已斷開，請檢查後重試",
-      "timeout": "請求超時，請檢查網路後重試",
-      "invalidParameters": "引數填寫有誤，請檢查後重試",
-      "tooManyRequestsRetryAfter": "請求過於頻繁，請 {retryAfter} 秒後重試",
-      "tooManyRequests": "請求過於頻繁，請稍後重試"
-    },
-    "site": {
-      "slogan": "雲伺服器與 IDC 服務平臺"
-    },
-    "regionPicker": {
-      "selectGroups": "選擇一級分組與二級分組"
-    },
-    "userMessage": {
-      "operationFailed": "操作失敗，請稍後重試"
-    },
-    "toast": {
-      "success": "操作成功"
-    },
-    "notFound": {
-      "backHome": "返回首頁",
-      "title": "頁面不存在",
-      "description": "你訪問的頁面可能已遷移，或者連結地址有誤。",
-      "goBack": "返回上一頁"
-    },
-    "product": {
-      "specNotConfigured": "未配置規格 #{productId}"
-    },
-    "cancel": "取消",
-    "close": "關閉",
-    "confirm": "確定",
-    "loading": "載入中…"
-  },
-  "home": {
-    "aiSkill": {
-      "title": "把你自己的 AI 助理接進來",
-      "subtitle": "不用打開面板也能管伺服器：把一條安裝連結交給你的 agent，它就能替你查價、下單、續費、開關機、提工單。",
-      "point1Title": "一條連結裝好",
-      "point1Desc": "Claude Code、Cursor、Codex 或任何支援 skill 的 harness，裝上即用，不用寫程式。",
-      "point2Title": "金鑰在你手裡",
-      "point2Desc": "用你自己的 API 金鑰授權，依作用域限權，隨時可停用，面板不碰你的模型。",
-      "point3Title": "能力全開放",
-      "point3Desc": "商品報價、下單續費、開關機、重裝、帳單餘額、工單回覆，開放介面一一對應。",
-      "commandLabel": "裝好後在終端機裡執行",
-      "cta": "取得我的接入金鑰",
-      "hint": "金鑰在控制台「API 憑證」頁建立"
-    },
-
-    "partners": {
-      "mediaAndReading": "愛奇藝、酷狗音樂、迅雷、掌閱 iReader 等合作方",
-      "internetTech": "阿里巴巴、騰訊、字節跳動、美團 等合作方",
-      "telecomAndTravel": "中國移動、中國聯通、58 同城、攜程 等合作方",
-      "ecommerceAndMobility": "格力、京東、Segway-Ninebot、淘寶 等合作方",
-      "electronicsAndEv": "格力、京東方、小鵬、蔚來 等合作方",
-      "title": "優質合作伙伴",
-      "subtitle": "以優質資源與服務領航開拓，助力更多企業高效上雲"
-    },
-    "hero": {
-      "productEntries": "商品入口",
-      "carouselIndicator": "輪播指示",
-      "carouselControls": "輪播控制",
-      "slides": {
-        "refresh": {
-          "title": "官網煥新 · 雲上新體驗",
-          "railTitle": "官網換新",
-          "primaryText": "立即體驗",
-          "secondaryText": "檢視詳情"
-        },
-        "global": {
-          "title": "多地節點 · 全球低延遲互聯",
-          "railTitle": "全球互聯",
-          "primaryText": "選購節點",
-          "secondaryText": "檢視線路"
-        },
-        "security": {
-          "title": "企業級安全 · 穩定可靠交付",
-          "railTitle": "安全防護",
-          "primaryText": "檢視防護",
-          "secondaryText": "線上諮詢"
-        },
-        "value": {
-          "title": "低門檻套餐 · 直享實惠價",
-          "railTitle": "實惠專區",
-          "primaryText": "立即搶購",
-          "secondaryText": "檢視優惠"
-        },
-        "support": {
-          "title": "企業客服 · 一對一專屬服務",
-          "railTitle": "企業客服",
-          "primaryText": "聯絡客服",
-          "secondaryText": "企業採購"
-        }
-      },
-      "features": {
-        "dynamic": {
-          "title": "香港 CN2 精品線路 上線",
-          "kicker": "商品動態"
+        "article": {
+            "hot": "熱門文章",
+            "publisher": "釋出人：",
+            "views": "閱讀量：",
+            "categoryCount": "{name}，共 {count} 篇",
+            "officialSupport": "官方客服",
+            "figureCaption": "相關配圖"
         },
         "activity": {
-          "title": "新客首單 39 元/年",
-          "kicker": "活動內容"
+            "latest": "最新活動"
         },
-        "enterprise": {
-          "title": "IDC 企業採購通道",
-          "kicker": "企業專區"
+        "list": {
+            "empty": "暫無內容",
+            "loadFailed": "內容載入失敗，請稍後重試",
+            "retry": "重新載入",
+            "hotSearches": "熱門搜尋:",
+            "search": "搜尋",
+            "pinned": "置頂",
+            "views": "瀏覽量: "
+        }
+    },
+    "seo": {
+        "home": {
+            "description": "提供雲伺服器、獨立伺服器、雲電腦與 IDC 服務，覆蓋香港、美國與國內多地節點。"
+        },
+        "products": {
+            "description": "瀏覽雲伺服器、獨立伺服器、雲電腦與 IDC 商品方案。",
+            "title": "商品與服務"
+        },
+        "about": {
+            "description": "瞭解 IDC 服務能力、節點覆蓋和平臺優勢。",
+            "title": "關於我們"
+        },
+        "terms": {
+            "description": "檢視服務條款。",
+            "title": "服務條款"
+        },
+        "privacy": {
+            "description": "檢視隱私政策。",
+            "title": "隱私政策"
+        },
+        "notices": {
+            "description": "檢視平臺公告和服務通知。",
+            "title": "官方公告"
+        },
+        "help": {
+            "description": "檢視商品購買、賬單支付和例項管理幫助。",
+            "title": "幫助中心"
+        },
+        "productDetail": {
+            "title": "商品詳情"
+        },
+        "noticeDetail": {
+            "title": "公告詳情"
+        },
+        "helpDetail": {
+            "title": "幫助詳情"
+        }
+    },
+    "seoLanding": {
+        "cloudServer": {
+            "keyword": "雲伺服器",
+            "title": "雲伺服器 - 穩定彈性計算與 IDC 雲主機",
+            "description": "雲伺服器面向企業網站、業務系統和開發測試場景，提供穩定彈性計算、靈活配置和 IDC 運維支援。",
+            "keywords": "雲伺服器,雲主機,彈性雲伺服器,IDC 雲伺服器",
+            "heroTitle": "穩定易用的雲伺服器",
+            "heroSummary": "面向網站託管、業務系統、介面服務和開發測試，按實際業務規模選擇 CPU、記憶體、頻寬和系統映象，減少前期硬體投入。",
+            "hero": {
+                "points": {
+                    "fastDelivery": "快速交付",
+                    "ticketSupport": "工單支援"
+                },
+                "stats": {
+                    "specs": {
+                        "value": "多規格",
+                        "label": "CPU / 記憶體 / 頻寬組合"
+                    },
+                    "os": {
+                        "value": "多系統",
+                        "label": "Linux 與 Windows 映象"
+                    },
+                    "onDemand": {
+                        "value": "按需選",
+                        "label": "適配測試到生產環境"
+                    }
+                },
+                "visualAlt": "雲伺服器業務部署示意"
+            },
+            "features": {
+                "scalable": {
+                    "title": "配置可按業務階段調整",
+                    "description": "從輕量網站到業務應用都能選擇合適規格，後續擴容時減少重複遷移成本。"
+                },
+                "standardized": {
+                    "title": "適合標準化部署",
+                    "description": "常用系統映象、網路和安全配置集中管理，方便新業務快速上線。"
+                },
+                "support": {
+                    "title": "售後路徑清晰",
+                    "description": "通過賬號與工單體系沉澱問題記錄，便於排查網路、系統和費用相關問題。"
+                }
+            },
+            "scenarios": {
+                "marketingSite": {
+                    "title": "企業官網與營銷站",
+                    "description": "承載官網、專題頁、表單提交和輕量後臺，適合穩定展示與日常維護。"
+                },
+                "devTest": {
+                    "title": "開發測試環境",
+                    "description": "為專案測試、介面聯調和臨時演示提供獨立環境，減少本地環境差異。"
+                },
+                "smbSystem": {
+                    "title": "中小型業務系統",
+                    "description": "適用於管理後臺、API 服務、資料看板等需要獨立執行環境的業務。"
+                }
+            },
+            "faqs": {
+                "useCases": {
+                    "question": "雲伺服器適合哪些業務？",
+                    "answer": "適合企業官網、業務後臺、介面服務、開發測試和輕量資料庫等常見網際網路業務。"
+                },
+                "sizing": {
+                    "question": "新業務應該怎麼選配置？",
+                    "answer": "可以先從較小規格開始，根據訪問量、CPU、記憶體和頻寬使用情況再調整。"
+                },
+                "vsDedicated": {
+                    "question": "雲伺服器和獨立伺服器有什麼區別？",
+                    "answer": "雲伺服器更適合彈性和快速交付，獨立伺服器更適合對物理資源獨佔要求更高的場景。"
+                }
+            },
+            "relatedLinks": {
+                "helpCenter": "閱讀幫助中心",
+                "aboutUs": "瞭解我們"
+            },
+            "cta": {
+                "title": "按業務規模選擇雲伺服器",
+                "description": "先檢視可售商品和配置，再進入控制台完成賬號註冊與下單。"
+            }
+        },
+        "hongKongServer": {
+            "keyword": "香港伺服器",
+            "title": "香港伺服器 - 面向出海與跨境訪問的雲伺服器",
+            "description": "香港伺服器適合跨境網站、外貿業務和亞太訪問場景，提供雲伺服器配置選擇與工單支援。",
+            "keywords": "香港伺服器,香港雲伺服器,香港雲主機,跨境伺服器",
+            "heroTitle": "面向亞太業務的香港伺服器",
+            "heroSummary": "適用於外貿站點、跨境業務、亞太使用者訪問和業務中轉場景，兼顧部署效率、訪問體驗和日常運維支援。"
+        },
+        "meta": {
+            "usServer": {
+                "keyword": "美國伺服器",
+                "title": "美國伺服器 - 海外業務部署與網站託管",
+                "description": "美國伺服器面向海外網站、跨境業務和開發測試場景，提供雲伺服器配置選擇、系統部署和售後支援。",
+                "keywords": "美國伺服器,美國雲伺服器,海外伺服器,海外雲主機",
+                "heroTitle": "適合海外部署的美國伺服器",
+                "heroSummary": "面向海外展示站、應用服務、跨境業務和測試環境，幫助團隊用較低門檻部署海外訪問入口。"
+            },
+            "highDefenseServer": {
+                "keyword": "高防伺服器",
+                "title": "高防伺服器 - 面向攻擊防護場景的雲伺服器",
+                "description": "高防伺服器適合遊戲、業務介面和高風險網站等防護需求場景，提供配置選擇與運維支援。",
+                "keywords": "高防伺服器,高防雲伺服器,防護伺服器,遊戲伺服器防護",
+                "heroTitle": "面向防護需求的高防伺服器",
+                "heroSummary": "適用於容易受到異常流量影響的網站、遊戲和介面服務，幫助業務在風險場景下保持更清晰的資源與工單管理路徑。"
+            },
+            "cloudPc": {
+                "keyword": "雲電腦",
+                "title": "雲電腦 - 遠端辦公與輕量桌面雲方案",
+                "description": "雲電腦適合遠端辦公、輕量桌面、軟體測試和臨時工作環境，提供雲端資源選擇與賬號管理能力。",
+                "keywords": "雲電腦,雲桌面,遠端辦公雲電腦,桌面雲",
+                "heroTitle": "靈活可用的雲電腦",
+                "heroSummary": "為遠端辦公、軟體測試、臨時桌面和輕量操作環境提供雲端資源，減少本地裝置差異帶來的維護成本。"
+            }
+        },
+        "breadcrumb": {
+            "home": "首頁",
+            "productsServices": "商品與服務"
+        },
+        "pages": {
+            "relatedLinks": {
+                "viewProductsServices": "檢視商品與服務",
+                "viewCloudServer": "檢視雲伺服器",
+                "viewHelpCenter": "檢視幫助中心"
+            },
+            "cta": {
+                "viewProductConfig": "檢視商品配置",
+                "registerAccount": "註冊賬號",
+                "submitConsultationTicket": "提交諮詢工單"
+            },
+            "common": {
+                "flexibleConfig": "靈活配置",
+                "productsTitle": "安全、穩定、可信賴的{keyword}服務",
+                "productsIntro": "圍繞真實業務選型整理商品能力、適用場景和開通入口，讓搜尋進入的使用者能直接完成判斷。",
+                "solutionTitle": "為不同業務場景提供{keyword}方案",
+                "solutionIntro": "從訪問區域、系統環境、頻寬需求和售後協同出發，先明確場景，再選擇資源。",
+                "processTitle": "從搜尋瞭解，到開通{keyword}",
+                "processIntro": "把官網內容、商品列表、註冊入口和工單諮詢連起來，減少使用者在多個頁面之間反覆尋找。",
+                "faqBadge": "FAQ",
+                "faqTitle": "選擇{keyword}前的常見問題",
+                "faqIntro": "使用真實搜尋問題組織，避免堆砌關鍵詞，讓頁面正文更容易被理解和收錄。"
+            },
+            "cloudServer": {
+                "hero": {
+                    "eyebrow": "彈性計算"
+                }
+            }
+        },
+        "tag": {
+            "crossBorderAccess": "跨境訪問",
+            "apacAccess": "亞太訪問",
+            "foreignTradeSite": "外貿建站",
+            "flexibleDeployment": "部署靈活",
+            "hongKongNode": "香港節點",
+            "multipleBandwidth": "多頻寬",
+            "ticketSupport": "工單協同"
+        },
+        "highlight": {
+            "apacAccessScenario": "適合亞太訪問場景",
+            "selectBySiteTraffic": "按站點訪問量選擇",
+            "networkSystemTroubleshooting": "支援網路與系統問題排查",
+            "crossBorderEntry": "適合跨境訪問入口",
+            "shorterDeploymentChain": "部署鏈路更短",
+            "easyToScaleLater": "便於後續擴充套件"
+        },
+        "figure": {
+            "crossBorderScenario": "香港伺服器跨境業務示意"
+        },
+        "paragraph": {
+            "hongKongNodeCommonUse": "香港節點常用於面向亞太使用者的網站、介面服務和輕量業務入口。",
+            "migrationInOneFlow": "網站、證書、應用和資料遷移可以在同一業務流程中逐步完成。",
+            "growthUpgrade": "業務增長後可繼續選擇更高配置或調整頻寬，減少一次性投入壓力。"
+        },
+        "scenario": {
+            "foreignTradeShowcase": "外貿展示站",
+            "foreignTradeShowcaseDesc": "承載企業介紹、商品目錄、詢盤表單和多語言頁面。",
+            "crossBorderEntry": "跨境業務入口",
+            "crossBorderEntryDesc": "作為面向亞太使用者的應用入口、介面服務或輕量後臺。",
+            "overseasStaging": "海外測試環境",
+            "overseasStagingDesc": "用於驗證海外線路、業務訪問和不同區域使用者體驗。"
+        },
+        "faq": {
+            "suitableWorkloadsQ": "香港伺服器適合什麼業務？",
+            "suitableWorkloadsA": "適合外貿網站、亞太使用者訪問、跨境業務入口和海外測試環境。",
+            "mainlandAccessQ": "香港伺服器是否適合國內使用者訪問？",
+            "mainlandAccessA": "具體體驗受線路、頻寬和訪問區域影響，建議按業務主要使用者所在地選擇配置。",
+            "bandwidthSelectionQ": "如何選擇香港伺服器頻寬？",
+            "bandwidthSelectionA": "展示型網站通常先按基礎頻寬試執行，影片、下載或高併發業務需要預留更高頻寬。",
+            "usServerForDomesticBusinessQuestion": "美國伺服器適合國內業務嗎？",
+            "usServerForDomesticBusinessAnswer": "如果主要使用者在海外，美國伺服器更合適；如果主要使用者在國內，應優先評估國內或香港節點。",
+            "usServerAsTestEnvironmentQuestion": "美國伺服器可以做測試環境嗎？",
+            "usServerAsTestEnvironmentAnswer": "可以，適合驗證海外訪問、系統部署和跨境業務流程。",
+            "chooseOverseasServerQuestion": "海外伺服器選擇時最先看什麼？",
+            "chooseOverseasServerAnswer": "優先看使用者所在地、頻寬需求、系統環境和後續運維方式。",
+            "ddosVsCloud": "高防伺服器和普通雲伺服器有什麼區別？",
+            "ddosVsCloudAnswer": "高防伺服器更偏向異常流量防護場景，普通雲伺服器更適合常規計算和託管需求。",
+            "ddosForEverySite": "所有網站都需要高防伺服器嗎？",
+            "ddosForEverySiteAnswer": "不一定。普通企業站通常先用常規雲伺服器，遊戲、活動和高風險業務再評估高防需求。",
+            "ddosPreparation": "選擇高防伺服器前要準備什麼？",
+            "ddosPreparationAnswer": "需要明確業務型別、訪問峰值、攻擊風險、系統環境和可接受的恢復時間。"
+        },
+        "cta": {
+            "viewUsServers": "檢視美國伺服器",
+            "chooseHongKongForCrossBorder": "為跨境業務選擇香港伺服器",
+            "chooseHongKongTip": "先確認訪問區域、頻寬需求和系統環境，再選擇合適配置。",
+            "viewHongKongServers": "檢視香港伺服器"
+        },
+        "related": {
+            "overseasNode": "海外節點",
+            "overseasDeployment": "海外部署",
+            "websiteHosting": "網站託管",
+            "serviceTesting": "業務測試",
+            "overseasAccess": "海外訪問",
+            "fitOverseasAudience": "適合目標使用者在海外的業務",
+            "selectBySystemBandwidth": "按系統與頻寬需求選擇"
+        },
+        "feature": {
+            "unifiedManagement": "統一管理",
+            "unifiedManagementDescription": "訂單、賬單和工單集中處理",
+            "easyTrialRun": "方便業務試執行",
+            "easyTrialRunDescription": "先部署測試環境，再根據訪問資料調整配置和頻寬。",
+            "unifiedBilling": "統一賬單管理",
+            "unifiedBillingDescription": "海外節點資源可與其他商品一起在賬戶內檢視和續費。",
+            "overseasWebsite": "海外官網",
+            "overseasWebsiteDescription": "承載英文站、多語言站和麵向海外市場的企業展示內容。",
+            "crossBorderAppService": "跨境應用服務",
+            "crossBorderAppServiceDescription": "部署 API、中轉服務、輕量業務後臺和運營工具。",
+            "overseasLinkValidation": "海外鏈路驗證",
+            "overseasLinkValidationDescription": "用於測試不同區域訪問、系統相容和業務延遲。",
+            "overseasBusinessEntry": "部署海外業務入口",
+            "overseasBusinessEntryDescription": "根據目標使用者區域選擇節點和頻寬，先小規模上線再持續最佳化。",
+            "centralizedTroubleshooting": "減少排查分散",
+            "centralizedManagement": "資源、賬單和工單在賬戶內集中管理，便於復盤問題。"
+        },
+        "diagram": {
+            "usServerOverseasDeployment": "美國伺服器海外部署示意",
+            "usServerOverseasDeploymentLabel": "面向海外使用者訪問",
+            "usServerOverseasDeploymentDescription": "適合服務海外使用者的網站、介面服務和輕量應用。",
+            "ddosProtectionScenarios": "高防伺服器防護場景示意",
+            "ddosProtectionScenariosLabel": "適配攻擊風險更高的業務",
+            "ddosProtectionScenariosDescription": "遊戲、活動站、介面服務等更容易遇到異常流量，需要提前規劃防護方案。"
+        },
+        "ddos": {
+            "scenarioProtection": "防護場景",
+            "scenarioBusinessContinuity": "業務連續性",
+            "scenarioIssueTracking": "問題追蹤",
+            "scenarioHighRiskBusiness": "高風險業務",
+            "scenarioGameAndApi": "適合遊戲與介面服務",
+            "tagTraceable": "可追蹤",
+            "tagTraceableDescription": "通過工單沉澱問題記錄",
+            "tagCombinable": "可組合",
+            "tagCombinableDescription": "按伺服器規格與頻寬選擇",
+            "highRiskPlan": "為高風險業務準備伺服器方案",
+            "highRiskPlanDesc": "先梳理業務峰值、攻擊風險和系統配置，再選擇合適資源。"
+        },
+        "serverPlan": {
+            "matchWorkload": "按業務承壓選擇配置",
+            "matchWorkloadDesc": "根據業務型別、流量規模和系統負載選擇伺服器規格。"
+        },
+        "game": {
+            "workloadEntry": "遊戲業務入口",
+            "workloadEntryDesc": "面向遊戲登入、介面和官網等對可用性敏感的業務。"
+        },
+        "campaign": {
+            "pages": "活動與營銷頁面",
+            "pagesDesc": "適合短期訪問波動明顯、需要提前準備防護預案的頁面。"
+        },
+        "api": {
+            "services": "業務介面服務",
+            "servicesDesc": "承載 API、回撥服務和對外介面，減少異常流量對主業務影響。"
         },
         "cloudDesktop": {
-          "title": "西安雲電腦 即開即用",
-          "kicker": "輕量商品"
+            "cloudDesktop": "雲端桌面",
+            "remoteAccess": "遠端訪問",
+            "lightweightDesktop": "輕量桌面",
+            "accountManagement": "賬號管理",
+            "runsInCloud": "雲端執行",
+            "lessLocalDependency": "減少本地裝置依賴",
+            "flexibleUse": "靈活使用",
+            "shortAndLongTerm": "適合臨時與長期場景",
+            "singleEntry": "統一入口",
+            "consoleAndRenewal": "控制台管理與續費",
+            "remoteWorkAlt": "雲電腦遠端辦公示意",
+            "lowerDeviceBarrier": "降低本地裝置門檻",
+            "cloudResourceDesc": "常用軟體、測試環境和輕量桌面可執行在雲端資源上。",
+            "temporaryProject": "適合臨時專案",
+            "temporaryProjectDesc": "短期測試、外包協作和演示環境可以快速準備。",
+            "easyAccountManagement": "方便賬號管理"
         },
-        "new": {
-          "title": "十堰高防獨立伺服器",
-          "kicker": "新開商品"
+        "cloudPc": {
+            "unifiedAccount": {
+                "desc": "通過統一賬戶檢視例項、續費和售後記錄。"
+            },
+            "remoteWork": {
+                "title": "遠端辦公",
+                "desc": "為員工或臨時協作者提供相對統一的雲端操作環境。"
+            },
+            "softwareTesting": {
+                "title": "軟體測試",
+                "desc": "隔離測試環境，減少對個人電腦配置和系統版本的依賴。"
+            },
+            "demoTraining": {
+                "title": "演示與培訓",
+                "desc": "在短期活動、培訓和客戶演示中快速準備可用桌面。"
+            },
+            "faq": {
+                "whoIsItFor": {
+                    "question": "雲電腦適合哪些人使用？",
+                    "answer": "適合遠端辦公、軟體測試、臨時專案、培訓演示和輕量桌面使用場景。"
+                },
+                "replaceAllLocalPc": {
+                    "question": "雲電腦能替代所有本地電腦嗎？",
+                    "answer": "不一定。高效能圖形、專業硬體和低延遲外設場景需要單獨評估。"
+                },
+                "vsCloudServer": {
+                    "question": "雲電腦和雲伺服器有什麼區別？",
+                    "answer": "雲電腦更偏桌面操作體驗，雲伺服器更偏業務系統和服務端應用執行。"
+                }
+            },
+            "section": {
+                "remoteWorkDesktop": {
+                    "title": "為遠端辦公準備雲端桌面",
+                    "desc": "先確認軟體、系統和使用週期，再選擇合適的雲電腦資源。"
+                }
+            }
+        },
+        "productCategories": "商品分類",
+        "coreSellingPoints": "核心賣點",
+        "serviceCapabilitySummary": "服務能力摘要",
+        "viewAllProducts": "檢視全部商品 &gt;",
+        "buyNow": "立即選購",
+        "productDetails": "商品詳情",
+        "scenarioList": "場景列表",
+        "relatedProducts": "相關商品：",
+        "process": {
+            "step1Title": "明確場景",
+            "step1Description": "確認業務訪問區域、系統環境、頻寬需求和預算範圍。",
+            "step2Title": "檢視配置",
+            "step2Description": "在商品列表中篩選合適的規格、節點和服務週期。",
+            "step3Title": "註冊開通",
+            "step3Description": "進入控制台完成賬號註冊、下單、支付和例項管理。",
+            "step4Title": "持續維護",
+            "step4Description": "通過公告、幫助中心和工單體系跟蹤使用與售後問題。"
         }
-      },
-      "entry": "商品目錄、購買支付、自動開通、賬單結算與服務支援統一打通；首頁即是控制台入口，讓資源採購和後續管理始終在同一條鏈路裡完成。",
-      "tier": "T3+ 資料中心 + BGP 多線接入 + 100G 抗 DDoS 防護；實名認證、許可權分級與操作留痕保障賬戶安全，長期業務和合規場景穩定承載。",
-      "support": "7×24 小時工單、官方QQ群與一對一商務對接，覆蓋選型、部署、遷移、運維與結算；支援對公結算、批次採購、子賬號協作與統一對賬。",
-      "firstOrder": "新客首單 2 核 2G 雲伺服器 39 元/年起，輕量雲電腦按月訂閱即開即用；優惠券、折扣券靈活疊加，配置隨業務彈性升級，先用後付更省心。",
-      "global": "覆蓋香港、美國與國內多地優質節點，三網 CN2 / BGP 線路最佳化回國；跨區域組網、跨境業務秒級響應，適合建站、代理、跨境電商與出海 SaaS。",
-      "cn2": "三網 CN2 GIA 最佳化回國，跨境業務低時延穩定承載。",
-      "cloud2c2g": "2H2G 雲伺服器覆蓋建站、代理、輕量業務全場景。",
-      "billing": "統一賬單、多子賬號協作與對公結算能力同步上線。",
-      "xian": "西安節點低延遲，支援遠端辦公、外包協作、教學實訓。",
-      "ddos": "100G 抗 DDoS + BGP 多線，面向長期穩定業務承載。",
-      "switchTo": "切換到 {title}",
-      "unnamed": "未命名",
-      "learnMore": "瞭解更多",
-      "viewDetail": "檢視詳情"
     },
-    "registerBar": {
-      "title": "現在註冊，開啟您的網際網路高速穩定之旅！",
-      "registerNow": "立即註冊"
-    },
-    "news": {
-      "title": "資訊動態",
-      "announcements": "公告",
-      "recommended": "推薦",
-      "subtitle": "為您呈現行業動態、活動公告、商品釋出",
-      "viewMore": "檢視更多",
-      "summaryFallback": "資訊動態主焦點卡片展示區域，點選檢視完整內容。",
-      "detailHint": "點選檢視詳細內容。"
-    },
-    "products": {
-      "title": "安全、穩定、可信賴的商品與服務",
-      "emptyCategory": "當前分類暫無可展示的二級分組，點選後可進入商品目錄檢視更多內容。",
-      "techDeliveryDesc": "的技術積澱與交付實踐，助力企業上雲與產業網際網路。",
-      "viewAll": "檢視全部商品",
-      "buyNow": "立即選購",
-      "groupFallback": "二級分組 {index}",
-      "categoryFallback": "商品分類 {index}",
-      "currentCategory": "當前分類",
-      "categoryCatalog": "{name}目錄",
-      "recommendedIntro": "主推 {name}，可線上檢視配置並快速完成選型。",
-      "groupIntro": "{category} 下已上架 {count} 款在售商品，可按業務需求快速選型。"
-    },
-    "solutions": {
-      "title": "為千行百業提供全面的解決方案",
-      "subtitle": "面向豐富的業務場景，提供覆蓋行業與技術的解決方案。",
-      "cloudServer": "雲伺服器",
-      "learnMore": "瞭解更多",
-      "industrySolutions": "行業解決方案",
-      "relatedProducts": "相關商品",
-      "securityProtection": "安全防護",
-      "ecommerce": {
-        "title": "電商解決方案",
-        "tags": "業務運營、資料分析、安全防護",
-        "description": "我們提供一站式的電商解決方案，將業務運營、資料分析、安全防護等多方面服務融為一體，確保您的電商業務順暢無阻。",
-        "points": {
-          "operationsOptimization": "業務運營最佳化",
-          "dataAnalyticsAndMining": "資料分析與挖掘",
-          "paymentLinkCoordination": "支付鏈路協同"
+    "common": {
+        "request": {
+            "apiBaseUrlRequired": "VITE_API_BASE_URL 必須配置",
+            "failed": "請求失敗",
+            "networkError": "網路異常",
+            "connectionLost": "網路連線已斷開，請檢查後重試",
+            "timeout": "請求超時，請檢查網路後重試",
+            "invalidParameters": "引數填寫有誤，請檢查後重試",
+            "tooManyRequestsRetryAfter": "請求過於頻繁，請 {retryAfter} 秒後重試",
+            "tooManyRequests": "請求過於頻繁，請稍後重試"
         },
-        "label": "電商",
-        "features": "業務運營、資料分析、安全防護"
-      },
-      "game": {
-        "label": "遊戲",
-        "title": "遊戲雲解決方案",
-        "subtitle": "高併發接入、彈性擴容、穩定防護",
-        "description": "針對高併發、低時延和穩定交付場景，整合彈性計算、流量排程、告警巡檢和節點容災能力，支撐遊戲業務穩定執行。",
-        "points": {
-          "elasticResourceScheduling": "彈性資源排程",
-          "lowLatencyAccessOptimization": "低時延接入最佳化",
-          "eventPeakCapacity": "活動峰值承載",
-          "nodeDisasterRecoveryAndMonitoring": "節點容災與監控"
+        "site": {
+            "slogan": "雲伺服器與 IDC 服務平臺"
+        },
+        "regionPicker": {
+            "selectGroups": "選擇一級分組與二級分組"
+        },
+        "userMessage": {
+            "operationFailed": "操作失敗，請稍後重試"
+        },
+        "toast": {
+            "success": "操作成功"
+        },
+        "notFound": {
+            "backHome": "返回首頁",
+            "title": "頁面不存在",
+            "description": "你訪問的頁面可能已遷移，或者連結地址有誤。",
+            "goBack": "返回上一頁"
+        },
+        "product": {
+            "specNotConfigured": "未配置規格 #{productId}"
+        },
+        "cancel": "取消",
+        "close": "關閉",
+        "confirm": "確定",
+        "loading": "載入中…"
+    },
+    "home": {
+        "aiSkill": {
+            "title": "把你自己的 AI 助理接進來",
+            "subtitle": "不用打開面板也能管伺服器：把一條安裝連結交給你的 agent，它就能替你查價、下單、續費、開關機、提工單。",
+            "point1Title": "一條連結裝好",
+            "point1Desc": "Claude Code、Cursor、Codex 或任何支援 skill 的 harness，裝上即用，不用寫程式。",
+            "point2Title": "金鑰在你手裡",
+            "point2Desc": "用你自己的 API 金鑰授權，依作用域限權，隨時可停用，面板不碰你的模型。",
+            "point3Title": "能力全開放",
+            "point3Desc": "商品報價、下單續費、開關機、重裝、帳單餘額、工單回覆，開放介面一一對應。",
+            "commandLabel": "裝好後在終端機裡執行",
+            "cta": "取得我的接入金鑰",
+            "hint": "金鑰在控制台「API 憑證」頁建立"
+        },
+        "partners": {
+            "mediaAndReading": "愛奇藝、酷狗音樂、迅雷、掌閱 iReader 等合作方",
+            "internetTech": "阿里巴巴、騰訊、字節跳動、美團 等合作方",
+            "telecomAndTravel": "中國移動、中國聯通、58 同城、攜程 等合作方",
+            "ecommerceAndMobility": "格力、京東、Segway-Ninebot、淘寶 等合作方",
+            "electronicsAndEv": "格力、京東方、小鵬、蔚來 等合作方",
+            "title": "優質合作伙伴",
+            "subtitle": "以優質資源與服務領航開拓，助力更多企業高效上雲"
+        },
+        "hero": {
+            "productEntries": "商品入口",
+            "carouselIndicator": "輪播指示",
+            "carouselControls": "輪播控制",
+            "slides": {
+                "refresh": {
+                    "title": "官網煥新 · 雲上新體驗",
+                    "railTitle": "官網換新",
+                    "primaryText": "立即體驗",
+                    "secondaryText": "檢視詳情"
+                },
+                "global": {
+                    "title": "多地節點 · 全球低延遲互聯",
+                    "railTitle": "全球互聯",
+                    "primaryText": "選購節點",
+                    "secondaryText": "檢視線路"
+                },
+                "security": {
+                    "title": "企業級安全 · 穩定可靠交付",
+                    "railTitle": "安全防護",
+                    "primaryText": "檢視防護",
+                    "secondaryText": "線上諮詢"
+                },
+                "value": {
+                    "title": "低門檻套餐 · 直享實惠價",
+                    "railTitle": "實惠專區",
+                    "primaryText": "立即搶購",
+                    "secondaryText": "檢視優惠"
+                },
+                "support": {
+                    "title": "企業客服 · 一對一專屬服務",
+                    "railTitle": "企業客服",
+                    "primaryText": "聯絡客服",
+                    "secondaryText": "企業採購"
+                }
+            },
+            "features": {
+                "dynamic": {
+                    "title": "香港 CN2 精品線路 上線",
+                    "kicker": "商品動態"
+                },
+                "activity": {
+                    "title": "新客首單 39 元/年",
+                    "kicker": "活動內容"
+                },
+                "enterprise": {
+                    "title": "IDC 企業採購通道",
+                    "kicker": "企業專區"
+                },
+                "cloudDesktop": {
+                    "title": "西安雲電腦 即開即用",
+                    "kicker": "輕量商品"
+                },
+                "new": {
+                    "title": "十堰高防獨立伺服器",
+                    "kicker": "新開商品"
+                }
+            },
+            "entry": "商品目錄、購買支付、自動開通、賬單結算與服務支援統一打通；首頁即是控制台入口，讓資源採購和後續管理始終在同一條鏈路裡完成。",
+            "tier": "T3+ 資料中心 + BGP 多線接入 + 100G 抗 DDoS 防護；實名認證、許可權分級與操作留痕保障賬戶安全，長期業務和合規場景穩定承載。",
+            "support": "7×24 小時工單、官方QQ群與一對一商務對接，覆蓋選型、部署、遷移、運維與結算；支援對公結算、批次採購、子賬號協作與統一對賬。",
+            "firstOrder": "新客首單 2 核 2G 雲伺服器 39 元/年起，輕量雲電腦按月訂閱即開即用；優惠券、折扣券靈活疊加，配置隨業務彈性升級，先用後付更省心。",
+            "global": "覆蓋香港、美國與國內多地優質節點，三網 CN2 / BGP 線路最佳化回國；跨區域組網、跨境業務秒級響應，適合建站、代理、跨境電商與出海 SaaS。",
+            "cn2": "三網 CN2 GIA 最佳化回國，跨境業務低時延穩定承載。",
+            "cloud2c2g": "2H2G 雲伺服器覆蓋建站、代理、輕量業務全場景。",
+            "billing": "統一賬單、多子賬號協作與對公結算能力同步上線。",
+            "xian": "西安節點低延遲，支援遠端辦公、外包協作、教學實訓。",
+            "ddos": "100G 抗 DDoS + BGP 多線，面向長期穩定業務承載。",
+            "switchTo": "切換到 {title}",
+            "unnamed": "未命名",
+            "learnMore": "瞭解更多",
+            "viewDetail": "檢視詳情"
+        },
+        "registerBar": {
+            "title": "現在註冊，開啟您的網際網路高速穩定之旅！",
+            "registerNow": "立即註冊"
+        },
+        "news": {
+            "title": "資訊動態",
+            "announcements": "公告",
+            "recommended": "推薦",
+            "subtitle": "為您呈現行業動態、活動公告、商品釋出",
+            "viewMore": "檢視更多",
+            "summaryFallback": "資訊動態主焦點卡片展示區域，點選檢視完整內容。",
+            "detailHint": "點選檢視詳細內容。"
+        },
+        "products": {
+            "title": "安全、穩定、可信賴的商品與服務",
+            "emptyCategory": "當前分類暫無可展示的二級分組，點選後可進入商品目錄檢視更多內容。",
+            "techDeliveryDesc": "的技術積澱與交付實踐，助力企業上雲與產業網際網路。",
+            "viewAll": "檢視全部商品",
+            "buyNow": "立即選購",
+            "groupFallback": "二級分組 {index}",
+            "categoryFallback": "商品分類 {index}",
+            "currentCategory": "當前分類",
+            "categoryCatalog": "{name}目錄",
+            "recommendedIntro": "主推 {name}，可線上檢視配置並快速完成選型。",
+            "groupIntro": "{category} 下已上架 {count} 款在售商品，可按業務需求快速選型。"
+        },
+        "solutions": {
+            "title": "為千行百業提供全面的解決方案",
+            "subtitle": "面向豐富的業務場景，提供覆蓋行業與技術的解決方案。",
+            "cloudServer": "雲伺服器",
+            "learnMore": "瞭解更多",
+            "industrySolutions": "行業解決方案",
+            "relatedProducts": "相關商品",
+            "securityProtection": "安全防護",
+            "ecommerce": {
+                "title": "電商解決方案",
+                "tags": "業務運營、資料分析、安全防護",
+                "description": "我們提供一站式的電商解決方案，將業務運營、資料分析、安全防護等多方面服務融為一體，確保您的電商業務順暢無阻。",
+                "points": {
+                    "operationsOptimization": "業務運營最佳化",
+                    "dataAnalyticsAndMining": "資料分析與挖掘",
+                    "paymentLinkCoordination": "支付鏈路協同"
+                },
+                "label": "電商",
+                "features": "業務運營、資料分析、安全防護",
+                "scenarios": [
+                    "多店鋪集中管理",
+                    "大促與秒殺期彈性擴容",
+                    "訂單與支付鏈路穩定"
+                ]
+            },
+            "game": {
+                "label": "遊戲",
+                "title": "遊戲雲解決方案",
+                "subtitle": "高併發接入、彈性擴容、穩定防護",
+                "description": "針對高併發、低時延和穩定交付場景，整合彈性計算、流量排程、告警巡檢和節點容災能力，支撐遊戲業務穩定執行。",
+                "points": {
+                    "elasticResourceScheduling": "彈性資源排程",
+                    "lowLatencyAccessOptimization": "低時延接入最佳化",
+                    "eventPeakCapacity": "活動峰值承載",
+                    "nodeDisasterRecoveryAndMonitoring": "節點容災與監控"
+                },
+                "scenarios": [
+                    "開服與合服資源調度",
+                    "活動期併發峰值承接",
+                    "跨區玩家低延遲接入"
+                ]
+            },
+            "security": {
+                "label": "安全",
+                "title": "安全行業解決方案",
+                "subtitle": "訪問控制、日誌審計、資產防護",
+                "description": "圍繞身份認證、許可權管理、日誌留痕和風險告警構建防護體系，幫助企業把安全能力前置到採購、交付和運維全鏈路。",
+                "points": {
+                    "identityAndAccessIsolation": "身份認證與許可權隔離",
+                    "logAuditingAndTracing": "日誌審計與追蹤",
+                    "securityPolicyOrchestration": "安全策略編排",
+                    "anomalousAccessProtection": "異常訪問防護"
+                },
+                "features": "訪問控制、日誌審計、資產防護",
+                "scenarios": [
+                    "對外服務暴露面收斂",
+                    "維運操作留痕稽核",
+                    "異常存取與攻擊防護"
+                ]
+            },
+            "website": {
+                "label": "網站",
+                "title": "網站託管解決方案",
+                "subtitle": "快速部署、穩定託管、持續運維",
+                "description": "從建站部署、效能最佳化到備案支撐和日常巡檢，為展示站、業務站和內容站提供一站式上雲託管方案。",
+                "points": {
+                    "fastSiteProvisioning": "建站資源快速開通",
+                    "performanceAndStabilityOptimization": "效能與穩定性最佳化",
+                    "multiSiteHostingCoordination": "多站點託管協同",
+                    "registrationAndOperationsSupport": "備案與運維支撐"
+                },
+                "scenarios": [
+                    "多站點統一託管",
+                    "存取量與頻寬彈性",
+                    "備案與上線流程配合"
+                ]
+            },
+            "finance": {
+                "label": "金融",
+                "title": "金融業務解決方案",
+                "subtitle": "穩定交付、審計留痕、合規支撐",
+                "description": "圍繞資金處理、敏感操作留痕、故障兜底 and 高可用資源編排，幫助金融場景建立更穩妥的基礎設施與運維體系。",
+                "points": {
+                    "clearBillingAndInvoicing": "賬單與計費鏈路清晰",
+                    "coreResourceHighAvailabilityDeployment": "核心資源高可用部署",
+                    "criticalActionAuditTrail": "關鍵操作審計留痕",
+                    "complianceScenarioSupport": "合規場景支撐"
+                },
+                "features": "快速部署、穩定託管、持續運維",
+                "scenarios": [
+                    "帳單與對帳資料一致",
+                    "核心業務高可用部署",
+                    "關鍵操作可追溯"
+                ]
+            },
+            "goGlobal": {
+                "label": "出海",
+                "title": "出海業務解決方案",
+                "subtitle": "全球節點、鏈路最佳化、服務協同",
+                "description": "面向跨境業務提供全球節點部署、區域路由最佳化、多地資源排程與統一交付支援，幫助業務更快覆蓋海外使用者。",
+                "scenarios": [
+                    "海外使用者就近接入",
+                    "跨境鏈路穩定性",
+                    "多區域統一維運"
+                ]
+            },
+            "globalNodeAccess": "全球節點接入",
+            "crossRegionLinkOptimization": "跨區域鏈路最佳化",
+            "unifiedMultiRegionScheduling": "多地資源統一排程",
+            "overseasBusinessDelivery": "海外業務穩定交付",
+            "government": "政府",
+            "governmentEnterpriseCloud": "政企上雲解決方案",
+            "governmentFeatureSummary": "資源統籌、許可權管理、長期運維",
+            "governmentSolutionDescription": "針對政企專案週期長、流程嚴謹和運維要求高的特點，提供從資源規劃、許可權管理到持續服務支撐的整套方案。",
+            "unifiedPlanningAndDelivery": "資源統一規劃與交付",
+            "tieredPermissionsAndProcessControl": "許可權分級與流程控制",
+            "documentedDeliveryManagement": "文件化交付管理",
+            "longTermOperationsAndSupport": "長期運維與服務保障",
+            "gaming": {
+                "features": "高併發接入、彈性擴容、穩定防護"
+            },
+            "overseas": {
+                "features": "穩定交付、審計留痕、合規支撐"
+            },
+            "global": {
+                "features": "全球節點、鏈路最佳化、服務協同"
+            },
+            "resource": {
+                "features": "資源統籌、許可權管理、長期運維"
+            },
+            "detail": {
+                "heroKicker": "行業解決方案",
+                "capabilitiesTitle": "方案能力",
+                "scenariosTitle": "適用場景",
+                "flowTitle": "接入流程",
+                "flowStep1": "需求梳理",
+                "flowStep1Desc": "明確業務規模、存取區域與峰值特徵。",
+                "flowStep2": "資源選型",
+                "flowStep2Desc": "按業務形態給出配置與頻寬建議。",
+                "flowStep3": "部署開通",
+                "flowStep3Desc": "下單後自動開通，交付控制台權限。",
+                "flowStep4": "維運保障",
+                "flowStep4Desc": "工單回應、監控告警與容量調整跟進。",
+                "recommendTitle": "推薦產品",
+                "ctaTitle": "想聊聊你的業務場景？",
+                "ctaDesc": "把業務規模、存取區域和峰值情況告訴我們，會給出對應的資源配置建議。",
+                "ctaPrimary": "查看商品目錄",
+                "ctaSecondary": "提交工單諮詢",
+                "otherTitle": "其他行業方案",
+                "backToList": "返回解決方案",
+                "notFoundTitle": "沒有這個行業方案",
+                "notFoundDesc": "位址可能已經調整，回到解決方案列表看看。"
+            },
+            "governmentScenarios": [
+                "多部門分級授權",
+                "交付過程留檔",
+                "長期維運與回應"
+            ]
         }
-      },
-      "security": {
-        "label": "安全",
-        "title": "安全行業解決方案",
-        "subtitle": "訪問控制、日誌審計、資產防護",
-        "description": "圍繞身份認證、許可權管理、日誌留痕和風險告警構建防護體系，幫助企業把安全能力前置到採購、交付和運維全鏈路。",
-        "points": {
-          "identityAndAccessIsolation": "身份認證與許可權隔離",
-          "logAuditingAndTracing": "日誌審計與追蹤",
-          "securityPolicyOrchestration": "安全策略編排",
-          "anomalousAccessProtection": "異常訪問防護"
-        },
-        "features": "訪問控制、日誌審計、資產防護"
-      },
-      "website": {
-        "label": "網站",
-        "title": "網站託管解決方案",
-        "subtitle": "快速部署、穩定託管、持續運維",
-        "description": "從建站部署、效能最佳化到備案支撐和日常巡檢，為展示站、業務站和內容站提供一站式上雲託管方案。",
-        "points": {
-          "fastSiteProvisioning": "建站資源快速開通",
-          "performanceAndStabilityOptimization": "效能與穩定性最佳化",
-          "multiSiteHostingCoordination": "多站點託管協同",
-          "registrationAndOperationsSupport": "備案與運維支撐"
+    },
+    "help": {
+        "support": {
+            "groupNumberPending": "待補充群號",
+            "joinOfficialChat": "加入官方群聊",
+            "officialChatDescription": "官方群聊用於釋出維護通知、活動訊息和常見問題答疑，歡迎掃碼加入。",
+            "officialQqGroup": "官方QQ群",
+            "partnershipEmail": "合作電子郵件",
+            "serviceHours": "服務時間"
         }
-      },
-      "finance": {
-        "label": "金融",
-        "title": "金融業務解決方案",
-        "subtitle": "穩定交付、審計留痕、合規支撐",
-        "description": "圍繞資金處理、敏感操作留痕、故障兜底 and 高可用資源編排，幫助金融場景建立更穩妥的基礎設施與運維體系。",
-        "points": {
-          "clearBillingAndInvoicing": "賬單與計費鏈路清晰",
-          "coreResourceHighAvailabilityDeployment": "核心資源高可用部署",
-          "criticalActionAuditTrail": "關鍵操作審計留痕",
-          "complianceScenarioSupport": "合規場景支撐"
+    },
+    "websiteProduct": {
+        "summary": {
+            "region": "區域",
+            "os": "系統安裝",
+            "cpuModel": "CPU型號",
+            "memory": "記憶體"
+        }
+    },
+    "openSource": {
+        "footer": {
+            "repository": "開源倉庫",
+            "version": "開源版本"
         },
-        "features": "快速部署、穩定託管、持續運維"
-      },
-      "goGlobal": {
-        "label": "出海",
-        "title": "出海業務解決方案",
-        "subtitle": "全球節點、鏈路最佳化、服務協同",
-        "description": "面向跨境業務提供全球節點部署、區域路由最佳化、多地資源排程與統一交付支援，幫助業務更快覆蓋海外使用者。"
-      },
-      "globalNodeAccess": "全球節點接入",
-      "crossRegionLinkOptimization": "跨區域鏈路最佳化",
-      "unifiedMultiRegionScheduling": "多地資源統一排程",
-      "overseasBusinessDelivery": "海外業務穩定交付",
-      "government": "政府",
-      "governmentEnterpriseCloud": "政企上雲解決方案",
-      "governmentFeatureSummary": "資源統籌、許可權管理、長期運維",
-      "governmentSolutionDescription": "針對政企專案週期長、流程嚴謹和運維要求高的特點，提供從資源規劃、許可權管理到持續服務支撐的整套方案。",
-      "unifiedPlanningAndDelivery": "資源統一規劃與交付",
-      "tieredPermissionsAndProcessControl": "許可權分級與流程控制",
-      "documentedDeliveryManagement": "文件化交付管理",
-      "longTermOperationsAndSupport": "長期運維與服務保障",
-      "gaming": {
-        "features": "高併發接入、彈性擴容、穩定防護"
-      },
-      "overseas": {
-        "features": "穩定交付、審計留痕、合規支撐"
-      },
-      "global": {
-        "features": "全球節點、鏈路最佳化、服務協同"
-      },
-      "resource": {
-        "features": "資源統籌、許可權管理、長期運維"
-      }
+        "kicker": "開源",
+        "title": "開源與商業授權",
+        "subtitle": "TuraIDC 採用 AGPL-3.0-or-later 與商業授權的雙重授權模式：可以免費開源使用，也可以購買商業授權後閉源使用。",
+        "agpl": {
+            "title": "AGPL-3.0-or-later（免費）",
+            "desc": "任何個人、組織、小企業都可以免費使用與商用，代價是承擔 AGPL 的強制開源義務。",
+            "rightsTitle": "你可以免費做",
+            "right1": "下載、部署，用於自己的業務經營",
+            "right2": "修改原始碼、二次開發、開發自己的外掛",
+            "right3": "複製與發佈（需遵守 AGPL）"
+        },
+        "obligations": {
+            "title": "免費使用必須履行的義務",
+            "networkTitle": "改了就得上線開源",
+            "networkDesc": "AGPL 第 13 條：修改版透過網路向使用者提供服務時，必須向這些使用者提供完整的對應原始碼（含自己的改動）。",
+            "noCloseTitle": "不得閉源再發佈",
+            "noCloseDesc": "對外服務與發佈同樣受 AGPL 約束；需要閉源商用必須另行取得商業授權，不能自行移除授權條款與版權聲明。",
+            "noticeTitle": "保留署名與倉庫連結",
+            "noticeDesc": "不得刪除 LICENSE、版權聲明與倉庫連結，也不得把 TuraIDC 包裝成自研產品對外宣傳。",
+            "depsTitle": "依賴授權要相容",
+            "depsDesc": "引入新依賴前確認其授權與 AGPL 相容（MIT / BSD / Apache-2.0 等一般可行）。"
+        },
+        "section13": {
+            "title": "AGPL 第 13 條怎麼落地",
+            "unmodifiedTitle": "部署的是未修改的官方版本",
+            "unmodifiedDesc": "只要在網站保留到官方倉庫的可見入口即可（本站頁尾「開源倉庫」與「開源版本」就是為此提供），不需要自建原始碼站。",
+            "modifiedTitle": "部署的是修改過的版本",
+            "modifiedDesc": "必須向網站使用者提供與實際執行版本對應的完整原始碼：公開倉庫、原始碼包下載，或明確告知取得方式並及時提供。"
+        },
+        "source": {
+            "title": "如何取得原始碼",
+            "desc": "完整原始碼始終公開，未購買商業授權也能取得；建議下載與線上版本一致的 Release 原始碼包。",
+            "repoTitle": "GitHub 倉庫",
+            "repoDesc": "瀏覽程式碼、提交 Issue 與 Pull Request。",
+            "cloneTitle": "git clone 取得",
+            "cloneDesc": "在伺服器上直接取得原始碼部署。",
+            "releaseTitle": "Release 原始碼包",
+            "releaseDesc": "下載與穩定版本對應的原始碼封存檔。",
+            "docsTitle": "部署文件",
+            "docsDesc": "依文件完成環境準備、部署與上線。",
+            "docsLink": "查看部署文件"
+        },
+        "commercial": {
+            "title": "商業授權（200 元/年）",
+            "desc": "面向不能公開原始碼的敏感企業、私有化交付與閉源二次開發情境，購買授權後可以閉源使用。",
+            "priceTitle": "價格口徑",
+            "priceDesc": "200 元/年，按「每個組織每個生產部署」計；多部署、OEM、白牌等可協商，最終以訂單為準。",
+            "grantTitle": "授權內容",
+            "grantDesc": "授權範圍內可閉源使用、修改後不公開，並免除 AGPL 第 13 條的網路原始碼提供義務。",
+            "excludeTitle": "不包含",
+            "excludeDesc": "不含商標授權，不得轉售、白牌或再發佈原始碼；不提供額外功能，與開源版原始碼相同。",
+            "howTitle": "如何取得",
+            "howDesc": "透過倉庫 Issues 提交「商業授權申請」，或寄信聯絡專案方；確認後簽署訂單並付款。"
+        },
+        "contact": {
+            "title": "商業授權與諮詢",
+            "desc": "商業授權、OEM 與合規問題請聯絡專案方。",
+            "emailLabel": "信箱",
+            "emailFallback": "待公布",
+            "issuesLabel": "倉庫 Issues",
+            "issuesLink": "提交「商業授權申請」",
+            "note": "以上聯絡方式為工程佔位，正式管道發布前可替換；商業授權與 CLA 條款為草案，簽署前需法務複核。"
+        },
+        "notice": "本頁為工程側授權說明，不構成法律意見；正式條款以 LICENSE、LICENSE-COMMERCIAL.md 與雙方簽署的授權文件為準。"
+    },
+    "cookieConsent": {
+        "title": "Cookie 使用說明",
+        "message": "{site} 使用 Cookie 與瀏覽器本地儲存來維持登入狀態、記住介面偏好並完成安全驗證，不用於跨站追蹤。了解詳情：",
+        "termsLink": "服務條款",
+        "privacyLink": "隱私政策",
+        "accept": "知道了",
+        "reject": "僅必要"
     }
-  },
-  "help": {
-    "support": {
-      "groupNumberPending": "待補充群號",
-      "joinOfficialChat": "加入官方群聊",
-      "officialChatDescription": "官方群聊用於釋出維護通知、活動訊息和常見問題答疑，歡迎掃碼加入。",
-      "officialQqGroup": "官方QQ群",
-      "partnershipEmail": "合作電子郵件",
-      "serviceHours": "服務時間"
-    }
-  },
-  "websiteProduct": {
-    "summary": {
-      "region": "區域",
-      "os": "系統安裝",
-      "cpuModel": "CPU型號",
-      "memory": "記憶體"
-    }
-  },
-  "openSource": {
-    "footer": {
-      "repository": "開源倉庫",
-      "version": "開源版本"
-    },
-    "kicker": "開源",
-    "title": "開源與商業授權",
-    "subtitle": "TuraIDC 採用 AGPL-3.0-or-later 與商業授權的雙重授權模式：可以免費開源使用，也可以購買商業授權後閉源使用。",
-    "agpl": {
-      "title": "AGPL-3.0-or-later（免費）",
-      "desc": "任何個人、組織、小企業都可以免費使用與商用，代價是承擔 AGPL 的強制開源義務。",
-      "rightsTitle": "你可以免費做",
-      "right1": "下載、部署，用於自己的業務經營",
-      "right2": "修改原始碼、二次開發、開發自己的外掛",
-      "right3": "複製與發佈（需遵守 AGPL）"
-    },
-    "obligations": {
-      "title": "免費使用必須履行的義務",
-      "networkTitle": "改了就得上線開源",
-      "networkDesc": "AGPL 第 13 條：修改版透過網路向使用者提供服務時，必須向這些使用者提供完整的對應原始碼（含自己的改動）。",
-      "noCloseTitle": "不得閉源再發佈",
-      "noCloseDesc": "對外服務與發佈同樣受 AGPL 約束；需要閉源商用必須另行取得商業授權，不能自行移除授權條款與版權聲明。",
-      "noticeTitle": "保留署名與倉庫連結",
-      "noticeDesc": "不得刪除 LICENSE、版權聲明與倉庫連結，也不得把 TuraIDC 包裝成自研產品對外宣傳。",
-      "depsTitle": "依賴授權要相容",
-      "depsDesc": "引入新依賴前確認其授權與 AGPL 相容（MIT / BSD / Apache-2.0 等一般可行）。"
-    },
-    "section13": {
-      "title": "AGPL 第 13 條怎麼落地",
-      "unmodifiedTitle": "部署的是未修改的官方版本",
-      "unmodifiedDesc": "只要在網站保留到官方倉庫的可見入口即可（本站頁尾「開源倉庫」與「開源版本」就是為此提供），不需要自建原始碼站。",
-      "modifiedTitle": "部署的是修改過的版本",
-      "modifiedDesc": "必須向網站使用者提供與實際執行版本對應的完整原始碼：公開倉庫、原始碼包下載，或明確告知取得方式並及時提供。"
-    },
-    "source": {
-      "title": "如何取得原始碼",
-      "desc": "完整原始碼始終公開，未購買商業授權也能取得；建議下載與線上版本一致的 Release 原始碼包。",
-      "repoTitle": "GitHub 倉庫",
-      "repoDesc": "瀏覽程式碼、提交 Issue 與 Pull Request。",
-      "cloneTitle": "git clone 取得",
-      "cloneDesc": "在伺服器上直接取得原始碼部署。",
-      "releaseTitle": "Release 原始碼包",
-      "releaseDesc": "下載與穩定版本對應的原始碼封存檔。",
-      "docsTitle": "部署文件",
-      "docsDesc": "依文件完成環境準備、部署與上線。",
-      "docsLink": "查看部署文件"
-    },
-    "commercial": {
-      "title": "商業授權（200 元/年）",
-      "desc": "面向不能公開原始碼的敏感企業、私有化交付與閉源二次開發情境，購買授權後可以閉源使用。",
-      "priceTitle": "價格口徑",
-      "priceDesc": "200 元/年，按「每個組織每個生產部署」計；多部署、OEM、白牌等可協商，最終以訂單為準。",
-      "grantTitle": "授權內容",
-      "grantDesc": "授權範圍內可閉源使用、修改後不公開，並免除 AGPL 第 13 條的網路原始碼提供義務。",
-      "excludeTitle": "不包含",
-      "excludeDesc": "不含商標授權，不得轉售、白牌或再發佈原始碼；不提供額外功能，與開源版原始碼相同。",
-      "howTitle": "如何取得",
-      "howDesc": "透過倉庫 Issues 提交「商業授權申請」，或寄信聯絡專案方；確認後簽署訂單並付款。"
-    },
-    "contact": {
-      "title": "商業授權與諮詢",
-      "desc": "商業授權、OEM 與合規問題請聯絡專案方。",
-      "emailLabel": "信箱",
-      "emailFallback": "待公布",
-      "issuesLabel": "倉庫 Issues",
-      "issuesLink": "提交「商業授權申請」",
-      "note": "以上聯絡方式為工程佔位，正式管道發布前可替換；商業授權與 CLA 條款為草案，簽署前需法務複核。"
-    },
-    "notice": "本頁為工程側授權說明，不構成法律意見；正式條款以 LICENSE、LICENSE-COMMERCIAL.md 與雙方簽署的授權文件為準。"
-  },
-  "cookieConsent": {
-    "title": "Cookie 使用說明",
-    "message": "{site} 使用 Cookie 與瀏覽器本地儲存來維持登入狀態、記住介面偏好並完成安全驗證，不用於跨站追蹤。了解詳情：",
-    "termsLink": "服務條款",
-    "privacyLink": "隱私政策",
-    "accept": "知道了",
-    "reject": "僅必要"
-  }
 }
