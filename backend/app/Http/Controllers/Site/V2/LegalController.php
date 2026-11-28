@@ -38,7 +38,10 @@ class LegalController extends Controller
         '{{icp_record}}' => 'icp_record',
     ];
 
-    public function show(string $kind): JsonResponse
+    /**
+     * @return JsonResponse
+     */
+    public function show(string $kind)
     {
         $key = self::KINDS[$kind] ?? null;
 
@@ -71,6 +74,9 @@ class LegalController extends Controller
     /**
      * 把纯文本排版成 [{title, paragraphs}]。
      *
+     * 用状态数组而不是闭包按引用捕获：PHPStan 会把闭包捕获的变量当成常量，
+     * 于是 `=== ''` 恒真、后续语句被判定不可达（CI 会因此失败）。
+     *
      * @return list<array{title: string, paragraphs: list<string>}>
      */
     private function parse(string $raw): array
@@ -81,23 +87,11 @@ class LegalController extends Controller
             return [];
         }
 
+        /** @var list<array{title: string, paragraphs: list<string>}> $sections */
         $sections = [];
-        $currentTitle = '';
-        $currentParagraphs = [];
 
-        $flush = static function () use (&$sections, &$currentTitle, &$currentParagraphs): void {
-            if ($currentTitle === '' && $currentParagraphs === []) {
-                return;
-            }
-
-            $sections[] = [
-                'title' => $currentTitle,
-                'paragraphs' => $currentParagraphs,
-            ];
-
-            $currentTitle = '';
-            $currentParagraphs = [];
-        };
+        /** @var array{title: string, paragraphs: list<string>} $state */
+        $state = ['title' => '', 'paragraphs' => []];
 
         foreach (explode("\n", $text) as $line) {
             $trimmed = trim($line);
@@ -107,16 +101,21 @@ class LegalController extends Controller
             }
 
             if (str_starts_with($trimmed, '##')) {
-                $flush();
-                $currentTitle = trim(ltrim($trimmed, '#'));
+                if ($state['title'] !== '' || $state['paragraphs'] !== []) {
+                    $sections[] = $state;
+                }
+
+                $state = ['title' => trim(ltrim($trimmed, '#')), 'paragraphs' => []];
 
                 continue;
             }
 
-            $currentParagraphs[] = $trimmed;
+            $state['paragraphs'][] = $trimmed;
         }
 
-        $flush();
+        if ($state['title'] !== '' || $state['paragraphs'] !== []) {
+            $sections[] = $state;
+        }
 
         return $sections;
     }
