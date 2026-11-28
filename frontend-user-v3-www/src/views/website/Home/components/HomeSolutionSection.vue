@@ -1,5 +1,5 @@
 <template>
-  <section class="solution-section">
+  <section class="solution-section" v-reveal>
     <div class="container solution-section__head">
       <h2 class="solution-section__title">{{ $t("home.solutions.title") }}</h2>
       <p class="solution-section__desc">
@@ -24,7 +24,7 @@
       </div>
 
       <div class="container solution-stage__inner">
-        <div class="solution-panel">
+        <div class="solution-panel" @mouseenter="pauseAutoSwitch" @mouseleave="resumeAutoSwitch">
           <aside
             class="solution-panel__rail"
             role="tablist"
@@ -39,55 +39,60 @@
               :class="{ 'is-active': item.key === activeSolutionKey }"
               :aria-selected="item.key === activeSolutionKey"
               :tabindex="item.key === activeSolutionKey ? 0 : -1"
-              @click="activeSolutionKey = item.key"
+              @click="selectSolution(item.key)"
             >
               {{ item.label }}
             </button>
           </aside>
 
           <div class="solution-panel__content">
-            <h3 class="solution-panel__title">
-              {{ activeIndustrySolution.title }}
-            </h3>
-            <p class="solution-panel__summary">
-              {{ activeIndustrySolution.description }}
-            </p>
+            <!-- 切换方案时整块内容淡入淡出，只换文字不动图片会显得生硬 -->
+            <transition name="solution-fade" mode="out-in">
+              <div :key="activeSolutionKey" class="solution-panel__body">
+                <h3 class="solution-panel__title">
+                  {{ activeIndustrySolution.title }}
+                </h3>
+                <p class="solution-panel__summary">
+                  {{ activeIndustrySolution.description }}
+                </p>
 
-            <div class="solution-panel__section-title">
-              {{ $t("layout.nav.solutions") }}
-            </div>
-            <ul class="solution-panel__feature-list">
-              <li
-                v-for="point in activeIndustrySolution.points"
-                :key="point"
-                class="solution-panel__feature"
-              >
-                <span class="solution-panel__feature-icon">
-                  <el-icon><Select /></el-icon>
-                </span>
-                <span>{{ point }}</span>
-              </li>
-            </ul>
+                <div class="solution-panel__section-title">
+                  {{ $t("layout.nav.solutions") }}
+                </div>
+                <ul class="solution-panel__feature-list">
+                  <li
+                    v-for="point in activeIndustrySolution.points"
+                    :key="point"
+                    class="solution-panel__feature"
+                  >
+                    <span class="solution-panel__feature-icon">
+                      <el-icon><Select /></el-icon>
+                    </span>
+                    <span>{{ point }}</span>
+                  </li>
+                </ul>
 
-            <div class="solution-panel__section-title">
-              {{ $t("home.solutions.relatedProducts") }}
-            </div>
-            <div class="solution-panel__actions">
-              <button
-                type="button"
-                class="solution-panel__action solution-panel__action--primary"
-                @click="router.push(activeIndustrySolution.productPath)"
-              >
-                {{ $t("home.solutions.cloudServer") }}
-              </button>
-              <button
-                type="button"
-                class="solution-panel__action"
-                @click="router.push(activeIndustrySolution.consultPath)"
-              >
-                {{ $t("home.solutions.learnMore") }}
-              </button>
-            </div>
+                <div class="solution-panel__section-title">
+                  {{ $t("home.solutions.relatedProducts") }}
+                </div>
+                <div class="solution-panel__actions">
+                  <button
+                    type="button"
+                    class="solution-panel__action solution-panel__action--primary"
+                    @click="router.push(activeIndustrySolution.productPath)"
+                  >
+                    {{ $t("home.solutions.cloudServer") }}
+                  </button>
+                  <button
+                    type="button"
+                    class="solution-panel__action"
+                    @click="router.push(activeIndustrySolution.consultPath)"
+                  >
+                    {{ $t("home.solutions.learnMore") }}
+                  </button>
+                </div>
+              </div>
+            </transition>
           </div>
         </div>
       </div>
@@ -96,7 +101,7 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElIcon } from "element-plus/es/components/icon/index.mjs";
 import { Select } from "@element-plus/icons-vue";
@@ -113,6 +118,57 @@ const activeIndustrySolution = computed(
       (item) => item.key === activeSolutionKey.value,
     ) || industrySolutions.value[0],
 );
+
+// 方案区自动轮换：静态摆着不动会显得页面没做完，
+// 隔一段时间自己换一个行业方案能动起来。鼠标停在面板上、页面切到后台、
+// 以及用户自己点过某个 tab 之后都重新计时，避免"刚点完就被抢走"。
+const AUTO_SWITCH_MS = 8000;
+const isPaused = ref(false);
+let autoTimer = null;
+
+function advanceSolution() {
+  const list = industrySolutions.value;
+  if (list.length <= 1) return;
+
+  const currentIndex = list.findIndex(
+    (item) => item.key === activeSolutionKey.value,
+  );
+  const next = list[(currentIndex + 1) % list.length];
+  if (next) activeSolutionKey.value = next.key;
+}
+
+function stopAutoSwitch() {
+  if (autoTimer) {
+    window.clearInterval(autoTimer);
+    autoTimer = null;
+  }
+}
+
+function startAutoSwitch() {
+  stopAutoSwitch();
+  if (industrySolutions.value.length <= 1) return;
+
+  autoTimer = window.setInterval(() => {
+    if (isPaused.value || document.hidden) return;
+    advanceSolution();
+  }, AUTO_SWITCH_MS);
+}
+
+function selectSolution(key) {
+  activeSolutionKey.value = key;
+  startAutoSwitch();
+}
+
+function pauseAutoSwitch() {
+  isPaused.value = true;
+}
+
+function resumeAutoSwitch() {
+  isPaused.value = false;
+}
+
+onMounted(startAutoSwitch);
+onBeforeUnmount(stopAutoSwitch);
 </script>
 
 <style scoped lang="scss">
@@ -169,6 +225,19 @@ const activeIndustrySolution = computed(
   height: 100%;
   object-fit: cover;
   filter: saturate(0.92) brightness(0.96);
+  /* 背景缓慢漂移：静止大图会让整屏看起来是截图，极慢的位移能带出"活"的感觉 */
+  animation: solution-stage-drift 26s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@keyframes solution-stage-drift {
+  from {
+    transform: scale(1.03) translate3d(0, 0, 0);
+  }
+
+  to {
+    transform: scale(1.08) translate3d(0, -1.4%, 0);
+  }
 }
 
 .solution-stage__overlay {
@@ -367,6 +436,38 @@ const activeIndustrySolution = computed(
 .solution-image-enter-from,
 .solution-image-leave-to {
   opacity: 0;
+}
+
+/* 方案内容切换的淡入淡出 */
+.solution-fade-enter-active,
+.solution-fade-leave-active {
+  transition:
+    opacity 0.26s ease,
+    transform 0.26s ease;
+}
+
+.solution-fade-enter-from {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.solution-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+/* 尊重系统的「减少动态效果」设置：关掉漂移与淡入位移，只留必要的可读性 */
+@media (prefers-reduced-motion: reduce) {
+  .solution-stage__image {
+    animation: none;
+  }
+
+  .solution-fade-enter-active,
+  .solution-fade-leave-active,
+  .solution-image-enter-active,
+  .solution-image-leave-active {
+    transition: none;
+  }
 }
 
 @media (max-width: 1180px) {

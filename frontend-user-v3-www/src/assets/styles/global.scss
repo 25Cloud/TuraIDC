@@ -793,3 +793,29 @@ ol {
     border-radius: 4px;
   }
 }
+
+/* ==========================================================================
+   区块入场动效（配合 app/directives/reveal.ts 的 v-reveal）
+   初始态由 JS 加 reveal-init（避免无 JS 时内容被藏死），进入视口后加 is-revealed。
+   ========================================================================== */
+.reveal-init {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.reveal-init.is-revealed {
+  opacity: 1;
+  transform: none;
+  transition:
+    opacity 0.62s cubic-bezier(0.22, 0.68, 0.32, 1),
+    transform 0.62s cubic-bezier(0.22, 0.68, 0.32, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal-init,
+  .reveal-init.is-revealed {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}

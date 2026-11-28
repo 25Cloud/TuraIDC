@@ -1,5 +1,5 @@
 <template>
-  <section class="product-tabs-section" :aria-busy="loading ? 'true' : 'false'">
+  <section class="product-tabs-section" v-reveal :aria-busy="loading ? 'true' : 'false'">
     <div class="container">
       <header class="product-tabs__head">
         <h2 class="product-tabs__title">{{ $t("home.products.title") }}</h2>

@@ -1,5 +1,5 @@
 <template>
-  <section class="news-section">
+  <section class="news-section" v-reveal>
     <div class="container">
       <header class="news-section__head">
         <h2 class="news-section__title">{{ $t("home.news.title") }}</h2>

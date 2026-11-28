@@ -1,5 +1,5 @@
 <template>
-  <section class="partner-section">
+  <section class="partner-section" v-reveal>
     <header class="partner-section__head">
       <h2 class="partner-section__title">{{ $t("home.partners.title") }}</h2>
       <p class="partner-section__desc">

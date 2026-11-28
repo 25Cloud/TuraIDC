@@ -1,5 +1,5 @@
 <template>
-  <section class="register-bar-section">
+  <section class="register-bar-section" v-reveal>
     <div class="register-bar">
       <div class="register-bar__inner container">
         <h3 class="register-bar__title">

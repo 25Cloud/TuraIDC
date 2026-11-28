@@ -7,6 +7,7 @@ import "element-plus/es/components/message/style/index";
 
 import App from "@/App.vue";
 import { createClientRouter } from "@/app/router";
+import { reveal } from "@/app/directives/reveal";
 import {
   initClientRuntimeConnectionHints,
   primeClientConnectionHints,
@@ -45,6 +46,9 @@ export function bootstrapClientApp() {
 
   app.use(pinia);
   app.use(i18n);
+
+  // 区块入场动效：v-reveal 让各 section 滚动进入视口时上浮淡入
+  app.directive("reveal", reveal);
 
   // 组件语言（分页/日期等文案）由 App.vue 的 <el-config-provider> 响应式承载，
   // 这里只负责全局尺寸与 zIndex。

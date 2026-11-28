@@ -1,5 +1,5 @@
 <template>
-  <section class="ai-skill-section">
+  <section class="ai-skill-section" v-reveal>
     <div class="container ai-skill-section__head">
       <h2 class="ai-skill-section__title">{{ $t("home.aiSkill.title") }}</h2>
       <p class="ai-skill-section__desc">{{ $t("home.aiSkill.subtitle") }}</p>
