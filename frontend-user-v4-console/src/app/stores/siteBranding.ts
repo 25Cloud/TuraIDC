@@ -101,6 +101,42 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
   const termsUrl = ref<string>('');
   const privacyUrl = ref<string>('');
   const frontendUrl = ref<string>('');
+  // 备案与许可：登录/注册/忘记密码这些页面也要显示，属于合规硬要求
+  const icpRecord = ref<string>('');
+  const icpRecordUrl = ref<string>('');
+  const publicSecurityRecord = ref<string>('');
+  const publicSecurityRecordUrl = ref<string>('');
+  const valueAddedLicense = ref<string>('');
+  const valueAddedLicenseUrl = ref<string>('');
+
+  const ICP_FILING_URL = 'https://beian.miit.gov.cn/';
+  const PUBLIC_SECURITY_FILING_URL = 'https://www.beian.gov.cn/';
+  const VALUE_ADDED_LICENSE_URL =
+    'https://tsm.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyesearch.jsp';
+
+  function isHttpUrl(value: string): boolean {
+    return /^https?:\/\//i.test(String(value || '').trim());
+  }
+
+  const icpFilingLink = computed(() =>
+    isHttpUrl(icpRecordUrl.value) ? icpRecordUrl.value.trim() : ICP_FILING_URL,
+  );
+
+  const publicSecurityFilingLink = computed(() => {
+    if (isHttpUrl(publicSecurityRecordUrl.value)) return publicSecurityRecordUrl.value.trim();
+    const code = (String(publicSecurityRecord.value || '').match(/\d{6,}/) || [])[0] || '';
+    return code
+      ? `${PUBLIC_SECURITY_FILING_URL}portal/registerSystemInfo?recordcode=${code}`
+      : PUBLIC_SECURITY_FILING_URL;
+  });
+
+  const valueAddedLicenseLink = computed(() => {
+    if (isHttpUrl(valueAddedLicenseUrl.value)) return valueAddedLicenseUrl.value.trim();
+    const license = String(valueAddedLicense.value || '').trim();
+    const base = `${VALUE_ADDED_LICENSE_URL}?type=xuke`;
+    return license ? `${base}&num=${encodeURIComponent(license)}` : base;
+  });
+
   const brandInitials = computed(() => deriveInitials(siteName.value));
 
   let fetchPromise: Promise<void> | null = null;
@@ -154,6 +190,28 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     termsUrl.value = pick(data, ['terms_url'], termsUrl.value || '');
     privacyUrl.value = pick(data, ['privacy_url'], privacyUrl.value || '');
     frontendUrl.value = pick(data, ['frontend_url'], frontendUrl.value || '');
+    icpRecord.value = pick(data, ['icp_record', 'icpRecord'], icpRecord.value || '');
+    icpRecordUrl.value = pick(data, ['icp_record_url', 'icpRecordUrl'], icpRecordUrl.value || '');
+    publicSecurityRecord.value = pick(
+      data,
+      ['public_security_record', 'publicSecurityRecord'],
+      publicSecurityRecord.value || '',
+    );
+    publicSecurityRecordUrl.value = pick(
+      data,
+      ['public_security_record_url', 'publicSecurityRecordUrl'],
+      publicSecurityRecordUrl.value || '',
+    );
+    valueAddedLicense.value = pick(
+      data,
+      ['value_added_license', 'valueAddedLicense', 'value_added_telecom_license'],
+      valueAddedLicense.value || '',
+    );
+    valueAddedLicenseUrl.value = pick(
+      data,
+      ['value_added_license_url', 'valueAddedLicenseUrl'],
+      valueAddedLicenseUrl.value || '',
+    );
     syncDocumentTitle(browserTitle.value || siteName.value || DEFAULT_SITE_NAME, previousBaseTitle, DEFAULT_SITE_NAME);
     if (siteFavicon.value) {
       updateFavicon(siteFavicon.value, '');
@@ -231,6 +289,12 @@ export const useSiteBrandingStore = defineStore('site-branding', () => {
     termsUrl,
     privacyUrl,
     frontendUrl,
+    icpRecord,
+    icpFilingLink,
+    publicSecurityRecord,
+    publicSecurityFilingLink,
+    valueAddedLicense,
+    valueAddedLicenseLink,
     brandInitials,
     toggleSidebar,
     applyPageTitle,

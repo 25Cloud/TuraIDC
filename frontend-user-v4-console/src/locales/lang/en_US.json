@@ -1451,9 +1451,21 @@
             "logs": "Logs"
         }
     },
+    "layout": {
+        "footer": {
+            "icpRecord": "ICP filing number: ",
+            "publicSecurityRecord": "Public security filing: ",
+            "valueAddedLicense": "Value-added telecom licence: "
+        }
+    },
     "clientAuth": {
         "register": {
-            "accountLabel": "Phone / Email",
+"agreePrefix": "I have read and agree to the",
+            "termsName": "Terms of Service",
+            "agreeAnd": "and",
+            "privacyName": "Privacy Policy",
+            "agreementRequired": "Please accept the Terms of Service and Privacy Policy first",
+                        "accountLabel": "Phone / Email",
             "accountPlaceholder": "Enter your phone number or email",
             "codeLabel": "Verification Code",
             "codePlaceholder": "Enter the verification code",

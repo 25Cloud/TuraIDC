@@ -1451,9 +1451,21 @@
             "logs": "日誌"
         }
     },
+    "layout": {
+        "footer": {
+            "icpRecord": "ICP 備案號：",
+            "publicSecurityRecord": "公安備案號：",
+            "valueAddedLicense": "增值電信業務經營許可證："
+        }
+    },
     "clientAuth": {
         "register": {
-            "accountLabel": "手機號 / 電郵",
+"agreePrefix": "我已閱讀並同意",
+            "termsName": "《服務條款》",
+            "agreeAnd": "與",
+            "privacyName": "《私隱政策》",
+            "agreementRequired": "請先閱讀並同意服務條款與私隱政策",
+                        "accountLabel": "手機號 / 電郵",
             "accountPlaceholder": "請輸入手機號或電郵",
             "codeLabel": "驗證碼",
             "codePlaceholder": "請輸入驗證碼",

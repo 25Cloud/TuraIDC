@@ -66,7 +66,45 @@
         </div>
       </section>
 
-      <footer class="auth-shell__footer">Copyright © {{ currentYear }} {{ siteBranding.siteName }}</footer>
+      <footer class="auth-shell__footer">
+        <p class="auth-shell__copyright">
+          Copyright © {{ currentYear }} {{ siteBranding.siteName }}
+        </p>
+        <!-- 备案与许可：登录/注册/忘记密码等所有认证页都要露出，属于合规硬要求 -->
+        <p
+          v-if="
+            siteBranding.icpRecord ||
+            siteBranding.valueAddedLicense ||
+            siteBranding.publicSecurityRecord
+          "
+          class="auth-shell__meta"
+        >
+          <span v-if="siteBranding.valueAddedLicense">
+            {{ $t('layout.footer.valueAddedLicense') }}
+            <a
+              :href="siteBranding.valueAddedLicenseLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ siteBranding.valueAddedLicense }}</a
+            >
+          </span>
+          <span v-if="siteBranding.icpRecord">
+            {{ $t('layout.footer.icpRecord') }}
+            <a :href="siteBranding.icpFilingLink" target="_blank" rel="noopener noreferrer">{{
+              siteBranding.icpRecord
+            }}</a>
+          </span>
+          <span v-if="siteBranding.publicSecurityRecord">
+            {{ $t('layout.footer.publicSecurityRecord') }}
+            <a
+              :href="siteBranding.publicSecurityFilingLink"
+              target="_blank"
+              rel="noopener noreferrer"
+              >{{ siteBranding.publicSecurityRecord }}</a
+            >
+          </span>
+        </p>
+      </footer>
     </div>
   </main>
 </template>
@@ -111,7 +149,9 @@ function handleLogoError() {
   logoLoadFailed.value = true;
 }
 
-const authBrandHref = computed(() => siteBranding.frontendUrl || '/client/login');
+// 左上角 logo 点回官网首页：配了 frontend_url 就用它，没配退回站点根，
+// 不能退回 /client/login——那等于在当前登录页原地跳转，用户以为什么都没发生。
+const authBrandHref = computed(() => siteBranding.frontendUrl || '/');
 
 function handleBack() {
   if (window.history.length > 1) {
@@ -729,6 +769,26 @@ onMounted(() => {
   .auth-shell__footer {
     text-align: left;
     font-size: 0.6875rem;
+  }
+
+  .auth-shell__copyright {
+    margin: 0;
+  }
+
+  .auth-shell__meta {
+    margin: 0.25rem 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.125rem 0.75rem;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
   }
 }
 

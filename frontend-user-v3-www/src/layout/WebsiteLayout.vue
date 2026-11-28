@@ -1085,10 +1085,16 @@
             "
             class="footer-bottom__meta"
           >
-            <span v-if="appStore.valueAddedLicense"
-              >{{ $t("layout.footer.valueAddedLicense")
-              }}{{ appStore.valueAddedLicense }}</span
-            >
+            <span v-if="appStore.valueAddedLicense">
+              {{ $t("layout.footer.valueAddedLicense") }}
+              <a
+                class="footer-bottom__link"
+                :href="appStore.valueAddedLicenseLink"
+                target="_blank"
+                rel="noopener noreferrer"
+                >{{ appStore.valueAddedLicense }}</a
+              >
+            </span>
             <span v-if="appStore.icpRecord">
               {{ $t("layout.footer.icpRecord") }}
               <a
@@ -1554,9 +1560,16 @@ function consoleUrl(path) {
 }
 
 function isNavActive(item) {
-  if (item.menuId === "products" && route.meta?.seoLanding) {
-    return true;
+  // 商品相关的路由名有好几个（产品类型页、分组页、商品详情、SEO 落地页），
+  // 逐个列 match 容易漏；这里对「商品」项直接按路径前缀判定，其余仍走 match 名单。
+  if (item.menuId === "products") {
+    return (
+      route.path === "/products" ||
+      route.path.startsWith("/products/") ||
+      Boolean(route.meta?.seoLanding)
+    );
   }
+
   return item.match.includes(route.name);
 }
 

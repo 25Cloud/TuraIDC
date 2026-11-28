@@ -125,6 +125,23 @@
       <!-- inline 形态（Turnstile）的验证组件落点：点击时就地加载，无感通过时不占位 -->
       <div v-show="renderMode === 'inline'" ref="captchaContainer" class="client-auth-captcha"></div>
 
+      <!-- 注册必须显式同意服务条款与隐私政策：既是最低合规要求，也是出事时的举证依据 -->
+      <t-form-item>
+        <t-checkbox v-model="form.agreed" class="client-auth-agree">
+          <span>
+            {{ t('clientAuth.register.agreePrefix') }}
+            <a :href="termsLink" target="_blank" rel="noopener noreferrer">{{
+              t('clientAuth.register.termsName')
+            }}</a>
+            {{ t('clientAuth.register.agreeAnd') }}
+            <a :href="privacyLink" target="_blank" rel="noopener noreferrer">{{
+              t('clientAuth.register.privacyName')
+            }}</a>
+          </span>
+        </t-checkbox>
+        <p v-if="agreedError" class="client-auth-agree__error">{{ agreedError }}</p>
+      </t-form-item>
+
       <t-button
         class="client-auth-submit"
         block
@@ -146,6 +163,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 
 import { clientAuthApi } from '@/api/auth';
+import { useSiteBrandingStore } from '@/app/stores/siteBranding';
 import AuthShell from '@/components/auth/AuthShell.vue';
 import PasswordToggle from '@/components/auth/PasswordToggle.vue';
 import { useGeeTestCaptcha } from '@/composables/useGeeTestCaptcha';
@@ -161,6 +179,8 @@ interface RegisterForm {
   referral_code: string;
   password: string;
   password_confirmation: string;
+  /** 是否已勾选同意服务条款与隐私政策；不勾不允许提交 */
+  agreed: boolean;
 }
 
 interface RuntimeHandledError {
@@ -200,6 +220,7 @@ const form = reactive<RegisterForm>({
   referral_code: '',
   password: '',
   password_confirmation: '',
+  agreed: false,
 });
 
 const loginLink = computed(() => ({
@@ -211,6 +232,22 @@ const redirectPath = computed(() => {
   const redirect = route.query.redirect;
   return typeof redirect === 'string' && redirect.startsWith('/') ? redirect : '/client/dashboard';
 });
+
+/**
+ * 条款链接：优先用站点配置的地址，没配就落到官网对应页面。
+ * 官网首页地址来自 frontend_url，两者都是站点级配置，不在前端硬编码域名。
+ */
+const siteBranding = useSiteBrandingStore();
+const agreedError = ref('');
+
+const officialBase = computed(() => String(siteBranding.frontendUrl || '').replace(/\/+$/, ''));
+
+const termsLink = computed(
+  () => siteBranding.termsUrl || (officialBase.value ? `${officialBase.value}/terms` : '/terms'),
+);
+const privacyLink = computed(
+  () => siteBranding.privacyUrl || (officialBase.value ? `${officialBase.value}/privacy` : '/privacy'),
+);
 
 const accountRule: FormRule = {
   validator: (value: string) => ({
@@ -245,6 +282,8 @@ const rules: Record<keyof RegisterForm, FormRule[]> = {
       trigger: 'blur',
     },
   ],
+  // 同意条款是 boolean，用 validateForm 里的显式检查报错，这里留空规则占位
+  agreed: [],
 };
 
 function clearTimer() {
@@ -323,12 +362,18 @@ function setFormErrors(errors: Partial<Record<keyof RegisterForm, string>>) {
     password_confirmation: errors.password_confirmation
       ? [{ type: 'error', message: errors.password_confirmation }]
       : [],
+    // 同意条款的提示走表单外的 agreedError，这里占位保持类型完整
+    agreed: [],
   };
   formRef.value?.setValidateMessage(validateMessage);
 }
 
 function validateForm() {
   const errors: Partial<Record<keyof RegisterForm, string>> = {};
+  agreedError.value = '';
+  if (!form.agreed) {
+    agreedError.value = t('clientAuth.register.agreementRequired');
+  }
   if (!detectAccountType(form.account)) {
     errors.account = t('clientAuth.register.accountInvalid');
   }
@@ -356,6 +401,10 @@ function validateForm() {
 
   if (Object.keys(errors).length > 0) {
     setFormErrors(errors);
+    return false;
+  }
+
+  if (agreedError.value) {
     return false;
   }
 
@@ -407,4 +456,15 @@ onBeforeUnmount(() => {
 </script>
 <style scoped lang="less">
 @import './shared-auth.less';
-</style>
+
+.client-auth-agree {
+  align-items: flex-start;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+.client-auth-agree__error {
+  margin: 0.25rem 0 0;
+  color: var(--td-error-color, #d54941);
+  font-size: 0.75rem;
+}</style>

@@ -1451,9 +1451,21 @@
             "logs": "日志"
         }
     },
+    "layout": {
+        "footer": {
+            "icpRecord": "ICP 备案号：",
+            "publicSecurityRecord": "公安备案号：",
+            "valueAddedLicense": "增值电信业务经营许可证："
+        }
+    },
     "clientAuth": {
         "register": {
-            "accountLabel": "手机号 / 邮箱",
+"agreePrefix": "我已阅读并同意",
+            "termsName": "《服务条款》",
+            "agreeAnd": "与",
+            "privacyName": "《隐私政策》",
+            "agreementRequired": "请先阅读并同意服务条款与隐私政策",
+                        "accountLabel": "手机号 / 邮箱",
             "accountPlaceholder": "请输入手机号或邮箱",
             "codeLabel": "验证码",
             "codePlaceholder": "请输入验证码",

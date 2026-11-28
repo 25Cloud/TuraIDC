@@ -80,6 +80,14 @@ function pick(raw, keys, fallback) {
 const ICP_FILING_URL = "https://beian.miit.gov.cn/";
 const PUBLIC_SECURITY_FILING_URL = "https://www.beian.gov.cn/";
 
+/**
+ * 增值电信业务经营许可证的工信部查询入口。
+ * 官方查询页要求带许可编号与查询类型，所以链接按站点配置的证号动态拼接；
+ * 没配证号时退化为查询页本身，不给出一个打不开的地址。
+ */
+const VALUE_ADDED_LICENSE_URL =
+  "https://tsm.miit.gov.cn/dxxzsp/xkz/xkzgl/resource/qiyesearch.jsp";
+
 /** 公安备案号形如「京公网安备 11010802000001号」，取其中数字作为查询参数 */
 function publicSecurityRecordCode(value) {
   const match = String(value || "").match(/\d{6,}/);
@@ -224,6 +232,13 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       ? `${PUBLIC_SECURITY_FILING_URL}portal/registerSystemInfo?recordcode=${code}`
       : PUBLIC_SECURITY_FILING_URL;
   });
+  const valueAddedLicenseUrl = ref(
+    pick(
+      initialSiteConfig,
+      ["value_added_license_url", "valueAddedLicenseUrl"],
+      "",
+    ),
+  );
   const valueAddedLicense = ref(
     pick(
       initialSiteConfig,
@@ -235,6 +250,15 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
       String(import.meta.env.VITE_VALUE_ADDED_LICENSE || ""),
     ),
   );
+  // 增值电信许可证的查询链接：配了证号就带 num 参数，没配就落到查询页首页
+  const valueAddedLicenseLink = computed(() => {
+    const custom = normalizeExternalLink(valueAddedLicenseUrl.value);
+    if (custom) return custom;
+
+    const license = String(valueAddedLicense.value || "").trim();
+    const base = `${VALUE_ADDED_LICENSE_URL}?type=xuke`;
+    return license ? `${base}&num=${encodeURIComponent(license)}` : base;
+  });
   // 全站商品展示方式：list=商品表格（列表式）/ card=商品卡片（卡片式）。
   // 只存后台设定的站点默认值；访客自己的切换由 useProductDisplayMode 存
   // localStorage 覆盖，不写进 store，避免把「运营设定的默认」和「本机偏好」混成一个状态。
@@ -467,6 +491,8 @@ export const useSiteBrandingStore = defineStore("site-branding", () => {
     publicSecurityRecordUrl,
     publicSecurityFilingLink,
     valueAddedLicense,
+    valueAddedLicenseUrl,
+    valueAddedLicenseLink,
     productDisplayMode,
     productCardShowStock,
     productDetailSpecCompare,
